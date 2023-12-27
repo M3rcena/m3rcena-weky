@@ -1,6 +1,6 @@
 {
   "name": "@m3rcena/weky",
-  "version": "4.1.1",
+  "version": "4.1.2",
   "description": "A fun npm package to play games within Discord with buttons!",
   "main": "index.js",
   "types": "typings/index.d.ts",
@@ -11,14 +11,14 @@
     "weky",
     "discord-games"
   ],
-  "homepage": "https://github.com/WekyDev/weky-npm#readme",
+  "homepage": "https://github.com/M3rcena/m3rcena-weky#readme",
   "bugs": {
-    "url": "https://github.com/WekyDev/weky-npm/issues"
+    "url": "https://github.com/M3rcena/m3rcena-weky/issues"
   },
-  "author": "Face#5454 + Sujal Goel#7602 + rayz#4986 +",
+  "author": "Face#5454 + Sujal Goel#7602 + rayz#4986 + d4rk.s0ul",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/WekyDev/weky-npm.git"
+    "url": "git+https://github.com/M3rcena/m3rcena-weky.git"
   },
   "dependencies": {
     "chalk": "^5.3.0",
