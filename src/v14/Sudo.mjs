@@ -1,7 +1,6 @@
-const Discord = require('discord.js');
+import Discord from 'discord.js';
 
-module.exports = async (options) => {
-
+export default async (options) => {
 	if (!options.message) {
 		throw new Error('Weky Error: message argument was not specified.');
 	}

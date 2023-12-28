@@ -1,13 +1,13 @@
-const { ButtonStyle } = require('discord.js');
+import { ButtonStyle } from 'discord.js';
 const data = new Set();
-const db = require('quick.db');
-const fetch = require('node-fetch');
-const Discord = require('discord.js');
-const { decode } = require('html-entities');
+import db from 'quick.db';
+import fetch from 'node-fetch';
+import Discord from 'discord.js';
+import { decode } from 'html-entities';
 const difficulties = ['hard', 'medium', 'easy'];
-const { getRandomString, convertTime, shuffleArray } = require('../../functions/function');
+import { getRandomString, convertTime, shuffleArray } from '../../functions/function.mjs';
 
-module.exports = async (options) => {
+export default async (options) => {
 
 	if (!options.message) {
 		throw new Error('Weky Error: message argument was not specified.');

@@ -1,10 +1,10 @@
-const { ButtonStyle } = require('discord.js');
-const fetch = require('node-fetch');
-const Discord = require('discord.js');
-const { decode } = require('html-entities');
-const { getRandomString, convertTime } = require('../../functions/function');
+import { ButtonStyle } from 'discord.js';
+import fetch from 'node-fetch';
+import Discord from 'discord.js';
+import { decode } from 'html-entities';
+import { getRandomString, convertTime } from '../../functions/function.mjs';
 
-module.exports = async (options) => {
+export default async (options) => {
 	if (!options.message) {
 		throw new Error('Weky Error: message argument was not specified.');
 	}

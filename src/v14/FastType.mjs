@@ -1,10 +1,9 @@
-const { ButtonStyle } = require('discord.js');
+import { ButtonStyle } from 'discord.js';
 const data = new Set();
-const Discord = require('discord.js');
-const { getRandomString, getRandomSentence, convertTime } = require('../../functions/function');
+import Discord from 'discord.js';
+import { getRandomString, getRandomSentence, convertTime } from '../../functions/function.mjs';
 
-module.exports = async (options) => {
-
+export default async (options) => {
 	if (!options.message) {
 		throw new Error('Weky Error: message argument was not specified.');
 	}
@@ -123,8 +122,8 @@ module.exports = async (options) => {
 			)}`,
 		)
 		.addFields('Sentence:', `${sentence}`)
-		.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-		.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+		.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+		.setFooter({ text: options.embed.footer, iconURL: options.client.user.displayAvatarURL() })
 	if (options.embed.timestamp) {
 		embed.setTimestamp();
 	}
@@ -149,8 +148,8 @@ module.exports = async (options) => {
 						.replace('{{time}}', convertTime(time))
 						.replace('{{wpm}}', wpm.toFixed(2)),
 				)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer, iconURL: options.client.user.displayAvatarURL() })
 			if (options.embed.timestamp) {
 				_embed.setTimestamp();
 			}
@@ -169,9 +168,9 @@ module.exports = async (options) => {
 		} else {
 			const _embed = new Discord.EmbedBuilder()
 				.setDescription(`${options.loseMessage}`)
-				.setFooter({text: options.embed.footer})
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+				.setFooter({ text: options.embed.footer })
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer, iconURL: options.client.user.displayAvatarURL() })
 			if (options.embed.timestamp) {
 				_embed.setTimestamp();
 			}
@@ -194,8 +193,8 @@ module.exports = async (options) => {
 		if (reason === 'time') {
 			const _embed = new Discord.EmbedBuilder()
 				.setDescription(`${options.loseMessage}`)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer, iconURL: options.client.user.displayAvatarURL() })
 			if (options.embed.timestamp) {
 				_embed.setTimestamp();
 			}

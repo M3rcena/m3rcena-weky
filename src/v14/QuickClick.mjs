@@ -1,9 +1,9 @@
-const { ButtonStyle } = require('discord.js');
+import { ButtonStyle } from 'discord.js';
 const currentGames = new Object();
-const Discord = require('discord.js');
-const { getRandomString, convertTime, shuffleArray} = require('../../functions/function');
+import Discord from 'discord.js';
+import { getRandomString, convertTime, shuffleArray} from '../../functions/function.mjs';
 
-module.exports = async (options) => {
+export default async (options) => {
 	if (!options.message) {
 		throw new Error('Weky Error: message argument was not specified.');
 	}

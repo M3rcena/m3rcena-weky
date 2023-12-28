@@ -47,4 +47,4 @@ const map = {
 	'<': '>',
 };
 
-module.exports = map;
+export default map

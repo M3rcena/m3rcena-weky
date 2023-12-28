@@ -97,4 +97,4 @@ const map = {
 	Û: '\u2229\u032e',
 };
 
-module.exports = map;
+export default map

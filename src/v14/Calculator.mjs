@@ -1,9 +1,8 @@
-const math = require('mathjs');
-const Discord = require('discord.js');
-const { createButton, getRandomString, addRow, addRow, createButton } = require('../../functions/function');
+import { evaluate } from 'mathjs';
+import Discord from 'discord.js';
+import { createButton, getRandomString, addRow } from '../../functions/function.mjs';
 
-module.exports = async (options) => {
-
+export default async (options) => {
 	if (!options.message) {
 		throw new Error('Weky Error: message argument was not specified.');
 	}
@@ -111,9 +110,9 @@ module.exports = async (options) => {
 	const embed = new Discord.EmbedBuilder()
 		.setTitle(options.embed.title)
 		.setDescription(stringify)
-		.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-		.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
-		embed.setTimestamp();
+		.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+		.setFooter({ text: options.embed.footer, iconURL: options.client.user.displayAvatarURL() });
+	embed.setTimestamp();
 
 	options.message
 		.reply({
@@ -125,10 +124,10 @@ module.exports = async (options) => {
 				const _embed = new Discord.EmbedBuilder()
 					.setTitle(options.embed.title)
 					.setDescription(stringify)
-					.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-					.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
-					_embed.setTimestamp();
-				
+					.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+					.setFooter({ text: options.embed.footer, iconURL: options.client.user.displayAvatarURL() });
+				_embed.setTimestamp();
+
 				msg.edit({
 					embeds: [_embed],
 					components: row,
@@ -139,9 +138,9 @@ module.exports = async (options) => {
 				const _embed = new Discord.EmbedBuilder()
 					.setTitle(options.embed.title)
 					.setDescription(stringify)
-					.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-					.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
-					_embed.setTimestamp();
+					.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+					.setFooter({ text: options.embed.footer, iconURL: options.client.user.displayAvatarURL() });
+				_embed.setTimestamp();
 				for (let i = 0; i < text.length; i++) {
 					if (buttons[cur].length === 5) cur++;
 					buttons[cur].push(
@@ -200,7 +199,7 @@ module.exports = async (options) => {
 						return;
 					} else {
 						try {
-							str += ' = ' + math.evaluate(str);
+							str += ' = ' + evaluate(str);
 							stringify = '```\n' + str + '\n```';
 							edit();
 							str = ' ';
@@ -226,4 +225,4 @@ module.exports = async (options) => {
 				}
 			});
 		});
-};
+}

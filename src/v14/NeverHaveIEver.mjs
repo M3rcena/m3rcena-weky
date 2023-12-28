@@ -1,10 +1,9 @@
-const { ButtonStyle } = require('discord.js');
-const Discord = require('discord.js');
-const { decode } = require('html-entities');
-const { getRandomString, WillYouPressTheButton } = require('../../functions/function');
+import { ButtonStyle } from 'discord.js';
+import fetch from 'node-fetch';
+import Discord from 'discord.js';
+import { getRandomString } from '../../functions/function.mjs';
 
-module.exports = async (options) => {
-
+export default async (options) => {
 	if (!options.message) {
 		throw new Error('Weky Error: message argument was not specified.');
 	}
@@ -18,20 +17,11 @@ module.exports = async (options) => {
 	}
 
 	if (!options.embed.title) {
-		options.embed.title = 'Will you press the button? | Weky Development';
+		options.embed.title = 'Never Have I Ever | Weky Development';
 	}
 	if (typeof options.embed.title !== 'string') {
 		throw new TypeError('Weky Error: embed title must be a string.');
 	}
-
-	if (!options.embed.description) {
-		options.embed.description =
-			'```{{statement1}}```\n**but**\n\n```{{statement2}}```';
-	}
-	if (typeof options.embed.description !== 'string') {
-		throw new TypeError('Weky Error: embed description must be a string.');
-	}
-
 
 
 	if (!options.embed.footer) {
@@ -46,21 +36,6 @@ module.exports = async (options) => {
 		throw new TypeError('Weky Error: timestamp must be a boolean.');
 	}
 
-	if (!options.button) options.button = {};
-	if (typeof options.embed !== 'object') {
-		throw new TypeError('Weky Error: buttons must be an object.');
-	}
-
-	if (!options.button.yes) options.button.yes = 'Yes';
-	if (typeof options.button.yes !== 'string') {
-		throw new TypeError('Weky Error: yesLabel must be a string.');
-	}
-
-	if (!options.button.no) options.button.no = 'No';
-	if (typeof options.button.no !== 'string') {
-		throw new TypeError('Weky Error: noLabel must be a string.');
-	}
-
 	if (!options.thinkMessage) options.thinkMessage = 'I am thinking';
 	if (typeof options.thinkMessage !== 'string') {
 		throw new TypeError('Weky Error: thinkMessage must be a boolean.');
@@ -71,6 +46,21 @@ module.exports = async (options) => {
 	}
 	if (typeof options.othersMessage !== 'string') {
 		throw new TypeError('Weky Error: othersMessage must be a string.');
+	}
+
+	if (!options.buttons) options.buttons = {};
+	if (typeof options.buttons !== 'object') {
+		throw new TypeError('Weky Error: buttons must be an object.');
+	}
+
+	if (!options.buttons.optionA) options.buttons.optionA = 'Yes';
+	if (typeof options.buttons.optionA !== 'string') {
+		throw new TypeError('Weky Error: button must be a string.');
+	}
+
+	if (!options.buttons.optionB) options.buttons.optionB = 'No';
+	if (typeof options.buttons.optionB !== 'string') {
+		throw new TypeError('Weky Error: button must be a string.');
 	}
 
 	const id1 =
@@ -109,24 +99,20 @@ module.exports = async (options) => {
 		],
 	});
 
-	const fetchedData = await WillYouPressTheButton();
+	let { statement } = await fetch(
+		'https://api.nhie.io/v1/statements/random?category[]=harmless',
+	).then((res) => res.json());
 
 	await think.edit({
 		embeds: [
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}...`)
-						.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
+				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
 				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()}),
 		],
 	});
 
-	const res = {
-		questions: [fetchedData.txt1, fetchedData.txt2],
-		percentage: {
-			1: fetchedData.yes,
-			2: fetchedData.no,
-		},
-	};
+	statement = statement.trim();
 
 	await think.edit({
 		embeds: [
@@ -138,12 +124,12 @@ module.exports = async (options) => {
 	});
 
 	let btn = new Discord.ButtonBuilder()
-		.setStyle(ButtonStyle.Success)
-		.setLabel(options.button.yes)
+		.setStyle(ButtonStyle.Primary)
+		.setLabel(`${options.buttons.optionA}`)
 		.setCustomId(id1);
 	let btn2 = new Discord.ButtonBuilder()
-		.setStyle(ButtonStyle.Danger)
-		.setLabel(options.button.no)
+		.setStyle(ButtonStyle.Primary)
+		.setLabel(`${options.buttons.optionB}`)
 		.setCustomId(id2);
 
 	await think.edit({
@@ -157,23 +143,7 @@ module.exports = async (options) => {
 
 	const embed = new Discord.EmbedBuilder()
 		.setTitle(options.embed.title)
-		.setDescription(
-			`${options.embed.description
-				.replace(
-					'{{statement1}}',
-					decode(
-						res.questions[0].charAt(0).toUpperCase() +
-							res.questions[0].slice(1),
-					),
-				)
-				.replace(
-					'{{statement2}}',
-					decode(
-						res.questions[1].charAt(0).toUpperCase() +
-							res.questions[1].slice(1),
-					),
-				)}`,
-		)
+		.setDescription(statement)
 		.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
 		.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
 	if (options.embed.timestamp) {
@@ -189,9 +159,9 @@ module.exports = async (options) => {
 		filter: (fn) => fn,
 	});
 
-	gameCollector.on('collect', async (wyptb) => {
-		if (wyptb.user.id !== options.message.author.id) {
-			return wyptb.reply({
+	gameCollector.on('collect', async (nhie) => {
+		if (nhie.user.id !== options.message.author.id) {
+			return nhie.reply({
 				content: options.othersMessage.replace(
 					'{{author}}',
 					options.message.member.id,
@@ -200,38 +170,38 @@ module.exports = async (options) => {
 			});
 		}
 
-		await wyptb.deferUpdate();
+		await nhie.deferUpdate();
 
-		if (wyptb.customId === id1) {
+		if (nhie.customId === id1) {
 			btn = new Discord.ButtonBuilder()
-				.setStyle(ButtonStyle.Success)
-				.setLabel(`${options.button.yes} (${res.percentage['1']})`)
+				.setStyle(ButtonStyle.Primary)
+				.setLabel(`${options.buttons.optionA}`)
 				.setCustomId(id1)
 				.setDisabled();
 			btn2 = new Discord.ButtonBuilder()
-				.setStyle(ButtonStyle.Danger)
-				.setLabel(`${options.button.no} (${res.percentage['2']})`)
+				.setStyle(ButtonStyle.Secondary)
+				.setLabel(`${options.buttons.optionB}`)
 				.setCustomId(id2)
 				.setDisabled();
 			gameCollector.stop();
-			await wyptb.editReply({
-				embed: embed,
+			think.edit({
+				embeds: [embed],
 				components: [{ type: 1, components: [btn, btn2] }],
 			});
-		} else if (wyptb.customId === id2) {
+		} else if (nhie.customId === id2) {
 			btn = new Discord.ButtonBuilder()
-				.setStyle(ButtonStyle.Danger)
-				.setLabel(`${options.button.yes} (${res.percentage['1']})`)
+				.setStyle(ButtonStyle.Secondary)
+				.setLabel(`${options.buttons.optionA}`)
 				.setCustomId(id1)
 				.setDisabled();
 			btn2 = new Discord.ButtonBuilder()
-				.setStyle(ButtonStyle.Success)
-				.setLabel(`${options.button.no} (${res.percentage['2']})`)
+				.setStyle(ButtonStyle.Primary)
+				.setLabel(`${options.buttons.optionB}`)
 				.setCustomId(id2)
 				.setDisabled();
 			gameCollector.stop();
-			await wyptb.editReply({
-				embed: embed,
+			think.edit({
+				embeds: [embed],
 				components: [{ type: 1, components: [btn, btn2] }],
 			});
 		}

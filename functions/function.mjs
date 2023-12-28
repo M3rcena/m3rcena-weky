@@ -2,9 +2,9 @@ import axios from 'axios';
 import chalk from 'chalk';
 import cheerio from 'cheerio';
 import fetch from 'node-fetch';
-import words from '../data/words.json';
-import { boxConsole } from './boxConsole';
-import { ActionRowBuilder, ButtonBuilder } from 'discord.js';
+import words from '../data/words.json' assert { type: 'json' };
+import { boxConsole } from './boxConsole.mjs';
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 
 export const fetchhtml = async function (url) {
 	const options = {
@@ -151,11 +151,11 @@ export const addRow = function(btns) {
 	return row;
 };
 export const createButton = function(label, disabled, getRandomString) {
-	let style = 'SECONDARY';
+	let style = ButtonStyle.Primary;
 	if (label === 'AC' || label === 'DC' || label === '⌫') {
-		style = 'DANGER';
+		style = ButtonStyle.Success;
 	} else if (label === '=') {
-		style = 'SUCCESS';
+		style = ButtonStyle.Danger;
 	} else if (
 		label === '(' ||
 		label === ')' ||
@@ -167,7 +167,7 @@ export const createButton = function(label, disabled, getRandomString) {
 		label === '+' ||
 		label === '.'
 	) {
-		style = 'PRIMARY';
+		style = ButtonStyle.Primary;
 	}
 	if (disabled) {
 		const btn = new ButtonBuilder()

@@ -1,11 +1,12 @@
 {
   "name": "@m3rcena/weky",
-  "version": "4.2.2",
+  "version": "4.3.0",
   "description": "A fun npm package to play games within Discord with buttons!",
   "main": "index.js",
   "types": "typings/index.d.ts",
+  "type": "module",
   "scripts": {
-    "test": "nodemon test/test.js"
+    "test": "nodemon test/test.mjs"
   },
   "keywords": [
     "weky",

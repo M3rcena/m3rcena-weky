@@ -27,4 +27,4 @@ const map = {
 	Z: '\u1d22',
 };
 
-module.exports = map;
+export default map

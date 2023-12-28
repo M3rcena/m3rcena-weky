@@ -1,6 +1,14 @@
-const Discord = require('discord.js');
-const client = new Discord.Client();
-const { Calculator } = require('../index');
+import { Client, GatewayIntentBits } from 'discord.js';
+
+const client = new Client({
+	intents: [
+		GatewayIntentBits.Guilds,
+		GatewayIntentBits.GuildMessages,
+		GatewayIntentBits.MessageContent,
+		// set the other intents
+	],
+});
+import Calculator from '../src/v14/Calculator.mjs';
 
 client.on('ready', async () => {
 	console.log(`Logged in as ${client.user.tag}`);
@@ -19,8 +27,9 @@ client.on('messageCreate', async (message) => {
 			disabledQuery: 'Calculator is disabled!',
 			invalidQuery: 'The provided equation is invalid!',
 			othersMessage: 'Only <@{{author}}> can use the buttons!',
+			client: client,
 		});
 	}
 });
 
-client.login('DISCORD_BOT_TOKEN');
+client.login('DISCORD TOKEN');

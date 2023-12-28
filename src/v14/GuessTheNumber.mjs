@@ -1,12 +1,11 @@
-const { ButtonStyle } = require('discord.js');
+import { ButtonStyle } from 'discord.js';
 const data = new Set();
-const db = require('quick.db');
+import db from 'quick.db';
 const currentGames = new Object();
-const Discord = require('discord.js');
-const { getRandomString,  convertTime } = require('../../functions/function');
+import Discord from 'discord.js';
+import { getRandomString,  convertTime } from '../../functions/function.mjs';
 
-module.exports = async (options) => {
-
+export default async (options) => {
 	if (!options.message) {
 		throw new Error('Weky Error: message argument was not specified.');
 	}
@@ -500,5 +499,5 @@ module.exports = async (options) => {
 				return options.message.reply({ embeds: [_embed] });
 			}
 		});
-	}
+	};
 };
