@@ -5,7 +5,7 @@ const fetch = require('node-fetch');
 const Discord = require('discord.js');
 const { decode } = require('html-entities');
 const difficulties = ['hard', 'medium', 'easy'];
-const functions = require('../../functions/function');
+const { getRandomString, convertTime, shuffleArray } = require('../../functions/function');
 
 module.exports = async (options) => {
 
@@ -128,40 +128,40 @@ module.exports = async (options) => {
 	data.add(options.message.author.id);
 
 	const id1 =
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20);
+		getRandomString(20);
 
 	const id2 =
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20);
+		getRandomString(20);
 
 	const id3 =
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20);
+		getRandomString(20);
 
 	const id4 =
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20);
+		getRandomString(20);
 
 	const think = await options.message.reply({
 		embeds: [
@@ -201,7 +201,7 @@ module.exports = async (options) => {
 	question.question = res.results[0].question;
 	question.difficulty = res.results[0].difficulty;
 	q[0].incorrect_answers.push(q[0].correct_answer);
-	const shuffledArray = functions.shuffleArray(q[0].incorrect_answers);
+	const shuffledArray = shuffleArray(q[0].incorrect_answers);
 	question.correct = shuffledArray.indexOf(res.results[0].correct_answer);
 	question.options = shuffledArray;
 
@@ -267,7 +267,7 @@ module.exports = async (options) => {
 			decode(question.question),
 			`${options.embed.description.replace(
 				'{{time}}',
-				functions.convertTime(options.time),
+				convertTime(options.time),
 			)}\n\n${opt}`,
 		)
 		.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
@@ -353,7 +353,7 @@ module.exports = async (options) => {
 				embeds: [embed],
 				components: [{ type: 1, components: [btn1, btn2, btn3, btn4] }],
 			});
-			const time = functions.convertTime(Date.now() - gameCreatedAt);
+			const time = convertTime(Date.now() - gameCreatedAt);
 			const winEmbed = new Discord.EmbedBuilder()
 				.setDescription(
 					`${options.winMessage

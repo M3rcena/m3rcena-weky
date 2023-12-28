@@ -2,7 +2,7 @@ const { ButtonStyle } = require('discord.js');
 const gameData = new Set();
 const fetch = require('node-fetch');
 const Discord = require('discord.js');
-const functions = require('../../functions/function');
+const { getRandomString, convertTime } = require('../../functions/function');
 
 module.exports = async (options) => {
 
@@ -100,13 +100,13 @@ module.exports = async (options) => {
 	gameData.add(options.message.author.id);
 
 	const id =
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20);
+		getRandomString(20);
 
 	const think = await options.message.reply({
 		embeds: [
@@ -168,7 +168,7 @@ module.exports = async (options) => {
 			options.embed.description
 				.replace('{{type}}', data.types.join(', '))
 				.replace('{{abilities}}', data.abilities.join(', '))
-				.replace('{{time}}', functions.convertTime(options.time)),
+				.replace('{{time}}', convertTime(options.time)),
 		)
 
 		.setImage(data.HiddenImage)
@@ -200,7 +200,7 @@ module.exports = async (options) => {
 						)
 						.replace(
 							'{{time}}',
-							functions.convertTime(Date.now() - gameCreatedAt),
+							convertTime(Date.now() - gameCreatedAt),
 						),
 				)
 				.setImage(data.ShowImage)

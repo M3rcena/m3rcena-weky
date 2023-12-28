@@ -1,7 +1,7 @@
 const { ButtonStyle } = require('discord.js');
 const data = new Set();
 const Discord = require('discord.js');
-const functions = require('../../functions/function');
+const { getRandomString } = require('../../functions/function');
 
 module.exports = async (options) => {
 
@@ -101,67 +101,67 @@ module.exports = async (options) => {
 	data.add(options.message.author.id);
 
 	const id1 =
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20);
+		getRandomString(20);
 
 	const id2 =
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20);
+		getRandomString(20);
 
 	const id3 =
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20);
+		getRandomString(20);
 
 	const id4 =
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20);
+		getRandomString(20);
 
 	const id5 =
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20);
+		getRandomString(20);
 
 	const id6 =
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20);
+		getRandomString(20);
 
 	const id7 =
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20);
+		getRandomString(20);
 
 	let score = 0;
 	const width = 15;

@@ -1,7 +1,7 @@
 const { ButtonStyle } = require('discord.js');
 const currentGames = new Object();
 const Discord = require('discord.js');
-const functions = require('../../functions/function');
+const { getRandomString, convertTime, shuffleArray} = require('../../functions/function');
 
 module.exports = async (options) => {
 	if (!options.message) {
@@ -134,7 +134,7 @@ module.exports = async (options) => {
 					.setDisabled()
 					.setLabel('\u200b')
 					.setStyle(ButtonStyle.Primary)
-					.setCustomId(functions.getRandomString(20)),
+					.setCustomId(getRandomString(20)),
 			);
 		}
 
@@ -145,7 +145,7 @@ module.exports = async (options) => {
 				.setCustomId('CORRECT'),
 		);
 
-		functions.shuffleArray(buttons);
+		shuffleArray(buttons);
 
 		for (let i = 0; i < 5; i++) {
 			rows.push(new Discord.ActionRowBuilder());
@@ -162,7 +162,7 @@ module.exports = async (options) => {
 			.setDescription(
 				options.startMessage.replace(
 					'{{time}}',
-					functions.convertTime(options.time),
+					convertTime(options.time),
 				),
 			);
 		if (options.embed.timestamp) {

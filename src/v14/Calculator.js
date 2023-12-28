@@ -1,6 +1,6 @@
 const math = require('mathjs');
 const Discord = require('discord.js');
-const functions = require('../../functions/function');
+const { createButton, getRandomString, addRow, addRow, createButton } = require('../../functions/function');
 
 module.exports = async (options) => {
 
@@ -101,10 +101,10 @@ module.exports = async (options) => {
 	for (let i = 0; i < text.length; i++) {
 		if (button[current].length === 5) current++;
 		button[current].push(
-			functions.createButton(text[i], false, functions.getRandomString),
+			createButton(text[i], false, getRandomString),
 		);
 		if (i === text.length - 1) {
-			for (const btn of button) row.push(functions.addRow(btn));
+			for (const btn of button) row.push(addRow(btn));
 		}
 	}
 
@@ -145,10 +145,10 @@ module.exports = async (options) => {
 				for (let i = 0; i < text.length; i++) {
 					if (buttons[cur].length === 5) cur++;
 					buttons[cur].push(
-						functions.createButton(text[i], true, functions.getRandomString),
+						createButton(text[i], true, getRandomString),
 					);
 					if (i === text.length - 1) {
-						for (const btn of buttons) rows.push(functions.addRow(btn));
+						for (const btn of buttons) rows.push(addRow(btn));
 					}
 				}
 

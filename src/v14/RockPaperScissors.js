@@ -2,7 +2,7 @@ const { ButtonStyle } = require('discord.js');
 const data = new Set();
 const db = require('quick.db');
 const Discord = require('discord.js');
-const functions = require('../../functions/function');
+const { getRandomString } = require('../../functions/function');
 
 module.exports = async (options) => {
 
@@ -185,31 +185,31 @@ module.exports = async (options) => {
 	data.add(options.opponent.id);
 
 	const id1 =
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20);
+		getRandomString(20);
 
 	const id2 =
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20);
+		getRandomString(20);
 
 	const id3 =
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20);
+		getRandomString(20);
 
 	if (
 		options.opponent.bot ||

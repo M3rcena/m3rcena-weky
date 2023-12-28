@@ -2,7 +2,7 @@ const { ButtonStyle } = require('discord.js');
 const fetch = require('node-fetch');
 const Discord = require('discord.js');
 const { decode } = require('html-entities');
-const functions = require('../../functions/function');
+const { getRandomString } = require('../../functions/function');
 
 module.exports = async (options) => {
 
@@ -67,22 +67,22 @@ module.exports = async (options) => {
 	}
 
 	const id1 =
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20);
+		getRandomString(20);
 
 	const id2 =
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20);
+		getRandomString(20);
 
 	const think = await options.message.reply({
 		embeds: [

@@ -1,7 +1,7 @@
 const { ButtonStyle } = require('discord.js');
 const data = new Set();
 const Discord = require('discord.js');
-const functions = require('../../functions/function');
+const { getRandomString, getRandomSentence, convertTime } = require('../../functions/function');
 
 module.exports = async (options) => {
 
@@ -46,11 +46,7 @@ module.exports = async (options) => {
 	}
 
 	if (!options.sentence) {
-		options.sentence = functions
-			.getRandomSentence(Math.floor(Math.random() * 10) + 3)
-			.toString()
-			.split(',')
-			.join(' ');
+		options.sentence = getRandomSentence(Math.floor(Math.random() * 10) + 3).toString().split(',').join(' ');
 	}
 	if (typeof options.sentence !== 'string') {
 		throw new TypeError('Weky Error: sentence must be a string');
@@ -100,13 +96,13 @@ module.exports = async (options) => {
 	data.add(options.message.author.id);
 
 	const id =
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20);
+		getRandomString(20);
 
 	const sentence = options.sentence
 		.toLowerCase()
@@ -123,7 +119,7 @@ module.exports = async (options) => {
 		.setDescription(
 			`${options.embed.description.replace(
 				'{{time}}',
-				functions.convertTime(options.time),
+				convertTime(options.time),
 			)}`,
 		)
 		.addFields('Sentence:', `${sentence}`)
@@ -150,7 +146,7 @@ module.exports = async (options) => {
 			const _embed = new Discord.EmbedBuilder()
 				.setDescription(
 					options.winMessage
-						.replace('{{time}}', functions.convertTime(time))
+						.replace('{{time}}', convertTime(time))
 						.replace('{{wpm}}', wpm.toFixed(2)),
 				)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})

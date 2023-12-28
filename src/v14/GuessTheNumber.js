@@ -3,7 +3,7 @@ const data = new Set();
 const db = require('quick.db');
 const currentGames = new Object();
 const Discord = require('discord.js');
-const functions = require('../../functions/function');
+const { getRandomString,  convertTime } = require('../../functions/function');
 
 module.exports = async (options) => {
 
@@ -125,13 +125,13 @@ module.exports = async (options) => {
 	}
 
 	const id =
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20);
+		getRandomString(20);
 
 	console.log(options.number);
 	if (options.publicGame) {
@@ -167,7 +167,7 @@ module.exports = async (options) => {
 			.setDescription(
 				`${options.embed.description.replace(
 					/{{time}}/g,
-					functions.convertTime(options.time),
+					convertTime(options.time),
 				)}`,
 			)
 			.setTitle(options.embed.title)
@@ -207,7 +207,7 @@ module.exports = async (options) => {
 			}
 			const parsedNumber = parseInt(_msg.content, 10);
 			if (parsedNumber === options.number) {
-				const time = functions.convertTime(Date.now() - gameCreatedAt);
+				const time = convertTime(Date.now() - gameCreatedAt);
 				const _embed = new Discord.EmbedBuilder()
 					.setDescription(
 						`${options.winMessage.publicGame
@@ -348,7 +348,7 @@ module.exports = async (options) => {
 			.setDescription(
 				`${options.embed.description.replace(
 					/{{time}}/g,
-					functions.convertTime(options.time),
+					convertTime(options.time),
 				)}`,
 			)
 			.setTitle(options.embed.title)
@@ -383,7 +383,7 @@ module.exports = async (options) => {
 			}
 			const parsedNumber = parseInt(_msg.content, 10);
 			if (parsedNumber === options.number) {
-				const time = functions.convertTime(Date.now() - gameCreatedAt);
+				const time = convertTime(Date.now() - gameCreatedAt);
 				const _embed = new Discord.EmbedBuilder()
 					.setDescription(
 						`${options.winMessage.privateGame

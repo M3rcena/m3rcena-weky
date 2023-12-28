@@ -1,7 +1,7 @@
 const { ButtonStyle } = require('discord.js');
 const data = new Set();
 const Discord = require('discord.js');
-const functions = require('../../functions/function');
+const { getRandomString, getRandomSentence, convertTime } = require('../../functions/function');
 
 module.exports = async (options) => {
 
@@ -107,7 +107,7 @@ module.exports = async (options) => {
 	}
 
 	if (!options.words) {
-		options.words = functions.getRandomSentence(Math.floor(Math.random() * 6) + 2);
+		options.words = getRandomSentence(Math.floor(Math.random() * 6) + 2);
 	}
 	if (typeof options.words !== 'object') {
 		throw new TypeError('Weky Error: words must be an array.');
@@ -141,13 +141,13 @@ module.exports = async (options) => {
 	data.add(options.message.author.id);
 
 	const id =
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20);
+		getRandomString(20);
 
 	let tries = 0;
 	const array = [];
@@ -177,7 +177,7 @@ module.exports = async (options) => {
 		.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
 		.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
 		.setDescription(
-			options.embed.description.replace('{{time}}', functions.convertTime(options.time)),
+			options.embed.description.replace('{{time}}', convertTime(options.time)),
 		)
 		.addFields(options.embed.field1, array.join(''))
 		.addFields(options.embed.field2, `0/${options.words.length}`)
@@ -216,7 +216,7 @@ module.exports = async (options) => {
 				.setDescription(
 					options.embed.description.replace(
 						'{{time}}',
-						functions.convertTime(options.time),
+						convertTime(options.time),
 					),
 				)
 				.addFields(options.embed.field1, array.join(''))
@@ -255,7 +255,7 @@ module.exports = async (options) => {
 						},
 					],
 				});
-				const time = functions.convertTime(Date.now() - gameCreatedAt);
+				const time = convertTime(Date.now() - gameCreatedAt);
 				const __embed = new Discord.EmbedBuilder()
 					.setTitle(options.embed.title)
 					.addFields(options.embed.field1, arr)

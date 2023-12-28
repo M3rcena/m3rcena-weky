@@ -2,7 +2,7 @@ const { ButtonStyle } = require('discord.js');
 const fetch = require('node-fetch');
 const Discord = require('discord.js');
 const { decode } = require('html-entities');
-const functions = require('../../functions/function');
+const { getRandomString, convertTime } = require('../../functions/function');
 
 module.exports = async (options) => {
 	if (!options.message) {
@@ -81,22 +81,22 @@ module.exports = async (options) => {
 	}
 
 	const id1 =
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20);
+		getRandomString(20);
 
 	const id2 =
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20);
+		getRandomString(20);
 
 	const think = await options.message.reply({
 		embeds: [
@@ -221,7 +221,7 @@ module.exports = async (options) => {
 				embeds: [embed],
 				components: [{ type: 1, components: [btn1, btn2] }],
 			});
-			const time = functions.convertTime(Date.now() - gameCreatedAt);
+			const time = convertTime(Date.now() - gameCreatedAt);
 			const winEmbed = new Discord.EmbedBuilder()
 				.setDescription(
 					`${options.winMessage

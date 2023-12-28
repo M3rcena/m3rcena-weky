@@ -1,7 +1,7 @@
 const { ButtonStyle } = require('discord.js');
 const data = new Set();
 const Discord = require('discord.js');
-const functions = require('../../functions/function');
+const { getRandomString, getRandomSentence, shuffleString, convertTime } = require('../../functions/function');
 
 module.exports = async (options) => {
 
@@ -12,7 +12,7 @@ module.exports = async (options) => {
 		throw new TypeError('Weky Error: Invalid Discord Message was provided.');
 	}
 
-	if (!options.word) options.word = functions.getRandomSentence(1);
+	if (!options.word) options.word = getRandomSentence(1);
 
 	if (!options.button) options.button = {};
 	if (typeof options.button !== 'object') {
@@ -106,24 +106,24 @@ module.exports = async (options) => {
 	data.add(options.message.author.id);
 
 	const id1 =
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20);
+		getRandomString(20);
 
 	const id2 =
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20) +
+		getRandomString(20) +
 		'-' +
-		functions.getRandomString(20);
+		getRandomString(20);
 
-	const word = functions.shuffleString(options.word.toString());
+	const word = shuffleString(options.word.toString());
 
 	let disbut = new Discord.ButtonBuilder()
 		.setLabel(options.button.reshuffle)
@@ -140,7 +140,7 @@ module.exports = async (options) => {
 		.setDescription(
 			options.startMessage
 				.replace('{{word}}', word)
-				.replace('{{time}}', functions.convertTime(options.time)),
+				.replace('{{time}}', convertTime(options.time)),
 		);
 	if (options.embed.timestamp) {
 		emd.setTimestamp();
@@ -178,7 +178,7 @@ module.exports = async (options) => {
 				.setCustomId(id2)
 				.setStyle(ButtonStyle.Danger)
 				.setDisabled();
-			const time = functions.convertTime(Date.now() - gameCreatedAt);
+			const time = convertTime(Date.now() - gameCreatedAt);
 			const _embed = new Discord.EmbedBuilder()
 			.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
 			.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
@@ -241,9 +241,9 @@ module.exports = async (options) => {
 					options.startMessage
 						.replace(
 							'{{word}}',
-							functions.shuffleString(options.word.toString()),
+							shuffleString(options.word.toString()),
 						)
-						.replace('{{time}}', functions.convertTime(options.time)),
+						.replace('{{time}}', convertTime(options.time)),
 				);
 			if (options.embed.timestamp) {
 				_embed.setTimestamp();
