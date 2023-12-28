@@ -1,7 +1,7 @@
-import { ButtonStyle } from ('discord.js');
-import Discord from ('discord.js');
-import { decode } from ('html-entities');
-import functions from ('../../functions/function');
+const { ButtonStyle } = require('discord.js');
+const Discord = require('discord.js');
+const { decode } = require('html-entities');
+const functions = require('../../functions/function');
 
 module.exports = async (options) => {
 

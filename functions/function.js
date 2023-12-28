@@ -1,10 +1,10 @@
-import axios from "axios";
-import chalk from 'chalk';
-import cheerio from 'cheerio';
-import fetch from 'node-fetch';
-import words from '../data/words.json';
-import { boxConsole } from './boxConsole';
-import { ActionRowBuilder, ButtonBuilder } from 'discord.js';
+const axios = require("axios");
+const chalk = require('chalk');
+const cheerio = require('cheerio');
+const fetch = require('node-fetch');
+const words = require('../data/words.json');
+const { boxConsole } = require('./boxConsole');
+const { ActionRowBuilder, ButtonBuilder } = require('discord.js');
 
 module.exports = {
 	fetchhtml: async function(url) {

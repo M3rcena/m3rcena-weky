@@ -1,8 +1,8 @@
-import { ButtonStyle } from ('discord.js');
-import currentGames from new Object();
-import fetch from ('node-fetch');
-import Discord from ('discord.js');
-import functions from ('../../functions/function');
+const { ButtonStyle } = require('discord.js');
+const currentGames = new Object();
+const fetch = require('node-fetch');
+const Discord = require('discord.js');
+const functions = require('../../functions/function');
 
 module.exports = async (options) => {
 

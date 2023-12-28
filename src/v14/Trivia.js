@@ -1,11 +1,11 @@
-import { ButtonStyle } from ('discord.js');
-import data from new Set();
-import db from ('quick.db');
-import fetch from ('node-fetch');
-import Discord from ('discord.js');
-import { decode } from ('html-entities');
-import difficulties from ['hard', 'medium', 'easy'];
-import functions from ('../../functions/function');
+const { ButtonStyle } = require('discord.js');
+const data = new Set();
+const db = require('quick.db');
+const fetch = require('node-fetch');
+const Discord = require('discord.js');
+const { decode } = require('html-entities');
+const difficulties = ['hard', 'medium', 'easy'];
+const functions = require('../../functions/function');
 
 module.exports = async (options) => {
 

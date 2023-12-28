@@ -1,8 +1,8 @@
-import { ButtonStyle } from ('discord.js');
-import gameData from new Set();
-import fetch from ('node-fetch');
-import Discord from ('discord.js');
-import functions from ('../../functions/function');
+const { ButtonStyle } = require('discord.js');
+const gameData = new Set();
+const fetch = require('node-fetch');
+const Discord = require('discord.js');
+const functions = require('../../functions/function');
 
 module.exports = async (options) => {
 

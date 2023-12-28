@@ -1,5 +1,5 @@
-import { ButtonStyle } from ('discord.js');
-import { EmbedBuilder, ButtonBuilder, ActionRowBuilder } from ('discord.js')
+const { ButtonStyle } = require('discord.js');
+const { EmbedBuilder, ButtonBuilder, ActionRowBuilder } = require('discord.js')
 class TicTacToe {
 
     /**
