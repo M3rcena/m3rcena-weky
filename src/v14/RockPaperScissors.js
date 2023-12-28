@@ -1,8 +1,8 @@
-const { ButtonStyle } = require('discord.js');
-const data = new Set();
-const db = require('quick.db');
-const Discord = require('discord.js');
-const functions = require('../../functions/function');
+import { ButtonStyle } from ('discord.js');
+import data from new Set();
+import db from ('quick.db');
+import Discord from ('discord.js');
+import functions from ('../../functions/function');
 
 module.exports = async (options) => {
 

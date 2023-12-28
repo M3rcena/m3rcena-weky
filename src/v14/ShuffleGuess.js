@@ -1,7 +1,7 @@
-const { ButtonStyle } = require('discord.js');
-const data = new Set();
-const Discord = require('discord.js');
-const functions = require('../../functions/function');
+import { ButtonStyle } from ('discord.js');
+import data from new Set();
+import Discord from require('discord.js');
+import functions from require('../../functions/function');
 
 module.exports = async (options) => {
 

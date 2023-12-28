@@ -1,5 +1,5 @@
-const Discord = require('discord.js');
-const functions = require('../../functions/function');
+import Discord from ('discord.js');
+import functions from ('../../functions/function');
 
 module.exports = async (options) => {
 

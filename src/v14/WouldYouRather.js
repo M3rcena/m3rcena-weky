@@ -1,8 +1,8 @@
-const { ButtonStyle } = require('discord.js');
-const fetch = require('node-fetch');
-const Discord = require('discord.js');
-const { decode } = require('html-entities');
-const functions = require('../../functions/function');
+import { ButtonStyle } from ('discord.js');
+import fetch from ('node-fetch');
+import Discord from ('discord.js');
+import { decode } from ('html-entities');
+import functions from ('../../functions/function');
 
 module.exports = async (options) => {
 
