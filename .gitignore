@@ -3,4 +3,4 @@ json.sqlite
 node_modules/
 package-lock.json
 src/test.TicTacToe.js
-test/original.test.js
+test/
