@@ -96,7 +96,7 @@ export default async (options) => {
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}.`)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()}),
+				.setFooter({text: options.embed.footer}),
 		],
 	});
 
@@ -105,7 +105,7 @@ export default async (options) => {
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}..`)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()}),
+				.setFooter({text: options.embed.footer}),
 		],
 	});
 
@@ -116,7 +116,7 @@ export default async (options) => {
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}...`)
 						.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()}),
+				.setFooter({text: options.embed.footer}),
 		],
 	});
 
@@ -133,7 +133,7 @@ export default async (options) => {
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}..`)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()}),
+				.setFooter({text: options.embed.footer}),
 		],
 	});
 
@@ -151,7 +151,7 @@ export default async (options) => {
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}.`)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()}),
+				.setFooter({text: options.embed.footer}),
 		],
 	});
 
@@ -175,7 +175,7 @@ export default async (options) => {
 				)}`,
 		)
 		.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-		.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+		.setFooter({text: options.embed.footer})
 	if (options.embed.timestamp) {
 		embed.setTimestamp();
 	}

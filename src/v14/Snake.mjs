@@ -229,7 +229,7 @@ export default async (options) => {
 		const editEmbed = new Discord.EmbedBuilder()
 			.setTitle(options.embed.title)
 			.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-			.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+			.setFooter({text: options.embed.footer})
 			.setDescription(gameBoardToString());
 		if (options.embed.timestamp) {
 			editEmbed.setTimestamp();
@@ -322,7 +322,7 @@ export default async (options) => {
 		const editEmbed = new Discord.EmbedBuilder()
 			.setTitle(options.embed.title)
 			.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-			.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+			.setFooter({text: options.embed.footer})
 			.setDescription(options.embed.description.replace('{{score}}', score));
 		if (options.embed.timestamp) {
 			editEmbed.setTimestamp();
@@ -352,7 +352,7 @@ export default async (options) => {
 	const embed = new Discord.EmbedBuilder()
 		.setTitle(options.embed.title)
 		.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-		.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+		.setFooter({text: options.embed.footer})
 		.setDescription(gameBoardToString());
 	if (options.embed.timestamp) {
 		embed.setTimestamp();

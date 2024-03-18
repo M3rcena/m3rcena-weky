@@ -108,7 +108,7 @@ var LieSwatter = async (options) => {
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}.`)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()}),
+				.setFooter({text: options.embed.footer}),
 		],
 	});
 
@@ -117,7 +117,7 @@ var LieSwatter = async (options) => {
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}..`)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()}),
+				.setFooter({text: options.embed.footer}),
 		],
 	});
 
@@ -126,7 +126,7 @@ var LieSwatter = async (options) => {
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}...`)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()}),
+				.setFooter({text: options.embed.footer}),
 		],
 	});
 
@@ -140,7 +140,7 @@ var LieSwatter = async (options) => {
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}..`)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()}),
+				.setFooter({text: options.embed.footer}),
 		],
 	});
 
@@ -169,7 +169,7 @@ var LieSwatter = async (options) => {
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}.`)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+				.setFooter({text: options.embed.footer})
 		],
 	});
 
@@ -177,7 +177,7 @@ var LieSwatter = async (options) => {
 		.setTitle(options.embed.title)
 		.setDescription(htmlEntities.decode(question.question))
 		.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-		.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+		.setFooter({text: options.embed.footer});
 	if (options.embed.timestamp) {
 		embed.setTimestamp();
 	}
@@ -234,7 +234,7 @@ var LieSwatter = async (options) => {
 						.replace('{{time}}', time)}`,
 				)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+				.setFooter({text: options.embed.footer});
 			if (options.embed.timestamp) {
 				winEmbed.setTimestamp();
 			}
@@ -265,7 +265,7 @@ var LieSwatter = async (options) => {
 					`${options.loseMessage.replace('{{answer}}', htmlEntities.decode(answer))}`,
 				)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+				.setFooter({text: options.embed.footer});
 			if (options.embed.timestamp) {
 				lostEmbed.setTimestamp();
 			}

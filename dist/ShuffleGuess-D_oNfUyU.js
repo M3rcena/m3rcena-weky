@@ -142,7 +142,7 @@ var ShuffleGuess = async (options) => {
 	const emd = new Discord.EmbedBuilder()
 		.setTitle(options.embed.title)
 		.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-		.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+		.setFooter({text: options.embed.footer})
 		.setDescription(
 			options.startMessage
 				.replace('{{word}}', word)
@@ -187,7 +187,7 @@ var ShuffleGuess = async (options) => {
 			const time = _function.convertTime(Date.now() - gameCreatedAt);
 			const _embed = new Discord.EmbedBuilder()
 			.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-			.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+			.setFooter({text: options.embed.footer})
 				.setDescription(
 					options.winMessage
 						.replace('{{word}}', options.word.toString())
@@ -214,7 +214,7 @@ var ShuffleGuess = async (options) => {
 						.replace('{{answer}}', msg.content.toLowerCase()),
 				)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+				.setFooter({text: options.embed.footer});
 			if (options.embed.timestamp) {
 				_embed.setTimestamp();
 			}
@@ -242,7 +242,7 @@ var ShuffleGuess = async (options) => {
 			const _embed = new Discord.EmbedBuilder()
 				.setTitle(options.embed.title)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+				.setFooter({text: options.embed.footer})
 				.setDescription(
 					options.startMessage
 						.replace(
@@ -279,7 +279,7 @@ var ShuffleGuess = async (options) => {
 			const _embed = new Discord.EmbedBuilder()
 				.setTitle(options.embed.title)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+				.setFooter({text: options.embed.footer})
 				.setDescription(
 					options.loseMessage.replace('{{answer}}', options.word.toString()),
 				);
@@ -312,7 +312,7 @@ var ShuffleGuess = async (options) => {
 				.setDisabled();
 			const _embed = new Discord.EmbedBuilder()
 			.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-			.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+			.setFooter({text: options.embed.footer})
 				.setDescription(
 					options.loseMessage.replace('{{answer}}', options.word.toString()),
 				);

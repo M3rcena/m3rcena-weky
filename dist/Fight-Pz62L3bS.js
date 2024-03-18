@@ -220,7 +220,7 @@ var Fight = async (options) => {
 				.replace('{{opponent}}', oppenent.id),
 		)
 		.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-		.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+		.setFooter({text: options.embed.footer});
 	if (options.embed.timestamp) {
 		embed.setTimestamp();
 	}
@@ -268,7 +268,7 @@ var Fight = async (options) => {
 					options.cancelMessage.replace('{{opponent}}', oppenent.id),
 				)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+				.setFooter({text: options.embed.footer});
 			if (options.embed.timestamp) {
 				emd.setTimestamp();
 			}
@@ -320,7 +320,7 @@ var Fight = async (options) => {
 					options.fightMessage.replace('{{player}}', gameData[player].member),
 				)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+				.setFooter({text: options.embed.footer});
 			if (options.embed.timestamp) {
 				_embed.setTimestamp();
 			}
@@ -362,7 +362,7 @@ var Fight = async (options) => {
 										`(:punch:) ${gameData[player].member.username} — ${gameData[player].health} HP - **versus** - **${gameData[tempPlayer].member.username}** — ${gameData[tempPlayer].health} HP`,
 									)
 									.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-									.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+									.setFooter({text: options.embed.footer});
 								if (options.embed.timestamp) {
 									__embed.setTimestamp();
 								}
@@ -377,7 +377,7 @@ var Fight = async (options) => {
 										`**${gameData[tempPlayer].member.username}** — ${gameData[tempPlayer].health} HP - **versus** - ${gameData[player].member.username} — ${gameData[player].health} HP (:punch:)`,
 									)
 									.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-									.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+									.setFooter({text: options.embed.footer});
 								if (options.embed.timestamp) {
 									__embed.setTimestamp();
 								}
@@ -418,7 +418,7 @@ var Fight = async (options) => {
 											`(:hearts:) ${gameData[player].member.username} — ${gameData[player].health} HP - **versus** - **${gameData[tempPlayer].member.username}** — ${gameData[tempPlayer].health} HP`,
 										)
 										.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-										.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+										.setFooter({text: options.embed.footer});
 									if (options.embed.timestamp) {
 										__embed.setTimestamp();
 									}
@@ -433,7 +433,7 @@ var Fight = async (options) => {
 											`**${gameData[tempPlayer].member.username}** — ${gameData[tempPlayer].health} HP - **versus** - ${gameData[player].member.username} — ${gameData[player].health} HP (:hearts:)`,
 										)
 										.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-										.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+										.setFooter({text: options.embed.footer});
 									if (options.embed.timestamp) {
 										__embed.setTimestamp();
 									}
@@ -489,7 +489,7 @@ var Fight = async (options) => {
 										),
 									)
 									.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-									.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+									.setFooter({text: options.embed.footer});
 								if (options.embed.timestamp) {
 									__embed.setTimestamp();
 								}
@@ -532,7 +532,7 @@ var Fight = async (options) => {
 									),
 								)
 								.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-								.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+								.setFooter({text: options.embed.footer});
 							if (options.embed.timestamp) {
 								__embed.setTimestamp();
 							}
@@ -588,7 +588,7 @@ var Fight = async (options) => {
 								),
 							)
 							.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-							.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+							.setFooter({text: options.embed.footer});
 						if (options.embed.timestamp) {
 							__embed.setTimestamp();
 						}
@@ -643,7 +643,7 @@ var Fight = async (options) => {
 				.setTitle(options.embed.title)
 				.setDescription(options.endMessage.replace('{{opponent}}', oppenent.id))
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+				.setFooter({text: options.embed.footer});
 			if (options.embed.timestamp) {
 				_embed.setTimestamp();
 			}

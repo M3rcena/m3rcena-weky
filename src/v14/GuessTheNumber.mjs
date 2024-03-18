@@ -3,7 +3,7 @@ const data = new Set();
 import db from 'quick.db';
 const currentGames = new Object();
 import Discord from 'discord.js';
-import { getRandomString,  convertTime } from '../../functions/function.mjs';
+import { getRandomString, convertTime } from '../../functions/function.mjs';
 
 export default async (options) => {
 	if (!options.message) {
@@ -132,7 +132,6 @@ export default async (options) => {
 		'-' +
 		getRandomString(20);
 
-	console.log(options.number);
 	if (options.publicGame) {
 		if (!options.ongoingMessage) {
 			options.ongoingMessage =
@@ -155,8 +154,8 @@ export default async (options) => {
 						currentGames[`${options.message.guild.id}_channel`],
 					),
 				)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer })
 			if (options.embed.timestamp) {
 				embed.setTimestamp();
 			}
@@ -170,8 +169,8 @@ export default async (options) => {
 				)}`,
 			)
 			.setTitle(options.embed.title)
-			.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-			.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+			.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+			.setFooter({ text: options.embed.footer })
 		if (options.embed.timestamp) {
 			embed.setTimestamp();
 		}
@@ -220,8 +219,8 @@ export default async (options) => {
 							)}`,
 					)
 					.setTitle(options.embed.title)
-					.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-					.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+					.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+					.setFooter({ text: options.embed.footer })
 				if (options.embed.timestamp) {
 					_embed.setTimestamp();
 				}
@@ -257,8 +256,8 @@ export default async (options) => {
 							.replace(/{{author}}/g, _msg.author.toString())
 							.replace(/{{number}}/g, parsedNumber),
 					)
-					.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-					.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+					.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+					.setFooter({ text: options.embed.footer })
 				_msg.reply({ embeds: [_embed] });
 			}
 			if (parseInt(_msg.content) > options.number) {
@@ -268,8 +267,8 @@ export default async (options) => {
 							.replace(/{{author}}/g, _msg.author.toString())
 							.replace(/{{number}}/g, parsedNumber),
 					)
-					.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-					.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+					.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+					.setFooter({ text: options.embed.footer })
 				_msg.reply({ embeds: [_embed] });
 			}
 		});
@@ -304,8 +303,8 @@ export default async (options) => {
 					.setDescription(
 						options.loseMessage.replace(/{{number}}/g, options.number),
 					)
-					.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-					.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+					.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+					.setFooter({ text: options.embed.footer })
 				if (options.embed.timestamp) {
 					_embed.setTimestamp();
 				}
@@ -322,8 +321,8 @@ export default async (options) => {
 					.setDescription(
 						options.loseMessage.replace(/{{number}}/g, options.number),
 					)
-					.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-					.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+					.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+					.setFooter({ text: options.embed.footer })
 				if (options.embed.timestamp) {
 					_embed.setTimestamp();
 				}
@@ -351,8 +350,8 @@ export default async (options) => {
 				)}`,
 			)
 			.setTitle(options.embed.title)
-			.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-			.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+			.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+			.setFooter({ text: options.embed.footer })
 		if (options.embed.timestamp) {
 			embed.setTimestamp();
 		}
@@ -390,8 +389,8 @@ export default async (options) => {
 							.replace(/{{number}}/g, options.number)}`,
 					)
 					.setTitle(options.embed.title)
-					.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-					.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+					.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+					.setFooter({ text: options.embed.footer })
 				if (options.embed.timestamp) {
 					_embed.setTimestamp();
 				}
@@ -416,8 +415,8 @@ export default async (options) => {
 							.replace(/{{author}}/g, _msg.author.toString())
 							.replace(/{{number}}/g, parsedNumber),
 					)
-					.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-					.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+					.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+					.setFooter({ text: options.embed.footer })
 				_msg.reply({ embeds: [_embed] });
 			}
 			if (parseInt(_msg.content) > options.number) {
@@ -427,8 +426,8 @@ export default async (options) => {
 							.replace(/{{author}}/g, _msg.author.toString())
 							.replace(/{{number}}/g, parsedNumber),
 					)
-					.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-					.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+					.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+					.setFooter({ text: options.embed.footer })
 				_msg.reply({ embeds: [_embed] });
 			}
 		});
@@ -464,8 +463,8 @@ export default async (options) => {
 					.setDescription(
 						options.loseMessage.replace(/{{number}}/g, options.number),
 					)
-					.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-					.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+					.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+					.setFooter({ text: options.embed.footer })
 				if (options.embed.timestamp) {
 					_embed.setTimestamp();
 				}
@@ -481,8 +480,8 @@ export default async (options) => {
 					.setDescription(
 						options.loseMessage.replace(/{{number}}/g, options.number),
 					)
-					.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-					.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+					.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+					.setFooter({ text: options.embed.footer })
 				if (options.embed.timestamp) {
 					_embed.setTimestamp();
 				}

@@ -89,7 +89,7 @@ export default async (options) => {
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}.`)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()}),
+				.setFooter({text: options.embed.footer}),
 		],
 	});
 
@@ -98,7 +98,7 @@ export default async (options) => {
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}..`)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()}),
+				.setFooter({text: options.embed.footer}),
 		],
 	});
 
@@ -112,7 +112,7 @@ export default async (options) => {
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}...`)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()}),
+				.setFooter({text: options.embed.footer}),
 		],
 	});
 
@@ -157,7 +157,7 @@ export default async (options) => {
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}.`)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()}),
+				.setFooter({text: options.embed.footer}),
 		],
 	});
 
@@ -167,7 +167,7 @@ export default async (options) => {
 			`**A)** ${decode(res.questions[0])} \n**B)** ${decode(res.questions[1])}`,
 		)
 		.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-		.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+		.setFooter({text: options.embed.footer})
 	if (options.embed.timestamp) {
 		embed.setTimestamp();
 	}
@@ -212,7 +212,7 @@ export default async (options) => {
 					})** \nB) ${decode(res.questions[1])} (${res.percentage['2']})`,
 				)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+				.setFooter({text: options.embed.footer})
 			if (options.embed.timestamp) {
 				_embed.setTimestamp();
 			}
@@ -240,7 +240,7 @@ export default async (options) => {
 					}) \n**B) ${decode(res.questions[1])} (${res.percentage['2']})**`,
 				)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+				.setFooter({text: options.embed.footer})
 			if (options.embed.timestamp) {
 				_embed.setTimestamp();
 			}

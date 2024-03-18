@@ -130,7 +130,7 @@ var FastType = async (options) => {
 		)
 		.addFields('Sentence:', `${sentence}`)
 		.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
-		.setFooter({ text: options.embed.footer, iconURL: options.client.user.displayAvatarURL() });
+		.setFooter({ text: options.embed.footer });
 	if (options.embed.timestamp) {
 		embed.setTimestamp();
 	}
@@ -156,7 +156,7 @@ var FastType = async (options) => {
 						.replace('{{wpm}}', wpm.toFixed(2)),
 				)
 				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
-				.setFooter({ text: options.embed.footer, iconURL: options.client.user.displayAvatarURL() });
+				.setFooter({ text: options.embed.footer });
 			if (options.embed.timestamp) {
 				_embed.setTimestamp();
 			}
@@ -177,7 +177,7 @@ var FastType = async (options) => {
 				.setDescription(`${options.loseMessage}`)
 				.setFooter({ text: options.embed.footer })
 				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
-				.setFooter({ text: options.embed.footer, iconURL: options.client.user.displayAvatarURL() });
+				.setFooter({ text: options.embed.footer });
 			if (options.embed.timestamp) {
 				_embed.setTimestamp();
 			}
@@ -201,7 +201,7 @@ var FastType = async (options) => {
 			const _embed = new Discord.EmbedBuilder()
 				.setDescription(`${options.loseMessage}`)
 				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
-				.setFooter({ text: options.embed.footer, iconURL: options.client.user.displayAvatarURL() });
+				.setFooter({ text: options.embed.footer });
 			if (options.embed.timestamp) {
 				_embed.setTimestamp();
 			}

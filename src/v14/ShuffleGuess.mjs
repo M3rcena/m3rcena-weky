@@ -135,7 +135,7 @@ export default async (options) => {
 	const emd = new Discord.EmbedBuilder()
 		.setTitle(options.embed.title)
 		.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-		.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+		.setFooter({text: options.embed.footer})
 		.setDescription(
 			options.startMessage
 				.replace('{{word}}', word)
@@ -180,7 +180,7 @@ export default async (options) => {
 			const time = convertTime(Date.now() - gameCreatedAt);
 			const _embed = new Discord.EmbedBuilder()
 			.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-			.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+			.setFooter({text: options.embed.footer})
 				.setDescription(
 					options.winMessage
 						.replace('{{word}}', options.word.toString())
@@ -207,11 +207,11 @@ export default async (options) => {
 						.replace('{{answer}}', msg.content.toLowerCase()),
 				)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+				.setFooter({text: options.embed.footer})
 			if (options.embed.timestamp) {
 				_embed.setTimestamp();
 			}
-			msg.reply({ embeds: [_embed] }).then((m) => m.delete({ timeout: 3000 }));
+			msg.reply({ embeds: [_embed] }).then((m) => setTimeout(() => m.delete(), 3000));
 		}
 	});
 
@@ -235,7 +235,7 @@ export default async (options) => {
 			const _embed = new Discord.EmbedBuilder()
 				.setTitle(options.embed.title)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+				.setFooter({text: options.embed.footer})
 				.setDescription(
 					options.startMessage
 						.replace(
@@ -272,7 +272,7 @@ export default async (options) => {
 			const _embed = new Discord.EmbedBuilder()
 				.setTitle(options.embed.title)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+				.setFooter({text: options.embed.footer})
 				.setDescription(
 					options.loseMessage.replace('{{answer}}', options.word.toString()),
 				);
@@ -305,7 +305,7 @@ export default async (options) => {
 				.setDisabled();
 			const _embed = new Discord.EmbedBuilder()
 			.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-			.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+			.setFooter({text: options.embed.footer})
 				.setDescription(
 					options.loseMessage.replace('{{answer}}', options.word.toString()),
 				);

@@ -146,7 +146,7 @@ var ChaosWords = async (options) => {
 	const embed = new Discord.EmbedBuilder()
 		.setTitle(options.embed.title)
 		.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-		.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+		.setFooter({text: options.embed.footer})
 		.setDescription(
 			options.embed.description.replace('{{time}}', _function.convertTime(options.time)),
 		)
@@ -193,7 +193,7 @@ var ChaosWords = async (options) => {
 				.addFields(options.embed.field3, `${guessed.join(', ')}`)
 				.addFields(options.embed.field2, `${remaining}/${options.words.length}`)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+				.setFooter({text: options.embed.footer});
 			if (options.embed.timestamp) {
 				_embed.setTimestamp();
 			}
@@ -232,7 +232,7 @@ var ChaosWords = async (options) => {
 					.setDescription(options.winMessage.replace('{{time}}', time))
 					.addFields(options.embed.field4, `${options.words.join(', ')}`)
 					.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-					.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+					.setFooter({text: options.embed.footer});
 
 				if (options.embed.timestamp) {
 					__embed.setTimestamp();
@@ -250,7 +250,7 @@ var ChaosWords = async (options) => {
 						.replace('{{remaining}}', options.words.length - remaining)}`,
 				)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+				.setFooter({text: options.embed.footer});
 			if (options.embed.timestamp) {
 				__embed.setTimestamp();
 			}
@@ -266,7 +266,7 @@ var ChaosWords = async (options) => {
 					.addFields(options.embed.field1, arr)
 					.addFields(options.embed.field4, `${options.words.join(', ')}`)
 					.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-					.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+					.setFooter({text: options.embed.footer});
 
 				if (options.embed.timestamp) {
 					_embed.setTimestamp();
@@ -299,7 +299,7 @@ var ChaosWords = async (options) => {
 					)}`,
 				)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+				.setFooter({text: options.embed.footer});
 			if (options.embed.timestamp) {
 				_embed.setTimestamp();
 			}
@@ -317,7 +317,7 @@ var ChaosWords = async (options) => {
 				.addFields(options.embed.field1, arr)
 				.addFields(options.embed.field4, `${options.words.join(', ')}`)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+				.setFooter({text: options.embed.footer});
 			if (options.embed.timestamp) {
 				_embed.setTimestamp();
 			}
@@ -379,7 +379,7 @@ var ChaosWords = async (options) => {
 			.addFields(options.embed.field1, arr)
 			.addFields(options.embed.field4, `${options.words.join(', ')}`)
 			.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-			.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+			.setFooter({text: options.embed.footer});
 		if (options.embed.timestamp) {
 			_embed.setTimestamp();
 		}

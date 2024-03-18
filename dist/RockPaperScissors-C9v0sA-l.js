@@ -243,7 +243,7 @@ var RockPaperScissors = async (options) => {
 				.replace('{{opponent}}', options.opponent.id),
 		)
 		.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-		.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+		.setFooter({text: options.embed.footer});
 	if (options.embed.timestamp) {
 		embed.setTimestamp();
 	}
@@ -287,7 +287,7 @@ var RockPaperScissors = async (options) => {
 					options.cancelMessage.replace('{{opponent}}', options.opponent.id),
 				)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+				.setFooter({text: options.embed.footer});
 			if (options.embed.timestamp) {
 				emd.setTimestamp();
 			}
@@ -323,7 +323,7 @@ var RockPaperScissors = async (options) => {
 				.setTitle(options.embed.title)
 				.setDescription(options.embed.description)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+				.setFooter({text: options.embed.footer});
 			if (options.embed.timestamp) {
 				emd.setTimestamp();
 			}
@@ -438,7 +438,7 @@ var RockPaperScissors = async (options) => {
 							const _embed = new Discord.EmbedBuilder()
 								.setTitle(options.embed.title)
 								.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-								.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+								.setFooter({text: options.embed.footer})
 								.setDescription(result)
 								.addFields(
 									{
@@ -554,7 +554,7 @@ var RockPaperScissors = async (options) => {
 									},
 								)
 								.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-								.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+								.setFooter({text: options.embed.footer});
 							if (options.embed.timestamp) {
 								_embed.setTimestamp();
 							}
@@ -657,7 +657,7 @@ var RockPaperScissors = async (options) => {
 									},
 								)
 								.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-								.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+								.setFooter({text: options.embed.footer});
 							if (options.embed.timestamp) {
 								_embed.setTimestamp();
 							}
@@ -769,7 +769,7 @@ var RockPaperScissors = async (options) => {
 									},
 								)
 								.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-								.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+								.setFooter({text: options.embed.footer});
 							if (options.embed.timestamp) {
 								_embed.setTimestamp();
 							}
@@ -872,7 +872,7 @@ var RockPaperScissors = async (options) => {
 									},
 								)
 								.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-								.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+								.setFooter({text: options.embed.footer});
 							if (options.embed.timestamp) {
 								_embed.setTimestamp();
 							}
@@ -975,7 +975,7 @@ var RockPaperScissors = async (options) => {
 									},
 								)
 								.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-								.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+								.setFooter({text: options.embed.footer});
 							if (options.embed.timestamp) {
 								_embed.setTimestamp();
 							}
@@ -1018,7 +1018,7 @@ var RockPaperScissors = async (options) => {
 						.setTitle(options.embed.title)
 						.setDescription(options.timeEndMessage)
 						.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-						.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+						.setFooter({text: options.embed.footer});
 					if (options.embed.timestamp) {
 						_embed.setTimestamp();
 					}
@@ -1055,7 +1055,7 @@ var RockPaperScissors = async (options) => {
 					options.endMessage.replace('{{opponent}}', options.opponent.id),
 				)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+				.setFooter({text: options.embed.footer});
 			if (options.embed.timestamp) {
 				_embed.setTimestamp();
 			}

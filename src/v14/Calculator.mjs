@@ -111,7 +111,7 @@ export default async (options) => {
 		.setTitle(options.embed.title)
 		.setDescription(stringify)
 		.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
-		.setFooter({ text: options.embed.footer, iconURL: options.client.user.displayAvatarURL() });
+		.setFooter({ text: options.embed.footer });
 	embed.setTimestamp();
 
 	options.message
@@ -125,7 +125,7 @@ export default async (options) => {
 					.setTitle(options.embed.title)
 					.setDescription(stringify)
 					.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
-					.setFooter({ text: options.embed.footer, iconURL: options.client.user.displayAvatarURL() });
+					.setFooter({ text: options.embed.footer });
 				_embed.setTimestamp();
 
 				msg.edit({
@@ -139,7 +139,7 @@ export default async (options) => {
 					.setTitle(options.embed.title)
 					.setDescription(stringify)
 					.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
-					.setFooter({ text: options.embed.footer, iconURL: options.client.user.displayAvatarURL() });
+					.setFooter({ text: options.embed.footer });
 				_embed.setTimestamp();
 				for (let i = 0; i < text.length; i++) {
 					if (buttons[cur].length === 5) cur++;

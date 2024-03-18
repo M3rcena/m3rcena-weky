@@ -94,7 +94,7 @@ var WouldYouRather = async (options) => {
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}.`)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()}),
+				.setFooter({text: options.embed.footer}),
 		],
 	});
 
@@ -103,7 +103,7 @@ var WouldYouRather = async (options) => {
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}..`)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()}),
+				.setFooter({text: options.embed.footer}),
 		],
 	});
 
@@ -117,7 +117,7 @@ var WouldYouRather = async (options) => {
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}...`)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()}),
+				.setFooter({text: options.embed.footer}),
 		],
 	});
 
@@ -162,7 +162,7 @@ var WouldYouRather = async (options) => {
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}.`)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()}),
+				.setFooter({text: options.embed.footer}),
 		],
 	});
 
@@ -172,7 +172,7 @@ var WouldYouRather = async (options) => {
 			`**A)** ${htmlEntities.decode(res.questions[0])} \n**B)** ${htmlEntities.decode(res.questions[1])}`,
 		)
 		.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-		.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+		.setFooter({text: options.embed.footer});
 	if (options.embed.timestamp) {
 		embed.setTimestamp();
 	}
@@ -217,7 +217,7 @@ var WouldYouRather = async (options) => {
 					})** \nB) ${htmlEntities.decode(res.questions[1])} (${res.percentage['2']})`,
 				)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+				.setFooter({text: options.embed.footer});
 			if (options.embed.timestamp) {
 				_embed.setTimestamp();
 			}
@@ -245,7 +245,7 @@ var WouldYouRather = async (options) => {
 					}) \n**B) ${htmlEntities.decode(res.questions[1])} (${res.percentage['2']})**`,
 				)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+				.setFooter({text: options.embed.footer});
 			if (options.embed.timestamp) {
 				_embed.setTimestamp();
 			}

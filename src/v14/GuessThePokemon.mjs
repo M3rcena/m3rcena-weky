@@ -4,7 +4,7 @@ import fetch from 'node-fetch';
 import Discord from 'discord.js';
 import { getRandomString, convertTime } from '../../functions/function.mjs';
 
-export default async(options) => {
+export default async (options) => {
 	if (!options.message) {
 		throw new Error('Weky Error: message argument was not specified.');
 	}
@@ -111,8 +111,8 @@ export default async(options) => {
 		embeds: [
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}.`)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()}),
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer }),
 		],
 	});
 
@@ -120,8 +120,8 @@ export default async(options) => {
 		embeds: [
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}..`)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()}),
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer }),
 		],
 	});
 
@@ -129,21 +129,28 @@ export default async(options) => {
 		embeds: [
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}...`)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()}),
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer }),
 		],
 	});
 
-	const { data } = await fetch(
-		'https://fun-api.sujalgoel.engineer/pokemon',
-	).then((res) => res.json());
+	const randomNumber = Math.floor(Math.random() * 801);
+	let data = await fetch(
+		`http://pokeapi.co/api/v2/pokemon/${randomNumber}`,
+	).then(res => res.json());
+
+	const abilities = data.abilities.map(item => item.ability.name);
+	const seperatedAbilities = abilities.join(', ');
+
+	const types = data.types.map(item => item.type.name);
+	const seperatedTypes = types.join(', ');
 
 	await think.edit({
 		embeds: [
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}..`)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()}),
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer }),
 		],
 	});
 
@@ -151,8 +158,8 @@ export default async(options) => {
 		embeds: [
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}.`)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()}),
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer }),
 		],
 	});
 
@@ -165,14 +172,14 @@ export default async(options) => {
 		.setTitle(options.embed.title)
 		.setDescription(
 			options.embed.description
-				.replace('{{type}}', data.types.join(', '))
-				.replace('{{abilities}}', data.abilities.join(', '))
+				.replace('{{type}}', seperatedTypes)
+				.replace('{{abilities}}', seperatedAbilities)
 				.replace('{{time}}', convertTime(options.time)),
 		)
 
 		.setImage(data.HiddenImage)
-		.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-		.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+		.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+		.setFooter({ text: options.embed.footer })
 	if (options.embed.timestamp) {
 		embed.setTimestamp();
 	}
@@ -203,8 +210,8 @@ export default async(options) => {
 						),
 				)
 				.setImage(data.ShowImage)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer })
 			if (options.embed.timestamp) {
 				_embed.setTimestamp();
 			}
@@ -229,14 +236,14 @@ export default async(options) => {
 						.replace('{{answer}}', msg.content.toLowerCase())
 						.replace('{{author}}', msg.author.toString()),
 				)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer })
 			if (options.embed.timestamp) {
 				_embed.setTimestamp();
 			}
 			msg.reply({
 				embeds: [_embed],
-			}).then((m) => m.delete({ timeout: 3000 }));
+			}).then(msg => setTimeout(() => msg.delete(), 3000));
 		}
 	});
 
@@ -279,8 +286,8 @@ export default async(options) => {
 					),
 				)
 				.setImage(data.ShowImage)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer })
 			if (options.embed.timestamp) {
 				_embed.setTimestamp();
 			}
@@ -314,8 +321,8 @@ export default async(options) => {
 				)
 
 				.setImage(data.ShowImage)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer })
 			if (options.embed.timestamp) {
 				_embed.setTimestamp();
 			}

@@ -212,8 +212,8 @@ export default async (options) => {
 				.replace('{{challenger}}', challenger.id)
 				.replace('{{opponent}}', oppenent.id),
 		)
-		.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-		.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+		.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+		.setFooter({ text: options.embed.footer })
 	if (options.embed.timestamp) {
 		embed.setTimestamp();
 	}
@@ -260,8 +260,8 @@ export default async (options) => {
 				.setDescription(
 					options.cancelMessage.replace('{{opponent}}', oppenent.id),
 				)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer })
 			if (options.embed.timestamp) {
 				emd.setTimestamp();
 			}
@@ -312,8 +312,8 @@ export default async (options) => {
 				.setDescription(
 					options.fightMessage.replace('{{player}}', gameData[player].member),
 				)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer })
 			if (options.embed.timestamp) {
 				_embed.setTimestamp();
 			}
@@ -340,7 +340,7 @@ export default async (options) => {
 							await msg.deferUpdate();
 							let randNumb =
 								Math.floor(Math.random() * parseInt(options.dmgMax)) +
-									parseInt(options.dmgMin) ||
+								parseInt(options.dmgMin) ||
 								Math.floor(Math.random() * 15) + 4;
 							const tempPlayer = (player + 1) % 2;
 							if (gameData[tempPlayer].lastAttack === 'heal') {
@@ -354,8 +354,8 @@ export default async (options) => {
 									.setDescription(
 										`(:punch:) ${gameData[player].member.username} — ${gameData[player].health} HP - **versus** - **${gameData[tempPlayer].member.username}** — ${gameData[tempPlayer].health} HP`,
 									)
-									.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-									.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+									.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+									.setFooter({ text: options.embed.footer })
 								if (options.embed.timestamp) {
 									__embed.setTimestamp();
 								}
@@ -369,8 +369,8 @@ export default async (options) => {
 									.setDescription(
 										`**${gameData[tempPlayer].member.username}** — ${gameData[tempPlayer].health} HP - **versus** - ${gameData[player].member.username} — ${gameData[player].health} HP (:punch:)`,
 									)
-									.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-									.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+									.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+									.setFooter({ text: options.embed.footer })
 								if (options.embed.timestamp) {
 									__embed.setTimestamp();
 								}
@@ -396,7 +396,7 @@ export default async (options) => {
 								await msg.deferUpdate();
 								let randNumb =
 									Math.floor(Math.random() * parseInt(options.healMax)) +
-										parseInt(options.healMin) ||
+									parseInt(options.healMin) ||
 									Math.floor(Math.random() * 10) + 4;
 								const tempPlayer = (player + 1) % 2;
 								if (gameData[tempPlayer].lastAttack === 'heal') {
@@ -410,8 +410,8 @@ export default async (options) => {
 										.setDescription(
 											`(:hearts:) ${gameData[player].member.username} — ${gameData[player].health} HP - **versus** - **${gameData[tempPlayer].member.username}** — ${gameData[tempPlayer].health} HP`,
 										)
-										.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-										.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+										.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+										.setFooter({ text: options.embed.footer })
 									if (options.embed.timestamp) {
 										__embed.setTimestamp();
 									}
@@ -425,8 +425,8 @@ export default async (options) => {
 										.setDescription(
 											`**${gameData[tempPlayer].member.username}** — ${gameData[tempPlayer].health} HP - **versus** - ${gameData[player].member.username} — ${gameData[player].health} HP (:hearts:)`,
 										)
-										.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-										.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+										.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+										.setFooter({ text: options.embed.footer })
 									if (options.embed.timestamp) {
 										__embed.setTimestamp();
 									}
@@ -481,8 +481,8 @@ export default async (options) => {
 											gameData[player].member.id,
 										),
 									)
-									.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-									.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+									.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+									.setFooter({ text: options.embed.footer })
 								if (options.embed.timestamp) {
 									__embed.setTimestamp();
 								}
@@ -524,8 +524,8 @@ export default async (options) => {
 										gameData[tempPlayer].member.id,
 									),
 								)
-								.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-								.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+								.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+								.setFooter({ text: options.embed.footer })
 							if (options.embed.timestamp) {
 								__embed.setTimestamp();
 							}
@@ -580,8 +580,8 @@ export default async (options) => {
 									gameData[tempPlayer].member.id,
 								),
 							)
-							.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-							.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+							.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+							.setFooter({ text: options.embed.footer })
 						if (options.embed.timestamp) {
 							__embed.setTimestamp();
 						}
@@ -635,8 +635,8 @@ export default async (options) => {
 			const _embed = new Discord.EmbedBuilder()
 				.setTitle(options.embed.title)
 				.setDescription(options.endMessage.replace('{{opponent}}', oppenent.id))
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer })
 			if (options.embed.timestamp) {
 				_embed.setTimestamp();
 			}

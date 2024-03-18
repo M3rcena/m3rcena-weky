@@ -236,7 +236,7 @@ export default async (options) => {
 				.replace('{{opponent}}', options.opponent.id),
 		)
 		.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-		.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+		.setFooter({text: options.embed.footer})
 	if (options.embed.timestamp) {
 		embed.setTimestamp();
 	}
@@ -280,7 +280,7 @@ export default async (options) => {
 					options.cancelMessage.replace('{{opponent}}', options.opponent.id),
 				)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+				.setFooter({text: options.embed.footer})
 			if (options.embed.timestamp) {
 				emd.setTimestamp();
 			}
@@ -294,20 +294,20 @@ export default async (options) => {
 		} else if (_btn.customId === 'accept') {
 			Collector.stop();
 			let scissorsbtn = new Discord.ButtonBuilder()
-				.setCustomId(id1)
-				.setLabel(options.buttons.scissors)
-				.setStyle(ButtonStyle.Primary)
-				.setEmoji('✌️');
+					.setCustomId(id1)
+					.setLabel(options.buttons.scissors)
+					.setStyle(ButtonStyle.Primary)
+					.setEmoji('✌️');
 			let rockbtn = new Discord.ButtonBuilder()
-				.setCustomId(id2)
-				.setLabel(options.buttons.rock)
-				.setStyle(ButtonStyle.Primary)
-				.setEmoji('✊');
+					.setCustomId(id2)
+					.setLabel(options.buttons.rock)
+					.setStyle(ButtonStyle.Primary)
+					.setEmoji('✊');
 			let paperbtn = new Discord.ButtonBuilder()
-				.setCustomId(id3)
-				.setLabel(options.buttons.paper)
-				.setStyle(ButtonStyle.Primary)
-				.setEmoji('✋');
+					.setCustomId(id3)
+					.setLabel(options.buttons.paper)
+					.setStyle(ButtonStyle.Primary)
+					.setEmoji('✋');
 			let row = new Discord.ActionRowBuilder()
 				.addComponents(rockbtn)
 				.addComponents(paperbtn)
@@ -316,7 +316,7 @@ export default async (options) => {
 				.setTitle(options.embed.title)
 				.setDescription(options.embed.description)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+				.setFooter({text: options.embed.footer})
 			if (options.embed.timestamp) {
 				emd.setTimestamp();
 			}
@@ -431,7 +431,7 @@ export default async (options) => {
 							const _embed = new Discord.EmbedBuilder()
 								.setTitle(options.embed.title)
 								.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-								.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+								.setFooter({text: options.embed.footer})
 								.setDescription(result)
 								.addFields(
 									{
@@ -459,7 +459,7 @@ export default async (options) => {
 					} else if (button.customId === id3) {
 						challengerChoice = '✋';
 						button.reply({
-							content: options.choseMessage.replace('{{emoji}}', '✊'),
+							content: options.choseMessage.replace('{{emoji}}', '✋'),
 							ephemeral: true,
 						});
 						if (challengerChose && opponentChose === true) {
@@ -547,7 +547,7 @@ export default async (options) => {
 									},
 								)
 								.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-								.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+								.setFooter({text: options.embed.footer})
 							if (options.embed.timestamp) {
 								_embed.setTimestamp();
 							}
@@ -562,7 +562,7 @@ export default async (options) => {
 					} else if (button.customId === id1) {
 						challengerChoice = '✌️';
 						button.reply({
-							content: options.choseMessage.replace('{{emoji}}', '✊'),
+							content: options.choseMessage.replace('{{emoji}}', '✌️'),
 							ephemeral: true,
 						});
 						if (challengerChose && opponentChose === true) {
@@ -650,7 +650,7 @@ export default async (options) => {
 									},
 								)
 								.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-								.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+								.setFooter({text: options.embed.footer})
 							if (options.embed.timestamp) {
 								_embed.setTimestamp();
 							}
@@ -762,7 +762,7 @@ export default async (options) => {
 									},
 								)
 								.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-								.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+								.setFooter({text: options.embed.footer})
 							if (options.embed.timestamp) {
 								_embed.setTimestamp();
 							}
@@ -777,7 +777,7 @@ export default async (options) => {
 					} else if (button.customId === id3) {
 						opponentChoice = '✋';
 						button.reply({
-							content: options.choseMessage.replace('{{emoji}}', '✊'),
+							content: options.choseMessage.replace('{{emoji}}', '✋'),
 							ephemeral: true,
 						});
 						if (challengerChose && opponentChose === true) {
@@ -865,7 +865,7 @@ export default async (options) => {
 									},
 								)
 								.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-								.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+								.setFooter({text: options.embed.footer})
 							if (options.embed.timestamp) {
 								_embed.setTimestamp();
 							}
@@ -880,7 +880,7 @@ export default async (options) => {
 					} else if (button.customId === id1) {
 						opponentChoice = '✌️';
 						button.reply({
-							content: options.choseMessage.replace('{{emoji}}', '✊'),
+							content: options.choseMessage.replace('{{emoji}}', '✌️'),
 							ephemeral: true,
 						});
 						if (challengerChose && opponentChose === true) {
@@ -968,7 +968,7 @@ export default async (options) => {
 									},
 								)
 								.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-								.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+								.setFooter({text: options.embed.footer})
 							if (options.embed.timestamp) {
 								_embed.setTimestamp();
 							}
@@ -1011,7 +1011,7 @@ export default async (options) => {
 						.setTitle(options.embed.title)
 						.setDescription(options.timeEndMessage)
 						.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-						.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+						.setFooter({text: options.embed.footer})
 					if (options.embed.timestamp) {
 						_embed.setTimestamp();
 					}
@@ -1048,7 +1048,7 @@ export default async (options) => {
 					options.endMessage.replace('{{opponent}}', options.opponent.id),
 				)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()})
+				.setFooter({text: options.embed.footer})
 			if (options.embed.timestamp) {
 				_embed.setTimestamp();
 			}

@@ -174,7 +174,7 @@ var Trivia = async (options) => {
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}.`)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()}),
+				.setFooter({text: options.embed.footer}),
 		],
 	});
 
@@ -185,7 +185,7 @@ var Trivia = async (options) => {
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}..`)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()}),
+				.setFooter({text: options.embed.footer}),
 		],
 	});
 
@@ -194,7 +194,7 @@ var Trivia = async (options) => {
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}...`)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()}),
+				.setFooter({text: options.embed.footer}),
 		],
 	});
 
@@ -216,7 +216,7 @@ var Trivia = async (options) => {
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}..`)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()}),
+				.setFooter({text: options.embed.footer}),
 		],
 	});
 
@@ -257,7 +257,7 @@ var Trivia = async (options) => {
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}.`)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()}),
+				.setFooter({text: options.embed.footer}),
 		],
 	});
 
@@ -277,7 +277,7 @@ var Trivia = async (options) => {
 			)}\n\n${opt}`,
 		)
 		.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-		.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+		.setFooter({text: options.embed.footer});
 	if (options.embed.timestamp) {
 		embed.setTimestamp();
 	}
@@ -367,7 +367,7 @@ var Trivia = async (options) => {
 						.replace('{{time}}', time)}`,
 				)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+				.setFooter({text: options.embed.footer});
 			if (options.embed.timestamp) {
 				winEmbed.setTimestamp();
 			}
@@ -465,7 +465,7 @@ var Trivia = async (options) => {
 					)}`,
 				)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+				.setFooter({text: options.embed.footer});
 			if (options.embed.timestamp) {
 				lostEmbed.setTimestamp();
 			}
@@ -526,7 +526,7 @@ var Trivia = async (options) => {
 					)}`,
 				)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+				.setFooter({text: options.embed.footer});
 			if (options.embed.timestamp) {
 				lostEmbed.setTimestamp();
 			}

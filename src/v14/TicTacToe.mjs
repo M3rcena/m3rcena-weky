@@ -15,14 +15,26 @@ class TicTacToe {
      */
 
     constructor(options) {
-        if (options.xEmoji) this.xEmoji = options.xEmoji;
-        else this.xEmoji = "❌"
-        if (options.oEmoji) this.oEmoji = options.oEmoji;
-        else this.oEmoji = "⭕";
-        if (options.xColor) this.xColor = options.xColor;
-        else this.xColor = "BLURPLE"
-        if (options.oColor) this.oColor = options.oColor;
-        else this.oColor = "BLURPLE"
+        if (options.xEmoji) {
+            this.xEmoji = options.xEmoji
+        } else {
+            this.xEmoji = "❌"
+        };
+        if (options.oEmoji) {
+            this.oEmoji = options.oEmoji
+        } else {
+            this.oEmoji = "⭕"
+        };
+        if (options.xColor) {
+            this.xColor = options.xColor
+        } else {
+            this.xColor = "BLURPLE"
+        };
+        if (options.oColor) {
+            this.oColor = options.oColor
+        } else {
+            this.oColor = "BLURPLE"
+        }
         if (!options.opponent) throw new TypeError('Weky Error: Missing argument: opponent | Type: DiscordUser')
         if (!options.message) throw new TypeError('Weky Error: Missing argument: message | Type Message')
         this.message = options.message;
@@ -619,3 +631,5 @@ class TicTacToe {
     }
 
 }
+
+export default TicTacToe;

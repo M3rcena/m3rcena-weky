@@ -163,7 +163,7 @@ var GuessTheNumber = async (options) => {
 					),
 				)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+				.setFooter({text: options.embed.footer});
 			if (options.embed.timestamp) {
 				embed.setTimestamp();
 			}
@@ -178,7 +178,7 @@ var GuessTheNumber = async (options) => {
 			)
 			.setTitle(options.embed.title)
 			.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-			.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+			.setFooter({text: options.embed.footer});
 		if (options.embed.timestamp) {
 			embed.setTimestamp();
 		}
@@ -228,7 +228,7 @@ var GuessTheNumber = async (options) => {
 					)
 					.setTitle(options.embed.title)
 					.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-					.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+					.setFooter({text: options.embed.footer});
 				if (options.embed.timestamp) {
 					_embed.setTimestamp();
 				}
@@ -265,7 +265,7 @@ var GuessTheNumber = async (options) => {
 							.replace(/{{number}}/g, parsedNumber),
 					)
 					.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-					.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+					.setFooter({text: options.embed.footer});
 				_msg.reply({ embeds: [_embed] });
 			}
 			if (parseInt(_msg.content) > options.number) {
@@ -276,7 +276,7 @@ var GuessTheNumber = async (options) => {
 							.replace(/{{number}}/g, parsedNumber),
 					)
 					.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-					.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+					.setFooter({text: options.embed.footer});
 				_msg.reply({ embeds: [_embed] });
 			}
 		});
@@ -312,7 +312,7 @@ var GuessTheNumber = async (options) => {
 						options.loseMessage.replace(/{{number}}/g, options.number),
 					)
 					.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-					.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+					.setFooter({text: options.embed.footer});
 				if (options.embed.timestamp) {
 					_embed.setTimestamp();
 				}
@@ -330,7 +330,7 @@ var GuessTheNumber = async (options) => {
 						options.loseMessage.replace(/{{number}}/g, options.number),
 					)
 					.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-					.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+					.setFooter({text: options.embed.footer});
 				if (options.embed.timestamp) {
 					_embed.setTimestamp();
 				}
@@ -359,7 +359,7 @@ var GuessTheNumber = async (options) => {
 			)
 			.setTitle(options.embed.title)
 			.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-			.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+			.setFooter({text: options.embed.footer});
 		if (options.embed.timestamp) {
 			embed.setTimestamp();
 		}
@@ -398,7 +398,7 @@ var GuessTheNumber = async (options) => {
 					)
 					.setTitle(options.embed.title)
 					.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-					.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+					.setFooter({text: options.embed.footer});
 				if (options.embed.timestamp) {
 					_embed.setTimestamp();
 				}
@@ -424,7 +424,7 @@ var GuessTheNumber = async (options) => {
 							.replace(/{{number}}/g, parsedNumber),
 					)
 					.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-					.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+					.setFooter({text: options.embed.footer});
 				_msg.reply({ embeds: [_embed] });
 			}
 			if (parseInt(_msg.content) > options.number) {
@@ -435,7 +435,7 @@ var GuessTheNumber = async (options) => {
 							.replace(/{{number}}/g, parsedNumber),
 					)
 					.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-					.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+					.setFooter({text: options.embed.footer});
 				_msg.reply({ embeds: [_embed] });
 			}
 		});
@@ -472,7 +472,7 @@ var GuessTheNumber = async (options) => {
 						options.loseMessage.replace(/{{number}}/g, options.number),
 					)
 					.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-					.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+					.setFooter({text: options.embed.footer});
 				if (options.embed.timestamp) {
 					_embed.setTimestamp();
 				}
@@ -489,7 +489,7 @@ var GuessTheNumber = async (options) => {
 						options.loseMessage.replace(/{{number}}/g, options.number),
 					)
 					.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-					.setFooter({text: options.embed.footer, iconURL: options.client.user.displayAvatarURL()});
+					.setFooter({text: options.embed.footer});
 				if (options.embed.timestamp) {
 					_embed.setTimestamp();
 				}

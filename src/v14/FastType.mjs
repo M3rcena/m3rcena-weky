@@ -121,9 +121,9 @@ export default async (options) => {
 				convertTime(options.time),
 			)}`,
 		)
-		.addFields('Sentence:', `${sentence}`)
-		.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
-		.setFooter({ text: options.embed.footer, iconURL: options.client.user.displayAvatarURL() })
+		.addFields({ name: 'Sentence:', value: `${sentence}` })
+		.setAuthor({ name: options.message.author.username })
+		.setFooter({ text: options.embed.footer })
 	if (options.embed.timestamp) {
 		embed.setTimestamp();
 	}
@@ -148,8 +148,8 @@ export default async (options) => {
 						.replace('{{time}}', convertTime(time))
 						.replace('{{wpm}}', wpm.toFixed(2)),
 				)
-				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
-				.setFooter({ text: options.embed.footer, iconURL: options.client.user.displayAvatarURL() })
+				.setAuthor({ name: options.message.author.username })
+				.setFooter({ text: options.embed.footer })
 			if (options.embed.timestamp) {
 				_embed.setTimestamp();
 			}
@@ -169,8 +169,8 @@ export default async (options) => {
 			const _embed = new Discord.EmbedBuilder()
 				.setDescription(`${options.loseMessage}`)
 				.setFooter({ text: options.embed.footer })
-				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
-				.setFooter({ text: options.embed.footer, iconURL: options.client.user.displayAvatarURL() })
+				.setAuthor({ name: options.message.author.username })
+				.setFooter({ text: options.embed.footer })
 			if (options.embed.timestamp) {
 				_embed.setTimestamp();
 			}
@@ -193,8 +193,8 @@ export default async (options) => {
 		if (reason === 'time') {
 			const _embed = new Discord.EmbedBuilder()
 				.setDescription(`${options.loseMessage}`)
-				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
-				.setFooter({ text: options.embed.footer, iconURL: options.client.user.displayAvatarURL() })
+				.setAuthor({ name: options.message.author.username })
+				.setFooter({ text: options.embed.footer })
 			if (options.embed.timestamp) {
 				_embed.setTimestamp();
 			}
