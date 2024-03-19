@@ -2,7 +2,7 @@
 
 var Discord = require('discord.js');
 var fetch = require('node-fetch');
-var _function = require('./function-DmowlvBl.js');
+var _function = require('./function-tD1ad7nu.js');
 require('axios');
 require('chalk');
 require('cheerio');
@@ -90,8 +90,8 @@ var NeverHaveIEver = async (options) => {
 		embeds: [
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}.`)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer}),
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer }),
 		],
 	});
 
@@ -99,21 +99,21 @@ var NeverHaveIEver = async (options) => {
 		embeds: [
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}..`)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer}),
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer }),
 		],
 	});
 
 	let { statement } = await fetch(
-		'https://api.nhie.io/v1/statements/random?category[]=harmless',
+		'https://api.boozee.app/v2/statements/next?language=en&category=harmless',
 	).then((res) => res.json());
 
 	await think.edit({
 		embeds: [
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}...`)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer}),
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer }),
 		],
 	});
 
@@ -123,8 +123,8 @@ var NeverHaveIEver = async (options) => {
 		embeds: [
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}..`)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer}),
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer }),
 		],
 	});
 
@@ -141,16 +141,16 @@ var NeverHaveIEver = async (options) => {
 		embeds: [
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}.`)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer}),
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer }),
 		],
 	});
 
 	const embed = new Discord.EmbedBuilder()
 		.setTitle(options.embed.title)
 		.setDescription(statement)
-		.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-		.setFooter({text: options.embed.footer});
+		.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+		.setFooter({ text: options.embed.footer });
 	if (options.embed.timestamp) {
 		embed.setTimestamp();
 	}

@@ -4,9 +4,6 @@ import flipMap from './data/flip.mjs';
 import tinyMap from './data/tiny.mjs';
 import bentMap from './data/bent.mjs';
 import copyMap from './data/copy.mjs';
-import * as DJSPackage from 'discord.js/package.json' assert { type: 'json' };
-
-const DJSVersion = DJSPackage.version;
 
 export const bent = async function (str) {
 	let c = '';
@@ -109,14 +106,11 @@ export const vaporwave = async function (string) {
 		.replace(/ /g, '　');
 };
 
-let Sudo, Snake, Fight, Trivia, FastType, QuickFind, QuickClick, ChaosWords, LieSwatter, Calculator, ShuffleGuess, GuessTheNumber, NeverHaveIEver, WouldYouRather, GuessThePokemon, RockPaperScissors, WillYouPressTheButton;
-// if (DJSVersion => 14) {
-	Sudo = import('./src/v14/Sudo.mjs');
+let Snake, Fight, Trivia, FastType, QuickClick, ChaosWords, LieSwatter, Calculator, ShuffleGuess, GuessTheNumber, NeverHaveIEver, WouldYouRather, GuessThePokemon, RockPaperScissors, WillYouPressTheButton, TicTacToe;
 	Snake = import('./src/v14/Snake.mjs');
 	Fight = import('./src/v14/Fight.mjs');
 	Trivia = import('./src/v14/Trivia.mjs');
 	FastType = import('./src/v14/FastType.mjs');
-	QuickFind = import('./src/v14/QuickFind.mjs');
 	QuickClick = import('./src/v14/QuickClick.mjs');
 	ChaosWords = import('./src/v14/ChaosWords.mjs');
 	LieSwatter = import('./src/v14/LieSwatter.mjs');
@@ -128,8 +122,6 @@ let Sudo, Snake, Fight, Trivia, FastType, QuickFind, QuickClick, ChaosWords, Lie
 	GuessThePokemon = import('./src/v14/GuessThePokemon.mjs');
 	RockPaperScissors = import('./src/v14/RockPaperScissors.mjs');
 	WillYouPressTheButton = import('./src/v14/WillYouPressTheButton.mjs');
-// } else {
-// 	console.log("[Weky Error]: Discord.JS should be ^v14");
-// }
+	TicTacToe = import('./src/v14/TicTacToe.mjs');
 
-export { Sudo, Snake, Fight, Trivia, FastType, QuickFind, QuickClick, ChaosWords, LieSwatter, Calculator, ShuffleGuess, GuessTheNumber, NeverHaveIEver, WouldYouRather, GuessThePokemon, RockPaperScissors, WillYouPressTheButton };
+export { Snake, Fight, Trivia, FastType, QuickClick, ChaosWords, LieSwatter, Calculator, ShuffleGuess, GuessTheNumber, NeverHaveIEver, WouldYouRather, GuessThePokemon, RockPaperScissors, WillYouPressTheButton };

@@ -2,7 +2,7 @@
 
 var Discord = require('discord.js');
 var db = require('quick.db');
-var _function = require('./function-DmowlvBl.js');
+var _function = require('./function-tD1ad7nu.js');
 require('axios');
 require('chalk');
 require('cheerio');
@@ -139,7 +139,6 @@ var GuessTheNumber = async (options) => {
 		'-' +
 		_function.getRandomString(20);
 
-	console.log(options.number);
 	if (options.publicGame) {
 		if (!options.ongoingMessage) {
 			options.ongoingMessage =
@@ -162,8 +161,8 @@ var GuessTheNumber = async (options) => {
 						currentGames[`${options.message.guild.id}_channel`],
 					),
 				)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer});
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer });
 			if (options.embed.timestamp) {
 				embed.setTimestamp();
 			}
@@ -177,8 +176,8 @@ var GuessTheNumber = async (options) => {
 				)}`,
 			)
 			.setTitle(options.embed.title)
-			.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-			.setFooter({text: options.embed.footer});
+			.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+			.setFooter({ text: options.embed.footer });
 		if (options.embed.timestamp) {
 			embed.setTimestamp();
 		}
@@ -227,8 +226,8 @@ var GuessTheNumber = async (options) => {
 							)}`,
 					)
 					.setTitle(options.embed.title)
-					.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-					.setFooter({text: options.embed.footer});
+					.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+					.setFooter({ text: options.embed.footer });
 				if (options.embed.timestamp) {
 					_embed.setTimestamp();
 				}
@@ -264,8 +263,8 @@ var GuessTheNumber = async (options) => {
 							.replace(/{{author}}/g, _msg.author.toString())
 							.replace(/{{number}}/g, parsedNumber),
 					)
-					.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-					.setFooter({text: options.embed.footer});
+					.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+					.setFooter({ text: options.embed.footer });
 				_msg.reply({ embeds: [_embed] });
 			}
 			if (parseInt(_msg.content) > options.number) {
@@ -275,8 +274,8 @@ var GuessTheNumber = async (options) => {
 							.replace(/{{author}}/g, _msg.author.toString())
 							.replace(/{{number}}/g, parsedNumber),
 					)
-					.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-					.setFooter({text: options.embed.footer});
+					.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+					.setFooter({ text: options.embed.footer });
 				_msg.reply({ embeds: [_embed] });
 			}
 		});
@@ -311,8 +310,8 @@ var GuessTheNumber = async (options) => {
 					.setDescription(
 						options.loseMessage.replace(/{{number}}/g, options.number),
 					)
-					.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-					.setFooter({text: options.embed.footer});
+					.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+					.setFooter({ text: options.embed.footer });
 				if (options.embed.timestamp) {
 					_embed.setTimestamp();
 				}
@@ -329,8 +328,8 @@ var GuessTheNumber = async (options) => {
 					.setDescription(
 						options.loseMessage.replace(/{{number}}/g, options.number),
 					)
-					.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-					.setFooter({text: options.embed.footer});
+					.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+					.setFooter({ text: options.embed.footer });
 				if (options.embed.timestamp) {
 					_embed.setTimestamp();
 				}
@@ -358,8 +357,8 @@ var GuessTheNumber = async (options) => {
 				)}`,
 			)
 			.setTitle(options.embed.title)
-			.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-			.setFooter({text: options.embed.footer});
+			.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+			.setFooter({ text: options.embed.footer });
 		if (options.embed.timestamp) {
 			embed.setTimestamp();
 		}
@@ -397,8 +396,8 @@ var GuessTheNumber = async (options) => {
 							.replace(/{{number}}/g, options.number)}`,
 					)
 					.setTitle(options.embed.title)
-					.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-					.setFooter({text: options.embed.footer});
+					.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+					.setFooter({ text: options.embed.footer });
 				if (options.embed.timestamp) {
 					_embed.setTimestamp();
 				}
@@ -423,8 +422,8 @@ var GuessTheNumber = async (options) => {
 							.replace(/{{author}}/g, _msg.author.toString())
 							.replace(/{{number}}/g, parsedNumber),
 					)
-					.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-					.setFooter({text: options.embed.footer});
+					.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+					.setFooter({ text: options.embed.footer });
 				_msg.reply({ embeds: [_embed] });
 			}
 			if (parseInt(_msg.content) > options.number) {
@@ -434,8 +433,8 @@ var GuessTheNumber = async (options) => {
 							.replace(/{{author}}/g, _msg.author.toString())
 							.replace(/{{number}}/g, parsedNumber),
 					)
-					.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-					.setFooter({text: options.embed.footer});
+					.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+					.setFooter({ text: options.embed.footer });
 				_msg.reply({ embeds: [_embed] });
 			}
 		});
@@ -471,8 +470,8 @@ var GuessTheNumber = async (options) => {
 					.setDescription(
 						options.loseMessage.replace(/{{number}}/g, options.number),
 					)
-					.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-					.setFooter({text: options.embed.footer});
+					.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+					.setFooter({ text: options.embed.footer });
 				if (options.embed.timestamp) {
 					_embed.setTimestamp();
 				}
@@ -488,8 +487,8 @@ var GuessTheNumber = async (options) => {
 					.setDescription(
 						options.loseMessage.replace(/{{number}}/g, options.number),
 					)
-					.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-					.setFooter({text: options.embed.footer});
+					.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+					.setFooter({ text: options.embed.footer });
 				if (options.embed.timestamp) {
 					_embed.setTimestamp();
 				}

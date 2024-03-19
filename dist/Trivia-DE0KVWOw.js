@@ -4,7 +4,7 @@ var Discord = require('discord.js');
 var db = require('quick.db');
 var fetch = require('node-fetch');
 var htmlEntities = require('html-entities');
-var _function = require('./function-DmowlvBl.js');
+var _function = require('./function-tD1ad7nu.js');
 require('axios');
 require('chalk');
 require('cheerio');
@@ -173,8 +173,8 @@ var Trivia = async (options) => {
 		embeds: [
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}.`)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer}),
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer }),
 		],
 	});
 
@@ -184,8 +184,8 @@ var Trivia = async (options) => {
 		embeds: [
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}..`)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer}),
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer }),
 		],
 	});
 
@@ -193,8 +193,8 @@ var Trivia = async (options) => {
 		embeds: [
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}...`)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer}),
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer }),
 		],
 	});
 
@@ -215,8 +215,8 @@ var Trivia = async (options) => {
 		embeds: [
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}..`)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer}),
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer }),
 		],
 	});
 
@@ -256,8 +256,8 @@ var Trivia = async (options) => {
 		embeds: [
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}.`)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer}),
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer }),
 		],
 	});
 
@@ -269,15 +269,9 @@ var Trivia = async (options) => {
 
 	const embed = new Discord.EmbedBuilder()
 		.setTitle(options.embed.title)
-		.addFields(
-			htmlEntities.decode(question.question),
-			`${options.embed.description.replace(
-				'{{time}}',
-				_function.convertTime(options.time),
-			)}\n\n${opt}`,
-		)
-		.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-		.setFooter({text: options.embed.footer});
+		.addFields({ name: htmlEntities.decode(question.question), value: `${options.embed.description.replace('{{time}}', _function.convertTime(options.time),)}\n\n${opt}` })
+		.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+		.setFooter({ text: options.embed.footer });
 	if (options.embed.timestamp) {
 		embed.setTimestamp();
 	}
@@ -366,8 +360,8 @@ var Trivia = async (options) => {
 						.replace('{{answer}}', htmlEntities.decode(question.options[question.correct]))
 						.replace('{{time}}', time)}`,
 				)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer});
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer });
 			if (options.embed.timestamp) {
 				winEmbed.setTimestamp();
 			}
@@ -464,8 +458,8 @@ var Trivia = async (options) => {
 						htmlEntities.decode(question.options[question.correct]),
 					)}`,
 				)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer});
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer });
 			if (options.embed.timestamp) {
 				lostEmbed.setTimestamp();
 			}
@@ -474,7 +468,6 @@ var Trivia = async (options) => {
 	});
 
 	gameCollector.on('end', (trivia, reason) => {
-		console.log(reason);
 		if (reason === 'time') {
 			btn1 = new Discord.ButtonBuilder()
 				.setEmoji(options.emojis.one)
@@ -525,8 +518,8 @@ var Trivia = async (options) => {
 						htmlEntities.decode(question.options[question.correct]),
 					)}`,
 				)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer});
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer });
 			if (options.embed.timestamp) {
 				lostEmbed.setTimestamp();
 			}

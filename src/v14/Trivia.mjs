@@ -167,8 +167,8 @@ export default async (options) => {
 		embeds: [
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}.`)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer}),
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer }),
 		],
 	});
 
@@ -178,8 +178,8 @@ export default async (options) => {
 		embeds: [
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}..`)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer}),
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer }),
 		],
 	});
 
@@ -187,8 +187,8 @@ export default async (options) => {
 		embeds: [
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}...`)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer}),
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer }),
 		],
 	});
 
@@ -209,8 +209,8 @@ export default async (options) => {
 		embeds: [
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}..`)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer}),
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer }),
 		],
 	});
 
@@ -250,8 +250,8 @@ export default async (options) => {
 		embeds: [
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}.`)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer}),
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer }),
 		],
 	});
 
@@ -263,15 +263,9 @@ export default async (options) => {
 
 	const embed = new Discord.EmbedBuilder()
 		.setTitle(options.embed.title)
-		.addFields(
-			decode(question.question),
-			`${options.embed.description.replace(
-				'{{time}}',
-				convertTime(options.time),
-			)}\n\n${opt}`,
-		)
-		.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-		.setFooter({text: options.embed.footer})
+		.addFields({ name: decode(question.question), value: `${options.embed.description.replace('{{time}}', convertTime(options.time),)}\n\n${opt}` })
+		.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+		.setFooter({ text: options.embed.footer })
 	if (options.embed.timestamp) {
 		embed.setTimestamp();
 	}
@@ -360,8 +354,8 @@ export default async (options) => {
 						.replace('{{answer}}', decode(question.options[question.correct]))
 						.replace('{{time}}', time)}`,
 				)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer})
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer })
 			if (options.embed.timestamp) {
 				winEmbed.setTimestamp();
 			}
@@ -458,8 +452,8 @@ export default async (options) => {
 						decode(question.options[question.correct]),
 					)}`,
 				)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer})
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer })
 			if (options.embed.timestamp) {
 				lostEmbed.setTimestamp();
 			}
@@ -468,7 +462,6 @@ export default async (options) => {
 	});
 
 	gameCollector.on('end', (trivia, reason) => {
-		console.log(reason);
 		if (reason === 'time') {
 			btn1 = new Discord.ButtonBuilder()
 				.setEmoji(options.emojis.one)
@@ -519,8 +512,8 @@ export default async (options) => {
 						decode(question.options[question.correct]),
 					)}`,
 				)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer})
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer })
 			if (options.embed.timestamp) {
 				lostEmbed.setTimestamp();
 			}

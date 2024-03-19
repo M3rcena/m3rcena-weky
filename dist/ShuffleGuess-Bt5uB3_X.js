@@ -1,7 +1,7 @@
 'use strict';
 
 var Discord = require('discord.js');
-var _function = require('./function-DmowlvBl.js');
+var _function = require('./function-tD1ad7nu.js');
 require('axios');
 require('chalk');
 require('cheerio');
@@ -218,7 +218,7 @@ var ShuffleGuess = async (options) => {
 			if (options.embed.timestamp) {
 				_embed.setTimestamp();
 			}
-			msg.reply({ embeds: [_embed] }).then((m) => m.delete({ timeout: 3000 }));
+			msg.reply({ embeds: [_embed] }).then((m) => setTimeout(() => m.delete(), 3000));
 		}
 	});
 

@@ -2,7 +2,7 @@
 
 var Discord = require('discord.js');
 var db = require('quick.db');
-var _function = require('./function-DmowlvBl.js');
+var _function = require('./function-tD1ad7nu.js');
 require('axios');
 require('chalk');
 require('cheerio');
@@ -301,20 +301,20 @@ var RockPaperScissors = async (options) => {
 		} else if (_btn.customId === 'accept') {
 			Collector.stop();
 			let scissorsbtn = new Discord.ButtonBuilder()
-				.setCustomId(id1)
-				.setLabel(options.buttons.scissors)
-				.setStyle(Discord.ButtonStyle.Primary)
-				.setEmoji('✌️');
+					.setCustomId(id1)
+					.setLabel(options.buttons.scissors)
+					.setStyle(Discord.ButtonStyle.Primary)
+					.setEmoji('✌️');
 			let rockbtn = new Discord.ButtonBuilder()
-				.setCustomId(id2)
-				.setLabel(options.buttons.rock)
-				.setStyle(Discord.ButtonStyle.Primary)
-				.setEmoji('✊');
+					.setCustomId(id2)
+					.setLabel(options.buttons.rock)
+					.setStyle(Discord.ButtonStyle.Primary)
+					.setEmoji('✊');
 			let paperbtn = new Discord.ButtonBuilder()
-				.setCustomId(id3)
-				.setLabel(options.buttons.paper)
-				.setStyle(Discord.ButtonStyle.Primary)
-				.setEmoji('✋');
+					.setCustomId(id3)
+					.setLabel(options.buttons.paper)
+					.setStyle(Discord.ButtonStyle.Primary)
+					.setEmoji('✋');
 			let row = new Discord.ActionRowBuilder()
 				.addComponents(rockbtn)
 				.addComponents(paperbtn)
@@ -466,7 +466,7 @@ var RockPaperScissors = async (options) => {
 					} else if (button.customId === id3) {
 						challengerChoice = '✋';
 						button.reply({
-							content: options.choseMessage.replace('{{emoji}}', '✊'),
+							content: options.choseMessage.replace('{{emoji}}', '✋'),
 							ephemeral: true,
 						});
 						if (challengerChose && opponentChose === true) {
@@ -569,7 +569,7 @@ var RockPaperScissors = async (options) => {
 					} else if (button.customId === id1) {
 						challengerChoice = '✌️';
 						button.reply({
-							content: options.choseMessage.replace('{{emoji}}', '✊'),
+							content: options.choseMessage.replace('{{emoji}}', '✌️'),
 							ephemeral: true,
 						});
 						if (challengerChose && opponentChose === true) {
@@ -784,7 +784,7 @@ var RockPaperScissors = async (options) => {
 					} else if (button.customId === id3) {
 						opponentChoice = '✋';
 						button.reply({
-							content: options.choseMessage.replace('{{emoji}}', '✊'),
+							content: options.choseMessage.replace('{{emoji}}', '✋'),
 							ephemeral: true,
 						});
 						if (challengerChose && opponentChose === true) {
@@ -887,7 +887,7 @@ var RockPaperScissors = async (options) => {
 					} else if (button.customId === id1) {
 						opponentChoice = '✌️';
 						button.reply({
-							content: options.choseMessage.replace('{{emoji}}', '✊'),
+							content: options.choseMessage.replace('{{emoji}}', '✌️'),
 							ephemeral: true,
 						});
 						if (challengerChose && opponentChose === true) {

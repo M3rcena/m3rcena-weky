@@ -2,7 +2,7 @@
 
 var mathjs = require('mathjs');
 var Discord = require('discord.js');
-var _function = require('./function-DmowlvBl.js');
+var _function = require('./function-tD1ad7nu.js');
 require('axios');
 require('chalk');
 require('cheerio');

@@ -1,17 +1,17 @@
 'use strict';
 
 var Discord = require('discord.js');
+var fetch = require('node-fetch');
 var htmlEntities = require('html-entities');
-var _function = require('./function-DmowlvBl.js');
+var _function = require('./function-tD1ad7nu.js');
 require('axios');
 require('chalk');
 require('cheerio');
-require('node-fetch');
 require('string-width');
 
-var WillYouPressTheButton = async (options) => {
+var WouldYouRather = async (options) => {
 
-	if (!options.message) {
+		if (!options.message) {
 		throw new Error('Weky Error: message argument was not specified.');
 	}
 	if (typeof options.message !== 'object') {
@@ -24,18 +24,10 @@ var WillYouPressTheButton = async (options) => {
 	}
 
 	if (!options.embed.title) {
-		options.embed.title = 'Will you press the button? | Weky Development';
+		options.embed.title = 'Would you rather... | Weky Development';
 	}
 	if (typeof options.embed.title !== 'string') {
 		throw new TypeError('Weky Error: embed title must be a string.');
-	}
-
-	if (!options.embed.description) {
-		options.embed.description =
-			'```{{statement1}}```\n**but**\n\n```{{statement2}}```';
-	}
-	if (typeof options.embed.description !== 'string') {
-		throw new TypeError('Weky Error: embed description must be a string.');
 	}
 
 
@@ -52,21 +44,6 @@ var WillYouPressTheButton = async (options) => {
 		throw new TypeError('Weky Error: timestamp must be a boolean.');
 	}
 
-	if (!options.button) options.button = {};
-	if (typeof options.embed !== 'object') {
-		throw new TypeError('Weky Error: buttons must be an object.');
-	}
-
-	if (!options.button.yes) options.button.yes = 'Yes';
-	if (typeof options.button.yes !== 'string') {
-		throw new TypeError('Weky Error: yesLabel must be a string.');
-	}
-
-	if (!options.button.no) options.button.no = 'No';
-	if (typeof options.button.no !== 'string') {
-		throw new TypeError('Weky Error: noLabel must be a string.');
-	}
-
 	if (!options.thinkMessage) options.thinkMessage = 'I am thinking';
 	if (typeof options.thinkMessage !== 'string') {
 		throw new TypeError('Weky Error: thinkMessage must be a boolean.');
@@ -77,6 +54,21 @@ var WillYouPressTheButton = async (options) => {
 	}
 	if (typeof options.othersMessage !== 'string') {
 		throw new TypeError('Weky Error: othersMessage must be a string.');
+	}
+
+	if (!options.buttons) options.buttons = {};
+	if (typeof options.buttons !== 'object') {
+		throw new TypeError('Weky Error: buttons must be an object.');
+	}
+
+	if (!options.buttons.optionA) options.buttons.optionA = 'Option A';
+	if (typeof options.buttons.optionA !== 'string') {
+		throw new TypeError('Weky Error: button must be a string.');
+	}
+
+	if (!options.buttons.optionB) options.buttons.optionB = 'Option B';
+	if (typeof options.buttons.optionB !== 'string') {
+		throw new TypeError('Weky Error: button must be a string.');
 	}
 
 	const id1 =
@@ -115,22 +107,35 @@ var WillYouPressTheButton = async (options) => {
 		],
 	});
 
-	const fetchedData = await _function.WillYouPressTheButton();
+	const response = await fetch(
+		'https://fun-api.sujalgoel.engineer/wyr',
+	).then((res) => res.json());
+	const data = response.data;
 
 	await think.edit({
 		embeds: [
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}...`)
-						.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
+				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
 				.setFooter({text: options.embed.footer}),
 		],
 	});
 
 	const res = {
-		questions: [fetchedData.txt1, fetchedData.txt2],
+		questions: [data.option_1.option, data.option_2.option],
 		percentage: {
-			1: fetchedData.yes,
-			2: fetchedData.no,
+			1:
+				(
+					(parseInt(data.option_1.votes) /
+						(parseInt(data.option_1.votes) + parseInt(data.option_2.votes))) *
+					100
+				).toFixed(2) + '%',
+			2:
+				(
+					(parseInt(data.option_2.votes) /
+						(parseInt(data.option_1.votes) + parseInt(data.option_2.votes))) *
+					100
+				).toFixed(2) + '%',
 		},
 	};
 
@@ -138,18 +143,18 @@ var WillYouPressTheButton = async (options) => {
 		embeds: [
 			new Discord.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}..`)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer}),
+				.setColor(options.embed.color),
 		],
 	});
 
 	let btn = new Discord.ButtonBuilder()
-		.setStyle(Discord.ButtonStyle.Success)
-		.setLabel(options.button.yes)
+		.setStyle(Discord.ButtonStyle.Primary)
+		.setLabel(`${options.buttons.optionA}`)
 		.setCustomId(id1);
+
 	let btn2 = new Discord.ButtonBuilder()
-		.setStyle(Discord.ButtonStyle.Danger)
-		.setLabel(options.button.no)
+		.setStyle(Discord.ButtonStyle.Primary)
+		.setLabel(`${options.buttons.optionB}`)
 		.setCustomId(id2);
 
 	await think.edit({
@@ -164,21 +169,7 @@ var WillYouPressTheButton = async (options) => {
 	const embed = new Discord.EmbedBuilder()
 		.setTitle(options.embed.title)
 		.setDescription(
-			`${options.embed.description
-				.replace(
-					'{{statement1}}',
-					htmlEntities.decode(
-						res.questions[0].charAt(0).toUpperCase() +
-							res.questions[0].slice(1),
-					),
-				)
-				.replace(
-					'{{statement2}}',
-					htmlEntities.decode(
-						res.questions[1].charAt(0).toUpperCase() +
-							res.questions[1].slice(1),
-					),
-				)}`,
+			`**A)** ${htmlEntities.decode(res.questions[0])} \n**B)** ${htmlEntities.decode(res.questions[1])}`,
 		)
 		.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
 		.setFooter({text: options.embed.footer});
@@ -195,9 +186,9 @@ var WillYouPressTheButton = async (options) => {
 		filter: (fn) => fn,
 	});
 
-	gameCollector.on('collect', async (wyptb) => {
-		if (wyptb.user.id !== options.message.author.id) {
-			return wyptb.reply({
+	gameCollector.on('collect', async (wyr) => {
+		if (wyr.user.id !== options.message.author.id) {
+			return wyr.reply({
 				content: options.othersMessage.replace(
 					'{{author}}',
 					options.message.member.id,
@@ -205,43 +196,65 @@ var WillYouPressTheButton = async (options) => {
 				ephemeral: true,
 			});
 		}
-
-		await wyptb.deferUpdate();
-
-		if (wyptb.customId === id1) {
+		await wyr.deferUpdate();
+		if (wyr.customId === id1) {
 			btn = new Discord.ButtonBuilder()
-				.setStyle(Discord.ButtonStyle.Success)
-				.setLabel(`${options.button.yes} (${res.percentage['1']})`)
+				.setStyle(Discord.ButtonStyle.Primary)
+				.setLabel(`${options.buttons.optionA}` + ` (${res.percentage['1']})`)
 				.setCustomId(id1)
 				.setDisabled();
 			btn2 = new Discord.ButtonBuilder()
-				.setStyle(Discord.ButtonStyle.Danger)
-				.setLabel(`${options.button.no} (${res.percentage['2']})`)
+				.setStyle(Discord.ButtonStyle.Secondary)
+				.setLabel(`${options.buttons.optionB}` + ` (${res.percentage['2']})`)
 				.setCustomId(id2)
 				.setDisabled();
 			gameCollector.stop();
-			await wyptb.editReply({
-				embed: embed,
+			const _embed = new Discord.EmbedBuilder()
+				.setTitle(options.embed.title)
+				.setDescription(
+					`**A) ${htmlEntities.decode(res.questions[0])} (${
+						res.percentage['1']
+					})** \nB) ${htmlEntities.decode(res.questions[1])} (${res.percentage['2']})`,
+				)
+				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
+				.setFooter({text: options.embed.footer});
+			if (options.embed.timestamp) {
+				_embed.setTimestamp();
+			}
+			await wyr.editReply({
+				embeds: [_embed],
 				components: [{ type: 1, components: [btn, btn2] }],
 			});
-		} else if (wyptb.customId === id2) {
+		} else if (wyr.customId === id2) {
 			btn = new Discord.ButtonBuilder()
-				.setStyle(Discord.ButtonStyle.Danger)
-				.setLabel(`${options.button.yes} (${res.percentage['1']})`)
+				.setStyle(Discord.ButtonStyle.Secondary)
+				.setLabel(`${options.buttons.optionA}` + ` (${res.percentage['1']})`)
 				.setCustomId(id1)
 				.setDisabled();
 			btn2 = new Discord.ButtonBuilder()
-				.setStyle(Discord.ButtonStyle.Success)
-				.setLabel(`${options.button.no} (${res.percentage['2']})`)
+				.setStyle(Discord.ButtonStyle.Primary)
+				.setLabel(`${options.buttons.optionB}` + ` (${res.percentage['2']})`)
 				.setCustomId(id2)
 				.setDisabled();
 			gameCollector.stop();
-			await wyptb.editReply({
-				embed: embed,
+			const _embed = new Discord.EmbedBuilder()
+				.setTitle(options.embed.title)
+				.setDescription(
+					`A) ${htmlEntities.decode(res.questions[0])} (${
+						res.percentage['1']
+					}) \n**B) ${htmlEntities.decode(res.questions[1])} (${res.percentage['2']})**`,
+				)
+				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
+				.setFooter({text: options.embed.footer});
+			if (options.embed.timestamp) {
+				_embed.setTimestamp();
+			}
+			await wyr.editReply({
+				embeds: [_embed],
 				components: [{ type: 1, components: [btn, btn2] }],
 			});
 		}
 	});
 };
 
-exports.default = WillYouPressTheButton;
+exports.default = WouldYouRather;

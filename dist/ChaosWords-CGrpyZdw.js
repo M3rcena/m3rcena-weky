@@ -1,7 +1,7 @@
 'use strict';
 
 var Discord = require('discord.js');
-var _function = require('./function-DmowlvBl.js');
+var _function = require('./function-tD1ad7nu.js');
 require('axios');
 require('chalk');
 require('cheerio');
@@ -13,103 +13,139 @@ const data = new Set();
 var ChaosWords = async (options) => {
 	if (!options.message) {
 		throw new Error('Weky Error: message argument was not specified.');
-	}	if (typeof options.message !== 'object') {
+	}
+	if (typeof options.message !== 'object') {
 		throw new TypeError('Weky Error: Invalid Discord Message was provided.');
 	}
+
 	if (!options.embed) options.embed = {};
 	if (typeof options.embed !== 'object') {
 		throw new TypeError('Weky Error: embed must be an object.');
 	}
+
 	if (!options.embed.title) {
 		options.embed.title = 'Chaos Words | Weky Development';
-	}	if (typeof options.embed.title !== 'string') {
+	}
+	if (typeof options.embed.title !== 'string') {
 		throw new TypeError('Weky Error: embed title must be a string.');
 	}
+
 	if (!options.embed.description) {
 		options.embed.description =
 			'You have **{{time}}** to find the hidden words in the below sentence.';
-	}	if (typeof options.embed.description !== 'string') {
+	}
+	if (typeof options.embed.description !== 'string') {
 		throw new TypeError('Weky Error: embed color must be a string.');
 	}
+
 	if (!options.embed.field1) options.embed.field1 = 'Sentence:';
 	if (typeof options.embed.field1 !== 'string') {
 		throw new TypeError('Weky Error: field1 must be a string.');
 	}
+
 	if (!options.embed.field2) {
 		options.embed.field2 = 'Words Found/Remaining Words:';
-	}	if (typeof options.embed.field2 !== 'string') {
+	}
+	if (typeof options.embed.field2 !== 'string') {
 		throw new TypeError('Weky Error: field2 must be a string.');
 	}
+
 	if (!options.embed.field3) options.embed.field3 = 'Words found:';
 	if (typeof options.embed.field3 !== 'string') {
 		throw new TypeError('Weky Error: field3 must be a string.');
 	}
+
 	if (!options.embed.field4) options.embed.field4 = 'Words:';
 	if (typeof options.embed.field4 !== 'string') {
 		throw new TypeError('Weky Error: field4 must be a string.');
 	}
 
+	if (!options.embed.color) options.embed.color = _function.randomHexColor();
+	if (typeof options.embed.color !== 'string') {
+		throw new TypeError('Weky Error: embed color must be a string.');
+	}
 
 	if (!options.embed.footer) {
 		options.embed.footer = '©️ Weky Development';
-	}	if (typeof options.embed.footer !== 'string') {
+	}
+	if (typeof options.embed.footer !== 'string') {
 		throw new TypeError('Weky Error: embed footer must be a string.');
 	}
+
 	if (!options.embed.timestamp) options.embed.timestamp = true;
 	if (typeof options.embed.timestamp !== 'boolean') {
 		throw new TypeError('Weky Error: timestamp must be a boolean.');
 	}
+
 	if (!options.winMessage) {
 		options.winMessage = 'GG, You won! You made it in **{{time}}**.';
-	}	if (typeof options.winMessage !== 'string') {
+	}
+	if (typeof options.winMessage !== 'string') {
 		throw new TypeError('Weky Error: winMessage must be a string.');
 	}
+
 	if (!options.loseMessage) options.loseMessage = 'Better luck next time!';
 	if (typeof options.loseMessage !== 'string') {
 		throw new TypeError('Weky Error: loseMessage must be a string.');
 	}
+
 	if (!options.wrongWordMessage) {
 		options.wrongWordMessage =
 			'Wrong Guess! You have **{{remaining_tries}}** tries left.';
-	}	if (typeof options.wrongWordMessage !== 'string') {
+	}
+	if (typeof options.wrongWordMessage !== 'string') {
 		throw new TypeError('Weky Error: wrongWordMessage must be a string.');
-	}	if (!options.correctWordMessage) {
+	}
+
+	if (!options.correctWordMessage) {
 		options.correctWordMessage =
 			'GG, **{{word}}** was correct! You have to find **{{remaining}}** more word(s).';
-	}	if (typeof options.correctWordMessage !== 'string') {
+	}
+	if (typeof options.correctWordMessage !== 'string') {
 		throw new TypeError('Weky Error: correctWordMessage must be a string.');
 	}
+
 	if (!options.time) options.time = 60000;
 	if (parseInt(options.time) < 10000) {
 		throw new Error(
 			'Weky Error: time argument must be greater than 10 Seconds (in ms i.e. 10000).',
 		);
-	}	if (typeof options.time !== 'number') {
+	}
+	if (typeof options.time !== 'number') {
 		throw new TypeError('Weky Error: time must be a number.');
 	}
+
 	if (!options.words) {
 		options.words = _function.getRandomSentence(Math.floor(Math.random() * 6) + 2);
-	}	if (typeof options.words !== 'object') {
+	}
+	if (typeof options.words !== 'object') {
 		throw new TypeError('Weky Error: words must be an array.');
 	}
+
 	if (!options.charGenerated) {
 		options.charGenerated = options.words.join('').length - 1;
-	}	if (typeof options.charGenerated !== 'number') {
+	}
+	if (typeof options.charGenerated !== 'number') {
 		throw new TypeError('Weky Error: charGenerated must be a number.');
 	}
+
 	if (!options.maxTries) options.maxTries = 10;
 	if (typeof options.maxTries !== 'number') {
 		throw new TypeError('Weky Error: maxTries must be a number.');
 	}
+
 	if (!options.othersMessage) {
 		options.othersMessage = 'Only <@{{author}}> can use the buttons!';
-	}	if (typeof options.othersMessage !== 'string') {
+	}
+	if (typeof options.othersMessage !== 'string') {
 		throw new TypeError('Weky Error: othersMessage must be a string.');
 	}
+
 	if (!options.buttonText) options.buttonText = 'Cancel';
 	if (typeof options.buttonText !== 'string') {
 		throw new TypeError('Weky Error: buttonText must be a string.');
 	}
+
 	if (data.has(options.message.author.id)) return;
 	data.add(options.message.author.id);
 
@@ -130,6 +166,7 @@ var ChaosWords = async (options) => {
 	if (options.words.join('').length > options.charGenerated) {
 		options.charGenerated = options.words.join('').length - 1;
 	}
+
 	for (let i = 0; i < options.charGenerated; i++) {
 		array.push(
 			'abcdefghijklmnopqrstuvwxyz'.charAt(
@@ -137,6 +174,7 @@ var ChaosWords = async (options) => {
 			),
 		);
 	}
+
 	options.words.forEach((e) => {
 		array.splice(Math.floor(Math.random() * array.length), 0, e);
 	});
@@ -145,17 +183,17 @@ var ChaosWords = async (options) => {
 
 	const embed = new Discord.EmbedBuilder()
 		.setTitle(options.embed.title)
-		.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-		.setFooter({text: options.embed.footer})
 		.setDescription(
 			options.embed.description.replace('{{time}}', _function.convertTime(options.time)),
 		)
-		.addFields(options.embed.field1, array.join(''))
-		.addFields(options.embed.field2, `0/${options.words.length}`);
-		
+		.addFields({ name: options.embed.field1, value: array.join('') })
+		.addFields({ name: options.embed.field2, value: `0/${options.words.length}` })
+		.setFooter({ text: options.embed.footer })
+		.setColor(options.embed.color);
 	if (options.embed.timestamp) {
 		embed.setTimestamp();
 	}
+
 	let btn1 = new Discord.ButtonBuilder()
 		.setStyle(Discord.ButtonStyle.Danger)
 		.setLabel(options.buttonText)
@@ -189,11 +227,11 @@ var ChaosWords = async (options) => {
 						_function.convertTime(options.time),
 					),
 				)
-				.addFields(options.embed.field1, array.join(''))
-				.addFields(options.embed.field3, `${guessed.join(', ')}`)
-				.addFields(options.embed.field2, `${remaining}/${options.words.length}`)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer});
+				.addFields({ name: options.embed.field1, value: array.join('') })
+				.addFields({ name: options.embed.field3, value: `${guessed.join(', ')}` })
+				.addFields({ name: options.embed.field2, value: `${remaining}/${options.words.length}` })
+				.setFooter({ text: options.embed.footer })
+				.setColor(options.embed.color);
 			if (options.embed.timestamp) {
 				_embed.setTimestamp();
 			}
@@ -228,12 +266,11 @@ var ChaosWords = async (options) => {
 				const time = _function.convertTime(Date.now() - gameCreatedAt);
 				const __embed = new Discord.EmbedBuilder()
 					.setTitle(options.embed.title)
-					.addFields(options.embed.field1, arr)
+					.addFields({ name: options.embed.field1, value: arr })
 					.setDescription(options.winMessage.replace('{{time}}', time))
-					.addFields(options.embed.field4, `${options.words.join(', ')}`)
-					.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-					.setFooter({text: options.embed.footer});
-
+					.addFields({ name: options.embed.field4, value: `${options.words.join(', ')}` })
+					.setFooter({ text: options.embed.footer })
+					.setColor(options.embed.color);
 				if (options.embed.timestamp) {
 					__embed.setTimestamp();
 				}
@@ -249,8 +286,8 @@ var ChaosWords = async (options) => {
 						.replace('{{word}}', msg.content.toLowerCase())
 						.replace('{{remaining}}', options.words.length - remaining)}`,
 				)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer});
+				.setColor(options.embed.color)
+				.setFooter({ text: options.embed.footer });
 			if (options.embed.timestamp) {
 				__embed.setTimestamp();
 			}
@@ -263,11 +300,10 @@ var ChaosWords = async (options) => {
 				const _embed = new Discord.EmbedBuilder()
 					.setTitle(options.embed.title)
 					.setDescription(options.loseMessage)
-					.addFields(options.embed.field1, arr)
-					.addFields(options.embed.field4, `${options.words.join(', ')}`)
-					.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-					.setFooter({text: options.embed.footer});
-
+					.addFields({ name: options.embed.field1, value: arr })
+					.addFields({ name: options.embed.field4, value: `${options.words.join(', ')}` })
+					.setFooter({ text: options.embed.footer })
+					.setColor(options.embed.color);
 				if (options.embed.timestamp) {
 					_embed.setTimestamp();
 				}
@@ -298,8 +334,8 @@ var ChaosWords = async (options) => {
 						`${options.maxTries - tries}`,
 					)}`,
 				)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer});
+				.setColor(options.embed.color)
+				.setFooter({ text: options.embed.footer });
 			if (options.embed.timestamp) {
 				_embed.setTimestamp();
 			}
@@ -314,10 +350,10 @@ var ChaosWords = async (options) => {
 			const _embed = new Discord.EmbedBuilder()
 				.setTitle(options.embed.title)
 				.setDescription(options.loseMessage)
-				.addFields(options.embed.field1, arr)
-				.addFields(options.embed.field4, `${options.words.join(', ')}`)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer});
+				.addFields({ name: options.embed.field1, value: arr })
+				.addFields({ name: options.embed.field4, value: `${options.words.join(', ')}` })
+				.setFooter({ text: options.embed.footer })
+				.setColor(options.embed.color);
 			if (options.embed.timestamp) {
 				_embed.setTimestamp();
 			}
@@ -373,13 +409,13 @@ var ChaosWords = async (options) => {
 				},
 			],
 		});
-		const _embed = new Discord.EmbedBuilder()
+		const _embed = new EmbedBuilder()
 			.setTitle(options.embed.title)
 			.setDescription(options.loseMessage)
-			.addFields(options.embed.field1, arr)
-			.addFields(options.embed.field4, `${options.words.join(', ')}`)
-			.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-			.setFooter({text: options.embed.footer});
+			.addFields({ name: options.embed.field1, value: arr })
+			.addFields({ name: options.embed.field4, value: `${options.words.join(', ')}` })
+			.setFooter({ text: options.embed.footer })
+			.setColor(options.embed.color);
 		if (options.embed.timestamp) {
 			_embed.setTimestamp();
 		}

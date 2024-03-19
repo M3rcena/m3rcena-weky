@@ -2034,6 +2034,13 @@ const shuffleArray = function (array) {
 	return array;
 };
 
+const randomHexColor = function () {
+	return (
+		'#' +
+		('000000' + Math.floor(Math.random() * 16777215).toString(16)).slice(-6)
+	);
+};
+
 const WillYouPressTheButton = function () {
 	return fetch('https://api2.willyoupressthebutton.com/api/v2/dilemma ', {
 		method: 'POST',
@@ -2095,5 +2102,6 @@ exports.convertTime = convertTime;
 exports.createButton = createButton;
 exports.getRandomSentence = getRandomSentence;
 exports.getRandomString = getRandomString;
+exports.randomHexColor = randomHexColor;
 exports.shuffleArray = shuffleArray;
 exports.shuffleString = shuffleString;

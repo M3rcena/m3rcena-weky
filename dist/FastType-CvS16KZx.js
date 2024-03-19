@@ -1,7 +1,7 @@
 'use strict';
 
 var Discord = require('discord.js');
-var _function = require('./function-DmowlvBl.js');
+var _function = require('./function-tD1ad7nu.js');
 require('axios');
 require('chalk');
 require('cheerio');
@@ -128,8 +128,8 @@ var FastType = async (options) => {
 				_function.convertTime(options.time),
 			)}`,
 		)
-		.addFields('Sentence:', `${sentence}`)
-		.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+		.addFields({ name: 'Sentence:', value: `${sentence}` })
+		.setAuthor({ name: options.message.author.username })
 		.setFooter({ text: options.embed.footer });
 	if (options.embed.timestamp) {
 		embed.setTimestamp();
@@ -155,7 +155,7 @@ var FastType = async (options) => {
 						.replace('{{time}}', _function.convertTime(time))
 						.replace('{{wpm}}', wpm.toFixed(2)),
 				)
-				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setAuthor({ name: options.message.author.username })
 				.setFooter({ text: options.embed.footer });
 			if (options.embed.timestamp) {
 				_embed.setTimestamp();
@@ -176,7 +176,7 @@ var FastType = async (options) => {
 			const _embed = new Discord.EmbedBuilder()
 				.setDescription(`${options.loseMessage}`)
 				.setFooter({ text: options.embed.footer })
-				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setAuthor({ name: options.message.author.username })
 				.setFooter({ text: options.embed.footer });
 			if (options.embed.timestamp) {
 				_embed.setTimestamp();
@@ -200,7 +200,7 @@ var FastType = async (options) => {
 		if (reason === 'time') {
 			const _embed = new Discord.EmbedBuilder()
 				.setDescription(`${options.loseMessage}`)
-				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setAuthor({ name: options.message.author.username })
 				.setFooter({ text: options.embed.footer });
 			if (options.embed.timestamp) {
 				_embed.setTimestamp();
