@@ -6,8 +6,6 @@
    <a href="https://m3rcena.gitbook.io/docs/"><img src="https://img.shields.io/badge/Documentation-Yes-amiajokegreen.svg?style=flat-square" /></a>
    <a href="https://github.com/M3rcena/m3rcena-weky/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/%40m3rcena%2Fweky" /></a>
    <br>
-   <iframe src="https://discord.com/widget?id=1224358764463783987&theme=dark" width="350" height="500" allowtransparency="true" frameborder="0" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"></iframe>
-   <br>
    <a href="https://www.npmjs.com/package/@m3rcena/weky"><img src="https://nodei.co/npm/@m3rcena/weky.png?downloadRank=true&downloads=true&downloadRank=true&stars=true" /></a>
 </p>
 
@@ -71,3 +69,6 @@ client.login('DISCORD_BOT_TOKEN');
 - **[Sujal Goel#7602](https://github.com/sujalgoel)**
 - **[rayz#4986](https://github.com/rayzdev)**
 - **[d4rk.s0ul](https://github.com/M3rcena)**
+
+## Discord 📰
+<img src="https://discordapp.com/api/guilds/1224358764463783987/widget.png?style=banner4" alt="Discord"/>
