@@ -1,7 +1,7 @@
 'use strict';
 
 var Discord = require('discord.js');
-var _function = require('./function-tD1ad7nu.js');
+var _function = require('./function-tD1ad7nu.cjs');
 require('axios');
 require('chalk');
 require('cheerio');
@@ -10,7 +10,11 @@ require('string-width');
 
 const data = new Set();
 
-var ChaosWords = async (options) => {
+module.exports = {
+	ChaosWords
+}
+
+async function ChaosWords (options) {
 	if (!options.message) {
 		throw new Error('Weky Error: message argument was not specified.');
 	}
@@ -427,5 +431,3 @@ var ChaosWords = async (options) => {
 		return game.stop();
 	});
 };
-
-exports.default = ChaosWords;

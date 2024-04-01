@@ -2,7 +2,7 @@
 
 var Discord = require('discord.js');
 var fetch = require('node-fetch');
-var _function = require('./function-tD1ad7nu.js');
+var _function = require('./function-tD1ad7nu.cjs');
 require('axios');
 require('chalk');
 require('cheerio');
@@ -10,7 +10,9 @@ require('string-width');
 
 const gameData = new Set();
 
-var GuessThePokemon = async (options) => {
+module.exports = GuessThePokemon;
+
+async function GuessThePokemon (options) {
 	if (!options.message) {
 		throw new Error('Weky Error: message argument was not specified.');
 	}
@@ -338,5 +340,3 @@ var GuessThePokemon = async (options) => {
 		}
 	});
 };
-
-exports.default = GuessThePokemon;

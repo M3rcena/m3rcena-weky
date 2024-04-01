@@ -4,7 +4,7 @@ var Discord = require('discord.js');
 var db = require('quick.db');
 var fetch = require('node-fetch');
 var htmlEntities = require('html-entities');
-var _function = require('./function-tD1ad7nu.js');
+var _function = require('./function-tD1ad7nu.cjs');
 require('axios');
 require('chalk');
 require('cheerio');
@@ -13,7 +13,9 @@ require('string-width');
 const data = new Set();
 const difficulties = ['hard', 'medium', 'easy'];
 
-var Trivia = async (options) => {
+module.exports = Trivia;
+
+async function Trivia (options) {
 
 	if (!options.message) {
 		throw new Error('Weky Error: message argument was not specified.');
@@ -527,5 +529,3 @@ var Trivia = async (options) => {
 		}
 	});
 };
-
-exports.default = Trivia;

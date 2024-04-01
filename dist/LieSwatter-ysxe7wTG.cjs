@@ -3,13 +3,15 @@
 var Discord = require('discord.js');
 var fetch = require('node-fetch');
 var htmlEntities = require('html-entities');
-var _function = require('./function-tD1ad7nu.js');
+var _function = require('./function-tD1ad7nu.cjs');
 require('axios');
 require('chalk');
 require('cheerio');
 require('string-width');
 
-var LieSwatter = async (options) => {
+module.exports = LieSwatter;
+
+async function LieSwatter (options) {
 	if (!options.message) {
 		throw new Error('Weky Error: message argument was not specified.');
 	}
@@ -273,5 +275,3 @@ var LieSwatter = async (options) => {
 		}
 	});
 };
-
-exports.default = LieSwatter;

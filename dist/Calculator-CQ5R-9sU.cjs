@@ -2,14 +2,18 @@
 
 var mathjs = require('mathjs');
 var Discord = require('discord.js');
-var _function = require('./function-tD1ad7nu.js');
+var _function = require('./function-tD1ad7nu.cjs');
 require('axios');
 require('chalk');
 require('cheerio');
 require('node-fetch');
 require('string-width');
 
-var Calculator = async (options) => {
+module.exports = {
+	Calculator
+}
+
+async function Calculator(options) {
 	if (!options.message) {
 		throw new Error('Weky Error: message argument was not specified.');
 	}
@@ -233,5 +237,3 @@ var Calculator = async (options) => {
 			});
 		});
 };
-
-exports.default = Calculator;

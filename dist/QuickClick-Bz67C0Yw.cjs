@@ -1,7 +1,7 @@
 'use strict';
 
 var Discord = require('discord.js');
-var _function = require('./function-tD1ad7nu.js');
+var _function = require('./function-tD1ad7nu.cjs');
 require('axios');
 require('chalk');
 require('cheerio');
@@ -10,7 +10,9 @@ require('string-width');
 
 const currentGames = new Object();
 
-var QuickClick = async (options) => {
+module.exports = QuickClick;
+
+async function QuickClick (options) {
 	if (!options.message) {
 		throw new Error('Weky Error: message argument was not specified.');
 	}
@@ -248,5 +250,3 @@ var QuickClick = async (options) => {
 		});
 	}, Math.floor(Math.random() * 5000) + 1000);
 };
-
-exports.default = QuickClick;

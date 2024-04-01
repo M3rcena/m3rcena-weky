@@ -2,7 +2,7 @@
 
 var Discord = require('discord.js');
 var db = require('quick.db');
-var _function = require('./function-tD1ad7nu.js');
+var _function = require('./function-tD1ad7nu.cjs');
 require('axios');
 require('chalk');
 require('cheerio');
@@ -11,7 +11,9 @@ require('string-width');
 
 const data = new Set();
 
-var Fight = async (options) => {
+module.exports = Fight;
+
+async function Fight (options) {
 	if (!options.message) {
 		throw new Error('Weky Error: message argument was not specified.');
 	}
@@ -656,5 +658,3 @@ var Fight = async (options) => {
 		}
 	});
 };
-
-exports.default = Fight;

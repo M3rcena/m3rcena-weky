@@ -122,7 +122,7 @@ interface guessThePokemon {
 	othersMessage?: string;
 	winMessage?: string;
 	loseMessage?: string;
-	time: ?number;
+	time?: number;
 	incorrectMessage?: string;
 	buttonText?: string;
 }
