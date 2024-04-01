@@ -6,6 +6,8 @@
    <a href="https://m3rcena.gitbook.io/docs/"><img src="https://img.shields.io/badge/Documentation-Yes-amiajokegreen.svg?style=flat-square" /></a>
    <a href="https://github.com/M3rcena/m3rcena-weky/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/%40m3rcena%2Fweky" /></a>
    <br>
+   <iframe src="https://discord.com/widget?id=1224358764463783987&theme=dark" width="350" height="500" allowtransparency="true" frameborder="0" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"></iframe>
+   <br>
    <a href="https://www.npmjs.com/package/@m3rcena/weky"><img src="https://nodei.co/npm/@m3rcena/weky.png?downloadRank=true&downloads=true&downloadRank=true&stars=true" /></a>
 </p>
 
@@ -62,7 +64,7 @@ client.login('DISCORD_BOT_TOKEN');
 
 ## Contributing 🤝
 - Contributions, issues and feature requests are welcome!
-- Feel free to check **[issues page](https://github.com/WekyDev/weky-npm/issues)**.
+- Feel free to check **[issues page](https://github.com/M3rcena/m3rcena-weky/issues)**.
 
 ## Developers 👨‍💻
 - **[Face#5454](https://github.com/face-hh)**
