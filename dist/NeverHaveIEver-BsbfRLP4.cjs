@@ -1,14 +1,16 @@
 'use strict';
 
 var Discord = require('discord.js');
-var fetch = import 'node-fetch';
-var _function = require('./function-tD1ad7nu.js');
+var fetch = require('node-fetch');
+var _function = require('./function-tD1ad7nu.cjs');
 require('axios');
-import 'chalk';
+require('chalk');
 require('cheerio');
 require('string-width');
 
-var NeverHaveIEver = async (options) => {
+module.exports = NeverHaveIEver;
+
+async function NeverHaveIEver (options) {
 	if (!options.message) {
 		throw new Error('Weky Error: message argument was not specified.');
 	}
@@ -212,5 +214,3 @@ var NeverHaveIEver = async (options) => {
 		}
 	});
 };
-
-exports.default = NeverHaveIEver;

@@ -367,7 +367,7 @@ exports.Snake = void 0; exports.Fight = void 0; exports.Trivia = void 0; exports
 	exports.GuessThePokemon = Promise.resolve().then(function () { return require('./GuessThePokemon-BBRrlhRF.cjs'); });
 	exports.RockPaperScissors = Promise.resolve().then(function () { return require('./RockPaperScissors-CWf71zZU.cjs'); });
 	exports.WillYouPressTheButton = Promise.resolve().then(function () { return require('./WillYouPressTheButton-CRm02Ych.cjs'); });
-	Promise.resolve().then(function () { return require('./TicTacToe-CWLZJMoT.js'); });
+	Promise.resolve().then(function () { return require('./TicTacToe-CWLZJMoT.cjs'); });
 
 exports.bent = bent;
 exports.flip = flip;

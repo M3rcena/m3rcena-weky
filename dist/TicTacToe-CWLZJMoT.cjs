@@ -2,7 +2,9 @@
 
 var Discord = require('discord.js');
 
-var TicTacToe = async (options) => {
+module.exports = TicTacToe;
+
+async function TicTacToe (options) {
     if (!options.xEmoji) {
         options.xEmoji = "❌";
     }    if (!options.oEmoji) {
@@ -602,5 +604,3 @@ var TicTacToe = async (options) => {
         ]
     }
 };
-
-exports.default = TicTacToe;

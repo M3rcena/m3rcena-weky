@@ -2,14 +2,16 @@
 
 var Discord = require('discord.js');
 var htmlEntities = require('html-entities');
-var _function = require('./function-tD1ad7nu.js');
+var _function = require('./function-tD1ad7nu.cjs');
 require('axios');
-import 'chalk';
+require('chalk');
 require('cheerio');
-import 'node-fetch';
+require('node-fetch');
 require('string-width');
 
-var WillYouPressTheButton = async (options) => {
+module.exports = WillYouPressTheButton;
+
+async function WillYouPressTheButton (options) {
 
 	if (!options.message) {
 		throw new Error('Weky Error: message argument was not specified.');
@@ -243,5 +245,3 @@ var WillYouPressTheButton = async (options) => {
 		}
 	});
 };
-
-exports.default = WillYouPressTheButton;

@@ -2,16 +2,18 @@
 
 var Discord = require('discord.js');
 var db = require('quick.db');
-var _function = require('./function-tD1ad7nu.js');
+var _function = require('./function-tD1ad7nu.cjs');
 require('axios');
-import 'chalk';
+require('chalk');
 require('cheerio');
-import 'node-fetch';
+require('node-fetch');
 require('string-width');
 
 const data = new Set();
 
-var RockPaperScissors = async (options) => {
+module.exports = RockPaperScissors;
+
+async function RockPaperScissors (options) {
 	if (!options.message) {
 		throw new Error('Weky Error: message argument was not specified.');
 	}
@@ -1068,5 +1070,3 @@ var RockPaperScissors = async (options) => {
 		}
 	});
 };
-
-exports.default = RockPaperScissors;

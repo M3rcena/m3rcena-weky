@@ -1,15 +1,17 @@
 'use strict';
 
 var Discord = require('discord.js');
-var fetch = import 'node-fetch';
+var fetch = require('node-fetch');
 var htmlEntities = require('html-entities');
-var _function = require('./function-tD1ad7nu.js');
+var _function = require('./function-tD1ad7nu.cjs');
 require('axios');
-import 'chalk';
+require('chalk');
 require('cheerio');
 require('string-width');
 
-var WouldYouRather = async (options) => {
+module.exports = WouldYouRather;
+
+async function WouldYouRather (options) {
 
 		if (!options.message) {
 		throw new Error('Weky Error: message argument was not specified.');
@@ -256,5 +258,3 @@ var WouldYouRather = async (options) => {
 		}
 	});
 };
-
-exports.default = WouldYouRather;

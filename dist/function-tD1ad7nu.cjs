@@ -1,9 +1,9 @@
 'use strict';
 
 require('axios');
-import 'chalk';
+require('chalk');
 require('cheerio');
-var fetch = import 'node-fetch';
+var fetch = require('node-fetch');
 require('string-width');
 var Discord = require('discord.js');
 

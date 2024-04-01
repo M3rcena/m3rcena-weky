@@ -1,6 +1,6 @@
 {
   "name": "@m3rcena/weky",
-  "version": "6.2.1",
+  "version": "6.3.0",
   "description": "A fun npm package to play games within Discord with buttons!",
   "exports": {
     "import": "./index.mjs",
@@ -10,6 +10,7 @@
   "type": "module",
   "scripts": {
     "test": "nodemon test/index.mjs",
+    "test-cjs": "nodemon test/index.cjs",
     "build": "rollup -c"
   },
   "keywords": [
@@ -28,13 +29,13 @@
   "dependencies": {
     "@rollup/plugin-commonjs": "^25.0.7",
     "@rollup/plugin-json": "^6.1.0",
-    "chalk": "^5.3.0",
+    "chalk": "^4.1.2",
     "html-entities": "^2.4.0",
     "mathjs": "^12.2.1",
-    "node-fetch": "^3.3.2",
+    "node-fetch": "^2.6.9",
     "quick.db": "^9.1.7",
     "rollup": "^4.13.0",
-    "string-width": "^7.0.0"
+    "string-width": "^4.2.3"
   },
   "devDependencies": {
     "@m3rcena/inlinereply": "^1.0.0",

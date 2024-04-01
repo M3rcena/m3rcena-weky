@@ -1,16 +1,18 @@
 'use strict';
 
 var Discord = require('discord.js');
-var _function = require('./function-tD1ad7nu.js');
+var _function = require('./function-tD1ad7nu.cjs');
 require('axios');
-import 'chalk';
+require('chalk');
 require('cheerio');
-import 'node-fetch';
+require('node-fetch');
 require('string-width');
 
 const data = new Set();
 
-var Snake = async (options) => {
+module.exports = Snake;
+
+async function Snake (options) {
 	if (!options.message) {
 		throw new Error('Weky Error: message argument was not specified.');
 	}
@@ -475,5 +477,3 @@ var Snake = async (options) => {
 		}
 	});
 };
-
-exports.default = Snake;

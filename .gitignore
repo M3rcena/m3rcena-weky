@@ -1,5 +1,3 @@
-bruh.json
-json.sqlite
 node_modules/
 package-lock.json
-src/test.TicTacToe.js
+.env
