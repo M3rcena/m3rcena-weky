@@ -1,10 +1,10 @@
 'use strict';
 
 var Discord = require('discord.js');
-var fetch = require('node-fetch');
+var fetch = import 'node-fetch';
 var _function = require('./function-tD1ad7nu.js');
 require('axios');
-require('chalk');
+import 'chalk';
 require('cheerio');
 require('string-width');
 

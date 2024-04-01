@@ -3,9 +3,9 @@
 var Discord = require('discord.js');
 var _function = require('./function-tD1ad7nu.js');
 require('axios');
-require('chalk');
+import 'chalk';
 require('cheerio');
-require('node-fetch');
+import 'node-fetch';
 require('string-width');
 
 const data = new Set();

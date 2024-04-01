@@ -4,9 +4,9 @@ var Discord = require('discord.js');
 var htmlEntities = require('html-entities');
 var _function = require('./function-tD1ad7nu.js');
 require('axios');
-require('chalk');
+import 'chalk';
 require('cheerio');
-require('node-fetch');
+import 'node-fetch';
 require('string-width');
 
 var WillYouPressTheButton = async (options) => {
