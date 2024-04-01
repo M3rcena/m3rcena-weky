@@ -62,10 +62,13 @@ client.login('DISCORD_BOT_TOKEN');
 
 ## Contributing 🤝
 - Contributions, issues and feature requests are welcome!
-- Feel free to check **[issues page](https://github.com/WekyDev/weky-npm/issues)**.
+- Feel free to check **[issues page](https://github.com/M3rcena/m3rcena-weky/issues)**.
 
 ## Developers 👨‍💻
 - **[Face#5454](https://github.com/face-hh)**
 - **[Sujal Goel#7602](https://github.com/sujalgoel)**
 - **[rayz#4986](https://github.com/rayzdev)**
 - **[d4rk.s0ul](https://github.com/M3rcena)**
+
+## Discord 📰
+<img src="https://discordapp.com/api/guilds/1224358764463783987/widget.png?style=banner4" alt="Discord"/>
