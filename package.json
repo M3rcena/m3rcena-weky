@@ -32,7 +32,7 @@
     "chalk": "^4.1.2",
     "html-entities": "^2.4.0",
     "mathjs": "^12.2.1",
-    "node-fetch": "^2.6.9",
+    "node-fetch": "^3.3.2",
     "quick.db": "^9.1.7",
     "rollup": "^4.13.0",
     "string-width": "^4.2.3"
