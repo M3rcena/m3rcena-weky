@@ -10,7 +10,7 @@ require('string-width');
 
 const data = new Set();
 
-module.exports = Snake;
+module.exports = {Snake};
 
 async function Snake (options) {
 	if (!options.message) {

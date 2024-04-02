@@ -12,7 +12,7 @@ require('string-width');
 const data = new Set();
 const currentGames = new Object();
 
-module.exports = GuessTheNumber;
+module.exports = {GuessTheNumber};
 
 async function GuessTheNumber (options) {
 	if (!options.message) {

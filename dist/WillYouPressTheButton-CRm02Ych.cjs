@@ -9,7 +9,7 @@ require('cheerio');
 require('node-fetch');
 require('string-width');
 
-module.exports = WillYouPressTheButton;
+module.exports = {WillYouPressTheButton};
 
 async function WillYouPressTheButton (options) {
 

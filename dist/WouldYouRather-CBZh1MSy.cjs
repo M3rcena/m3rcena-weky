@@ -9,7 +9,7 @@ require('chalk');
 require('cheerio');
 require('string-width');
 
-module.exports = WouldYouRather;
+module.exports = {WouldYouRather};
 
 async function WouldYouRather (options) {
 
