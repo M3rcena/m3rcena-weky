@@ -35,7 +35,7 @@
     "node-fetch": "^2.6.9",
     "quick.db": "^9.1.7",
     "rollup": "^4.13.0",
-    "string-width": "^4.2.3"
+    "string-width": "^7.1.0"
   },
   "devDependencies": {
     "@m3rcena/inlinereply": "^1.0.0",
