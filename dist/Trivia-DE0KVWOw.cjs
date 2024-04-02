@@ -13,7 +13,7 @@ require('string-width');
 const data = new Set();
 const difficulties = ['hard', 'medium', 'easy'];
 
-module.exports = Trivia;
+module.exports = {Trivia};
 
 async function Trivia (options) {
 

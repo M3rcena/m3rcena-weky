@@ -10,7 +10,7 @@ require('string-width');
 
 const data = new Set();
 
-module.exports = ShuffleGuess;
+module.exports = {ShuffleGuess};
 
 async function ShuffleGuess (options) {
 	if (!options.message) {

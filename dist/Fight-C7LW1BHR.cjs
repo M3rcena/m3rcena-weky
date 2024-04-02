@@ -11,7 +11,7 @@ require('string-width');
 
 const data = new Set();
 
-module.exports = Fight;
+module.exports = {Fight};
 
 async function Fight (options) {
 	if (!options.message) {

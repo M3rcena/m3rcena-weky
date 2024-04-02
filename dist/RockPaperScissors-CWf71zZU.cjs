@@ -11,7 +11,7 @@ require('string-width');
 
 const data = new Set();
 
-module.exports = RockPaperScissors;
+module.exports = {RockPaperScissors};
 
 async function RockPaperScissors (options) {
 	if (!options.message) {

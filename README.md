@@ -29,10 +29,12 @@ npm install @m3rcena/weky
 ## Example ✏️
 
 #### Discord.js v14.0.0
+
+### Common-JS
 ```js
 const Discord = require('discord.js');
 const client = new Discord.Client();
-const { Calculator } = require('@m3rcena/weky');
+const { Calculator } = require('@m3rcena/weky/dist/index.cjs'); // temporary
 
 client.on('ready', async () => {
 	console.log(`Logged in as ${client.user.tag}`);
@@ -57,6 +59,37 @@ client.on('messageCreate', async (message) => {
 
 client.login('DISCORD_BOT_TOKEN');
 ```
+
+### Module:
+```mjs
+import Discord from 'discord.js';
+const client = new Discord.Client();
+import { Calculator } from '@m3rcena/weky/';
+
+client.on('ready', async () => {
+	console.log(`Logged in as ${client.user.tag}`);
+});
+
+client.on('messageCreate', async (message) => {
+	if (message.content === '!calculator') {
+		await Calculator({
+			message: message,
+			embed: {
+				title: 'Calculator | Weky Development',
+				color: '#5865F2',
+				footer: '©️ Weky Development',
+				timestamp: true,
+			},
+			disabledQuery: 'Calculator is disabled!',
+			invalidQuery: 'The provided equation is invalid!',
+			othersMessage: 'Only <@{{author}}> can use the buttons!',
+		});
+	}
+});
+
+client.login('DISCORD_BOT_TOKEN');
+```
+
 ## Result 📤
 <img src="https://i.imgur.com/DEdhHHd.png">
 

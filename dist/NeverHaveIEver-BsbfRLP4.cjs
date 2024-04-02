@@ -8,7 +8,7 @@ require('chalk');
 require('cheerio');
 require('string-width');
 
-module.exports = NeverHaveIEver;
+module.exports = {NeverHaveIEver};
 
 async function NeverHaveIEver (options) {
 	if (!options.message) {

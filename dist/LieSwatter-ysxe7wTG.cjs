@@ -9,7 +9,7 @@ require('chalk');
 require('cheerio');
 require('string-width');
 
-module.exports = LieSwatter;
+module.exports = {LieSwatter};
 
 async function LieSwatter (options) {
 	if (!options.message) {

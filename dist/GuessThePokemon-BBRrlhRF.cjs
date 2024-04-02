@@ -10,7 +10,7 @@ require('string-width');
 
 const gameData = new Set();
 
-module.exports = GuessThePokemon;
+module.exports = {GuessThePokemon};
 
 async function GuessThePokemon (options) {
 	if (!options.message) {

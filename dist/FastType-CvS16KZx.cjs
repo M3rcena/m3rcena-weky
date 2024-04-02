@@ -10,7 +10,7 @@ require('string-width');
 
 const data = new Set();
 
-module.exports = FastType;
+module.exports = {FastType};
 
 async function FastType (options) {
 	if (!options.message) {

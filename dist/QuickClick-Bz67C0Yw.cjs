@@ -10,7 +10,7 @@ require('string-width');
 
 const currentGames = new Object();
 
-module.exports = QuickClick;
+module.exports = {QuickClick};
 
 async function QuickClick (options) {
 	if (!options.message) {

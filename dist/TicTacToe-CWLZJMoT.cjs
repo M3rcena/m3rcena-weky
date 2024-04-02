@@ -2,7 +2,7 @@
 
 var Discord = require('discord.js');
 
-module.exports = TicTacToe;
+module.exports = {TicTacToe};
 
 async function TicTacToe (options) {
     if (!options.xEmoji) {
