@@ -1,8 +1,8 @@
 'use strict';
 
-var Discord = require('discord.js');
+var discord_js = require('discord.js');
 var fetch = require('node-fetch');
-var _function = require('./function-tD1ad7nu.cjs');
+var _function = require('./function-Bv9fWZf5.js');
 require('axios');
 require('chalk');
 require('cheerio');
@@ -10,9 +10,32 @@ require('string-width');
 
 const gameData = new Set();
 
-module.exports = {GuessThePokemon};
+/**
+ * Make a Guess The Pokémon game for your bot
+ * @param {object} options - Options for the Guess The Pokémon game
+ * @param {object} options.message - The message object
+ * 
+ * @param {object} [options.embed] - The embed object
+ * @param {string} [options.embed.title] - The title of the embed
+ * @param {string} [options.embed.description] - The description of the embed
+ * @param {string} [options.embed.footer] - The footer of the embed
+ * @param {boolean} [options.embed.timestamp] - The timestamp of the embed
+ * 
+ * @param {string} [options.thinkMessage] - The thinking message
+ * @param {string} [options.othersMessage] - The others message
+ * @param {string} [options.winMessage] - The win message
+ * @param {string} [options.loseMessage] - The lose message
+ * @param {string} [options.incorrectMessage] - The incorrect message
+ * 
+ * @param {number} [options.time] - The time for the game
+ * 
+ * @param {string} [options.buttonText] - The button text
+ * 
+ * @returns {Promise<void>}
+ * @copyright All rights Reserved. Weky Development
+ */
 
-async function GuessThePokemon (options) {
+var GuessThePokemon = async (options) => {
 	if (!options.message) {
 		throw new Error('Weky Error: message argument was not specified.');
 	}
@@ -117,7 +140,7 @@ async function GuessThePokemon (options) {
 
 	const think = await options.message.reply({
 		embeds: [
-			new Discord.EmbedBuilder()
+			new discord_js.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}.`)
 				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
 				.setFooter({ text: options.embed.footer }),
@@ -126,7 +149,7 @@ async function GuessThePokemon (options) {
 
 	await think.edit({
 		embeds: [
-			new Discord.EmbedBuilder()
+			new discord_js.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}..`)
 				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
 				.setFooter({ text: options.embed.footer }),
@@ -135,7 +158,7 @@ async function GuessThePokemon (options) {
 
 	await think.edit({
 		embeds: [
-			new Discord.EmbedBuilder()
+			new discord_js.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}...`)
 				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
 				.setFooter({ text: options.embed.footer }),
@@ -155,7 +178,7 @@ async function GuessThePokemon (options) {
 
 	await think.edit({
 		embeds: [
-			new Discord.EmbedBuilder()
+			new discord_js.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}..`)
 				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
 				.setFooter({ text: options.embed.footer }),
@@ -164,19 +187,19 @@ async function GuessThePokemon (options) {
 
 	await think.edit({
 		embeds: [
-			new Discord.EmbedBuilder()
+			new discord_js.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}.`)
 				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
 				.setFooter({ text: options.embed.footer }),
 		],
 	});
 
-	let btn1 = new Discord.ButtonBuilder()
-		.setStyle(Discord.ButtonStyle.Danger)
+	let btn1 = new discord_js.ButtonBuilder()
+		.setStyle(discord_js.ButtonStyle.Danger)
 		.setLabel(options.buttonText)
 		.setCustomId(id);
 
-	const embed = new Discord.EmbedBuilder()
+	const embed = new discord_js.EmbedBuilder()
 		.setTitle(options.embed.title)
 		.setDescription(
 			options.embed.description
@@ -204,7 +227,7 @@ async function GuessThePokemon (options) {
 
 	collector.on('collect', async (msg) => {
 		if (msg.content.toLowerCase() === data.name) {
-			const _embed = new Discord.EmbedBuilder()
+			const _embed = new discord_js.EmbedBuilder()
 				.setTitle(options.embed.title)
 				.setDescription(
 					options.winMessage
@@ -226,8 +249,8 @@ async function GuessThePokemon (options) {
 			msg.reply({
 				embeds: [_embed],
 			});
-			btn1 = new Discord.ButtonBuilder()
-				.setStyle(Discord.ButtonStyle.Danger)
+			btn1 = new discord_js.ButtonBuilder()
+				.setStyle(discord_js.ButtonStyle.Danger)
 				.setLabel(options.buttonText)
 				.setDisabled()
 				.setCustomId(id);
@@ -238,7 +261,7 @@ async function GuessThePokemon (options) {
 			collector.stop();
 			gameData.delete(options.message.author.id);
 		} else {
-			const _embed = new Discord.EmbedBuilder()
+			const _embed = new discord_js.EmbedBuilder()
 				.setDescription(
 					options.incorrectMessage
 						.replace('{{answer}}', msg.content.toLowerCase())
@@ -273,8 +296,8 @@ async function GuessThePokemon (options) {
 		await button.deferUpdate();
 
 		if (button.customId === id) {
-			btn1 = new Discord.ButtonBuilder()
-				.setStyle(Discord.ButtonStyle.Danger)
+			btn1 = new discord_js.ButtonBuilder()
+				.setStyle(discord_js.ButtonStyle.Danger)
 				.setLabel(options.buttonText)
 				.setDisabled()
 				.setCustomId(id);
@@ -285,7 +308,7 @@ async function GuessThePokemon (options) {
 				embeds: [embed],
 				components: [{ type: 1, components: [btn1] }],
 			});
-			const _embed = new Discord.EmbedBuilder()
+			const _embed = new discord_js.EmbedBuilder()
 				.setTitle(options.embed.title)
 				.setDescription(
 					options.loseMessage.replace(
@@ -307,8 +330,8 @@ async function GuessThePokemon (options) {
 
 	collector.on('end', async (_msg, reason) => {
 		if (reason === 'time') {
-			btn1 = new Discord.ButtonBuilder()
-				.setStyle(Discord.ButtonStyle.Danger)
+			btn1 = new discord_js.ButtonBuilder()
+				.setStyle(discord_js.ButtonStyle.Danger)
 				.setLabel(options.buttonText)
 				.setDisabled()
 				.setCustomId(id);
@@ -319,7 +342,7 @@ async function GuessThePokemon (options) {
 				embeds: [embed],
 				components: [{ type: 1, components: [btn1] }],
 			});
-			const _embed = new Discord.EmbedBuilder()
+			const _embed = new discord_js.EmbedBuilder()
 				.setTitle(options.embed.title)
 				.setDescription(
 					options.loseMessage.replace(
@@ -340,3 +363,5 @@ async function GuessThePokemon (options) {
 		}
 	});
 };
+
+exports.default = GuessThePokemon;

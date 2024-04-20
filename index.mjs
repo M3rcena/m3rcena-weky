@@ -4,6 +4,7 @@ import flipMap from './data/flip.mjs';
 import tinyMap from './data/tiny.mjs';
 import bentMap from './data/bent.mjs';
 import copyMap from './data/copy.mjs';
+import chalk from 'chalk';
 
 export const bent = async function (str) {
 	let c = '';
@@ -45,9 +46,9 @@ export const mirror = async function (str) {
 
 export const randomCase = async function (string) {
 	let result = '';
-	if (!string) throw new TypeError('Weky Error: A string was not specified.');
+	if (!string) throw new TypeError(`${chalk.red('Weky Error:')} A string was not specified.`);
 	if (typeof string !== 'string') {
-		throw new TypeError('Weky Error: Provided string is Invalid.');
+		throw new TypeError(`${chalk.red('Weky Error:')} Provided string is Invalid.`);
 	}
 	for (const i in string) {
 		const Random = Math.floor(Math.random() * 2);
@@ -64,19 +65,19 @@ export const randomHexColor = async function () {
 };
 
 export const randomizeNumber = async function (start, end) {
-	if (!start) throw new TypeError('Weky Error: A number was not specified.');
-	if (!end) throw new TypeError('Weky Error: A number was not specified.');
+	if (!start) throw new TypeError(`${chalk.red('Weky Error:')} A number was not specified.`);
+	if (!end) throw new TypeError(`${chalk.red('Weky Error:')} A number was not specified.`);
 	if (typeof start !== 'number' && typeof end !== 'number') {
-		throw new TypeError('Weky Error: Provided number data is Invalid');
+		throw new TypeError(`${chalk.red('Weky Error:')} Provided number data is Invalid`);
 	}
 	const res = Math.floor(Math.random() * (end - start + 1) + start);
 	return res;
 };
 
 export const randomizeString = async function (array) {
-	if (!array) throw new TypeError('Weky Error: A array was not specified.');
+	if (!array) throw new TypeError(`${chalk.red('Weky Error:')} A array was not specified.`);
 	if (typeof array !== 'object') {
-		throw new TypeError('Weky Error: The provided array is invalid.');
+		throw new TypeError(`${chalk.red('Weky Error:')} The provided array is invalid.`);
 	}
 	const res = Math.floor(Math.random() * array.length);
 	return array[res];

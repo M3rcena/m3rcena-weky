@@ -1,10 +1,27 @@
 'use strict';
 
-var Discord = require('discord.js');
+var discord_js = require('discord.js');
+var chalk = require('chalk');
 
-module.exports = {TicTacToe};
+/**
+ * TicTacToe Game for your Bot!
+ * @param {Object} options - Options for the TicTacToe Game
+ * 
+ * @param {String} options.xEmoji - Emoji for Player 1
+ * @param {String} options.oEmoji - Emoji for Player 2
+ * 
+ * @param {String} options.xColor - Color for Player 1
+ * @param {String} options.oColor - Color for Player 2
+ * 
+ * @param {DiscordUser} options.opponent - The opponent
+ * 
+ * @param {Message} options.message - The message object
+ * 
+ * @returns {Promise<void>}
+ * @copyright All rights Reserved. Weky Development
+ */
 
-async function TicTacToe (options) {
+var TicTacToe = async (options) => {
     if (!options.xEmoji) {
         options.xEmoji = "❌";
     }    if (!options.oEmoji) {
@@ -13,8 +30,8 @@ async function TicTacToe (options) {
         options.xColor = "Primary";
     }    if (!options.oColor) {
         options.oColor = "Primary";
-    }    if (!options.opponent) throw new TypeError('Weky Error: Missing argument: opponent | Type: DiscordUser')
-    if (!options.message) throw new TypeError('Weky Error: Missing argument: message | Type Message')
+    }    if (!options.opponent) throw new TypeError(`${chalk.red('Weky Error:')} Missing argument: opponent | Type: DiscordUser`)
+    if (!options.message) throw new TypeError(`${chalk.red('Weky Error:')} Missing argument: message | Type Message`)
 
     let [a1, a2, a3, b1, b2, b3, c1, c2, c3] = getBoarder();
     let [a11, a22, a33, b11, b22, b33, c11, c22, c33] = getIds();
@@ -47,12 +64,12 @@ async function TicTacToe (options) {
 
     let Embed;
     if (player == 0) {
-        Embed = new Discord.EmbedBuilder()
+        Embed = new discord_js.EmbedBuilder()
             .setTitle(`🎮 __**${authorName}**__ VS ${options.opponent.username} 🎮`)
             .setDescription(`It is ${authorName}'s Turn!`)
             .setColor(3426654);
     } else {
-        Embed = new Discord.EmbedBuilder()
+        Embed = new discord_js.EmbedBuilder()
             .setTitle(`🎮 ${authorName} VS __**${options.opponent.username}**__ 🎮`)
             .setDescription(`It is ${options.opponent.username}'s Turn!`)
             .setColor(3426654);
@@ -61,9 +78,9 @@ async function TicTacToe (options) {
     options.message.reply({
         embeds: [Embed],
         components: [
-            new Discord.ActionRowBuilder().addComponents([A1, A2, A3]),
-            new Discord.ActionRowBuilder().addComponents([B1, B2, B3]),
-            new Discord.ActionRowBuilder().addComponents([C1, C2, C3]),
+            new discord_js.ActionRowBuilder().addComponents([A1, A2, A3]),
+            new discord_js.ActionRowBuilder().addComponents([B1, B2, B3]),
+            new discord_js.ActionRowBuilder().addComponents([C1, C2, C3]),
         ]
     }).then(async (msg) => {
         midDuel.add(author);
@@ -108,15 +125,15 @@ async function TicTacToe (options) {
                     }
                     player = (player + 1) % 2;
                     if (player == 0) {
-                        Embed = new Discord.EmbedBuilder()
+                        Embed = new discord_js.EmbedBuilder()
                             .setDescription(`🎮 __**${authorName}**__ VS ${options.opponent.username} 🎮`)
                             .setColor(3426654);
                     } else {
-                        Embed = new Discord.EmbedBuilder()
+                        Embed = new discord_js.EmbedBuilder()
                             .setDescription(`🎮 ${authorName} VS __**${options.opponent.username}**__ 🎮`)
                             .setColor(3426654);
                     }
-                    A1 = new Discord.ButtonBuilder()
+                    A1 = new discord_js.ButtonBuilder()
                         .setCustomId(a11)
                         .setStyle(`${gameData[player].color}`)
                         .setEmoji(gameData[player].em)
@@ -157,15 +174,15 @@ async function TicTacToe (options) {
                     }
                     player = (player + 1) % 2;
                     if (player == 0) {
-                        Embed = new Discord.EmbedBuilder()
+                        Embed = new discord_js.EmbedBuilder()
                             .setDescription(`🎮 __**${authorName}**__ VS ${options.opponent.username} 🎮`)
                             .setColor(3426654);
                     } else {
-                        Embed = new Discord.EmbedBuilder()
+                        Embed = new discord_js.EmbedBuilder()
                             .setDescription(`🎮 ${authorName} VS __**${options.opponent.username}**__ 🎮`)
                             .setColor(3426654);
                     }
-                    A2 = new Discord.ButtonBuilder()
+                    A2 = new discord_js.ButtonBuilder()
                         .setCustomId(a22)
                         .setStyle(`${gameData[player].color}`)
                         .setEmoji(gameData[player].em)
@@ -206,15 +223,15 @@ async function TicTacToe (options) {
                     }
                     player = (player + 1) % 2;
                     if (player == 0) {
-                        Embed = new Discord.EmbedBuilder()
+                        Embed = new discord_js.EmbedBuilder()
                             .setDescription(`🎮 __**${authorName}**__ VS ${options.opponent.username} 🎮`)
                             .setColor(3426654);
                     } else {
-                        Embed = new Discord.EmbedBuilder()
+                        Embed = new discord_js.EmbedBuilder()
                             .setDescription(`🎮 ${authorName} VS __**${options.opponent.username}**__ 🎮`)
                             .setColor(3426654);
                     }
-                    A3 = new Discord.ButtonBuilder()
+                    A3 = new discord_js.ButtonBuilder()
                         .setCustomId(a33)
                         .setStyle(`${gameData[player].color}`)
                         .setEmoji(gameData[player].em)
@@ -256,15 +273,15 @@ async function TicTacToe (options) {
                     }
                     player = (player + 1) % 2;
                     if (player == 0) {
-                        Embed = new Discord.EmbedBuilder()
+                        Embed = new discord_js.EmbedBuilder()
                             .setDescription(`🎮 __**${authorName}**__ VS ${options.opponent.username} 🎮`)
                             .setColor(3426654);
                     } else {
-                        Embed = new Discord.EmbedBuilder()
+                        Embed = new discord_js.EmbedBuilder()
                             .setDescription(`🎮 ${authorName} VS __**${options.opponent.username}**__ 🎮`)
                             .setColor(3426654);
                     }
-                    B1 = new Discord.ButtonBuilder()
+                    B1 = new discord_js.ButtonBuilder()
                         .setCustomId(b11)
                         .setStyle(`${gameData[player].color}`)
                         .setEmoji(gameData[player].em)
@@ -305,15 +322,15 @@ async function TicTacToe (options) {
                     }
                     player = (player + 1) % 2;
                     if (player == 0) {
-                        Embed = new Discord.EmbedBuilder()
+                        Embed = new discord_js.EmbedBuilder()
                             .setDescription(`🎮 __**${authorName}**__ VS ${options.opponent.username} 🎮`)
                             .setColor(3426654);
                     } else {
-                        Embed = new Discord.EmbedBuilder()
+                        Embed = new discord_js.EmbedBuilder()
                             .setDescription(`🎮 ${authorName} VS __**${options.opponent.username}**__ 🎮`)
                             .setColor(3426654);
                     }
-                    B2 = new Discord.ButtonBuilder()
+                    B2 = new discord_js.ButtonBuilder()
                         .setCustomId(b22)
                         .setStyle(`${gameData[player].color}`)
                         .setEmoji(gameData[player].em)
@@ -354,15 +371,15 @@ async function TicTacToe (options) {
                     }
                     player = (player + 1) % 2;
                     if (player == 0) {
-                        Embed = new Discord.EmbedBuilder()
+                        Embed = new discord_js.EmbedBuilder()
                             .setDescription(`🎮 __**${authorName}**__ VS ${options.opponent.username} 🎮`)
                             .setColor(3426654);
                     } else {
-                        Embed = new Discord.EmbedBuilder()
+                        Embed = new discord_js.EmbedBuilder()
                             .setDescription(`🎮 ${authorName} VS __**${options.opponent.username}**__ 🎮`)
                             .setColor(3426654);
                     }
-                    B3 = new Discord.ButtonBuilder()
+                    B3 = new discord_js.ButtonBuilder()
                         .setCustomId(b33)
                         .setStyle(`${gameData[player].color}`)
                         .setEmoji(gameData[player].em)
@@ -403,15 +420,15 @@ async function TicTacToe (options) {
                     }
                     player = (player + 1) % 2;
                     if (player == 0) {
-                        Embed = new Discord.EmbedBuilder()
+                        Embed = new discord_js.EmbedBuilder()
                             .setDescription(`🎮 __**${authorName}**__ VS ${options.opponent.username} 🎮`)
                             .setColor(3426654);
                     } else {
-                        Embed = new Discord.EmbedBuilder()
+                        Embed = new discord_js.EmbedBuilder()
                             .setDescription(`🎮 ${authorName} VS __**${options.opponent.username}**__ 🎮`)
                             .setColor(3426654);
                     }
-                    C1 = new Discord.ButtonBuilder()
+                    C1 = new discord_js.ButtonBuilder()
                         .setCustomId(c11)
                         .setStyle(`${gameData[player].color}`)
                         .setEmoji(gameData[player].em)
@@ -452,15 +469,15 @@ async function TicTacToe (options) {
                     }
                     player = (player + 1) % 2;
                     if (player == 0) {
-                        Embed = new Discord.EmbedBuilder()
+                        Embed = new discord_js.EmbedBuilder()
                             .setDescription(`🎮 __**${authorName}**__ VS ${options.opponent.username} 🎮`)
                             .setColor(3426654);
                     } else {
-                        Embed = new Discord.EmbedBuilder()
+                        Embed = new discord_js.EmbedBuilder()
                             .setDescription(`🎮 ${authorName} VS __**${options.opponent.username}**__ 🎮`)
                             .setColor(3426654);
                     }
-                    C2 = new Discord.ButtonBuilder()
+                    C2 = new discord_js.ButtonBuilder()
                         .setCustomId(c22)
                         .setStyle(`${gameData[player].color}`)
                         .setEmoji(gameData[player].em)
@@ -501,15 +518,15 @@ async function TicTacToe (options) {
                     }
                     player = (player + 1) % 2;
                     if (player == 0) {
-                        Embed = new Discord.EmbedBuilder()
+                        Embed = new discord_js.EmbedBuilder()
                             .setDescription(`🎮 __**${authorName}**__ VS ${options.opponent.username} 🎮`)
                             .setColor(3426654);
                     } else {
-                        Embed = new Discord.EmbedBuilder()
+                        Embed = new discord_js.EmbedBuilder()
                             .setDescription(`🎮 ${authorName} VS __**${options.opponent.username}**__ 🎮`)
                             .setColor(3426654);
                     }
-                    C3 = new Discord.ButtonBuilder()
+                    C3 = new discord_js.ButtonBuilder()
                         .setCustomId(c33)
                         .setStyle(`${gameData[player].color}`)
                         .setEmoji(gameData[player].em)
@@ -526,9 +543,9 @@ async function TicTacToe (options) {
             msg.edit({
                 embeds: [Embed],
                 components: [
-                    new Discord.ActionRowBuilder().addComponents([A1, A2, A3]),
-                    new Discord.ActionRowBuilder().addComponents([B1, B2, B3]),
-                    new Discord.ActionRowBuilder().addComponents([C1, C2, C3]),
+                    new discord_js.ActionRowBuilder().addComponents([A1, A2, A3]),
+                    new discord_js.ActionRowBuilder().addComponents([B1, B2, B3]),
+                    new discord_js.ActionRowBuilder().addComponents([C1, C2, C3]),
                 ]
             });
         });
@@ -537,9 +554,9 @@ async function TicTacToe (options) {
             msg.edit({
                 embeds: [Embed],
                 components: [
-                    new Discord.ActionRowBuilder().addComponents([A1.setDisabled(), A2.setDisabled(), A3.setDisabled()]),
-                    new Discord.ActionRowBuilder().addComponents([B1.setDisabled(), B2.setDisabled(), B3.setDisabled()]),
-                    new Discord.ActionRowBuilder().addComponents([C1.setDisabled(), C2.setDisabled(), C3.setDisabled()]),
+                    new discord_js.ActionRowBuilder().addComponents([A1.setDisabled(), A2.setDisabled(), A3.setDisabled()]),
+                    new discord_js.ActionRowBuilder().addComponents([B1.setDisabled(), B2.setDisabled(), B3.setDisabled()]),
+                    new discord_js.ActionRowBuilder().addComponents([C1.setDisabled(), C2.setDisabled(), C3.setDisabled()]),
                 ]
             }).catch(console.log);
         });
@@ -565,42 +582,44 @@ async function TicTacToe (options) {
 
     function getButtons() {
         return [
-            new Discord.ButtonBuilder()
+            new discord_js.ButtonBuilder()
                 .setCustomId(a11)
-                .setStyle(Discord.ButtonStyle.Secondary)
+                .setStyle(discord_js.ButtonStyle.Secondary)
                 .setLabel('~'),
-            new Discord.ButtonBuilder()
+            new discord_js.ButtonBuilder()
                 .setCustomId(a22)
-                .setStyle(Discord.ButtonStyle.Secondary)
+                .setStyle(discord_js.ButtonStyle.Secondary)
                 .setLabel('~'),
-            new Discord.ButtonBuilder()
+            new discord_js.ButtonBuilder()
                 .setCustomId(a33)
-                .setStyle(Discord.ButtonStyle.Secondary)
+                .setStyle(discord_js.ButtonStyle.Secondary)
                 .setLabel('~'),
-            new Discord.ButtonBuilder()
+            new discord_js.ButtonBuilder()
                 .setCustomId(b11)
-                .setStyle(Discord.ButtonStyle.Secondary)
+                .setStyle(discord_js.ButtonStyle.Secondary)
                 .setLabel('~'),
-            new Discord.ButtonBuilder()
+            new discord_js.ButtonBuilder()
                 .setCustomId(b22)
-                .setStyle(Discord.ButtonStyle.Secondary)
+                .setStyle(discord_js.ButtonStyle.Secondary)
                 .setLabel('~'),
-            new Discord.ButtonBuilder()
+            new discord_js.ButtonBuilder()
                 .setCustomId(b33)
-                .setStyle(Discord.ButtonStyle.Secondary)
+                .setStyle(discord_js.ButtonStyle.Secondary)
                 .setLabel('~'),
-            new Discord.ButtonBuilder()
+            new discord_js.ButtonBuilder()
                 .setCustomId(c11)
-                .setStyle(Discord.ButtonStyle.Secondary)
+                .setStyle(discord_js.ButtonStyle.Secondary)
                 .setLabel('~'),
-            new Discord.ButtonBuilder()
+            new discord_js.ButtonBuilder()
                 .setCustomId(c22)
-                .setStyle(Discord.ButtonStyle.Secondary)
+                .setStyle(discord_js.ButtonStyle.Secondary)
                 .setLabel('~'),
-            new Discord.ButtonBuilder()
+            new discord_js.ButtonBuilder()
                 .setCustomId(c33)
-                .setStyle(Discord.ButtonStyle.Secondary)
+                .setStyle(discord_js.ButtonStyle.Secondary)
                 .setLabel('~')
         ]
     }
 };
+
+exports.default = TicTacToe;

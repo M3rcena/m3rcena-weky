@@ -1,34 +1,76 @@
-import { ButtonStyle } from 'discord.js';
+import { ButtonStyle, ButtonBuilder, EmbedBuilder, ActionRowBuilder } from 'discord.js';
 const data = new Set();
 import db from 'quick.db';
-import Discord from 'discord.js';
 import { getRandomString } from '../../functions/function.mjs';
+import chalk from 'chalk';
+
+/**
+ * Make a Fight game for your bot
+ * @param {object} options - Options for the Fight game
+ * @param {object} options.message - The message object
+ * @param {object} options.opponent - The opponent object
+ * 
+ * @param {object} [options.embed] - The embed object
+ * @param {string} [options.embed.title] - The title of the embed
+ * @param {string} [options.embed.footer] - The footer of the embed
+ * @param {boolean} [options.embed.timestamp] - The timestamp of the embed
+ * 
+ * @param {object} [options.buttons] - The buttons object
+ * @param {string} [options.buttons.hit] - The hit button text
+ * @param {string} [options.buttons.heal] - The heal button text
+ * @param {string} [options.buttons.cancel] - The cancel button text
+ * @param {string} [options.buttons.accept] - The accept button text
+ * @param {string} [options.buttons.deny] - The deny button text
+ * 
+ * @param {string} [options.acceptMessage] - The accept message
+ * @param {string} [options.winMessage] - The win message
+ * @param {string} [options.endMessage] - The end message
+ * @param {string} [options.cancelMessage] - The cancel message
+ * @param {string} [options.fightMessage] - The fight message
+ * @param {string} [options.othersMessage] - The others message
+ * @param {string} [options.opponentsTurnMessage] - The opponents turn message
+ * 
+ * @param {string} [options.highHealthMessage] - The high health message
+ * @param {string} [options.lowHealthMessage] - The low health message
+ * 
+ * @param {boolean} [options.returnWinner] - If the winner should be returned
+ * 
+ * @param {string} [options.gameID] - The game ID
+ * 
+ * @param {number} [options.dmgMin] - The minimum damage
+ * @param {number} [options.dmgMax] - The maximum damage
+ * @param {number} [options.healMin] - The minimum heal
+ * @param {number} [options.healMax] - The maximum heal
+ * 
+ * @returns {Promise<void>}
+ * @copyright All rights Reserved. Weky Development
+ */
 
 export default async (options) => {
 	if (!options.message) {
-		throw new Error('Weky Error: message argument was not specified.');
+		throw new Error(`${chalk.red('Weky Error:')} message argument was not specified.`);
 	}
 	if (typeof options.message !== 'object') {
-		throw new TypeError('Weky Error: Invalid Discord Message was provided.');
+		throw new TypeError(`${chalk.red('Weky Error:')} Invalid Discord Message was provided.`);
 	}
 
 	if (!options.opponent) {
-		throw new Error('Weky Error: opponent argument was not specified.');
+		throw new Error(`${chalk.red('Weky Error:')} opponent argument was not specified.`);
 	}
 	if (typeof options.opponent !== 'object') {
-		throw new TypeError('Weky Error: Invalid Discord User was provided.');
+		throw new TypeError(`${chalk.red('Weky Error:')} Invalid Discord User was provided.`);
 	}
 
 	if (!options.embed) options.embed = {};
 	if (typeof options.embed !== 'object') {
-		throw new TypeError('Weky Error: embed must be an object.');
+		throw new TypeError(`${chalk.red('Weky Error:')} embed must be an object.`);
 	}
 
 	if (!options.embed.title) {
 		options.embed.title = 'Fight | Weky Development';
 	}
 	if (typeof options.embed.title !== 'string') {
-		throw new TypeError('Weky Error: embed title must be a string.');
+		throw new TypeError(`${chalk.red('Weky Error:')} embed title must be a string.`);
 	}
 
 
@@ -36,54 +78,54 @@ export default async (options) => {
 		options.embed.footer = '©️ Weky Development';
 	}
 	if (typeof options.embed.footer !== 'string') {
-		throw new TypeError('Weky Error: embed footer must be a string.');
+		throw new TypeError(`${chalk.red('Weky Error:')} footer must be a string.`);
 	}
 
 	if (!options.embed.timestamp) {
 		options.embed.timestamp = true;
 	}
 	if (typeof options.embed.timestamp !== 'boolean') {
-		throw new TypeError('Weky Error: setTimestamp must be a boolean.');
+		throw new TypeError(`${chalk.red('Weky Error:')} timestamp must be a boolean.`);
 	}
 
 	if (!options.buttons) options.buttons = {};
 	if (typeof options.buttons !== 'object') {
-		throw new TypeError('Weky Error: buttons must be an object.');
+		throw new TypeError(`${chalk.red('Weky Error:')} buttons must be an object.`);
 	}
 
 	if (!options.buttons.hit) {
 		options.buttons.hit = 'Hit';
 	}
 	if (typeof options.buttons.hit !== 'string') {
-		throw new Error('Weky Error: hit button text must be a string.');
+		throw new Error(`${chalk.red('Weky Error:')} hit button text must be a string.`);
 	}
 
 	if (!options.buttons.heal) {
 		options.buttons.heal = 'Heal';
 	}
 	if (typeof options.buttons.heal !== 'string') {
-		throw new Error('Weky Error: heal button text must be a string.');
+		throw new Error(`${chalk.red('Weky Error:')} heal button text must be a string.`);
 	}
 
 	if (!options.buttons.cancel) {
 		options.buttons.cancel = 'Stop';
 	}
 	if (typeof options.buttons.cancel !== 'string') {
-		throw new Error('Weky Error: cancel button text must be a string.');
+		throw new Error(`${chalk.red('Weky Error:')} cancel button text must be a string.`);
 	}
 
 	if (!options.buttons.accept) {
 		options.buttons.accept = 'Accept';
 	}
 	if (typeof options.buttons.accept !== 'string') {
-		throw new Error('Weky Error: accept button text must be a string.');
+		throw new Error(`${chalk.red('Weky Error:')} accept button text must be a string.`);
 	}
 
 	if (!options.buttons.deny) {
 		options.buttons.deny = 'Deny';
 	}
 	if (typeof options.buttons.deny !== 'string') {
-		throw new Error('Weky Error: deny button text must be a string.');
+		throw new Error(`${chalk.red('Weky Error:')} deny button text must be a string.`);
 	}
 
 	if (!options.acceptMessage) {
@@ -91,14 +133,14 @@ export default async (options) => {
 			'<@{{challenger}}> has challenged <@{{opponent}}> for a fight!';
 	}
 	if (typeof options.acceptMessage !== 'string') {
-		throw new Error('Weky Error: acceptMessage must be a string.');
+		throw new TypeError(`${chalk.red('Weky Error:')} acceptMessage must be a string.`);
 	}
 
 	if (!options.winMessage) {
 		options.winMessage = 'GG, <@{{winner}}> won the fight!';
 	}
 	if (typeof options.winMessage !== 'string') {
-		throw new TypeError('Weky Error: winMessage must be a string.');
+		throw new TypeError(`${chalk.red('Weky Error:')} winMessage must be a string.`);
 	}
 
 	if (!options.endMessage) {
@@ -106,42 +148,42 @@ export default async (options) => {
 			'<@{{opponent}}> didn\'t answer in time. So, I dropped the game!';
 	}
 	if (typeof options.endMessage !== 'string') {
-		throw new TypeError('Weky Error: endMessage must be a string.');
+		throw new TypeError(`${chalk.red('Weky Error:')} endMessage must be a string.`);
 	}
 
 	if (!options.cancelMessage) {
 		options.cancelMessage = '<@{{opponent}}> refused to have a fight with you!';
 	}
 	if (typeof options.cancelMessage !== 'string') {
-		throw new TypeError('Weky Error: cancelMessage must be a string.');
+		throw new TypeError(`${chalk.red('Weky Error:')} cancelMessage must be a string.`);
 	}
 
 	if (!options.fightMessage) {
 		options.fightMessage = '{{player}} you go first!';
 	}
 	if (typeof options.fightMessage !== 'string') {
-		throw new TypeError('Weky Error: fightMessage must be a string.');
+		throw new TypeError(`${chalk.red('Weky Error:')} fightMessage must be a string.`);
 	}
 
 	if (!options.othersMessage) {
 		options.othersMessage = 'Only {{author}} can use the buttons!';
 	}
 	if (typeof options.othersMessage !== 'string') {
-		throw new TypeError('Weky Error: othersMessage must be a string.');
+		throw new TypeError(`${chalk.red('Weky Error:')} othersMessage must be a string.`);
 	}
 
 	if (!options.opponentsTurnMessage) {
 		options.opponentsTurnMessage = 'Please wait for your opponents move!';
 	}
 	if (typeof options.opponentsTurnMessage !== 'string') {
-		throw new TypeError('Weky Error: opponentsTurnMessage must be a string.');
+		throw new TypeError(`${chalk.red('Weky Error:')} opponentsTurnMessage must be a string.`);
 	}
 
 	if (!options.highHealthMessage) {
 		options.highHealthMessage = 'You cannot heal if your HP is above 80!';
 	}
 	if (typeof options.highHealthMessage !== 'string') {
-		throw new TypeError('Weky Error: highHealthMessage must be a string.');
+		throw new TypeError(`${chalk.red('Weky Error:')} highHealthMessage must be a string.`);
 	}
 
 	if (!options.lowHealthMessage) {
@@ -149,12 +191,12 @@ export default async (options) => {
 			'You cannot cancel the fight if your HP is below 50!';
 	}
 	if (typeof options.lowHealthMessage !== 'string') {
-		throw new TypeError('Weky Error: lowHealthMessage must be a string.');
+		throw new TypeError(`${chalk.red('Weky Error:')} lowHealthMessage must be a string.`);
 	}
 
 	if (!options.returnWinner) options.returnWinner = false;
 	if (typeof options.returnWinner !== 'boolean') {
-		throw new TypeError('Weky Error: buttonText must be a boolean.');
+		throw new TypeError(`${chalk.red('Weky Error:')} returnWinner must be a boolean.`);
 	}
 
 	if (data.has(options.message.author.id) || data.has(options.opponent.id)) {
@@ -193,19 +235,19 @@ export default async (options) => {
 	const oppenent = options.opponent;
 	const challenger = options.message.author;
 	if (oppenent.bot || oppenent.id === challenger.id) return;
-	let acceptbutton = new Discord.ButtonBuilder()
+	let acceptbutton = new ButtonBuilder()
 		.setStyle(ButtonStyle.Success)
 		.setLabel(options.buttons.accept)
 		.setCustomId('accept');
-	let denybutton = new Discord.ButtonBuilder()
+	let denybutton = new ButtonBuilder()
 		.setStyle(ButtonStyle.Danger)
 		.setLabel(options.buttons.deny)
 		.setCustomId('deny');
-	let component = new Discord.ActionRowBuilder().addComponents([
+	let component = new ActionRowBuilder().addComponents([
 		acceptbutton,
 		denybutton,
 	]);
-	const embed = new Discord.EmbedBuilder()
+	const embed = new EmbedBuilder()
 		.setTitle(options.embed.title)
 		.setDescription(
 			options.acceptMessage
@@ -241,21 +283,21 @@ export default async (options) => {
 		await _btn.deferUpdate();
 
 		if (_btn.customId === 'deny') {
-			acceptbutton = new Discord.ButtonBuilder()
+			acceptbutton = new ButtonBuilder()
 				.setDisabled()
 				.setStyle(ButtonStyle.Success)
 				.setLabel(options.buttons.accept)
 				.setCustomId('accept');
-			denybutton = new Discord.ButtonBuilder()
+			denybutton = new ButtonBuilder()
 				.setDisabled()
 				.setStyle(ButtonStyle.Danger)
 				.setLabel(options.buttons.deny)
 				.setCustomId('deny');
-			component = new Discord.ActionRowBuilder().addComponents([
+			component = new ActionRowBuilder().addComponents([
 				acceptbutton,
 				denybutton,
 			]);
-			const emd = new Discord.EmbedBuilder()
+			const emd = new EmbedBuilder()
 				.setTitle(options.embed.title)
 				.setDescription(
 					options.cancelMessage.replace('{{opponent}}', oppenent.id),
@@ -291,23 +333,23 @@ export default async (options) => {
 				},
 			];
 			let player = Math.floor(Math.random() * gameData.length);
-			let btn1 = new Discord.ButtonBuilder()
+			let btn1 = new ButtonBuilder()
 				.setLabel(options.buttons.hit)
 				.setCustomId(id1)
 				.setStyle(ButtonStyle.Danger);
-			let btn2 = new Discord.ButtonBuilder()
+			let btn2 = new ButtonBuilder()
 				.setLabel(options.buttons.heal)
 				.setCustomId(id2)
 				.setStyle(ButtonStyle.Success);
-			let btn3 = new Discord.ButtonBuilder()
+			let btn3 = new ButtonBuilder()
 				.setLabel(options.buttons.cancel)
 				.setCustomId(id3)
 				.setStyle(ButtonStyle.Secondary);
-			let row = new Discord.ActionRowBuilder()
+			let row = new ActionRowBuilder()
 				.addComponents(btn1)
 				.addComponents(btn2)
 				.addComponents(btn3);
-			const _embed = new Discord.EmbedBuilder()
+			const _embed = new EmbedBuilder()
 				.setTitle(options.embed.title)
 				.setDescription(
 					options.fightMessage.replace('{{player}}', gameData[player].member),
@@ -349,7 +391,7 @@ export default async (options) => {
 							gameData[tempPlayer].health -= randNumb;
 							gameData[player].lastAttack = 'attack';
 							if (gameData[player].member.id == options.message.author.id) {
-								const __embed = new Discord.EmbedBuilder()
+								const __embed = new EmbedBuilder()
 									.setTitle(options.embed.title)
 									.setDescription(
 										`(:punch:) ${gameData[player].member.username} — ${gameData[player].health} HP - **versus** - **${gameData[tempPlayer].member.username}** — ${gameData[tempPlayer].health} HP`,
@@ -364,7 +406,7 @@ export default async (options) => {
 									components: [row],
 								});
 							} else if (gameData[player].member.id == options.opponent.id) {
-								const __embed = new Discord.EmbedBuilder()
+								const __embed = new EmbedBuilder()
 									.setTitle(options.embed.title)
 									.setDescription(
 										`**${gameData[tempPlayer].member.username}** — ${gameData[tempPlayer].health} HP - **versus** - ${gameData[player].member.username} — ${gameData[player].health} HP (:punch:)`,
@@ -405,7 +447,7 @@ export default async (options) => {
 								gameData[player].health += randNumb;
 								gameData[player].lastAttack = 'heal';
 								if (gameData[player].member.id == options.message.author.id) {
-									const __embed = new Discord.EmbedBuilder()
+									const __embed = new EmbedBuilder()
 										.setTitle(options.embed.title)
 										.setDescription(
 											`(:hearts:) ${gameData[player].member.username} — ${gameData[player].health} HP - **versus** - **${gameData[tempPlayer].member.username}** — ${gameData[tempPlayer].health} HP`,
@@ -420,7 +462,7 @@ export default async (options) => {
 										components: [row],
 									});
 								} else if (gameData[player].member.id == options.opponent.id) {
-									const __embed = new Discord.EmbedBuilder()
+									const __embed = new EmbedBuilder()
 										.setTitle(options.embed.title)
 										.setDescription(
 											`**${gameData[tempPlayer].member.username}** — ${gameData[tempPlayer].health} HP - **versus** - ${gameData[player].member.username} — ${gameData[player].health} HP (:hearts:)`,
@@ -451,29 +493,29 @@ export default async (options) => {
 								});
 							} else {
 								await msg.deferUpdate();
-								btn1 = new Discord.ButtonBuilder()
+								btn1 = new ButtonBuilder()
 									.setLabel(options.buttons.hit)
 									.setCustomId(id1)
 									.setStyle(ButtonStyle.Danger)
 									.setDisabled();
-								btn2 = new Discord.ButtonBuilder()
+								btn2 = new ButtonBuilder()
 									.setLabel(options.buttons.heal)
 									.setCustomId(id2)
 									.setStyle(ButtonStyle.Success)
 									.setDisabled();
-								btn3 = new Discord.ButtonBuilder()
+								btn3 = new ButtonBuilder()
 									.setLabel(options.buttons.cancel)
 									.setCustomId(id3)
 									.setStyle(ButtonStyle.Secondary)
 									.setDisabled();
-								row = new Discord.ActionRowBuilder()
+								row = new ActionRowBuilder()
 									.addComponents(btn1)
 									.addComponents(btn2)
 									.addComponents(btn3);
 								gameCollector.stop();
 								data.delete(options.opponent.id);
 								data.delete(options.message.author.id);
-								const __embed = new Discord.EmbedBuilder()
+								const __embed = new EmbedBuilder()
 									.setTitle(options.embed.title)
 									.setDescription(
 										options.cancelMessage.replace(
@@ -493,22 +535,22 @@ export default async (options) => {
 							}
 						}
 						if (checkHealth(player)) {
-							btn1 = new Discord.ButtonBuilder()
+							btn1 = new ButtonBuilder()
 								.setLabel(options.buttons.hit)
 								.setCustomId(id1)
 								.setStyle(ButtonStyle.Danger)
 								.setDisabled();
-							btn2 = new Discord.ButtonBuilder()
+							btn2 = new ButtonBuilder()
 								.setLabel(options.buttons.heal)
 								.setCustomId(id2)
 								.setStyle(ButtonStyle.Success)
 								.setDisabled();
-							btn3 = new Discord.ButtonBuilder()
+							btn3 = new ButtonBuilder()
 								.setLabel(options.buttons.cancel)
 								.setCustomId(id3)
 								.setStyle(ButtonStyle.Secondary)
 								.setDisabled();
-							row = new Discord.ActionRowBuilder()
+							row = new ActionRowBuilder()
 								.addComponents(btn1)
 								.addComponents(btn2)
 								.addComponents(btn3);
@@ -516,7 +558,7 @@ export default async (options) => {
 							data.delete(options.opponent.id);
 							data.delete(options.message.author.id);
 							const tempPlayer = (player + 1) % 2;
-							const __embed = new Discord.EmbedBuilder()
+							const __embed = new EmbedBuilder()
 								.setTitle(options.embed.title)
 								.setDescription(
 									options.winMessage.replace(
@@ -532,14 +574,14 @@ export default async (options) => {
 							if (options.returnWinner) {
 								if (!options.gameID) {
 									throw new Error(
-										'Weky Error: gameID argument was not specified.',
+										`${chalk.red('Weky Error:')} gameID argument was not specified.`,
 									);
 								}
 								if (
 									typeof options.gameID !== 'string'
 								) {
 									throw new TypeError(
-										'Weky Error: gameID must be a string.',
+										`${chalk.red('Weky Error:')} gameID must be a string.`,
 									);
 								}
 								db.set(
@@ -553,17 +595,17 @@ export default async (options) => {
 							});
 						}
 					} else {
-						btn1 = new Discord.ButtonBuilder()
+						btn1 = new ButtonBuilder()
 							.setLabel(options.buttons.hit)
 							.setCustomId(id1)
 							.setStyle(ButtonStyle.Danger)
 							.setDisabled();
-						btn2 = new Discord.ButtonBuilder()
+						btn2 = new ButtonBuilder()
 							.setLabel(options.buttons.heal)
 							.setCustomId(id2)
 							.setStyle(ButtonStyle.Success)
 							.setDisabled();
-						btn3 = new Discord.ButtonBuilder()
+						btn3 = new ButtonBuilder()
 							.setLabel(options.buttons.cancel)
 							.setCustomId(id3)
 							.setStyle(ButtonStyle.Secondary)
@@ -572,7 +614,7 @@ export default async (options) => {
 						data.delete(options.opponent.id);
 						data.delete(options.message.author.id);
 						const tempPlayer = (player + 1) % 2;
-						const __embed = new Discord.EmbedBuilder()
+						const __embed = new EmbedBuilder()
 							.setTitle(options.embed.title)
 							.setDescription(
 								options.winMessage.replace(
@@ -588,11 +630,11 @@ export default async (options) => {
 						if (options.returnWinner) {
 							if (!options.gameID) {
 								throw new Error(
-									'Weky Error: gameID argument was not specified.',
+									`${chalk.red('Weky Error:')} gameID argument was not specified.`,
 								);
 							}
 							if (typeof options.gameID !== 'string') {
-								throw new TypeError('Weky Error: gameID must be a string.');
+								throw new TypeError(`${chalk.red('Weky Error:')} gameID must be a string.`);
 							}
 							db.set(
 								`Fight_${options.message.guild.id}_${options.gameID}`,
@@ -618,21 +660,21 @@ export default async (options) => {
 	});
 	Collector.on('end', async (msg, reason) => {
 		if (reason === 'time') {
-			acceptbutton = new Discord.ButtonBuilder()
+			acceptbutton = new ButtonBuilder()
 				.setDisabled()
 				.setStyle(ButtonStyle.Success)
 				.setLabel(options.buttons.accept)
 				.setCustomId('accept');
-			denybutton = new Discord.ButtonBuilder()
+			denybutton = new ButtonBuilder()
 				.setDisabled()
 				.setStyle(ButtonStyle.Danger)
 				.setLabel(options.buttons.deny)
 				.setCustomId('deny');
-			component = new Discord.ActionRowBuilder().addComponents([
+			component = new ActionRowBuilder().addComponents([
 				acceptbutton,
 				denybutton,
 			]);
-			const _embed = new Discord.EmbedBuilder()
+			const _embed = new EmbedBuilder()
 				.setTitle(options.embed.title)
 				.setDescription(options.endMessage.replace('{{opponent}}', oppenent.id))
 				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })

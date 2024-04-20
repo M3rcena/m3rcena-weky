@@ -1,11 +1,42 @@
-import { ButtonStyle } from 'discord.js';
+import { ButtonStyle, ButtonBuilder, EmbedBuilder } from 'discord.js';
 const data = new Set();
 import db from 'quick.db';
 import fetch from 'node-fetch';
-import Discord from 'discord.js';
 import { decode } from 'html-entities';
 const difficulties = ['hard', 'medium', 'easy'];
 import { getRandomString, convertTime, shuffleArray } from '../../functions/function.mjs';
+
+/**
+ * Trivia Game for your Discord Bot!
+ * @param {Object} options - Options for the Trivia Game.
+ * @param {Object} options.message - The Discord Message Object.
+ * 
+ * @param {Object} [options.embed] - Embed for the Trivia Game.
+ * @param {string} [options.embed.title] - Title for the Embed.
+ * @param {string} [options.embed.description] - Description for the Embed.
+ * @param {string} [options.embed.footer] - Footer for the Embed.
+ * @param {boolean} [options.embed.timestamp] - Whether to show the timestamp in the Embed.
+ * 
+ * @param {string} [options.difficulty] - Difficulty for the Trivia Game.
+ * 
+ * @param {string} [options.thinkMessage] - Message to show while the bot is thinking.
+ * @param {string} [options.winMessage] - Message to show when the user wins.
+ * @param {string} [options.loseMessage] - Message to show when the user loses.
+ * 
+ * @param {Object} [options.emojis] - Emojis for the Trivia Game.
+ * @param {string} [options.emojis.one] - Emoji for the first option.
+ * @param {string} [options.emojis.two] - Emoji for the second option.
+ * @param {string} [options.emojis.three] - Emoji for the third option.
+ * @param {string} [options.emojis.four] - Emoji for the fourth option.
+ * 
+ * @param {number} [options.time] - Time for the Trivia Game.
+ * 
+ * @param {boolean} [options.returnWinner] - Whether to return the winner of the Trivia Game.
+ * @param {string} [options.othersMessage] - Message to show when someone else tries to interact with the buttons.
+ * 
+ * @returns {Promise<void>}
+ * @copyright All rights Reserved. Weky Development
+ */
 
 export default async (options) => {
 
@@ -165,7 +196,7 @@ export default async (options) => {
 
 	const think = await options.message.reply({
 		embeds: [
-			new Discord.EmbedBuilder()
+			new EmbedBuilder()
 				.setTitle(`${options.thinkMessage}.`)
 				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
 				.setFooter({ text: options.embed.footer }),
@@ -176,7 +207,7 @@ export default async (options) => {
 
 	await think.edit({
 		embeds: [
-			new Discord.EmbedBuilder()
+			new EmbedBuilder()
 				.setTitle(`${options.thinkMessage}..`)
 				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
 				.setFooter({ text: options.embed.footer }),
@@ -185,7 +216,7 @@ export default async (options) => {
 
 	await think.edit({
 		embeds: [
-			new Discord.EmbedBuilder()
+			new EmbedBuilder()
 				.setTitle(`${options.thinkMessage}...`)
 				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
 				.setFooter({ text: options.embed.footer }),
@@ -207,7 +238,7 @@ export default async (options) => {
 
 	await think.edit({
 		embeds: [
-			new Discord.EmbedBuilder()
+			new EmbedBuilder()
 				.setTitle(`${options.thinkMessage}..`)
 				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
 				.setFooter({ text: options.embed.footer }),
@@ -226,29 +257,29 @@ export default async (options) => {
 		winningID = id4;
 	}
 
-	let btn1 = new Discord.ButtonBuilder()
+	let btn1 = new ButtonBuilder()
 		.setStyle(ButtonStyle.Primary)
 		.setEmoji(options.emojis.one)
 		.setCustomId(id1);
 
-	let btn2 = new Discord.ButtonBuilder()
+	let btn2 = new ButtonBuilder()
 		.setStyle(ButtonStyle.Primary)
 		.setEmoji(options.emojis.two)
 		.setCustomId(id2);
 
-	let btn3 = new Discord.ButtonBuilder()
+	let btn3 = new ButtonBuilder()
 		.setStyle(ButtonStyle.Primary)
 		.setEmoji(options.emojis.three)
 		.setCustomId(id3);
 
-	let btn4 = new Discord.ButtonBuilder()
+	let btn4 = new ButtonBuilder()
 		.setStyle(ButtonStyle.Primary)
 		.setEmoji(options.emojis.four)
 		.setCustomId(id4);
 
 	await think.edit({
 		embeds: [
-			new Discord.EmbedBuilder()
+			new EmbedBuilder()
 				.setTitle(`${options.thinkMessage}.`)
 				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
 				.setFooter({ text: options.embed.footer }),
@@ -261,7 +292,7 @@ export default async (options) => {
 		opt += `**${i + 1})** ${decode(question.options[i])}\n`;
 	}
 
-	const embed = new Discord.EmbedBuilder()
+	const embed = new EmbedBuilder()
 		.setTitle(options.embed.title)
 		.addFields({ name: decode(question.question), value: `${options.embed.description.replace('{{time}}', convertTime(options.time),)}\n\n${opt}` })
 		.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
@@ -292,19 +323,19 @@ export default async (options) => {
 		}
 		await trivia.deferUpdate();
 		if (trivia.customId === winningID) {
-			btn1 = new Discord.ButtonBuilder()
+			btn1 = new ButtonBuilder()
 				.setEmoji(options.emojis.one)
 				.setCustomId(id1)
 				.setDisabled();
-			btn2 = new Discord.ButtonBuilder()
+			btn2 = new ButtonBuilder()
 				.setEmoji(options.emojis.two)
 				.setCustomId(id2)
 				.setDisabled();
-			btn3 = new Discord.ButtonBuilder()
+			btn3 = new ButtonBuilder()
 				.setEmoji(options.emojis.three)
 				.setCustomId(id3)
 				.setDisabled();
-			btn4 = new Discord.ButtonBuilder()
+			btn4 = new ButtonBuilder()
 				.setEmoji(options.emojis.four)
 				.setCustomId(id4)
 				.setDisabled();
@@ -348,7 +379,7 @@ export default async (options) => {
 				components: [{ type: 1, components: [btn1, btn2, btn3, btn4] }],
 			});
 			const time = convertTime(Date.now() - gameCreatedAt);
-			const winEmbed = new Discord.EmbedBuilder()
+			const winEmbed = new EmbedBuilder()
 				.setDescription(
 					`${options.winMessage
 						.replace('{{answer}}', decode(question.options[question.correct]))
@@ -361,19 +392,19 @@ export default async (options) => {
 			}
 			options.message.reply({ embeds: [winEmbed] });
 		} else {
-			btn1 = new Discord.ButtonBuilder()
+			btn1 = new ButtonBuilder()
 				.setEmoji(options.emojis.one)
 				.setCustomId(id1)
 				.setDisabled();
-			btn2 = new Discord.ButtonBuilder()
+			btn2 = new ButtonBuilder()
 				.setEmoji(options.emojis.two)
 				.setCustomId(id2)
 				.setDisabled();
-			btn3 = new Discord.ButtonBuilder()
+			btn3 = new ButtonBuilder()
 				.setEmoji(options.emojis.three)
 				.setCustomId(id3)
 				.setDisabled();
-			btn4 = new Discord.ButtonBuilder()
+			btn4 = new ButtonBuilder()
 				.setEmoji(options.emojis.four)
 				.setCustomId(id4)
 				.setDisabled();
@@ -445,7 +476,7 @@ export default async (options) => {
 				embeds: [embed],
 				components: [{ type: 1, components: [btn1, btn2, btn3, btn4] }],
 			});
-			const lostEmbed = new Discord.EmbedBuilder()
+			const lostEmbed = new EmbedBuilder()
 				.setDescription(
 					`${options.loseMessage.replace(
 						'{{answer}}',
@@ -463,19 +494,19 @@ export default async (options) => {
 
 	gameCollector.on('end', (trivia, reason) => {
 		if (reason === 'time') {
-			btn1 = new Discord.ButtonBuilder()
+			btn1 = new ButtonBuilder()
 				.setEmoji(options.emojis.one)
 				.setCustomId(id1)
 				.setDisabled();
-			btn2 = new Discord.ButtonBuilder()
+			btn2 = new ButtonBuilder()
 				.setEmoji(options.emojis.two)
 				.setCustomId(id2)
 				.setDisabled();
-			btn3 = new Discord.ButtonBuilder()
+			btn3 = new ButtonBuilder()
 				.setEmoji(options.emojis.three)
 				.setCustomId(id3)
 				.setDisabled();
-			btn4 = new Discord.ButtonBuilder()
+			btn4 = new ButtonBuilder()
 				.setEmoji(options.emojis.four)
 				.setCustomId(id4)
 				.setDisabled();
@@ -505,7 +536,7 @@ export default async (options) => {
 				embeds: [embed],
 				components: [{ type: 1, components: [btn1, btn2, btn3, btn4] }],
 			});
-			const lostEmbed = new Discord.EmbedBuilder()
+			const lostEmbed = new EmbedBuilder()
 				.setDescription(
 					`${options.loseMessage.replace(
 						'{{answer}}',

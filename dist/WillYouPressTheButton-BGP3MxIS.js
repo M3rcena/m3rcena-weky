@@ -1,17 +1,37 @@
 'use strict';
 
-var Discord = require('discord.js');
+var discord_js = require('discord.js');
 var htmlEntities = require('html-entities');
-var _function = require('./function-tD1ad7nu.cjs');
+var _function = require('./function-Bv9fWZf5.js');
 require('axios');
 require('chalk');
 require('cheerio');
 require('node-fetch');
 require('string-width');
 
-module.exports = {WillYouPressTheButton};
+/**
+ * Will You Press The Button? Game for your Discord Bot!
+ * @param {object} options - Options for the game.
+ * @param {object} options.message - The Discord Message object.
+ * 
+ * @param {object} [options.embed] - Embed options.
+ * @param {string} [options.embed.title] - The title of the embed.
+ * @param {string} [options.embed.description] - The description of the embed.
+ * @param {string} [options.embed.footer] - The footer of the embed.
+ * @param {boolean} [options.embed.timestamp] - Whether to show the timestamp on the footer or not.
+ * 
+ * @param {object} [options.button] - Button options.
+ * @param {string} [options.button.yes] - The label for the yes button.
+ * @param {string} [options.button.no] - The label for the no button.
+ * 
+ * @param {string} [options.thinkMessage] - The message to show while the bot is thinking.
+ * @param {string} [options.othersMessage] - The message to show when someone else tries to click the buttons.
+ * 
+ * @returns {Promise<void>}
+ * @copyright All rights Reserved. Weky Development
+ */
 
-async function WillYouPressTheButton (options) {
+var WillYouPressTheButton = async (options) => {
 
 	if (!options.message) {
 		throw new Error('Weky Error: message argument was not specified.');
@@ -101,19 +121,19 @@ async function WillYouPressTheButton (options) {
 
 	const think = await options.message.reply({
 		embeds: [
-			new Discord.EmbedBuilder()
+			new discord_js.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}.`)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer}),
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer }),
 		],
 	});
 
 	await think.edit({
 		embeds: [
-			new Discord.EmbedBuilder()
+			new discord_js.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}..`)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer}),
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer }),
 		],
 	});
 
@@ -121,10 +141,10 @@ async function WillYouPressTheButton (options) {
 
 	await think.edit({
 		embeds: [
-			new Discord.EmbedBuilder()
+			new discord_js.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}...`)
-						.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer}),
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer }),
 		],
 	});
 
@@ -138,32 +158,32 @@ async function WillYouPressTheButton (options) {
 
 	await think.edit({
 		embeds: [
-			new Discord.EmbedBuilder()
+			new discord_js.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}..`)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer}),
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer }),
 		],
 	});
 
-	let btn = new Discord.ButtonBuilder()
-		.setStyle(Discord.ButtonStyle.Success)
+	let btn = new discord_js.ButtonBuilder()
+		.setStyle(discord_js.ButtonStyle.Success)
 		.setLabel(options.button.yes)
 		.setCustomId(id1);
-	let btn2 = new Discord.ButtonBuilder()
-		.setStyle(Discord.ButtonStyle.Danger)
+	let btn2 = new discord_js.ButtonBuilder()
+		.setStyle(discord_js.ButtonStyle.Danger)
 		.setLabel(options.button.no)
 		.setCustomId(id2);
 
 	await think.edit({
 		embeds: [
-			new Discord.EmbedBuilder()
+			new discord_js.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}.`)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer}),
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer }),
 		],
 	});
 
-	const embed = new Discord.EmbedBuilder()
+	const embed = new discord_js.EmbedBuilder()
 		.setTitle(options.embed.title)
 		.setDescription(
 			`${options.embed.description
@@ -171,19 +191,19 @@ async function WillYouPressTheButton (options) {
 					'{{statement1}}',
 					htmlEntities.decode(
 						res.questions[0].charAt(0).toUpperCase() +
-							res.questions[0].slice(1),
+						res.questions[0].slice(1),
 					),
 				)
 				.replace(
 					'{{statement2}}',
 					htmlEntities.decode(
 						res.questions[1].charAt(0).toUpperCase() +
-							res.questions[1].slice(1),
+						res.questions[1].slice(1),
 					),
 				)}`,
 		)
-		.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-		.setFooter({text: options.embed.footer});
+		.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+		.setFooter({ text: options.embed.footer });
 	if (options.embed.timestamp) {
 		embed.setTimestamp();
 	}
@@ -211,13 +231,13 @@ async function WillYouPressTheButton (options) {
 		await wyptb.deferUpdate();
 
 		if (wyptb.customId === id1) {
-			btn = new Discord.ButtonBuilder()
-				.setStyle(Discord.ButtonStyle.Success)
+			btn = new discord_js.ButtonBuilder()
+				.setStyle(discord_js.ButtonStyle.Success)
 				.setLabel(`${options.button.yes} (${res.percentage['1']})`)
 				.setCustomId(id1)
 				.setDisabled();
-			btn2 = new Discord.ButtonBuilder()
-				.setStyle(Discord.ButtonStyle.Danger)
+			btn2 = new discord_js.ButtonBuilder()
+				.setStyle(discord_js.ButtonStyle.Danger)
 				.setLabel(`${options.button.no} (${res.percentage['2']})`)
 				.setCustomId(id2)
 				.setDisabled();
@@ -227,13 +247,13 @@ async function WillYouPressTheButton (options) {
 				components: [{ type: 1, components: [btn, btn2] }],
 			});
 		} else if (wyptb.customId === id2) {
-			btn = new Discord.ButtonBuilder()
-				.setStyle(Discord.ButtonStyle.Danger)
+			btn = new discord_js.ButtonBuilder()
+				.setStyle(discord_js.ButtonStyle.Danger)
 				.setLabel(`${options.button.yes} (${res.percentage['1']})`)
 				.setCustomId(id1)
 				.setDisabled();
-			btn2 = new Discord.ButtonBuilder()
-				.setStyle(Discord.ButtonStyle.Success)
+			btn2 = new discord_js.ButtonBuilder()
+				.setStyle(discord_js.ButtonStyle.Success)
 				.setLabel(`${options.button.no} (${res.percentage['2']})`)
 				.setCustomId(id2)
 				.setDisabled();
@@ -245,3 +265,5 @@ async function WillYouPressTheButton (options) {
 		}
 	});
 };
+
+exports.default = WillYouPressTheButton;

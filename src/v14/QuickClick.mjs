@@ -1,7 +1,29 @@
-import { ButtonStyle } from 'discord.js';
+import { ButtonStyle, ButtonBuilder, EmbedBuilder, ActionRowBuilder } from 'discord.js';
 const currentGames = new Object();
-import Discord from 'discord.js';
-import { getRandomString, convertTime, shuffleArray} from '../../functions/function.mjs';
+import { getRandomString, convertTime, shuffleArray } from '../../functions/function.mjs';
+
+/**
+ * Quick Click game for your bot!
+ * @param {object} options - Options for the Quick Click game.
+ * @param {object} options.message - The message object.
+ * 
+ * @param {object} [options.embed] - Embed options.
+ * @param {string} [options.embed.title] - The title of the embed.
+ * @param {string} [options.embed.footer] - The footer of the embed.
+ * @param {boolean} [options.embed.timestamp] - Whether to show the timestamp on the embed.
+ * 
+ * @param {number} [options.time] - The time for the game.
+ * @param {string} [options.waitMessage] - The message to show while the bot is waiting for the game to start.
+ * @param {string} [options.startMessage] - The message to show when the game starts.
+ * @param {string} [options.winMessage] - The message to show when the user wins.
+ * @param {string} [options.loseMessage] - The message to show when the user loses.
+ * @param {string} [options.ongoingMessage] - The message to show when the game is already running.
+ * 
+ * @param {string} [options.emoji] - The emoji for the button.
+ * 
+ * @returns {Promise<void>}
+ * @copyright All rights Reserved. Weky Development
+ */
 
 export default async (options) => {
 	if (!options.message) {
@@ -92,10 +114,10 @@ export default async (options) => {
 	}
 
 	if (currentGames[options.message.guild.id]) {
-		const embed = new Discord.EmbedBuilder()
+		const embed = new EmbedBuilder()
 			.setTitle(options.embed.title)
-			.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-			.setFooter({text: options.embed.footer})
+			.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+			.setFooter({ text: options.embed.footer })
 			.setDescription(
 				options.ongoingMessage.replace(
 					'{{channel}}',
@@ -108,10 +130,10 @@ export default async (options) => {
 		return options.message.reply({ embeds: [embed] });
 	}
 
-	const embed = new Discord.EmbedBuilder()
+	const embed = new EmbedBuilder()
 		.setTitle(options.embed.title)
-		.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-		.setFooter({text: options.embed.footer})
+		.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+		.setFooter({ text: options.embed.footer })
 		.setDescription(options.waitMessage);
 	if (options.embed.timestamp) {
 		embed.setTimestamp();
@@ -123,14 +145,14 @@ export default async (options) => {
 	currentGames[`${options.message.guild.id}_channel`] =
 		options.message.channel.id;
 
-	setTimeout(async function() {
+	setTimeout(async function () {
 		const rows = [];
 		const buttons = [];
 		const gameCreatedAt = Date.now();
 
 		for (let i = 0; i < 24; i++) {
 			buttons.push(
-				new Discord.ButtonBuilder()
+				new ButtonBuilder()
 					.setDisabled()
 					.setLabel('\u200b')
 					.setStyle(ButtonStyle.Primary)
@@ -139,7 +161,7 @@ export default async (options) => {
 		}
 
 		buttons.push(
-			new Discord.ButtonBuilder()
+			new ButtonBuilder()
 				.setStyle(ButtonStyle.Primary)
 				.setEmoji(options.emoji)
 				.setCustomId('CORRECT'),
@@ -148,17 +170,17 @@ export default async (options) => {
 		shuffleArray(buttons);
 
 		for (let i = 0; i < 5; i++) {
-			rows.push(new Discord.ActionRowBuilder());
+			rows.push(new ActionRowBuilder());
 		}
 
 		rows.forEach((row, i) => {
 			row.addComponents(buttons.slice(0 + i * 5, 5 + i * 5));
 		});
 
-		const _embed = new Discord.EmbedBuilder()
+		const _embed = new EmbedBuilder()
 			.setTitle(options.embed.title)
-			.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-			.setFooter({text: options.embed.footer})
+			.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+			.setFooter({ text: options.embed.footer })
 			.setDescription(
 				options.startMessage.replace(
 					'{{time}}',
@@ -187,20 +209,20 @@ export default async (options) => {
 				});
 				rows.length = 0;
 				for (let i = 0; i < 5; i++) {
-					rows.push(new Discord.ActionRowBuilder());
+					rows.push(new ActionRowBuilder());
 				}
 				rows.forEach((row, i) => {
 					row.addComponents(buttons.slice(0 + i * 5, 5 + i * 5));
 				});
-				const __embed = new Discord.EmbedBuilder()
+				const __embed = new EmbedBuilder()
 					.setTitle(options.embed.title)
 					.setDescription(
 						options.winMessage
 							.replace('{{winner}}', button.user.id)
 							.replace('{{time}}', (Date.now() - gameCreatedAt) / 1000),
 					)
-					.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-					.setFooter({text: options.embed.footer})
+					.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+					.setFooter({ text: options.embed.footer })
 				if (options.embed.timestamp) {
 					__embed.setTimestamp();
 				}
@@ -219,15 +241,15 @@ export default async (options) => {
 				});
 				rows.length = 0;
 				for (let i = 0; i < 5; i++) {
-					rows.push(new Discord.ActionRowBuilder());
+					rows.push(new ActionRowBuilder());
 				}
 				rows.forEach((row, i) => {
 					row.addComponents(buttons.slice(0 + i * 5, 5 + i * 5));
 				});
-				const __embed = new Discord.EmbedBuilder()
+				const __embed = new EmbedBuilder()
 					.setTitle(options.embed.title)
-					.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-					.setFooter({text: options.embed.footer})
+					.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+					.setFooter({ text: options.embed.footer })
 					.setDescription(options.loseMessage);
 				if (options.embed.timestamp) {
 					__embed.setTimestamp();

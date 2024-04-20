@@ -1,7 +1,7 @@
 'use strict';
 
-var Discord = require('discord.js');
-var _function = require('./function-tD1ad7nu.cjs');
+var discord_js = require('discord.js');
+var _function = require('./function-Bv9fWZf5.js');
 require('axios');
 require('chalk');
 require('cheerio');
@@ -10,9 +10,30 @@ require('string-width');
 
 const currentGames = new Object();
 
-module.exports = {QuickClick};
+/**
+ * Quick Click game for your bot!
+ * @param {object} options - Options for the Quick Click game.
+ * @param {object} options.message - The message object.
+ * 
+ * @param {object} [options.embed] - Embed options.
+ * @param {string} [options.embed.title] - The title of the embed.
+ * @param {string} [options.embed.footer] - The footer of the embed.
+ * @param {boolean} [options.embed.timestamp] - Whether to show the timestamp on the embed.
+ * 
+ * @param {number} [options.time] - The time for the game.
+ * @param {string} [options.waitMessage] - The message to show while the bot is waiting for the game to start.
+ * @param {string} [options.startMessage] - The message to show when the game starts.
+ * @param {string} [options.winMessage] - The message to show when the user wins.
+ * @param {string} [options.loseMessage] - The message to show when the user loses.
+ * @param {string} [options.ongoingMessage] - The message to show when the game is already running.
+ * 
+ * @param {string} [options.emoji] - The emoji for the button.
+ * 
+ * @returns {Promise<void>}
+ * @copyright All rights Reserved. Weky Development
+ */
 
-async function QuickClick (options) {
+var QuickClick = async (options) => {
 	if (!options.message) {
 		throw new Error('Weky Error: message argument was not specified.');
 	}
@@ -101,10 +122,10 @@ async function QuickClick (options) {
 	}
 
 	if (currentGames[options.message.guild.id]) {
-		const embed = new Discord.EmbedBuilder()
+		const embed = new discord_js.EmbedBuilder()
 			.setTitle(options.embed.title)
-			.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-			.setFooter({text: options.embed.footer})
+			.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+			.setFooter({ text: options.embed.footer })
 			.setDescription(
 				options.ongoingMessage.replace(
 					'{{channel}}',
@@ -117,10 +138,10 @@ async function QuickClick (options) {
 		return options.message.reply({ embeds: [embed] });
 	}
 
-	const embed = new Discord.EmbedBuilder()
+	const embed = new discord_js.EmbedBuilder()
 		.setTitle(options.embed.title)
-		.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-		.setFooter({text: options.embed.footer})
+		.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+		.setFooter({ text: options.embed.footer })
 		.setDescription(options.waitMessage);
 	if (options.embed.timestamp) {
 		embed.setTimestamp();
@@ -132,24 +153,24 @@ async function QuickClick (options) {
 	currentGames[`${options.message.guild.id}_channel`] =
 		options.message.channel.id;
 
-	setTimeout(async function() {
+	setTimeout(async function () {
 		const rows = [];
 		const buttons = [];
 		const gameCreatedAt = Date.now();
 
 		for (let i = 0; i < 24; i++) {
 			buttons.push(
-				new Discord.ButtonBuilder()
+				new discord_js.ButtonBuilder()
 					.setDisabled()
 					.setLabel('\u200b')
-					.setStyle(Discord.ButtonStyle.Primary)
+					.setStyle(discord_js.ButtonStyle.Primary)
 					.setCustomId(_function.getRandomString(20)),
 			);
 		}
 
 		buttons.push(
-			new Discord.ButtonBuilder()
-				.setStyle(Discord.ButtonStyle.Primary)
+			new discord_js.ButtonBuilder()
+				.setStyle(discord_js.ButtonStyle.Primary)
 				.setEmoji(options.emoji)
 				.setCustomId('CORRECT'),
 		);
@@ -157,17 +178,17 @@ async function QuickClick (options) {
 		_function.shuffleArray(buttons);
 
 		for (let i = 0; i < 5; i++) {
-			rows.push(new Discord.ActionRowBuilder());
+			rows.push(new discord_js.ActionRowBuilder());
 		}
 
 		rows.forEach((row, i) => {
 			row.addComponents(buttons.slice(0 + i * 5, 5 + i * 5));
 		});
 
-		const _embed = new Discord.EmbedBuilder()
+		const _embed = new discord_js.EmbedBuilder()
 			.setTitle(options.embed.title)
-			.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-			.setFooter({text: options.embed.footer})
+			.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+			.setFooter({ text: options.embed.footer })
 			.setDescription(
 				options.startMessage.replace(
 					'{{time}}',
@@ -196,20 +217,20 @@ async function QuickClick (options) {
 				});
 				rows.length = 0;
 				for (let i = 0; i < 5; i++) {
-					rows.push(new Discord.ActionRowBuilder());
+					rows.push(new discord_js.ActionRowBuilder());
 				}
 				rows.forEach((row, i) => {
 					row.addComponents(buttons.slice(0 + i * 5, 5 + i * 5));
 				});
-				const __embed = new Discord.EmbedBuilder()
+				const __embed = new discord_js.EmbedBuilder()
 					.setTitle(options.embed.title)
 					.setDescription(
 						options.winMessage
 							.replace('{{winner}}', button.user.id)
 							.replace('{{time}}', (Date.now() - gameCreatedAt) / 1000),
 					)
-					.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-					.setFooter({text: options.embed.footer});
+					.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+					.setFooter({ text: options.embed.footer });
 				if (options.embed.timestamp) {
 					__embed.setTimestamp();
 				}
@@ -228,15 +249,15 @@ async function QuickClick (options) {
 				});
 				rows.length = 0;
 				for (let i = 0; i < 5; i++) {
-					rows.push(new Discord.ActionRowBuilder());
+					rows.push(new discord_js.ActionRowBuilder());
 				}
 				rows.forEach((row, i) => {
 					row.addComponents(buttons.slice(0 + i * 5, 5 + i * 5));
 				});
-				const __embed = new Discord.EmbedBuilder()
+				const __embed = new discord_js.EmbedBuilder()
 					.setTitle(options.embed.title)
-					.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-					.setFooter({text: options.embed.footer})
+					.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+					.setFooter({ text: options.embed.footer })
 					.setDescription(options.loseMessage);
 				if (options.embed.timestamp) {
 					__embed.setTimestamp();
@@ -250,3 +271,5 @@ async function QuickClick (options) {
 		});
 	}, Math.floor(Math.random() * 5000) + 1000);
 };
+
+exports.default = QuickClick;
