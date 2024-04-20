@@ -1,8 +1,8 @@
 'use strict';
 
-var Discord = require('discord.js');
+var discord_js = require('discord.js');
 var db = require('quick.db');
-var _function = require('./function-tD1ad7nu.cjs');
+var _function = require('./function-Bv9fWZf5.js');
 require('axios');
 require('chalk');
 require('cheerio');
@@ -11,9 +11,44 @@ require('string-width');
 
 const data = new Set();
 
-module.exports = {RockPaperScissors};
+/**
+ * Rock Paper Scissors game for your bot!
+ * @param {object} options - Options for the Rock Paper Scissors game.
+ * @param {object} options.message - The message object.
+ * @param {object} options.opponent - The opponent object.
+ * 
+ * @param {object} [options.embed] - Embed options.
+ * @param {string} [options.embed.title] - The title of the embed.
+ * @param {string} [options.embed.description] - The description of the embed.
+ * @param {string} [options.embed.footer] - The footer of the embed.
+ * @param {boolean} [options.embed.timestamp] - Whether to show the timestamp on the embed.
+ * 
+ * @param {object} [options.buttons] - Button options.
+ * @param {string} [options.buttons.rock] - The text for the rock button.
+ * @param {string} [options.buttons.paper] - The text for the paper button.
+ * @param {string} [options.buttons.scissors] - The text for the scissors button.
+ * @param {string} [options.buttons.accept] - The text for the accept button.
+ * @param {string} [options.buttons.deny] - The text for the deny button.
+ * 
+ * @param {number} [options.time] - The time for the game.
+ * @param {string} [options.acceptMessage] - The message to show when the opponent accepts the game.
+ * @param {string} [options.winMessage] - The message to show when the user wins.
+ * @param {string} [options.drawMessage] - The message to show when the game is a draw.
+ * @param {string} [options.endMessage] - The message to show when the opponent doesn't answer in time.
+ * @param {string} [options.timeEndMessage] - The message to show when both of the users didn't pick something in time.
+ * @param {string} [options.cancelMessage] - The message to show when the opponent cancels the game.
+ * @param {string} [options.choseMessage] - The message to show when the user picks something.
+ * @param {string} [options.noChangeMessage] - The message to show when the user tries to change their selection.
+ * @param {string} [options.othersMessage] - The message to show when others rather than the message author uses the buttons.
+ * 
+ * @param {boolean} [options.returnWinner] - Whether to return the winner of the game.
+ * @param {string} [options.gameID] - The ID for the game.
+ * 
+ * @returns {Promise<void>}
+ * @copyright All rights Reserved. Weky Development
+ */
 
-async function RockPaperScissors (options) {
+var RockPaperScissors = async (options) => {
 	if (!options.message) {
 		throw new Error('Weky Error: message argument was not specified.');
 	}
@@ -225,33 +260,33 @@ async function RockPaperScissors (options) {
 	) {
 		return;
 	}
-	let acceptbutton = new Discord.ButtonBuilder()
-		.setStyle(Discord.ButtonStyle.Success)
+	let acceptbutton = new discord_js.ButtonBuilder()
+		.setStyle(discord_js.ButtonStyle.Success)
 		.setLabel(options.buttons.accept)
 		.setCustomId('accept');
-	let denybutton = new Discord.ButtonBuilder()
-		.setStyle(Discord.ButtonStyle.Danger)
+	let denybutton = new discord_js.ButtonBuilder()
+		.setStyle(discord_js.ButtonStyle.Danger)
 		.setLabel(options.buttons.deny)
 		.setCustomId('deny');
-	let component = new Discord.ActionRowBuilder().addComponents([
+	let component = new discord_js.ActionRowBuilder().addComponents([
 		acceptbutton,
 		denybutton,
 	]);
-	const embed = new Discord.EmbedBuilder()
+	const embed = new discord_js.EmbedBuilder()
 		.setTitle(options.embed.title)
 		.setDescription(
 			options.acceptMessage
 				.replace('{{challenger}}', options.message.author.id)
 				.replace('{{opponent}}', options.opponent.id),
 		)
-		.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-		.setFooter({text: options.embed.footer});
+		.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+		.setFooter({ text: options.embed.footer });
 	if (options.embed.timestamp) {
 		embed.setTimestamp();
 	}
 	const question = await options.message.reply({
 		embeds: [embed],
-		components : [component],
+		components: [component],
 	});
 	const Collector = await question.createMessageComponentCollector({
 		filter: (fn) => fn,
@@ -269,27 +304,27 @@ async function RockPaperScissors (options) {
 		}
 		await _btn.deferUpdate();
 		if (_btn.customId === 'deny') {
-			acceptbutton = new Discord.ButtonBuilder()
+			acceptbutton = new discord_js.ButtonBuilder()
 				.setDisabled()
-				.setStyle(Discord.ButtonStyle.Success)
+				.setStyle(discord_js.ButtonStyle.Success)
 				.setLabel(options.buttons.accept)
 				.setCustomId('accept');
-			denybutton = new Discord.ButtonBuilder()
+			denybutton = new discord_js.ButtonBuilder()
 				.setDisabled()
-				.setStyle(Discord.ButtonStyle.Danger)
+				.setStyle(discord_js.ButtonStyle.Danger)
 				.setLabel(options.buttons.deny)
 				.setCustomId('deny');
-			component = new Discord.ActionRowBuilder().addComponents([
+			component = new discord_js.ActionRowBuilder().addComponents([
 				acceptbutton,
 				denybutton,
 			]);
-			const emd = new Discord.EmbedBuilder()
+			const emd = new discord_js.EmbedBuilder()
 				.setTitle(options.embed.title)
 				.setDescription(
 					options.cancelMessage.replace('{{opponent}}', options.opponent.id),
 				)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer});
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer });
 			if (options.embed.timestamp) {
 				emd.setTimestamp();
 			}
@@ -298,40 +333,40 @@ async function RockPaperScissors (options) {
 			data.delete(options.message.author.id);
 			return question.edit({
 				embeds: [emd],
-				components : [component],
+				components: [component],
 			});
 		} else if (_btn.customId === 'accept') {
 			Collector.stop();
-			let scissorsbtn = new Discord.ButtonBuilder()
-					.setCustomId(id1)
-					.setLabel(options.buttons.scissors)
-					.setStyle(Discord.ButtonStyle.Primary)
-					.setEmoji('✌️');
-			let rockbtn = new Discord.ButtonBuilder()
-					.setCustomId(id2)
-					.setLabel(options.buttons.rock)
-					.setStyle(Discord.ButtonStyle.Primary)
-					.setEmoji('✊');
-			let paperbtn = new Discord.ButtonBuilder()
-					.setCustomId(id3)
-					.setLabel(options.buttons.paper)
-					.setStyle(Discord.ButtonStyle.Primary)
-					.setEmoji('✋');
-			let row = new Discord.ActionRowBuilder()
+			let scissorsbtn = new discord_js.ButtonBuilder()
+				.setCustomId(id1)
+				.setLabel(options.buttons.scissors)
+				.setStyle(discord_js.ButtonStyle.Primary)
+				.setEmoji('✌️');
+			let rockbtn = new discord_js.ButtonBuilder()
+				.setCustomId(id2)
+				.setLabel(options.buttons.rock)
+				.setStyle(discord_js.ButtonStyle.Primary)
+				.setEmoji('✊');
+			let paperbtn = new discord_js.ButtonBuilder()
+				.setCustomId(id3)
+				.setLabel(options.buttons.paper)
+				.setStyle(discord_js.ButtonStyle.Primary)
+				.setEmoji('✋');
+			let row = new discord_js.ActionRowBuilder()
 				.addComponents(rockbtn)
 				.addComponents(paperbtn)
 				.addComponents(scissorsbtn);
-			const emd = new Discord.EmbedBuilder()
+			const emd = new discord_js.EmbedBuilder()
 				.setTitle(options.embed.title)
 				.setDescription(options.embed.description)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer});
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer });
 			if (options.embed.timestamp) {
 				emd.setTimestamp();
 			}
 			question.edit({
 				embeds: [emd],
-				components : [row],
+				components: [row],
 			});
 			let opponentChose;
 			let opponentChoice;
@@ -415,32 +450,32 @@ async function RockPaperScissors (options) {
 									options.message.author.id,
 								);
 							}
-							scissorsbtn = new Discord.ButtonBuilder()
+							scissorsbtn = new discord_js.ButtonBuilder()
 								.setDisabled()
 								.setCustomId(id1)
 								.setLabel(options.buttons.scissors)
-								.setStyle(Discord.ButtonStyle.Primary)
+								.setStyle(discord_js.ButtonStyle.Primary)
 								.setEmoji('✌️');
-							rockbtn = new Discord.ButtonBuilder()
+							rockbtn = new discord_js.ButtonBuilder()
 								.setDisabled()
 								.setCustomId(id2)
 								.setLabel(options.buttons.rock)
-								.setStyle(Discord.ButtonStyle.Primary)
+								.setStyle(discord_js.ButtonStyle.Primary)
 								.setEmoji('✊');
-							paperbtn = new Discord.ButtonBuilder()
+							paperbtn = new discord_js.ButtonBuilder()
 								.setDisabled()
 								.setCustomId(id3)
 								.setLabel(options.buttons.paper)
-								.setStyle(Discord.ButtonStyle.Primary)
+								.setStyle(discord_js.ButtonStyle.Primary)
 								.setEmoji('✋');
-							row = new Discord.ActionRowBuilder()
+							row = new discord_js.ActionRowBuilder()
 								.addComponents(rockbtn)
 								.addComponents(paperbtn)
 								.addComponents(scissorsbtn);
-							const _embed = new Discord.EmbedBuilder()
+							const _embed = new discord_js.EmbedBuilder()
 								.setTitle(options.embed.title)
-								.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-								.setFooter({text: options.embed.footer})
+								.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+								.setFooter({ text: options.embed.footer })
 								.setDescription(result)
 								.addFields(
 									{
@@ -462,7 +497,7 @@ async function RockPaperScissors (options) {
 							data.delete(options.message.author.id);
 							return question.edit({
 								embeds: [_embed],
-								components : [row],
+								components: [row],
 							});
 						}
 					} else if (button.customId === id3) {
@@ -518,29 +553,29 @@ async function RockPaperScissors (options) {
 									options.message.author.id,
 								);
 							}
-							scissorsbtn = new Discord.ButtonBuilder()
+							scissorsbtn = new discord_js.ButtonBuilder()
 								.setDisabled()
 								.setCustomId(id1)
 								.setLabel(options.buttons.scissors)
-								.setStyle(Discord.ButtonStyle.Primary)
+								.setStyle(discord_js.ButtonStyle.Primary)
 								.setEmoji('✌️');
-							rockbtn = new Discord.ButtonBuilder()
+							rockbtn = new discord_js.ButtonBuilder()
 								.setDisabled()
 								.setCustomId(id2)
 								.setLabel(options.buttons.rock)
-								.setStyle(Discord.ButtonStyle.Primary)
+								.setStyle(discord_js.ButtonStyle.Primary)
 								.setEmoji('✊');
-							paperbtn = new Discord.ButtonBuilder()
+							paperbtn = new discord_js.ButtonBuilder()
 								.setDisabled()
 								.setCustomId(id3)
 								.setLabel(options.buttons.paper)
-								.setStyle(Discord.ButtonStyle.Primary)
+								.setStyle(discord_js.ButtonStyle.Primary)
 								.setEmoji('✋');
-							row = new Discord.ActionRowBuilder()
+							row = new discord_js.ActionRowBuilder()
 								.addComponents(rockbtn)
 								.addComponents(paperbtn)
 								.addComponents(scissorsbtn);
-							const _embed = new Discord.EmbedBuilder()
+							const _embed = new discord_js.EmbedBuilder()
 								.setTitle(options.embed.title)
 								.setDescription(result)
 								.addFields(
@@ -555,8 +590,8 @@ async function RockPaperScissors (options) {
 										inline: true,
 									},
 								)
-								.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-								.setFooter({text: options.embed.footer});
+								.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+								.setFooter({ text: options.embed.footer });
 							if (options.embed.timestamp) {
 								_embed.setTimestamp();
 							}
@@ -565,7 +600,7 @@ async function RockPaperScissors (options) {
 							data.delete(options.message.author.id);
 							return question.edit({
 								embeds: [_embed],
-								components : [row],
+								components: [row],
 							});
 						}
 					} else if (button.customId === id1) {
@@ -621,29 +656,29 @@ async function RockPaperScissors (options) {
 									options.message.author.id,
 								);
 							}
-							scissorsbtn = new Discord.ButtonBuilder()
+							scissorsbtn = new discord_js.ButtonBuilder()
 								.setDisabled()
 								.setCustomId(id1)
 								.setLabel(options.buttons.scissors)
-								.setStyle(Discord.ButtonStyle.Primary)
+								.setStyle(discord_js.ButtonStyle.Primary)
 								.setEmoji('✌️');
-							rockbtn = new Discord.ButtonBuilder()
+							rockbtn = new discord_js.ButtonBuilder()
 								.setDisabled()
 								.setCustomId(id2)
 								.setLabel(options.buttons.rock)
-								.setStyle(Discord.ButtonStyle.Primary)
+								.setStyle(discord_js.ButtonStyle.Primary)
 								.setEmoji('✊');
-							paperbtn = new Discord.ButtonBuilder()
+							paperbtn = new discord_js.ButtonBuilder()
 								.setDisabled()
 								.setCustomId(id3)
 								.setLabel(options.buttons.paper)
-								.setStyle(Discord.ButtonStyle.Primary)
+								.setStyle(discord_js.ButtonStyle.Primary)
 								.setEmoji('✋');
-							row = new Discord.ActionRowBuilder()
+							row = new discord_js.ActionRowBuilder()
 								.addComponents(rockbtn)
 								.addComponents(paperbtn)
 								.addComponents(scissorsbtn);
-							const _embed = new Discord.EmbedBuilder()
+							const _embed = new discord_js.EmbedBuilder()
 								.setTitle(options.embed.title)
 								.setDescription(result)
 								.addFields(
@@ -658,8 +693,8 @@ async function RockPaperScissors (options) {
 										inline: true,
 									},
 								)
-								.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-								.setFooter({text: options.embed.footer});
+								.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+								.setFooter({ text: options.embed.footer });
 							if (options.embed.timestamp) {
 								_embed.setTimestamp();
 							}
@@ -668,7 +703,7 @@ async function RockPaperScissors (options) {
 							data.delete(options.message.author.id);
 							return question.edit({
 								embeds: [_embed],
-								components : [row],
+								components: [row],
 							});
 						}
 					}
@@ -733,29 +768,29 @@ async function RockPaperScissors (options) {
 									options.message.author.id,
 								);
 							}
-							scissorsbtn = new Discord.ButtonBuilder()
+							scissorsbtn = new discord_js.ButtonBuilder()
 								.setDisabled()
 								.setCustomId(id1)
 								.setLabel(options.buttons.scissors)
-								.setStyle(Discord.ButtonStyle.Primary)
+								.setStyle(discord_js.ButtonStyle.Primary)
 								.setEmoji('✌️');
-							rockbtn = new Discord.ButtonBuilder()
+							rockbtn = new discord_js.ButtonBuilder()
 								.setDisabled()
 								.setCustomId(id2)
 								.setLabel(options.buttons.rock)
-								.setStyle(Discord.ButtonStyle.Primary)
+								.setStyle(discord_js.ButtonStyle.Primary)
 								.setEmoji('✊');
-							paperbtn = new Discord.ButtonBuilder()
+							paperbtn = new discord_js.ButtonBuilder()
 								.setDisabled()
 								.setCustomId(id3)
 								.setLabel(options.buttons.paper)
-								.setStyle(Discord.ButtonStyle.Primary)
+								.setStyle(discord_js.ButtonStyle.Primary)
 								.setEmoji('✋');
-							row = new Discord.ActionRowBuilder()
+							row = new discord_js.ActionRowBuilder()
 								.addComponents(rockbtn)
 								.addComponents(paperbtn)
 								.addComponents(scissorsbtn);
-							const _embed = new Discord.EmbedBuilder()
+							const _embed = new discord_js.EmbedBuilder()
 								.setTitle(options.embed.title)
 								.setDescription(result)
 								.addFields(
@@ -770,8 +805,8 @@ async function RockPaperScissors (options) {
 										inline: true,
 									},
 								)
-								.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-								.setFooter({text: options.embed.footer});
+								.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+								.setFooter({ text: options.embed.footer });
 							if (options.embed.timestamp) {
 								_embed.setTimestamp();
 							}
@@ -780,7 +815,7 @@ async function RockPaperScissors (options) {
 							data.delete(options.message.author.id);
 							return question.edit({
 								embeds: [_embed],
-								components : [row],
+								components: [row],
 							});
 						}
 					} else if (button.customId === id3) {
@@ -836,29 +871,29 @@ async function RockPaperScissors (options) {
 									options.message.author.id,
 								);
 							}
-							scissorsbtn = new Discord.ButtonBuilder()
+							scissorsbtn = new discord_js.ButtonBuilder()
 								.setDisabled()
 								.setCustomId(id1)
 								.setLabel(options.buttons.scissors)
-								.setStyle(Discord.ButtonStyle.Primary)
+								.setStyle(discord_js.ButtonStyle.Primary)
 								.setEmoji('✌️');
-							rockbtn = new Discord.ButtonBuilder()
+							rockbtn = new discord_js.ButtonBuilder()
 								.setDisabled()
 								.setCustomId(id2)
 								.setLabel(options.buttons.rock)
-								.setStyle(Discord.ButtonStyle.Primary)
+								.setStyle(discord_js.ButtonStyle.Primary)
 								.setEmoji('✊');
-							paperbtn = new Discord.ButtonBuilder()
+							paperbtn = new discord_js.ButtonBuilder()
 								.setDisabled()
 								.setCustomId(id3)
 								.setLabel(options.buttons.paper)
-								.setStyle(Discord.ButtonStyle.Primary)
+								.setStyle(discord_js.ButtonStyle.Primary)
 								.setEmoji('✋');
-							row = new Discord.ActionRowBuilder()
+							row = new discord_js.ActionRowBuilder()
 								.addComponents(rockbtn)
 								.addComponents(paperbtn)
 								.addComponents(scissorsbtn);
-							const _embed = new Discord.EmbedBuilder()
+							const _embed = new discord_js.EmbedBuilder()
 								.setTitle(options.embed.title)
 								.setDescription(result)
 								.addFields(
@@ -873,8 +908,8 @@ async function RockPaperScissors (options) {
 										inline: true,
 									},
 								)
-								.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-								.setFooter({text: options.embed.footer});
+								.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+								.setFooter({ text: options.embed.footer });
 							if (options.embed.timestamp) {
 								_embed.setTimestamp();
 							}
@@ -883,7 +918,7 @@ async function RockPaperScissors (options) {
 							data.delete(options.message.author.id);
 							return question.edit({
 								embeds: [_embed],
-								components : [row],
+								components: [row],
 							});
 						}
 					} else if (button.customId === id1) {
@@ -939,29 +974,29 @@ async function RockPaperScissors (options) {
 									options.message.author.id,
 								);
 							}
-							scissorsbtn = new Discord.ButtonBuilder()
+							scissorsbtn = new discord_js.ButtonBuilder()
 								.setDisabled()
 								.setCustomId(id1)
 								.setLabel(options.buttons.scissors)
-								.setStyle(Discord.ButtonStyle.Primary)
+								.setStyle(discord_js.ButtonStyle.Primary)
 								.setEmoji('✌️');
-							rockbtn = new Discord.ButtonBuilder()
+							rockbtn = new discord_js.ButtonBuilder()
 								.setDisabled()
 								.setCustomId(id2)
 								.setLabel(options.buttons.rock)
-								.setStyle(Discord.ButtonStyle.Primary)
+								.setStyle(discord_js.ButtonStyle.Primary)
 								.setEmoji('✊');
-							paperbtn = new Discord.ButtonBuilder()
+							paperbtn = new discord_js.ButtonBuilder()
 								.setDisabled()
 								.setCustomId(id3)
 								.setLabel(options.buttons.paper)
-								.setStyle(Discord.ButtonStyle.Primary)
+								.setStyle(discord_js.ButtonStyle.Primary)
 								.setEmoji('✋');
-							row = new Discord.ActionRowBuilder()
+							row = new discord_js.ActionRowBuilder()
 								.addComponents(rockbtn)
 								.addComponents(paperbtn)
 								.addComponents(scissorsbtn);
-							const _embed = new Discord.EmbedBuilder()
+							const _embed = new discord_js.EmbedBuilder()
 								.setTitle(options.embed.title)
 								.setDescription(result)
 								.addFields(
@@ -976,8 +1011,8 @@ async function RockPaperScissors (options) {
 										inline: true,
 									},
 								)
-								.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-								.setFooter({text: options.embed.footer});
+								.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+								.setFooter({ text: options.embed.footer });
 							if (options.embed.timestamp) {
 								_embed.setTimestamp();
 							}
@@ -986,7 +1021,7 @@ async function RockPaperScissors (options) {
 							data.delete(options.message.author.id);
 							return question.edit({
 								embeds: [_embed],
-								components : [row],
+								components: [row],
 							});
 						}
 					}
@@ -994,33 +1029,33 @@ async function RockPaperScissors (options) {
 			});
 			collector.on('end', async (collected, reason) => {
 				if (reason === 'time') {
-					scissorsbtn = new Discord.ButtonBuilder()
+					scissorsbtn = new discord_js.ButtonBuilder()
 						.setDisabled()
 						.setCustomId(id1)
 						.setLabel(options.buttons.scissors)
-						.setStyle(Discord.ButtonStyle.Primary)
+						.setStyle(discord_js.ButtonStyle.Primary)
 						.setEmoji('✌️');
-					rockbtn = new Discord.ButtonBuilder()
+					rockbtn = new discord_js.ButtonBuilder()
 						.setDisabled()
 						.setCustomId(id2)
 						.setLabel(options.buttons.rock)
-						.setStyle(Discord.ButtonStyle.Primary)
+						.setStyle(discord_js.ButtonStyle.Primary)
 						.setEmoji('✊');
-					paperbtn = new Discord.ButtonBuilder()
+					paperbtn = new discord_js.ButtonBuilder()
 						.setDisabled()
 						.setCustomId(id3)
 						.setLabel(options.buttons.paper)
-						.setStyle(Discord.ButtonStyle.Primary)
+						.setStyle(discord_js.ButtonStyle.Primary)
 						.setEmoji('✋');
-					row = new Discord.ActionRowBuilder()
+					row = new discord_js.ActionRowBuilder()
 						.addComponents(rockbtn)
 						.addComponents(paperbtn)
 						.addComponents(scissorsbtn);
-					const _embed = new Discord.EmbedBuilder()
+					const _embed = new discord_js.EmbedBuilder()
 						.setTitle(options.embed.title)
 						.setDescription(options.timeEndMessage)
-						.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-						.setFooter({text: options.embed.footer});
+						.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+						.setFooter({ text: options.embed.footer });
 					if (options.embed.timestamp) {
 						_embed.setTimestamp();
 					}
@@ -1028,7 +1063,7 @@ async function RockPaperScissors (options) {
 					data.delete(options.message.author.id);
 					return question.edit({
 						embeds: [_embed],
-						components : [row],
+						components: [row],
 					});
 				}
 			});
@@ -1037,27 +1072,27 @@ async function RockPaperScissors (options) {
 
 	Collector.on('end', async (msg, reason) => {
 		if (reason === 'time') {
-			acceptbutton = new Discord.ButtonBuilder()
+			acceptbutton = new discord_js.ButtonBuilder()
 				.setDisabled()
-				.setStyle(Discord.ButtonStyle.Success)
+				.setStyle(discord_js.ButtonStyle.Success)
 				.setLabel(options.buttons.accept)
 				.setCustomId('accept');
-			denybutton = new Discord.ButtonBuilder()
+			denybutton = new discord_js.ButtonBuilder()
 				.setDisabled()
-				.setStyle(Discord.ButtonStyle.Danger)
+				.setStyle(discord_js.ButtonStyle.Danger)
 				.setLabel(options.buttons.deny)
 				.setCustomId('deny');
-			component = new Discord.ActionRowBuilder().addComponents([
+			component = new discord_js.ActionRowBuilder().addComponents([
 				acceptbutton,
 				denybutton,
 			]);
-			const _embed = new Discord.EmbedBuilder()
+			const _embed = new discord_js.EmbedBuilder()
 				.setTitle(options.embed.title)
 				.setDescription(
 					options.endMessage.replace('{{opponent}}', options.opponent.id),
 				)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer});
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer });
 			if (options.embed.timestamp) {
 				_embed.setTimestamp();
 			}
@@ -1065,8 +1100,10 @@ async function RockPaperScissors (options) {
 			data.delete(options.message.author.id);
 			return question.edit({
 				embeds: [_embed],
-				components : [component],
+				components: [component],
 			});
 		}
 	});
 };
+
+exports.default = RockPaperScissors;

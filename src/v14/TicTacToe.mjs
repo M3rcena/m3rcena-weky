@@ -1,5 +1,23 @@
-import { ButtonStyle } from 'discord.js';
-import { EmbedBuilder, ButtonBuilder, ActionRowBuilder } from 'discord.js';
+import { ButtonStyle, EmbedBuilder, ButtonBuilder, ActionRowBuilder } from 'discord.js';
+import chalk from 'chalk';
+
+/**
+ * TicTacToe Game for your Bot!
+ * @param {Object} options - Options for the TicTacToe Game
+ * 
+ * @param {String} options.xEmoji - Emoji for Player 1
+ * @param {String} options.oEmoji - Emoji for Player 2
+ * 
+ * @param {String} options.xColor - Color for Player 1
+ * @param {String} options.oColor - Color for Player 2
+ * 
+ * @param {DiscordUser} options.opponent - The opponent
+ * 
+ * @param {Message} options.message - The message object
+ * 
+ * @returns {Promise<void>}
+ * @copyright All rights Reserved. Weky Development
+ */
 
 export default async (options) => {
     if (!options.xEmoji) {
@@ -14,8 +32,8 @@ export default async (options) => {
     if (!options.oColor) {
         options.oColor = "Primary"
     };
-    if (!options.opponent) throw new TypeError('Weky Error: Missing argument: opponent | Type: DiscordUser')
-    if (!options.message) throw new TypeError('Weky Error: Missing argument: message | Type Message')
+    if (!options.opponent) throw new TypeError(`${chalk.red('Weky Error:')} Missing argument: opponent | Type: DiscordUser`)
+    if (!options.message) throw new TypeError(`${chalk.red('Weky Error:')} Missing argument: message | Type Message`)
 
     let [a1, a2, a3, b1, b2, b3, c1, c2, c3] = getBoarder();
     let [a11, a22, a33, b11, b22, b33, c11, c22, c33] = getIds();

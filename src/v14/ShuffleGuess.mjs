@@ -1,7 +1,33 @@
-import { ButtonStyle } from 'discord.js';
+import { ButtonStyle, ButtonBuilder, EmbedBuilder } from 'discord.js';
 const data = new Set();
-import Discord from 'discord.js';
 import { getRandomString, getRandomSentence, shuffleString, convertTime } from '../../functions/function.mjs';
+
+/**
+ * Shuffle Guess Game for your bot!
+ * @param {object} options - Options for the game.
+ * @param {object} options.message - The message object.
+ * @param {string} [options.word] - The word to shuffle.
+ * 
+ * @param {object} [options.button] - Buttons for the game.
+ * @param {string} [options.button.cancel] - The cancel button text.
+ * @param {string} [options.button.reshuffle] - The reshuffle button text.
+ * 
+ * @param {object} [options.embed] - Embed for the game.
+ * @param {string} [options.embed.title] - The title of the embed.
+ * @param {string} [options.embed.footer] - The footer of the embed.
+ * @param {boolean} [options.embed.timestamp] - Whether to show timestamp in the embed.
+ * 
+ * @param {string} [options.startMessage] - The start message for the game.
+ * @param {string} [options.winMessage] - The win message for the game.
+ * @param {string} [options.loseMessage] - The lose message for the game.
+ * @param {string} [options.incorrectMessage] - The incorrect message for the game.
+ * @param {string} [options.othersMessage] - The others message for the game.
+ * 
+ * @param {number} [options.time] - The time for the game.
+ * 
+ * @returns {Promise<void>}
+ * @copyright All rights Reserved. Weky Development
+ */
 
 export default async (options) => {
 	if (!options.message) {
@@ -124,15 +150,15 @@ export default async (options) => {
 
 	const word = shuffleString(options.word.toString());
 
-	let disbut = new Discord.ButtonBuilder()
+	let disbut = new ButtonBuilder()
 		.setLabel(options.button.reshuffle)
 		.setCustomId(id1)
 		.setStyle(ButtonStyle.Success);
-	let cancel = new Discord.ButtonBuilder()
+	let cancel = new ButtonBuilder()
 		.setLabel(options.button.cancel)
 		.setCustomId(id2)
 		.setStyle(ButtonStyle.Danger);
-	const emd = new Discord.EmbedBuilder()
+	const emd = new EmbedBuilder()
 		.setTitle(options.embed.title)
 		.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
 		.setFooter({text: options.embed.footer})
@@ -167,18 +193,18 @@ export default async (options) => {
 		if (msg.content.toLowerCase() === options.word.toString()) {
 			gameCollector.stop();
 			data.delete(options.message.author.id);
-			disbut = new Discord.ButtonBuilder()
+			disbut = new ButtonBuilder()
 				.setLabel(options.button.reshuffle)
 				.setCustomId(id1)
 				.setStyle(ButtonStyle.Success)
 				.setDisabled();
-			cancel = new Discord.ButtonBuilder()
+			cancel = new ButtonBuilder()
 				.setLabel(options.button.cancel)
 				.setCustomId(id2)
 				.setStyle(ButtonStyle.Danger)
 				.setDisabled();
 			const time = convertTime(Date.now() - gameCreatedAt);
-			const _embed = new Discord.EmbedBuilder()
+			const _embed = new EmbedBuilder()
 			.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
 			.setFooter({text: options.embed.footer})
 				.setDescription(
@@ -200,7 +226,7 @@ export default async (options) => {
 				],
 			});
 		} else {
-			const _embed = new Discord.EmbedBuilder()
+			const _embed = new EmbedBuilder()
 				.setDescription(
 					options.incorrectMessage
 						.replace('{{author}}', msg.author.toString())
@@ -232,7 +258,7 @@ export default async (options) => {
 		await btn.deferUpdate();
 
 		if (btn.customId === id1) {
-			const _embed = new Discord.EmbedBuilder()
+			const _embed = new EmbedBuilder()
 				.setTitle(options.embed.title)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
 				.setFooter({text: options.embed.footer})
@@ -259,17 +285,17 @@ export default async (options) => {
 		} else if (btn.customId === id2) {
 			gameCollector.stop();
 			data.delete(options.message.author.id);
-			disbut = new Discord.ButtonBuilder()
+			disbut = new ButtonBuilder()
 				.setLabel(options.button.reshuffle)
 				.setCustomId(id1)
 				.setStyle(ButtonStyle.Success)
 				.setDisabled();
-			cancel = new Discord.ButtonBuilder()
+			cancel = new ButtonBuilder()
 				.setLabel(options.button.cancel)
 				.setCustomId(id2)
 				.setStyle(ButtonStyle.Danger)
 				.setDisabled();
-			const _embed = new Discord.EmbedBuilder()
+			const _embed = new EmbedBuilder()
 				.setTitle(options.embed.title)
 				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
 				.setFooter({text: options.embed.footer})
@@ -293,17 +319,17 @@ export default async (options) => {
 
 	gameCollector.on('end', async (_collected, reason) => {
 		if (reason === 'time') {
-			disbut = new Discord.ButtonBuilder()
+			disbut = new ButtonBuilder()
 				.setLabel(options.button.reshuffle)
 				.setCustomId(id1)
 				.setStyle(ButtonStyle.Success)
 				.setDisabled();
-			cancel = new Discord.ButtonBuilder()
+			cancel = new ButtonBuilder()
 				.setLabel(options.button.cancel)
 				.setCustomId(id2)
 				.setStyle(ButtonStyle.Danger)
 				.setDisabled();
-			const _embed = new Discord.EmbedBuilder()
+			const _embed = new EmbedBuilder()
 			.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
 			.setFooter({text: options.embed.footer})
 				.setDescription(

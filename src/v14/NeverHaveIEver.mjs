@@ -1,7 +1,27 @@
-import { ButtonStyle } from 'discord.js';
+import { ButtonStyle, ButtonBuilder, EmbedBuilder } from 'discord.js';
 import fetch from 'node-fetch';
-import Discord from 'discord.js';
 import { getRandomString } from '../../functions/function.mjs';
+
+/**
+ * Play Never Have I Ever with your bot
+ * @param {object} options - Options for the Never Have I Ever game
+ * @param {object} options.message - The message object
+ * 
+ * @param {object} [options.embed] - The embed object
+ * @param {string} [options.embed.title] - The title of the embed
+ * @param {string} [options.embed.footer] - The footer of the embed
+ * @param {boolean} [options.embed.timestamp] - The timestamp of the embed
+ * 
+ * @param {string} [options.thinkMessage] - The message to show while the bot is thinking
+ * @param {string} [options.othersMessage] - The message to show when others rather than the message author uses the buttons
+ * 
+ * @param {object} [options.buttons] - Button options
+ * @param {string} [options.buttons.optionA] - The text for the option A button
+ * @param {string} [options.buttons.optionB] - The text for the option B button
+ * 
+ * @returns {Promise<void>}
+ * @copyright All rights Reserved. Weky Development
+ */
 
 export default async (options) => {
 	if (!options.message) {
@@ -83,7 +103,7 @@ export default async (options) => {
 
 	const think = await options.message.reply({
 		embeds: [
-			new Discord.EmbedBuilder()
+			new EmbedBuilder()
 				.setTitle(`${options.thinkMessage}.`)
 				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
 				.setFooter({ text: options.embed.footer }),
@@ -92,7 +112,7 @@ export default async (options) => {
 
 	await think.edit({
 		embeds: [
-			new Discord.EmbedBuilder()
+			new EmbedBuilder()
 				.setTitle(`${options.thinkMessage}..`)
 				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
 				.setFooter({ text: options.embed.footer }),
@@ -105,7 +125,7 @@ export default async (options) => {
 
 	await think.edit({
 		embeds: [
-			new Discord.EmbedBuilder()
+			new EmbedBuilder()
 				.setTitle(`${options.thinkMessage}...`)
 				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
 				.setFooter({ text: options.embed.footer }),
@@ -116,32 +136,32 @@ export default async (options) => {
 
 	await think.edit({
 		embeds: [
-			new Discord.EmbedBuilder()
+			new EmbedBuilder()
 				.setTitle(`${options.thinkMessage}..`)
 				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
 				.setFooter({ text: options.embed.footer }),
 		],
 	});
 
-	let btn = new Discord.ButtonBuilder()
+	let btn = new ButtonBuilder()
 		.setStyle(ButtonStyle.Primary)
 		.setLabel(`${options.buttons.optionA}`)
 		.setCustomId(id1);
-	let btn2 = new Discord.ButtonBuilder()
+	let btn2 = new ButtonBuilder()
 		.setStyle(ButtonStyle.Primary)
 		.setLabel(`${options.buttons.optionB}`)
 		.setCustomId(id2);
 
 	await think.edit({
 		embeds: [
-			new Discord.EmbedBuilder()
+			new EmbedBuilder()
 				.setTitle(`${options.thinkMessage}.`)
 				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
 				.setFooter({ text: options.embed.footer }),
 		],
 	});
 
-	const embed = new Discord.EmbedBuilder()
+	const embed = new EmbedBuilder()
 		.setTitle(options.embed.title)
 		.setDescription(statement)
 		.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
@@ -173,12 +193,12 @@ export default async (options) => {
 		await nhie.deferUpdate();
 
 		if (nhie.customId === id1) {
-			btn = new Discord.ButtonBuilder()
+			btn = new ButtonBuilder()
 				.setStyle(ButtonStyle.Primary)
 				.setLabel(`${options.buttons.optionA}`)
 				.setCustomId(id1)
 				.setDisabled();
-			btn2 = new Discord.ButtonBuilder()
+			btn2 = new ButtonBuilder()
 				.setStyle(ButtonStyle.Secondary)
 				.setLabel(`${options.buttons.optionB}`)
 				.setCustomId(id2)
@@ -189,12 +209,12 @@ export default async (options) => {
 				components: [{ type: 1, components: [btn, btn2] }],
 			});
 		} else if (nhie.customId === id2) {
-			btn = new Discord.ButtonBuilder()
+			btn = new ButtonBuilder()
 				.setStyle(ButtonStyle.Secondary)
 				.setLabel(`${options.buttons.optionA}`)
 				.setCustomId(id1)
 				.setDisabled();
-			btn2 = new Discord.ButtonBuilder()
+			btn2 = new ButtonBuilder()
 				.setStyle(ButtonStyle.Primary)
 				.setLabel(`${options.buttons.optionB}`)
 				.setCustomId(id2)

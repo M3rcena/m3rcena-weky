@@ -1,7 +1,7 @@
 'use strict';
 
-var Discord = require('discord.js');
-var _function = require('./function-tD1ad7nu.cjs');
+var discord_js = require('discord.js');
+var _function = require('./function-Bv9fWZf5.js');
 require('axios');
 require('chalk');
 require('cheerio');
@@ -10,9 +10,35 @@ require('string-width');
 
 const data = new Set();
 
-module.exports = {Snake};
+/**
+ * Snake Game for your Discord Bot
+ * @param {object} options - Options for the Snake Game
+ * @param {object} options.message - The Discord Message
+ * 
+ * @param {object} [options.embed] - Embed Options
+ * @param {string} [options.embed.title] - The Embed Title
+ * @param {string} [options.embed.description] - The Embed Description
+ * @param {string} [options.embed.footer] - The Embed Footer
+ * @param {boolean} [options.embed.timestamp] - The Embed Timestamp
+ * 
+ * @param {object} [options.emojis] - Emojis for the Game
+ * @param {string} [options.emojis.empty] - The Empty Emoji
+ * @param {string} [options.emojis.snakeBody] - The Snake Body Emoji
+ * @param {string} [options.emojis.food] - The Food Emoji
+ * @param {string} [options.emojis.up] - The Up Emoji
+ * @param {string} [options.emojis.right] - The Right Emoji
+ * @param {string} [options.emojis.down] - The Down Emoji
+ * @param {string} [options.emojis.left] - The Left Emoji
+ * 
+ * @param {string} [options.othersMessage] - The Message for other users
+ * 
+ * @param {string} [options.buttonText] - The Button Text
+ * 
+ * @returns {Promise<void>}
+ * @copyright All rights Reserved. Weky Development
+ */
 
-async function Snake (options) {
+var Snake = async (options) => {
 	if (!options.message) {
 		throw new Error('Weky Error: message argument was not specified.');
 	}
@@ -235,7 +261,7 @@ async function Snake (options) {
 			newappleLoc();
 		}
 
-		const editEmbed = new Discord.EmbedBuilder()
+		const editEmbed = new discord_js.EmbedBuilder()
 			.setTitle(options.embed.title)
 			.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
 			.setFooter({text: options.embed.footer})
@@ -243,35 +269,35 @@ async function Snake (options) {
 		if (options.embed.timestamp) {
 			editEmbed.setTimestamp();
 		}
-		lock1 = new Discord.ButtonBuilder()
+		lock1 = new discord_js.ButtonBuilder()
 			.setLabel('\u200b')
-			.setStyle(Discord.ButtonStyle.Secondary)
+			.setStyle(discord_js.ButtonStyle.Secondary)
 			.setCustomId(id1)
 			.setDisabled();
-		w = new Discord.ButtonBuilder()
+		w = new discord_js.ButtonBuilder()
 			.setEmoji(options.emojis.up)
-			.setStyle(Discord.ButtonStyle.Primary)
+			.setStyle(discord_js.ButtonStyle.Primary)
 			.setCustomId(id2);
-		lock2 = new Discord.ButtonBuilder()
+		lock2 = new discord_js.ButtonBuilder()
 			.setLabel('\u200b')
-			.setStyle(Discord.ButtonStyle.Secondary)
+			.setStyle(discord_js.ButtonStyle.Secondary)
 			.setCustomId(id7)
 			.setDisabled();
-		a = new Discord.ButtonBuilder()
+		a = new discord_js.ButtonBuilder()
 			.setEmoji(options.emojis.right)
-			.setStyle(Discord.ButtonStyle.Primary)
+			.setStyle(discord_js.ButtonStyle.Primary)
 			.setCustomId(id3);
-		s = new Discord.ButtonBuilder()
+		s = new discord_js.ButtonBuilder()
 			.setEmoji(options.emojis.down)
-			.setStyle(Discord.ButtonStyle.Primary)
+			.setStyle(discord_js.ButtonStyle.Primary)
 			.setCustomId(id4);
-		d = new Discord.ButtonBuilder()
+		d = new discord_js.ButtonBuilder()
 			.setEmoji(options.emojis.left)
-			.setStyle(Discord.ButtonStyle.Primary)
+			.setStyle(discord_js.ButtonStyle.Primary)
 			.setCustomId(id5);
-		stopy = new Discord.ButtonBuilder()
+		stopy = new discord_js.ButtonBuilder()
 			.setLabel(options.buttonText)
-			.setStyle(Discord.ButtonStyle.Danger)
+			.setStyle(discord_js.ButtonStyle.Danger)
 			.setCustomId(id6);
 
 		msg.edit({
@@ -290,45 +316,45 @@ async function Snake (options) {
 	}
 
 	function gameOver(m) {
-		lock1 = new Discord.ButtonBuilder()
+		lock1 = new discord_js.ButtonBuilder()
 			.setLabel('\u200b')
-			.setStyle(Discord.ButtonStyle.Secondary)
+			.setStyle(discord_js.ButtonStyle.Secondary)
 			.setCustomId(id1)
 			.setDisabled();
 
-		lock2 = new Discord.ButtonBuilder()
+		lock2 = new discord_js.ButtonBuilder()
 			.setLabel('\u200b')
-			.setStyle(Discord.ButtonStyle.Secondary)
+			.setStyle(discord_js.ButtonStyle.Secondary)
 			.setCustomId(id7)
 			.setDisabled();
-		w = new Discord.ButtonBuilder()
+		w = new discord_js.ButtonBuilder()
 			.setEmoji(options.emojis.up)
-			.setStyle(Discord.ButtonStyle.Primary)
+			.setStyle(discord_js.ButtonStyle.Primary)
 			.setCustomId(id2)
 			.setDisabled();
-		a = new Discord.ButtonBuilder()
+		a = new discord_js.ButtonBuilder()
 			.setEmoji(options.emojis.right)
-			.setStyle(Discord.ButtonStyle.Primary)
+			.setStyle(discord_js.ButtonStyle.Primary)
 			.setCustomId(id3)
 			.setDisabled();
-		s = new Discord.ButtonBuilder()
+		s = new discord_js.ButtonBuilder()
 			.setEmoji(options.emojis.down)
-			.setStyle(Discord.ButtonStyle.Primary)
+			.setStyle(discord_js.ButtonStyle.Primary)
 			.setCustomId(id4)
 			.setDisabled();
-		d = new Discord.ButtonBuilder()
+		d = new discord_js.ButtonBuilder()
 			.setEmoji(options.emojis.left)
-			.setStyle(Discord.ButtonStyle.Primary)
+			.setStyle(discord_js.ButtonStyle.Primary)
 			.setCustomId(id5)
 			.setDisabled();
-		stopy = new Discord.ButtonBuilder()
+		stopy = new discord_js.ButtonBuilder()
 			.setLabel(options.buttonText)
-			.setStyle(Discord.ButtonStyle.Danger)
+			.setStyle(discord_js.ButtonStyle.Danger)
 			.setCustomId(id6)
 			.setDisabled();
 		inGame = false;
 
-		const editEmbed = new Discord.EmbedBuilder()
+		const editEmbed = new discord_js.EmbedBuilder()
 			.setTitle(options.embed.title)
 			.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
 			.setFooter({text: options.embed.footer})
@@ -358,7 +384,7 @@ async function Snake (options) {
 	snakeLength = 1;
 	snake = [{ x: 5, y: 5 }];
 	newappleLoc();
-	const embed = new Discord.EmbedBuilder()
+	const embed = new discord_js.EmbedBuilder()
 		.setTitle(options.embed.title)
 		.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
 		.setFooter({text: options.embed.footer})
@@ -367,35 +393,35 @@ async function Snake (options) {
 		embed.setTimestamp();
 	}
 
-	let lock1 = new Discord.ButtonBuilder()
+	let lock1 = new discord_js.ButtonBuilder()
 		.setLabel('\u200b')
-		.setStyle(Discord.ButtonStyle.Secondary)
+		.setStyle(discord_js.ButtonStyle.Secondary)
 		.setCustomId(id1)
 		.setDisabled();
-	let w = new Discord.ButtonBuilder()
+	let w = new discord_js.ButtonBuilder()
 		.setEmoji(options.emojis.up)
-		.setStyle(Discord.ButtonStyle.Primary)
+		.setStyle(discord_js.ButtonStyle.Primary)
 		.setCustomId(id2);
-	let lock2 = new Discord.ButtonBuilder()
+	let lock2 = new discord_js.ButtonBuilder()
 		.setLabel('\u200b')
-		.setStyle(Discord.ButtonStyle.Secondary)
+		.setStyle(discord_js.ButtonStyle.Secondary)
 		.setCustomId(id7)
 		.setDisabled();
-	let a = new Discord.ButtonBuilder()
+	let a = new discord_js.ButtonBuilder()
 		.setEmoji(options.emojis.right)
-		.setStyle(Discord.ButtonStyle.Primary)
+		.setStyle(discord_js.ButtonStyle.Primary)
 		.setCustomId(id3);
-	let s = new Discord.ButtonBuilder()
+	let s = new discord_js.ButtonBuilder()
 		.setEmoji(options.emojis.down)
-		.setStyle(Discord.ButtonStyle.Primary)
+		.setStyle(discord_js.ButtonStyle.Primary)
 		.setCustomId(id4);
-	let d = new Discord.ButtonBuilder()
+	let d = new discord_js.ButtonBuilder()
 		.setEmoji(options.emojis.left)
-		.setStyle(Discord.ButtonStyle.Primary)
+		.setStyle(discord_js.ButtonStyle.Primary)
 		.setCustomId(id5);
-	let stopy = new Discord.ButtonBuilder()
+	let stopy = new discord_js.ButtonBuilder()
 		.setLabel(options.buttonText)
-		.setStyle(Discord.ButtonStyle.Danger)
+		.setStyle(discord_js.ButtonStyle.Danger)
 		.setCustomId(id6);
 
 	const m = await options.message.reply({
@@ -477,3 +503,5 @@ async function Snake (options) {
 		}
 	});
 };
+
+exports.default = Snake;

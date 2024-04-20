@@ -1,7 +1,34 @@
-import { ButtonStyle } from 'discord.js';
+import { ButtonStyle, ButtonBuilder, EmbedBuilder } from 'discord.js';
 const data = new Set();
-import Discord from 'discord.js';
 import { getRandomString } from '../../functions/function.mjs';
+
+/**
+ * Snake Game for your Discord Bot
+ * @param {object} options - Options for the Snake Game
+ * @param {object} options.message - The Discord Message
+ * 
+ * @param {object} [options.embed] - Embed Options
+ * @param {string} [options.embed.title] - The Embed Title
+ * @param {string} [options.embed.description] - The Embed Description
+ * @param {string} [options.embed.footer] - The Embed Footer
+ * @param {boolean} [options.embed.timestamp] - The Embed Timestamp
+ * 
+ * @param {object} [options.emojis] - Emojis for the Game
+ * @param {string} [options.emojis.empty] - The Empty Emoji
+ * @param {string} [options.emojis.snakeBody] - The Snake Body Emoji
+ * @param {string} [options.emojis.food] - The Food Emoji
+ * @param {string} [options.emojis.up] - The Up Emoji
+ * @param {string} [options.emojis.right] - The Right Emoji
+ * @param {string} [options.emojis.down] - The Down Emoji
+ * @param {string} [options.emojis.left] - The Left Emoji
+ * 
+ * @param {string} [options.othersMessage] - The Message for other users
+ * 
+ * @param {string} [options.buttonText] - The Button Text
+ * 
+ * @returns {Promise<void>}
+ * @copyright All rights Reserved. Weky Development
+ */
 
 export default async (options) => {
 	if (!options.message) {
@@ -226,7 +253,7 @@ export default async (options) => {
 			newappleLoc();
 		}
 
-		const editEmbed = new Discord.EmbedBuilder()
+		const editEmbed = new EmbedBuilder()
 			.setTitle(options.embed.title)
 			.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
 			.setFooter({text: options.embed.footer})
@@ -234,33 +261,33 @@ export default async (options) => {
 		if (options.embed.timestamp) {
 			editEmbed.setTimestamp();
 		}
-		lock1 = new Discord.ButtonBuilder()
+		lock1 = new ButtonBuilder()
 			.setLabel('\u200b')
 			.setStyle(ButtonStyle.Secondary)
 			.setCustomId(id1)
 			.setDisabled();
-		w = new Discord.ButtonBuilder()
+		w = new ButtonBuilder()
 			.setEmoji(options.emojis.up)
 			.setStyle(ButtonStyle.Primary)
 			.setCustomId(id2);
-		lock2 = new Discord.ButtonBuilder()
+		lock2 = new ButtonBuilder()
 			.setLabel('\u200b')
 			.setStyle(ButtonStyle.Secondary)
 			.setCustomId(id7)
 			.setDisabled();
-		a = new Discord.ButtonBuilder()
+		a = new ButtonBuilder()
 			.setEmoji(options.emojis.right)
 			.setStyle(ButtonStyle.Primary)
 			.setCustomId(id3);
-		s = new Discord.ButtonBuilder()
+		s = new ButtonBuilder()
 			.setEmoji(options.emojis.down)
 			.setStyle(ButtonStyle.Primary)
 			.setCustomId(id4);
-		d = new Discord.ButtonBuilder()
+		d = new ButtonBuilder()
 			.setEmoji(options.emojis.left)
 			.setStyle(ButtonStyle.Primary)
 			.setCustomId(id5);
-		stopy = new Discord.ButtonBuilder()
+		stopy = new ButtonBuilder()
 			.setLabel(options.buttonText)
 			.setStyle(ButtonStyle.Danger)
 			.setCustomId(id6);
@@ -281,45 +308,45 @@ export default async (options) => {
 	}
 
 	function gameOver(m) {
-		lock1 = new Discord.ButtonBuilder()
+		lock1 = new ButtonBuilder()
 			.setLabel('\u200b')
 			.setStyle(ButtonStyle.Secondary)
 			.setCustomId(id1)
 			.setDisabled();
 
-		lock2 = new Discord.ButtonBuilder()
+		lock2 = new ButtonBuilder()
 			.setLabel('\u200b')
 			.setStyle(ButtonStyle.Secondary)
 			.setCustomId(id7)
 			.setDisabled();
-		w = new Discord.ButtonBuilder()
+		w = new ButtonBuilder()
 			.setEmoji(options.emojis.up)
 			.setStyle(ButtonStyle.Primary)
 			.setCustomId(id2)
 			.setDisabled();
-		a = new Discord.ButtonBuilder()
+		a = new ButtonBuilder()
 			.setEmoji(options.emojis.right)
 			.setStyle(ButtonStyle.Primary)
 			.setCustomId(id3)
 			.setDisabled();
-		s = new Discord.ButtonBuilder()
+		s = new ButtonBuilder()
 			.setEmoji(options.emojis.down)
 			.setStyle(ButtonStyle.Primary)
 			.setCustomId(id4)
 			.setDisabled();
-		d = new Discord.ButtonBuilder()
+		d = new ButtonBuilder()
 			.setEmoji(options.emojis.left)
 			.setStyle(ButtonStyle.Primary)
 			.setCustomId(id5)
 			.setDisabled();
-		stopy = new Discord.ButtonBuilder()
+		stopy = new ButtonBuilder()
 			.setLabel(options.buttonText)
 			.setStyle(ButtonStyle.Danger)
 			.setCustomId(id6)
 			.setDisabled();
 		inGame = false;
 
-		const editEmbed = new Discord.EmbedBuilder()
+		const editEmbed = new EmbedBuilder()
 			.setTitle(options.embed.title)
 			.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
 			.setFooter({text: options.embed.footer})
@@ -349,7 +376,7 @@ export default async (options) => {
 	snakeLength = 1;
 	snake = [{ x: 5, y: 5 }];
 	newappleLoc();
-	const embed = new Discord.EmbedBuilder()
+	const embed = new EmbedBuilder()
 		.setTitle(options.embed.title)
 		.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
 		.setFooter({text: options.embed.footer})
@@ -358,33 +385,33 @@ export default async (options) => {
 		embed.setTimestamp();
 	}
 
-	let lock1 = new Discord.ButtonBuilder()
+	let lock1 = new ButtonBuilder()
 		.setLabel('\u200b')
 		.setStyle(ButtonStyle.Secondary)
 		.setCustomId(id1)
 		.setDisabled();
-	let w = new Discord.ButtonBuilder()
+	let w = new ButtonBuilder()
 		.setEmoji(options.emojis.up)
 		.setStyle(ButtonStyle.Primary)
 		.setCustomId(id2);
-	let lock2 = new Discord.ButtonBuilder()
+	let lock2 = new ButtonBuilder()
 		.setLabel('\u200b')
 		.setStyle(ButtonStyle.Secondary)
 		.setCustomId(id7)
 		.setDisabled();
-	let a = new Discord.ButtonBuilder()
+	let a = new ButtonBuilder()
 		.setEmoji(options.emojis.right)
 		.setStyle(ButtonStyle.Primary)
 		.setCustomId(id3);
-	let s = new Discord.ButtonBuilder()
+	let s = new ButtonBuilder()
 		.setEmoji(options.emojis.down)
 		.setStyle(ButtonStyle.Primary)
 		.setCustomId(id4);
-	let d = new Discord.ButtonBuilder()
+	let d = new ButtonBuilder()
 		.setEmoji(options.emojis.left)
 		.setStyle(ButtonStyle.Primary)
 		.setCustomId(id5);
-	let stopy = new Discord.ButtonBuilder()
+	let stopy = new ButtonBuilder()
 		.setLabel(options.buttonText)
 		.setStyle(ButtonStyle.Danger)
 		.setCustomId(id6);

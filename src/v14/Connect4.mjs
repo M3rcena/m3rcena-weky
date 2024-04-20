@@ -1,6 +1,7 @@
-import { filter } from "mathjs";
+import { filter, im } from "mathjs";
 import { randomHexColor } from "../../functions/function.mjs";
 import { ButtonBuilder, ButtonStyle, EmbedBuilder, ActionRowBuilder } from 'discord.js';
+import chalk from 'chalk';
 
 /**
  * Play Connect4 with someone on discord!
@@ -22,13 +23,13 @@ import { ButtonBuilder, ButtonStyle, EmbedBuilder, ActionRowBuilder } from 'disc
 export default async (options) => {
   // Basic
   if (!options.message) {
-    throw new Error('[Weky Error] Message argument was not specified.');
+    throw new Error(`${chalk.red('Weky Error:')} Message argument was not specified.`);
   };
   if (typeof options.message !== 'object') {
-    throw new Error('[Weky Error] Discord Message argument should be a type of object.');
+    throw new TypeError(`${chalk.red('Weky Error:')} Discord Message argument should be a type of object.`);
   };
   if (!options.opponent) {
-    throw new Error('[Weky Error] Opponent argument was not specified.');
+    throw new TypeError(`${chalk.red('Weky Error:')} Opponent argument was not specified.`);
   };
 
   // Embeds

@@ -1,36 +1,50 @@
 'use strict';
 
 var mathjs = require('mathjs');
-var Discord = require('discord.js');
-var _function = require('./function-tD1ad7nu.cjs');
+var discord_js = require('discord.js');
+var _function = require('./function-Bv9fWZf5.js');
+var chalk = require('chalk');
 require('axios');
-require('chalk');
 require('cheerio');
 require('node-fetch');
 require('string-width');
 
-module.exports = {
-	Calculator
-}
+/**
+ * Make a calculator for your bot
+ * @param {object} options - Options for the calculator
+ * @param {object} options.message - The message object
+ * 
+ * @param {object} [options.embed] - The embed object
+ * @param {string} [options.embed.title] - The title of the embed
+ * @param {string} [options.embed.footer] - The footer of the embed
+ * @param {boolean} [options.embed.timestamp] - The timestamp of the embed
+ * 
+ * @param {string} [options.disabledQuery] - The disabled query message
+ * @param {string} [options.invalidQuery] - The invalid query message
+ * @param {string} [options.othersMessage] - The others message
+ * 
+ * @returns {Promise<void>}
+ * @copyright All rights Reserved. Weky Development
+ */
 
-async function Calculator(options) {
+var Calculator = async (options) => {
 	if (!options.message) {
-		throw new Error('Weky Error: message argument was not specified.');
+		throw new Error(`${chalk.red('Weky Error:')} message argument was not specified.`);
 	}
 	if (typeof options.message !== 'object') {
-		throw new TypeError('Weky Error: Invalid Discord Message was provided.');
+		throw new TypeError(`${chalk.red('Weky Error:')} Invalid Discord Message was provided.`);
 	}
 
 	if (!options.embed) options.embed = {};
 	if (typeof options.embed !== 'object') {
-		throw new TypeError('Weky Error: embed must be an object.');
+		throw new TypeError(`${chalk.red('Weky Error:')} embed must be an object.`);
 	}
 
 	if (!options.embed.title) {
 		options.embed.title = 'Calculator | Weky Development';
 	}
 	if (typeof options.embed.title !== 'string') {
-		throw new TypeError('Weky Error: embed title must be a string.');
+		throw new TypeError(`${chalk.red('Weky Error:')} embed title must be a string.`);
 	}
 
 
@@ -39,33 +53,33 @@ async function Calculator(options) {
 		options.embed.footer = '©️ Weky Development';
 	}
 	if (typeof options.embed.footer !== 'string') {
-		throw new TypeError('Weky Error: embed footer must be a string.');
+		throw new TypeError(`${chalk.red('Weky Error:')} footer must be a string.`);
 	}
 
 	if (!options.embed.timestamp) options.embed.timestamp = true;
 	if (typeof options.embed.timestamp !== 'boolean') {
-		throw new TypeError('Weky Error: timestamp must be a boolean.');
+		throw new TypeError(`${chalk.red('Weky Error:')} timestamp must be a boolean.`);
 	}
 
 	if (!options.disabledQuery) {
 		options.disabledQuery = 'Calculator is disabled!';
 	}
 	if (typeof options.disabledQuery !== 'string') {
-		throw new TypeError('Weky Error: disabledQuery must be a string.');
+		throw new TypeError(`${chalk.red('Weky Error:')} disabledQuery must be a string.`);
 	}
 
 	if (!options.invalidQuery) {
 		options.invalidQuery = 'The provided equation is invalid!';
 	}
 	if (typeof options.invalidQuery !== 'string') {
-		throw new TypeError('Weky Error: invalidQuery must be a string.');
+		throw new TypeError(`${chalk.red('Weky Error:')} invalidQuery must be a string.`);
 	}
 
 	if (!options.othersMessage) {
 		options.othersMessage = 'Only <@{{author}}> can use the buttons!';
 	}
 	if (typeof options.othersMessage !== 'string') {
-		throw new TypeError('Weky Error: othersMessage must be a string.');
+		throw new TypeError(`${chalk.red('Weky Error:')} othersMessage must be a string.`);
 	}
 
 	let str = ' ';
@@ -118,7 +132,7 @@ async function Calculator(options) {
 		}
 	}
 
-	const embed = new Discord.EmbedBuilder()
+	const embed = new discord_js.EmbedBuilder()
 		.setTitle(options.embed.title)
 		.setDescription(stringify)
 		.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
@@ -132,7 +146,7 @@ async function Calculator(options) {
 		})
 		.then(async (msg) => {
 			async function edit() {
-				const _embed = new Discord.EmbedBuilder()
+				const _embed = new discord_js.EmbedBuilder()
 					.setTitle(options.embed.title)
 					.setDescription(stringify)
 					.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
@@ -146,7 +160,7 @@ async function Calculator(options) {
 			}
 
 			async function lock() {
-				const _embed = new Discord.EmbedBuilder()
+				const _embed = new discord_js.EmbedBuilder()
 					.setTitle(options.embed.title)
 					.setDescription(stringify)
 					.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
@@ -237,3 +251,5 @@ async function Calculator(options) {
 			});
 		});
 };
+
+exports.default = Calculator;

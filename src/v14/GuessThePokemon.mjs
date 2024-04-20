@@ -1,8 +1,32 @@
-import { ButtonStyle } from 'discord.js';
+import { ButtonStyle, ButtonBuilder, EmbedBuilder } from 'discord.js';
 const gameData = new Set();
 import fetch from 'node-fetch';
-import Discord from 'discord.js';
 import { getRandomString, convertTime } from '../../functions/function.mjs';
+
+/**
+ * Make a Guess The Pokémon game for your bot
+ * @param {object} options - Options for the Guess The Pokémon game
+ * @param {object} options.message - The message object
+ * 
+ * @param {object} [options.embed] - The embed object
+ * @param {string} [options.embed.title] - The title of the embed
+ * @param {string} [options.embed.description] - The description of the embed
+ * @param {string} [options.embed.footer] - The footer of the embed
+ * @param {boolean} [options.embed.timestamp] - The timestamp of the embed
+ * 
+ * @param {string} [options.thinkMessage] - The thinking message
+ * @param {string} [options.othersMessage] - The others message
+ * @param {string} [options.winMessage] - The win message
+ * @param {string} [options.loseMessage] - The lose message
+ * @param {string} [options.incorrectMessage] - The incorrect message
+ * 
+ * @param {number} [options.time] - The time for the game
+ * 
+ * @param {string} [options.buttonText] - The button text
+ * 
+ * @returns {Promise<void>}
+ * @copyright All rights Reserved. Weky Development
+ */
 
 export default async (options) => {
 	if (!options.message) {
@@ -109,7 +133,7 @@ export default async (options) => {
 
 	const think = await options.message.reply({
 		embeds: [
-			new Discord.EmbedBuilder()
+			new EmbedBuilder()
 				.setTitle(`${options.thinkMessage}.`)
 				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
 				.setFooter({ text: options.embed.footer }),
@@ -118,7 +142,7 @@ export default async (options) => {
 
 	await think.edit({
 		embeds: [
-			new Discord.EmbedBuilder()
+			new EmbedBuilder()
 				.setTitle(`${options.thinkMessage}..`)
 				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
 				.setFooter({ text: options.embed.footer }),
@@ -127,7 +151,7 @@ export default async (options) => {
 
 	await think.edit({
 		embeds: [
-			new Discord.EmbedBuilder()
+			new EmbedBuilder()
 				.setTitle(`${options.thinkMessage}...`)
 				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
 				.setFooter({ text: options.embed.footer }),
@@ -147,7 +171,7 @@ export default async (options) => {
 
 	await think.edit({
 		embeds: [
-			new Discord.EmbedBuilder()
+			new EmbedBuilder()
 				.setTitle(`${options.thinkMessage}..`)
 				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
 				.setFooter({ text: options.embed.footer }),
@@ -156,19 +180,19 @@ export default async (options) => {
 
 	await think.edit({
 		embeds: [
-			new Discord.EmbedBuilder()
+			new EmbedBuilder()
 				.setTitle(`${options.thinkMessage}.`)
 				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
 				.setFooter({ text: options.embed.footer }),
 		],
 	});
 
-	let btn1 = new Discord.ButtonBuilder()
+	let btn1 = new ButtonBuilder()
 		.setStyle(ButtonStyle.Danger)
 		.setLabel(options.buttonText)
 		.setCustomId(id);
 
-	const embed = new Discord.EmbedBuilder()
+	const embed = new EmbedBuilder()
 		.setTitle(options.embed.title)
 		.setDescription(
 			options.embed.description
@@ -196,7 +220,7 @@ export default async (options) => {
 
 	collector.on('collect', async (msg) => {
 		if (msg.content.toLowerCase() === data.name) {
-			const _embed = new Discord.EmbedBuilder()
+			const _embed = new EmbedBuilder()
 				.setTitle(options.embed.title)
 				.setDescription(
 					options.winMessage
@@ -218,7 +242,7 @@ export default async (options) => {
 			msg.reply({
 				embeds: [_embed],
 			});
-			btn1 = new Discord.ButtonBuilder()
+			btn1 = new ButtonBuilder()
 				.setStyle(ButtonStyle.Danger)
 				.setLabel(options.buttonText)
 				.setDisabled()
@@ -230,7 +254,7 @@ export default async (options) => {
 			collector.stop();
 			gameData.delete(options.message.author.id);
 		} else {
-			const _embed = new Discord.EmbedBuilder()
+			const _embed = new EmbedBuilder()
 				.setDescription(
 					options.incorrectMessage
 						.replace('{{answer}}', msg.content.toLowerCase())
@@ -265,7 +289,7 @@ export default async (options) => {
 		await button.deferUpdate();
 
 		if (button.customId === id) {
-			btn1 = new Discord.ButtonBuilder()
+			btn1 = new ButtonBuilder()
 				.setStyle(ButtonStyle.Danger)
 				.setLabel(options.buttonText)
 				.setDisabled()
@@ -277,7 +301,7 @@ export default async (options) => {
 				embeds: [embed],
 				components: [{ type: 1, components: [btn1] }],
 			});
-			const _embed = new Discord.EmbedBuilder()
+			const _embed = new EmbedBuilder()
 				.setTitle(options.embed.title)
 				.setDescription(
 					options.loseMessage.replace(
@@ -299,7 +323,7 @@ export default async (options) => {
 
 	collector.on('end', async (_msg, reason) => {
 		if (reason === 'time') {
-			btn1 = new Discord.ButtonBuilder()
+			btn1 = new ButtonBuilder()
 				.setStyle(ButtonStyle.Danger)
 				.setLabel(options.buttonText)
 				.setDisabled()
@@ -311,7 +335,7 @@ export default async (options) => {
 				embeds: [embed],
 				components: [{ type: 1, components: [btn1] }],
 			});
-			const _embed = new Discord.EmbedBuilder()
+			const _embed = new EmbedBuilder()
 				.setTitle(options.embed.title)
 				.setDescription(
 					options.loseMessage.replace(

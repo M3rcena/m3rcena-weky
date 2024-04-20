@@ -1,34 +1,55 @@
 'use strict';
 
-var Discord = require('discord.js');
+var discord_js = require('discord.js');
 var fetch = require('node-fetch');
 var htmlEntities = require('html-entities');
-var _function = require('./function-tD1ad7nu.cjs');
+var _function = require('./function-Bv9fWZf5.js');
+var chalk = require('chalk');
 require('axios');
-require('chalk');
 require('cheerio');
 require('string-width');
 
-module.exports = {LieSwatter};
+/**
+ * Lie Swatter game for your bot!
+ * @param {object} options - Options for the Lie Swatter game.
+ * @param {object} options.message - The message object.
+ * 
+ * @param {object} [options.embed] - Embed options.
+ * @param {string} [options.embed.title] - The title of the embed.
+ * @param {string} [options.embed.footer] - The footer of the embed.
+ * @param {boolean} [options.embed.timestamp] - Whether to show the timestamp on the embed.
+ * 
+ * @param {string} [options.thinkMessage] - The message to show while the bot is thinking.
+ * @param {string} [options.winMessage] - The message to show when the user wins.
+ * @param {string} [options.loseMessage] - The message to show when the user loses.
+ * @param {string} [options.othersMessage] - The message to show when others rather than the message author uses the buttons.
+ * 
+ * @param {object} [options.buttons] - Button options.
+ * @param {string} [options.buttons.true] - The text for the true button.
+ * @param {string} [options.buttons.lie] - The text for the lie button.
+ * 
+ * @returns {Promise<void>}
+ * @copyright All rights Reserved. Weky Development
+ */
 
-async function LieSwatter (options) {
+var LieSwatter = async (options) => {
 	if (!options.message) {
-		throw new Error('Weky Error: message argument was not specified.');
+		throw new Error(`${chalk.red('Weky Error:')} message argument was not specified.`);
 	}
 	if (typeof options.message !== 'object') {
-		throw new TypeError('Weky Error: Invalid Discord Message was provided.');
+		throw new TypeError(`${chalk.red('Weky Error:')} Invalid Discord Message was provided.`);
 	}
 
 	if (!options.embed) options.embed = {};
 	if (typeof options.embed !== 'object') {
-		throw new TypeError('Weky Error: embed must be an object.');
+		throw new TypeError(`${chalk.red('Weky Error:')} embed must be an object.`);
 	}
 
 	if (!options.embed.title) {
 		options.embed.title = 'Lie Swatter | Weky Development';
 	}
 	if (typeof options.embed.title !== 'string') {
-		throw new TypeError('Weky Error: embed title must be a string.');
+		throw new TypeError(`${chalk.red('Weky Error:')} embed title must be a string.`);
 	}
 
 
@@ -37,17 +58,17 @@ async function LieSwatter (options) {
 		options.embed.footer = '©️ Weky Development';
 	}
 	if (typeof options.embed.footer !== 'string') {
-		throw new TypeError('Weky Error: embed footer must be a string.');
+		throw new TypeError(`${chalk.red('Weky Error:')} embed footer must be a string.`);
 	}
 
 	if (!options.embed.timestamp) options.embed.timestamp = true;
 	if (typeof options.embed.timestamp !== 'boolean') {
-		throw new TypeError('Weky Error: timestamp must be a boolean.');
+		throw new TypeError(`${chalk.red('Weky Error:')} timestamp must be a boolean.`);
 	}
 
 	if (!options.thinkMessage) options.thinkMessage = 'I am thinking';
 	if (typeof options.thinkMessage !== 'string') {
-		throw new TypeError('Weky Error: thinkMessage must be a boolean.');
+		throw new TypeError(`${chalk.red('Weky Error:')} thinkMessage must be a boolean.`);
 	}
 
 	if (!options.winMessage) {
@@ -55,36 +76,36 @@ async function LieSwatter (options) {
 			'GG, It was a **{{answer}}**. You got it correct in **{{time}}**.';
 	}
 	if (typeof options.winMessage !== 'string') {
-		throw new TypeError('Weky Error: winMessage must be a boolean.');
+		throw new TypeError(`${chalk.red('Weky Error:')} winMessage must be a boolean.`);
 	}
 
 	if (!options.loseMessage) {
 		options.loseMessage = 'Better luck next time! It was a **{{answer}}**.';
 	}
 	if (typeof options.loseMessage !== 'string') {
-		throw new TypeError('Weky Error: loseMessage must be a boolean.');
+		throw new TypeError(`${chalk.red('Weky Error:')} loseMessage must be a boolean.`);
 	}
 
 	if (!options.othersMessage) {
 		options.othersMessage = 'Only <@{{author}}> can use the buttons!';
 	}
 	if (typeof options.othersMessage !== 'string') {
-		throw new TypeError('Weky Error: othersMessage must be a string.');
+		throw new TypeError(`${chalk.red('Weky Error:')} othersMessage must be a string.`);
 	}
 
 	if (!options.buttons) options.buttons = {};
 	if (typeof options.buttons !== 'object') {
-		throw new TypeError('Weky Error: buttons must be an object.');
+		throw new TypeError(`${chalk.red('Weky Error:')} buttons must be an object.`);
 	}
 
 	if (!options.buttons.true) options.buttons.true = 'Truth';
 	if (typeof options.buttons.true !== 'string') {
-		throw new TypeError('Weky Error: true buttons text must be a string.');
+		throw new TypeError(`${chalk.red('Weky Error:')} true buttons text must be a string.`);
 	}
 
 	if (!options.buttons.lie) options.buttons.lie = 'Lie';
 	if (typeof options.buttons.lie !== 'string') {
-		throw new TypeError('Weky Error: lie buttons text must be a string.');
+		throw new TypeError(`${chalk.red('Weky Error:')} lie buttons text must be a string.`);
 	}
 
 	const id1 =
@@ -107,7 +128,7 @@ async function LieSwatter (options) {
 
 	const think = await options.message.reply({
 		embeds: [
-			new Discord.EmbedBuilder()
+			new discord_js.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}.`)
 				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
 				.setFooter({ text: options.embed.footer }),
@@ -116,7 +137,7 @@ async function LieSwatter (options) {
 
 	await think.edit({
 		embeds: [
-			new Discord.EmbedBuilder()
+			new discord_js.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}..`)
 				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
 				.setFooter({ text: options.embed.footer }),
@@ -125,7 +146,7 @@ async function LieSwatter (options) {
 
 	await think.edit({
 		embeds: [
-			new Discord.EmbedBuilder()
+			new discord_js.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}...`)
 				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
 				.setFooter({ text: options.embed.footer }),
@@ -139,7 +160,7 @@ async function LieSwatter (options) {
 
 	await think.edit({
 		embeds: [
-			new Discord.EmbedBuilder()
+			new discord_js.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}..`)
 				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
 				.setFooter({ text: options.embed.footer }),
@@ -156,26 +177,26 @@ async function LieSwatter (options) {
 		answer = options.buttons.lie;
 	}
 
-	let btn1 = new Discord.ButtonBuilder()
-		.setStyle(Discord.ButtonStyle.Primary)
+	let btn1 = new discord_js.ButtonBuilder()
+		.setStyle(discord_js.ButtonStyle.Primary)
 		.setLabel(options.buttons.true)
 		.setCustomId(id1);
-	let btn2 = new Discord.ButtonBuilder()
-		.setStyle(Discord.ButtonStyle.Primary)
+	let btn2 = new discord_js.ButtonBuilder()
+		.setStyle(discord_js.ButtonStyle.Primary)
 		.setLabel(options.buttons.lie)
 		.setCustomId(id2);
 
 
 	await think.edit({
 		embeds: [
-			new Discord.EmbedBuilder()
+			new discord_js.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}.`)
 				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
 				.setFooter({ text: options.embed.footer })
 		],
 	});
 
-	const embed = new Discord.EmbedBuilder()
+	const embed = new discord_js.EmbedBuilder()
 		.setTitle(options.embed.title)
 		.setDescription(htmlEntities.decode(question.question))
 		.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
@@ -208,28 +229,28 @@ async function LieSwatter (options) {
 		await button.deferUpdate();
 
 		if (button.customId === winningID) {
-			btn1 = new Discord.ButtonBuilder()
+			btn1 = new discord_js.ButtonBuilder()
 				.setLabel(options.buttons.true)
 				.setCustomId(id1)
 				.setDisabled();
-			btn2 = new Discord.ButtonBuilder()
+			btn2 = new discord_js.ButtonBuilder()
 				.setLabel(options.buttons.lie)
 				.setCustomId(id2)
 				.setDisabled();
 			gameCollector.stop();
 			if (winningID === id1) {
-				btn1.setStyle(Discord.ButtonStyle.Success);
-				btn2.setStyle(Discord.ButtonStyle.Danger);
+				btn1.setStyle(discord_js.ButtonStyle.Success);
+				btn2.setStyle(discord_js.ButtonStyle.Danger);
 			} else {
-				btn1.setStyle(Discord.ButtonStyle.Danger);
-				btn2.setStyle(Discord.ButtonStyle.Success);
+				btn1.setStyle(discord_js.ButtonStyle.Danger);
+				btn2.setStyle(discord_js.ButtonStyle.Success);
 			}
 			think.edit({
 				embeds: [embed],
 				components: [{ type: 1, components: [btn1, btn2] }],
 			});
 			const time = _function.convertTime(Date.now() - gameCreatedAt);
-			const winEmbed = new Discord.EmbedBuilder()
+			const winEmbed = new discord_js.EmbedBuilder()
 				.setDescription(
 					`${options.winMessage
 						.replace('{{answer}}', htmlEntities.decode(answer))
@@ -242,27 +263,27 @@ async function LieSwatter (options) {
 			}
 			options.message.reply({ embeds: [winEmbed] });
 		} else {
-			btn1 = new Discord.ButtonBuilder()
+			btn1 = new discord_js.ButtonBuilder()
 				.setLabel(options.buttons.true)
 				.setCustomId(id1)
 				.setDisabled();
-			btn2 = new Discord.ButtonBuilder()
+			btn2 = new discord_js.ButtonBuilder()
 				.setLabel(options.buttons.lie)
 				.setCustomId(id2)
 				.setDisabled();
 			gameCollector.stop();
 			if (winningID === id1) {
-				btn1.setStyle(Discord.ButtonStyle.Success);
-				btn2.setStyle(Discord.ButtonStyle.Danger);
+				btn1.setStyle(discord_js.ButtonStyle.Success);
+				btn2.setStyle(discord_js.ButtonStyle.Danger);
 			} else {
-				btn1.setStyle(Discord.ButtonStyle.Danger);
-				btn2.setStyle(Discord.ButtonStyle.Success);
+				btn1.setStyle(discord_js.ButtonStyle.Danger);
+				btn2.setStyle(discord_js.ButtonStyle.Success);
 			}
 			think.edit({
 				embeds: [embed],
 				components: [{ type: 1, components: [btn1, btn2] }],
 			});
-			const lostEmbed = new Discord.EmbedBuilder()
+			const lostEmbed = new discord_js.EmbedBuilder()
 				.setDescription(
 					`${options.loseMessage.replace('{{answer}}', htmlEntities.decode(answer))}`,
 				)
@@ -275,3 +296,5 @@ async function LieSwatter (options) {
 		}
 	});
 };
+
+exports.default = LieSwatter;

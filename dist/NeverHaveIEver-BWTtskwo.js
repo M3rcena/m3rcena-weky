@@ -1,16 +1,35 @@
 'use strict';
 
-var Discord = require('discord.js');
+var discord_js = require('discord.js');
 var fetch = require('node-fetch');
-var _function = require('./function-tD1ad7nu.cjs');
+var _function = require('./function-Bv9fWZf5.js');
 require('axios');
 require('chalk');
 require('cheerio');
 require('string-width');
 
-module.exports = {NeverHaveIEver};
+/**
+ * Play Never Have I Ever with your bot
+ * @param {object} options - Options for the Never Have I Ever game
+ * @param {object} options.message - The message object
+ * 
+ * @param {object} [options.embed] - The embed object
+ * @param {string} [options.embed.title] - The title of the embed
+ * @param {string} [options.embed.footer] - The footer of the embed
+ * @param {boolean} [options.embed.timestamp] - The timestamp of the embed
+ * 
+ * @param {string} [options.thinkMessage] - The message to show while the bot is thinking
+ * @param {string} [options.othersMessage] - The message to show when others rather than the message author uses the buttons
+ * 
+ * @param {object} [options.buttons] - Button options
+ * @param {string} [options.buttons.optionA] - The text for the option A button
+ * @param {string} [options.buttons.optionB] - The text for the option B button
+ * 
+ * @returns {Promise<void>}
+ * @copyright All rights Reserved. Weky Development
+ */
 
-async function NeverHaveIEver (options) {
+var NeverHaveIEver = async (options) => {
 	if (!options.message) {
 		throw new Error('Weky Error: message argument was not specified.');
 	}
@@ -90,7 +109,7 @@ async function NeverHaveIEver (options) {
 
 	const think = await options.message.reply({
 		embeds: [
-			new Discord.EmbedBuilder()
+			new discord_js.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}.`)
 				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
 				.setFooter({ text: options.embed.footer }),
@@ -99,7 +118,7 @@ async function NeverHaveIEver (options) {
 
 	await think.edit({
 		embeds: [
-			new Discord.EmbedBuilder()
+			new discord_js.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}..`)
 				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
 				.setFooter({ text: options.embed.footer }),
@@ -112,7 +131,7 @@ async function NeverHaveIEver (options) {
 
 	await think.edit({
 		embeds: [
-			new Discord.EmbedBuilder()
+			new discord_js.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}...`)
 				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
 				.setFooter({ text: options.embed.footer }),
@@ -123,32 +142,32 @@ async function NeverHaveIEver (options) {
 
 	await think.edit({
 		embeds: [
-			new Discord.EmbedBuilder()
+			new discord_js.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}..`)
 				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
 				.setFooter({ text: options.embed.footer }),
 		],
 	});
 
-	let btn = new Discord.ButtonBuilder()
-		.setStyle(Discord.ButtonStyle.Primary)
+	let btn = new discord_js.ButtonBuilder()
+		.setStyle(discord_js.ButtonStyle.Primary)
 		.setLabel(`${options.buttons.optionA}`)
 		.setCustomId(id1);
-	let btn2 = new Discord.ButtonBuilder()
-		.setStyle(Discord.ButtonStyle.Primary)
+	let btn2 = new discord_js.ButtonBuilder()
+		.setStyle(discord_js.ButtonStyle.Primary)
 		.setLabel(`${options.buttons.optionB}`)
 		.setCustomId(id2);
 
 	await think.edit({
 		embeds: [
-			new Discord.EmbedBuilder()
+			new discord_js.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}.`)
 				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
 				.setFooter({ text: options.embed.footer }),
 		],
 	});
 
-	const embed = new Discord.EmbedBuilder()
+	const embed = new discord_js.EmbedBuilder()
 		.setTitle(options.embed.title)
 		.setDescription(statement)
 		.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
@@ -180,13 +199,13 @@ async function NeverHaveIEver (options) {
 		await nhie.deferUpdate();
 
 		if (nhie.customId === id1) {
-			btn = new Discord.ButtonBuilder()
-				.setStyle(Discord.ButtonStyle.Primary)
+			btn = new discord_js.ButtonBuilder()
+				.setStyle(discord_js.ButtonStyle.Primary)
 				.setLabel(`${options.buttons.optionA}`)
 				.setCustomId(id1)
 				.setDisabled();
-			btn2 = new Discord.ButtonBuilder()
-				.setStyle(Discord.ButtonStyle.Secondary)
+			btn2 = new discord_js.ButtonBuilder()
+				.setStyle(discord_js.ButtonStyle.Secondary)
 				.setLabel(`${options.buttons.optionB}`)
 				.setCustomId(id2)
 				.setDisabled();
@@ -196,13 +215,13 @@ async function NeverHaveIEver (options) {
 				components: [{ type: 1, components: [btn, btn2] }],
 			});
 		} else if (nhie.customId === id2) {
-			btn = new Discord.ButtonBuilder()
-				.setStyle(Discord.ButtonStyle.Secondary)
+			btn = new discord_js.ButtonBuilder()
+				.setStyle(discord_js.ButtonStyle.Secondary)
 				.setLabel(`${options.buttons.optionA}`)
 				.setCustomId(id1)
 				.setDisabled();
-			btn2 = new Discord.ButtonBuilder()
-				.setStyle(Discord.ButtonStyle.Primary)
+			btn2 = new discord_js.ButtonBuilder()
+				.setStyle(discord_js.ButtonStyle.Primary)
 				.setLabel(`${options.buttons.optionB}`)
 				.setCustomId(id2)
 				.setDisabled();
@@ -214,3 +233,5 @@ async function NeverHaveIEver (options) {
 		}
 	});
 };
+
+exports.default = NeverHaveIEver;

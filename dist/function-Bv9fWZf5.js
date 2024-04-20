@@ -5,7 +5,7 @@ require('chalk');
 require('cheerio');
 var fetch = require('node-fetch');
 require('string-width');
-var Discord = require('discord.js');
+var discord_js = require('discord.js');
 
 var words = [
 	"ability",
@@ -2048,18 +2048,18 @@ const WillYouPressTheButton = function () {
 };
 
 const addRow = function(btns) {
-	const row = new Discord.ActionRowBuilder();
+	const row = new discord_js.ActionRowBuilder();
 	for (const btn of btns) {
 		row.addComponents(btn);
 	}
 	return row;
 };
 const createButton = function(label, disabled, getRandomString) {
-	let style = Discord.ButtonStyle.Primary;
+	let style = discord_js.ButtonStyle.Primary;
 	if (label === 'AC' || label === 'DC' || label === '⌫') {
-		style = Discord.ButtonStyle.Success;
+		style = discord_js.ButtonStyle.Success;
 	} else if (label === '=') {
-		style = Discord.ButtonStyle.Danger;
+		style = discord_js.ButtonStyle.Danger;
 	} else if (
 		label === '(' ||
 		label === ')' ||
@@ -2071,10 +2071,10 @@ const createButton = function(label, disabled, getRandomString) {
 		label === '+' ||
 		label === '.'
 	) {
-		style = Discord.ButtonStyle.Primary;
+		style = discord_js.ButtonStyle.Primary;
 	}
 	if (disabled) {
-		const btn = new Discord.ButtonBuilder()
+		const btn = new discord_js.ButtonBuilder()
 			.setLabel(label)
 			.setStyle(style)
 			.setDisabled();
@@ -2085,7 +2085,7 @@ const createButton = function(label, disabled, getRandomString) {
 		}
 		return btn;
 	} else {
-		const btn = new Discord.ButtonBuilder().setLabel(label).setStyle(style);
+		const btn = new discord_js.ButtonBuilder().setLabel(label).setStyle(style);
 		if (label === '\u200b') {
 			btn.setDisabled();
 			btn.setCustomId(getRandomString(10));

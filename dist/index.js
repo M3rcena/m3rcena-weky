@@ -1,5 +1,7 @@
 'use strict';
 
+var chalk = require('chalk');
+
 const map$3 = {
 	a: '\u0250',
 	b: 'q',
@@ -290,9 +292,9 @@ const mirror = async function (str) {
 
 const randomCase = async function (string) {
 	let result = '';
-	if (!string) throw new TypeError('Weky Error: A string was not specified.');
+	if (!string) throw new TypeError(`${chalk.red('Weky Error:')} A string was not specified.`);
 	if (typeof string !== 'string') {
-		throw new TypeError('Weky Error: Provided string is Invalid.');
+		throw new TypeError(`${chalk.red('Weky Error:')} Provided string is Invalid.`);
 	}
 	for (const i in string) {
 		const Random = Math.floor(Math.random() * 2);
@@ -309,19 +311,19 @@ const randomHexColor = async function () {
 };
 
 const randomizeNumber = async function (start, end) {
-	if (!start) throw new TypeError('Weky Error: A number was not specified.');
-	if (!end) throw new TypeError('Weky Error: A number was not specified.');
+	if (!start) throw new TypeError(`${chalk.red('Weky Error:')} A number was not specified.`);
+	if (!end) throw new TypeError(`${chalk.red('Weky Error:')} A number was not specified.`);
 	if (typeof start !== 'number' && typeof end !== 'number') {
-		throw new TypeError('Weky Error: Provided number data is Invalid');
+		throw new TypeError(`${chalk.red('Weky Error:')} Provided number data is Invalid`);
 	}
 	const res = Math.floor(Math.random() * (end - start + 1) + start);
 	return res;
 };
 
 const randomizeString = async function (array) {
-	if (!array) throw new TypeError('Weky Error: A array was not specified.');
+	if (!array) throw new TypeError(`${chalk.red('Weky Error:')} A array was not specified.`);
 	if (typeof array !== 'object') {
-		throw new TypeError('Weky Error: The provided array is invalid.');
+		throw new TypeError(`${chalk.red('Weky Error:')} The provided array is invalid.`);
 	}
 	const res = Math.floor(Math.random() * array.length);
 	return array[res];
@@ -351,37 +353,23 @@ const vaporwave = async function (string) {
 		.replace(/ /g, '　');
 };
 
-const { Snake } = require('./Snake-Cn9Tw8uZ.cjs');
-const { Fight } = require('./Fight-C7LW1BHR.cjs');
-const { Trivia } = require('./Trivia-DE0KVWOw.cjs');
-const { FastType } = require('./FastType-CvS16KZx.cjs');
-const { QuickClick } = require('./QuickClick-Bz67C0Yw.cjs');
-const { ChaosWords } = require('./ChaosWords-CGrpyZdw.cjs');
-const { LieSwatter } = require('./LieSwatter-ysxe7wTG.cjs');
-const { Calculator } = require('./Calculator-CQ5R-9sU.cjs');
-const { ShuffleGuess } = require('./ShuffleGuess-Bt5uB3_X.cjs');
-const { GuessTheNumber } = require('./GuessTheNumber-QmIoxYJA.cjs');
-const { NeverHaveIEver } = require('./NeverHaveIEver-BsbfRLP4.cjs');
-const { WouldYouRather } = require('./WouldYouRather-CBZh1MSy.cjs');
-const { GuessThePokemon } = require('./GuessThePokemon-BBRrlhRF.cjs');
-const { RockPaperScissors } = require('./RockPaperScissors-CWf71zZU.cjs');
-const { WillYouPressTheButton } = require('./WillYouPressTheButton-CRm02Ych.cjs');
-
-exports.Calculator = Calculator;
-exports.ChaosWords = ChaosWords;
-exports.FastType = FastType;
-exports.Fight = Fight;
-exports.GuessTheNumber = GuessTheNumber;
-exports.GuessThePokemon = GuessThePokemon;
-exports.LieSwatter = LieSwatter;
-exports.NeverHaveIEver = NeverHaveIEver;
-exports.QuickClick = QuickClick;
-exports.RockPaperScissors = RockPaperScissors;
-exports.ShuffleGuess = ShuffleGuess;
-exports.Snake = Snake;
-exports.Trivia = Trivia;
-exports.WillYouPressTheButton = WillYouPressTheButton;
-exports.WouldYouRather = WouldYouRather;
+exports.Snake = void 0; exports.Fight = void 0; exports.Trivia = void 0; exports.FastType = void 0; exports.QuickClick = void 0; exports.ChaosWords = void 0; exports.LieSwatter = void 0; exports.Calculator = void 0; exports.ShuffleGuess = void 0; exports.GuessTheNumber = void 0; exports.NeverHaveIEver = void 0; exports.WouldYouRather = void 0; exports.GuessThePokemon = void 0; exports.RockPaperScissors = void 0; exports.WillYouPressTheButton = void 0;
+	exports.Snake = Promise.resolve().then(function () { return require('./Snake-BB7dY1wn.js'); });
+	exports.Fight = Promise.resolve().then(function () { return require('./Fight-C5RQaITT.js'); });
+	exports.Trivia = Promise.resolve().then(function () { return require('./Trivia-Pqatr--A.js'); });
+	exports.FastType = Promise.resolve().then(function () { return require('./FastType-MDG2NIdk.js'); });
+	exports.QuickClick = Promise.resolve().then(function () { return require('./QuickClick-Dv6EHeR2.js'); });
+	exports.ChaosWords = Promise.resolve().then(function () { return require('./ChaosWords-CVmGR-vP.js'); });
+	exports.LieSwatter = Promise.resolve().then(function () { return require('./LieSwatter-BJqoVsdh.js'); });
+	exports.Calculator = Promise.resolve().then(function () { return require('./Calculator-CD_islqG.js'); });
+	exports.ShuffleGuess = Promise.resolve().then(function () { return require('./ShuffleGuess-DUJlbY9W.js'); });
+	exports.GuessTheNumber = Promise.resolve().then(function () { return require('./GuessTheNumber-DCKgh4h_.js'); });
+	exports.NeverHaveIEver = Promise.resolve().then(function () { return require('./NeverHaveIEver-BWTtskwo.js'); });
+	exports.WouldYouRather = Promise.resolve().then(function () { return require('./WouldYouRather-CWuMYZ3Y.js'); });
+	exports.GuessThePokemon = Promise.resolve().then(function () { return require('./GuessThePokemon-BgxCzWF-.js'); });
+	exports.RockPaperScissors = Promise.resolve().then(function () { return require('./RockPaperScissors-DMc1ljy3.js'); });
+	exports.WillYouPressTheButton = Promise.resolve().then(function () { return require('./WillYouPressTheButton-BGP3MxIS.js'); });
+	Promise.resolve().then(function () { return require('./TicTacToe-AV0sMj2f.js'); });
 
 exports.bent = bent;
 exports.flip = flip;

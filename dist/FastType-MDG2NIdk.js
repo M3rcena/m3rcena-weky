@@ -1,35 +1,64 @@
 'use strict';
 
-var Discord = require('discord.js');
-var _function = require('./function-tD1ad7nu.cjs');
+var discord_js = require('discord.js');
+var _function = require('./function-Bv9fWZf5.js');
+var chalk = require('chalk');
 require('axios');
-require('chalk');
 require('cheerio');
 require('node-fetch');
 require('string-width');
 
 const data = new Set();
 
-module.exports = {FastType};
+/**
+ * Make a Fast Type game for your bot
+ * @param {object} options - Options for the Fast Type game
+ * @param {object} options.message - The message object
+ * 
+ * @param {object} [options.embed] - The embed object
+ * @param {string} [options.embed.title] - The title of the embed
+ * @param {string} [options.embed.description] - The description of the embed
+ * @param {string} [options.embed.field1] - The field1 of the embed
+ * @param {string} [options.embed.field2] - The field2 of the embed
+ * @param {string} [options.embed.field3] - The field3 of the embed
+ * @param {string} [options.embed.field4] - The field4 of the embed
+ * @param {string} [options.embed.color] - The color of the embed
+ * @param {string} [options.embed.footer] - The footer of the embed
+ * @param {boolean} [options.embed.timestamp] - The timestamp of the embed
+ * 
+ * @param {string} [options.sentence] - The sentence for the game
+ * @param {string} [options.winMessage] - The win message
+ * @param {string} [options.loseMessage] - The lose message
+ * 
+ * @param {number} [options.time] - The time for the game
+ * 
+ * @param {string} [options.buttonText] - The button text
+ * 
+ * @param {string} [options.othersMessage] - The others message
+ * @param {string} [options.cancelMessage] - The cancel message
+ * 
+ * @returns {Promise<void>}
+ * @copyright All rights Reserved. Weky Development
+ */
 
-async function FastType (options) {
+var FastType = async (options) => {
 	if (!options.message) {
-		throw new Error('Weky Error: message argument was not specified.');
+		throw new Error(`${chalk.red('Weky Error:')} message argument was not specified.`);
 	}
 	if (typeof options.message !== 'object') {
-		throw new TypeError('Weky Error: Invalid Discord Message was provided.');
+		throw new TypeError(`${chalk.red('Weky Error:')} Invalid Discord Message was provided.`);
 	}
 
 	if (!options.embed) options.embed = {};
 	if (typeof options.embed !== 'object') {
-		throw new TypeError('Weky Error: embed must be an object.');
+		throw new TypeError(`${chalk.red('Weky Error:')} embed must be an object.`);
 	}
 
 	if (!options.embed.title) {
 		options.embed.title = 'Fast Type | Weky Development';
 	}
 	if (typeof options.embed.title !== 'string') {
-		throw new TypeError('Weky Error: embed title must be a string.');
+		throw new TypeError(`${chalk.red('Weky Error:')} embed title must be a string.`);
 	}
 
 	if (!options.embed.description) {
@@ -37,7 +66,7 @@ async function FastType (options) {
 			'You have **{{time}}** to type the below sentence.';
 	}
 	if (typeof options.embed.description !== 'string') {
-		throw new TypeError('Weky Error: embed color must be a string.');
+		throw new TypeError(`${chalk.red('Weky Error:')} embed description must be a string.`);
 	}
 
 
@@ -45,19 +74,19 @@ async function FastType (options) {
 		options.embed.footer = '©️ Weky Development';
 	}
 	if (typeof options.embed.footer !== 'string') {
-		throw new TypeError('Weky Error: embed footer must be a string.');
+		throw new TypeError(`${chalk.red('Weky Error:')} footer must be a string.`);
 	}
 
 	if (!options.embed.timestamp) options.embed.timestamp = true;
 	if (typeof options.embed.timestamp !== 'boolean') {
-		throw new TypeError('Weky Error: timestamp must be a boolean.');
+		throw new TypeError(`${chalk.red('Weky Error:')} timestamp must be a boolean.`);
 	}
 
 	if (!options.sentence) {
 		options.sentence = _function.getRandomSentence(Math.floor(Math.random() * 10) + 3).toString().split(',').join(' ');
 	}
 	if (typeof options.sentence !== 'string') {
-		throw new TypeError('Weky Error: sentence must be a string');
+		throw new TypeError(`${chalk.red('Weky Error:')} sentence must be a string`);
 	}
 
 	if (!options.winMessage) {
@@ -65,39 +94,37 @@ async function FastType (options) {
 			'GG, you have a wpm of **{{wpm}}** and You made it in **{{time}}**.';
 	}
 	if (typeof options.winMessage !== 'string') {
-		throw new TypeError('Weky Error: winMessage must be a string.');
+		throw new TypeError(`${chalk.red('Weky Error:')} winMessage must be a string.`);
 	}
 
 	if (!options.loseMessage) options.loseMessage = 'Better luck next time!';
 	if (typeof options.loseMessage !== 'string') {
-		throw new TypeError('Weky Error: loseMessage must be a string.');
+		throw new TypeError(`${chalk.red('Weky Error:')} loseMessage must be a string.`);
 	}
 
 	if (!options.time) options.time = 60000;
 	if (parseInt(options.time) < 10000) {
-		throw new Error(
-			'Weky Error: time argument must be greater than 10 Seconds (in ms i.e. 10000).',
-		);
+		throw new TypeError(`${chalk.red('Weky Error:')} time must be greater than 10000.`);
 	}
 	if (typeof options.time !== 'number') {
-		throw new TypeError('Weky Error: time must be a number.');
+		throw new TypeError(`${chalk.red('Weky Error:')} time must be a number.`);
 	}
 
 	if (!options.buttonText) options.buttonText = 'Cancel';
 	if (typeof options.buttonText !== 'string') {
-		throw new TypeError('Weky Error: buttonText must be a string.');
+		throw new TypeError(`${chalk.red('Weky Error:')} buttonText must be a string.`);
 	}
 
 	if (!options.othersMessage) {
 		options.othersMessage = 'Only <@{{author}}> can use the buttons!';
 	}
 	if (typeof options.othersMessage !== 'string') {
-		throw new TypeError('Weky Error: othersMessage must be a string.');
+		throw new TypeError(`${chalk.red('Weky Error:')} othersMessage must be a string.`);
 	}
 
 	if (!options.cancelMessage) options.cancelMessage = 'You ended the game!';
 	if (typeof options.cancelMessage !== 'string') {
-		throw new TypeError('Weky Error: othersMessage must be a string.');
+		throw new TypeError(`${chalk.red('Weky Error:')} cancelMessage must be a string.`);
 	}
 
 	if (data.has(options.message.author.id)) return;
@@ -118,11 +145,11 @@ async function FastType (options) {
 		.map((msg) => `\`${msg.split('').join(' ')}\``)
 		.join(' ');
 	const gameCreatedAt = Date.now();
-	let btn1 = new Discord.ButtonBuilder()
-		.setStyle(Discord.ButtonStyle.Danger)
+	let btn1 = new discord_js.ButtonBuilder()
+		.setStyle(discord_js.ButtonStyle.Danger)
 		.setLabel(options.buttonText)
 		.setCustomId(id);
-	const embed = new Discord.EmbedBuilder()
+	const embed = new discord_js.EmbedBuilder()
 		.setTitle(options.embed.title)
 		.setDescription(
 			`${options.embed.description.replace(
@@ -151,7 +178,7 @@ async function FastType (options) {
 			const time = Date.now() - gameCreatedAt;
 			const minute = (time / 1000 / 60) % 60;
 			const wpm = msg.content.toLowerCase().trim().length / 5 / minute;
-			const _embed = new Discord.EmbedBuilder()
+			const _embed = new discord_js.EmbedBuilder()
 				.setDescription(
 					options.winMessage
 						.replace('{{time}}', _function.convertTime(time))
@@ -163,8 +190,8 @@ async function FastType (options) {
 				_embed.setTimestamp();
 			}
 			options.message.reply({ embeds: [_embed] });
-			btn1 = new Discord.ButtonBuilder()
-				.setStyle(Discord.ButtonStyle.Danger)
+			btn1 = new discord_js.ButtonBuilder()
+				.setStyle(discord_js.ButtonStyle.Danger)
 				.setLabel(options.buttonText)
 				.setDisabled()
 				.setCustomId(id);
@@ -175,7 +202,7 @@ async function FastType (options) {
 			collector.stop(msg.author.username);
 			data.delete(options.message.author.id);
 		} else {
-			const _embed = new Discord.EmbedBuilder()
+			const _embed = new discord_js.EmbedBuilder()
 				.setDescription(`${options.loseMessage}`)
 				.setFooter({ text: options.embed.footer })
 				.setAuthor({ name: options.message.author.username })
@@ -186,8 +213,8 @@ async function FastType (options) {
 			options.message.reply({ embeds: [_embed] });
 			collector.stop(msg.author.username);
 			data.delete(options.message.author.id);
-			btn1 = new Discord.ButtonBuilder()
-				.setStyle(Discord.ButtonStyle.Danger)
+			btn1 = new discord_js.ButtonBuilder()
+				.setStyle(discord_js.ButtonStyle.Danger)
 				.setLabel(options.buttonText)
 				.setDisabled()
 				.setCustomId(id);
@@ -200,7 +227,7 @@ async function FastType (options) {
 
 	collector.on('end', async (_collected, reason) => {
 		if (reason === 'time') {
-			const _embed = new Discord.EmbedBuilder()
+			const _embed = new discord_js.EmbedBuilder()
 				.setDescription(`${options.loseMessage}`)
 				.setAuthor({ name: options.message.author.username })
 				.setFooter({ text: options.embed.footer });
@@ -208,8 +235,8 @@ async function FastType (options) {
 				_embed.setTimestamp();
 			}
 			options.message.reply({ embeds: [_embed] });
-			btn1 = new Discord.ButtonBuilder()
-				.setStyle(Discord.ButtonStyle.Danger)
+			btn1 = new discord_js.ButtonBuilder()
+				.setStyle(discord_js.ButtonStyle.Danger)
 				.setLabel(options.buttonText)
 				.setDisabled()
 				.setCustomId(id);
@@ -233,8 +260,8 @@ async function FastType (options) {
 				ephemeral: true,
 			});
 		}
-		btn1 = new Discord.ButtonBuilder()
-			.setStyle(Discord.ButtonStyle.Danger)
+		btn1 = new discord_js.ButtonBuilder()
+			.setStyle(discord_js.ButtonStyle.Danger)
 			.setLabel(options.buttonText)
 			.setDisabled()
 			.setCustomId(id);
@@ -251,3 +278,5 @@ async function FastType (options) {
 		return collector.stop();
 	});
 };
+
+exports.default = FastType;

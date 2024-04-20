@@ -1,19 +1,38 @@
 'use strict';
 
-var Discord = require('discord.js');
+var discord_js = require('discord.js');
 var fetch = require('node-fetch');
 var htmlEntities = require('html-entities');
-var _function = require('./function-tD1ad7nu.cjs');
+var _function = require('./function-Bv9fWZf5.js');
 require('axios');
 require('chalk');
 require('cheerio');
 require('string-width');
 
-module.exports = {WouldYouRather};
+/**
+ * Would You Rather? Game for your Discord Bot!
+ * @param {object} options - Options for the game.
+ * @param {object} options.message - The Discord Message object.
+ * 
+ * @param {object} [options.embed] - Embed options.
+ * @param {string} [options.embed.title] - The title of the embed.
+ * @param {string} [options.embed.footer] - The footer of the embed.
+ * @param {boolean} [options.embed.timestamp] - Whether to show the timestamp on the footer or not.
+ * 
+ * @param {string} [options.thinkMessage] - The message to show while the bot is thinking.
+ * @param {string} [options.othersMessage] - The message to show when someone else tries to click the buttons.
+ * 
+ * @param {object} [options.buttons] - Button options.
+ * @param {string} [options.buttons.optionA] - The label for the option A button.
+ * @param {string} [options.buttons.optionB] - The label for the option B button.
+ * 
+ * @returns {Promise<void>}
+ * @copyright All rights Reserved. Weky Development
+ */
 
-async function WouldYouRather (options) {
+var WouldYouRather = async (options) => {
 
-		if (!options.message) {
+	if (!options.message) {
 		throw new Error('Weky Error: message argument was not specified.');
 	}
 	if (typeof options.message !== 'object') {
@@ -93,19 +112,19 @@ async function WouldYouRather (options) {
 
 	const think = await options.message.reply({
 		embeds: [
-			new Discord.EmbedBuilder()
+			new discord_js.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}.`)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer}),
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer }),
 		],
 	});
 
 	await think.edit({
 		embeds: [
-			new Discord.EmbedBuilder()
+			new discord_js.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}..`)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer}),
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer }),
 		],
 	});
 
@@ -116,10 +135,10 @@ async function WouldYouRather (options) {
 
 	await think.edit({
 		embeds: [
-			new Discord.EmbedBuilder()
+			new discord_js.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}...`)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer}),
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer }),
 		],
 	});
 
@@ -143,38 +162,38 @@ async function WouldYouRather (options) {
 
 	await think.edit({
 		embeds: [
-			new Discord.EmbedBuilder()
+			new discord_js.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}..`)
 				.setColor(options.embed.color),
 		],
 	});
 
-	let btn = new Discord.ButtonBuilder()
-		.setStyle(Discord.ButtonStyle.Primary)
+	let btn = new discord_js.ButtonBuilder()
+		.setStyle(discord_js.ButtonStyle.Primary)
 		.setLabel(`${options.buttons.optionA}`)
 		.setCustomId(id1);
 
-	let btn2 = new Discord.ButtonBuilder()
-		.setStyle(Discord.ButtonStyle.Primary)
+	let btn2 = new discord_js.ButtonBuilder()
+		.setStyle(discord_js.ButtonStyle.Primary)
 		.setLabel(`${options.buttons.optionB}`)
 		.setCustomId(id2);
 
 	await think.edit({
 		embeds: [
-			new Discord.EmbedBuilder()
+			new discord_js.EmbedBuilder()
 				.setTitle(`${options.thinkMessage}.`)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer}),
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer }),
 		],
 	});
 
-	const embed = new Discord.EmbedBuilder()
+	const embed = new discord_js.EmbedBuilder()
 		.setTitle(options.embed.title)
 		.setDescription(
 			`**A)** ${htmlEntities.decode(res.questions[0])} \n**B)** ${htmlEntities.decode(res.questions[1])}`,
 		)
-		.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-		.setFooter({text: options.embed.footer});
+		.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+		.setFooter({ text: options.embed.footer });
 	if (options.embed.timestamp) {
 		embed.setTimestamp();
 	}
@@ -200,26 +219,25 @@ async function WouldYouRather (options) {
 		}
 		await wyr.deferUpdate();
 		if (wyr.customId === id1) {
-			btn = new Discord.ButtonBuilder()
-				.setStyle(Discord.ButtonStyle.Primary)
+			btn = new discord_js.ButtonBuilder()
+				.setStyle(discord_js.ButtonStyle.Primary)
 				.setLabel(`${options.buttons.optionA}` + ` (${res.percentage['1']})`)
 				.setCustomId(id1)
 				.setDisabled();
-			btn2 = new Discord.ButtonBuilder()
-				.setStyle(Discord.ButtonStyle.Secondary)
+			btn2 = new discord_js.ButtonBuilder()
+				.setStyle(discord_js.ButtonStyle.Secondary)
 				.setLabel(`${options.buttons.optionB}` + ` (${res.percentage['2']})`)
 				.setCustomId(id2)
 				.setDisabled();
 			gameCollector.stop();
-			const _embed = new Discord.EmbedBuilder()
+			const _embed = new discord_js.EmbedBuilder()
 				.setTitle(options.embed.title)
 				.setDescription(
-					`**A) ${htmlEntities.decode(res.questions[0])} (${
-						res.percentage['1']
+					`**A) ${htmlEntities.decode(res.questions[0])} (${res.percentage['1']
 					})** \nB) ${htmlEntities.decode(res.questions[1])} (${res.percentage['2']})`,
 				)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer});
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer });
 			if (options.embed.timestamp) {
 				_embed.setTimestamp();
 			}
@@ -228,26 +246,25 @@ async function WouldYouRather (options) {
 				components: [{ type: 1, components: [btn, btn2] }],
 			});
 		} else if (wyr.customId === id2) {
-			btn = new Discord.ButtonBuilder()
-				.setStyle(Discord.ButtonStyle.Secondary)
+			btn = new discord_js.ButtonBuilder()
+				.setStyle(discord_js.ButtonStyle.Secondary)
 				.setLabel(`${options.buttons.optionA}` + ` (${res.percentage['1']})`)
 				.setCustomId(id1)
 				.setDisabled();
-			btn2 = new Discord.ButtonBuilder()
-				.setStyle(Discord.ButtonStyle.Primary)
+			btn2 = new discord_js.ButtonBuilder()
+				.setStyle(discord_js.ButtonStyle.Primary)
 				.setLabel(`${options.buttons.optionB}` + ` (${res.percentage['2']})`)
 				.setCustomId(id2)
 				.setDisabled();
 			gameCollector.stop();
-			const _embed = new Discord.EmbedBuilder()
+			const _embed = new discord_js.EmbedBuilder()
 				.setTitle(options.embed.title)
 				.setDescription(
-					`A) ${htmlEntities.decode(res.questions[0])} (${
-						res.percentage['1']
+					`A) ${htmlEntities.decode(res.questions[0])} (${res.percentage['1']
 					}) \n**B) ${htmlEntities.decode(res.questions[1])} (${res.percentage['2']})**`,
 				)
-				.setAuthor({name: options.message.author.username, iconURL: options.message.author.displayAvatarURL()})
-				.setFooter({text: options.embed.footer});
+				.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+				.setFooter({ text: options.embed.footer });
 			if (options.embed.timestamp) {
 				_embed.setTimestamp();
 			}
@@ -258,3 +275,5 @@ async function WouldYouRather (options) {
 		}
 	});
 };
+
+exports.default = WouldYouRather;
