@@ -1,9 +1,9 @@
 {
   "name": "@m3rcena/weky",
-  "version": "6.5.0",
+  "version": "7.0.0-beta.1.0",
   "description": "A fun npm package to play games within Discord with buttons!",
   "main": "./index.mjs",
-  "types": "typings/index.d.ts",
+  "typings": "typings/index.d.ts",
   "type": "module",
   "scripts": {
     "test": "nodemon test/index.mjs",
@@ -29,15 +29,18 @@
     "axios": "^1.6.2",
     "chalk": "^4.1.2",
     "cheerio": "^1.0.0-rc.12",
+    "discord.js": "^14.14.1",
     "html-entities": "^2.4.0",
     "mathjs": "^12.2.1",
     "node-fetch": "^2.6.9",
     "quick.db": "^9.1.7",
     "rollup": "^4.13.0",
-    "string-width": "^4.2.3"
+    "string-width": "^4.2.3",
+    "typescript": "^5.4.5"
   },
   "devDependencies": {
     "@m3rcena/inlinereply": "^1.0.0",
+    "@types/node-fetch": "^2.6.11",
     "nodemon": "^3.0.2"
   },
   "directories": {
