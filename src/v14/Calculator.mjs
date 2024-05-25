@@ -6,7 +6,7 @@ import chalk from 'chalk';
 /**
  * Make a calculator for your bot
  * @param {object} options - Options for the calculator
- * @param {object} options.message - The message object
+ * @param {object} options.message - The message or interaction object
  * 
  * @param {object} [options.embed] - The embed object
  * @param {string} [options.embed.title] - The title of the embed
@@ -22,11 +22,12 @@ import chalk from 'chalk';
  */
 
 export default async (options) => {
-	if (!options.message) {
-		throw new Error(`${chalk.red('Weky Error:')} message argument was not specified.`);
+	const message = options.message || options.interaction;
+	if (!message) {
+		throw new Error(`${chalk.red('Weky Error:')} message or interaction argument was not specified.`);
 	}
-	if (typeof options.message !== 'object') {
-		throw new TypeError(`${chalk.red('Weky Error:')} Invalid Discord Message was provided.`);
+	if (typeof message !== 'object') {
+		throw new TypeError(`${chalk.red('Weky Error:')} Invalid Discord Message or Interaction was provided.`);
 	}
 
 	if (!options.embed) options.embed = {};
@@ -40,8 +41,6 @@ export default async (options) => {
 	if (typeof options.embed.title !== 'string') {
 		throw new TypeError(`${chalk.red('Weky Error:')} embed title must be a string.`);
 	}
-
-
 
 	if (!options.embed.footer) {
 		options.embed.footer = '©️ Weky Development';
@@ -129,119 +128,175 @@ export default async (options) => {
 	const embed = new EmbedBuilder()
 		.setTitle(options.embed.title)
 		.setDescription(stringify)
-		.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
+		.setAuthor({ name: message.author?.username || message.user.username, iconURL: message.author?.displayAvatarURL() || message.user.displayAvatarURL() })
 		.setFooter({ text: options.embed.footer });
 	embed.setTimestamp();
 
-	options.message
-		.reply({
-			embeds: [embed],
-			components: row,
-		})
-		.then(async (msg) => {
-			async function edit() {
-				const _embed = new EmbedBuilder()
-					.setTitle(options.embed.title)
-					.setDescription(stringify)
-					.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
-					.setFooter({ text: options.embed.footer });
-				_embed.setTimestamp();
+	const replyOptions = {
+		embeds: [embed],
+		components: row,
+	};
 
-				msg.edit({
-					embeds: [_embed],
-					components: row,
-				});
-			}
-
-			async function lock() {
-				const _embed = new EmbedBuilder()
-					.setTitle(options.embed.title)
-					.setDescription(stringify)
-					.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
-					.setFooter({ text: options.embed.footer });
-				_embed.setTimestamp();
-				for (let i = 0; i < text.length; i++) {
-					if (buttons[cur].length === 5) cur++;
-					buttons[cur].push(
-						createButton(text[i], true, getRandomString),
-					);
-					if (i === text.length - 1) {
-						for (const btn of buttons) rows.push(addRow(btn));
-					}
-				}
-
-				msg.edit({
-					embeds: [_embed],
-					components: rows,
-				});
-			}
-
-			const calc = msg.createMessageComponentCollector({
-				filter: (fn) => fn,
-			});
-
-			calc.on('collect', async (btn) => {
-				if (btn.user.id !== options.message.author.id) {
-					return btn.reply({
-						content: options.othersMessage.replace(
-							'{{author}}',
-							options.message.author.id,
-						),
-						ephemeral: true,
-					});
-				}
-				await btn.deferUpdate();
-				if (btn.customId === 'calAC') {
-					str += ' ';
-					stringify = '```\n' + str + '\n```';
-					edit();
-				} else if (btn.customId === 'calx') {
-					str += '*';
-					stringify = '```\n' + str + '\n```';
-					edit();
-				} else if (btn.customId === 'cal÷') {
-					str += '/';
-					stringify = '```\n' + str + '\n```';
-					edit();
-				} else if (btn.customId === 'cal⌫') {
-					if (str === ' ' || str === '' || str === null || str === undefined) {
-						return;
-					} else {
-						str = str.split('');
-						str.pop();
-						str = str.join('');
-						stringify = '```\n' + str + '\n```';
-						edit();
-					}
-				} else if (btn.customId === 'cal=') {
-					if (str === ' ' || str === '' || str === null || str === undefined) {
-						return;
-					} else {
-						try {
-							str += ' = ' + evaluate(str);
-							stringify = '```\n' + str + '\n```';
-							edit();
-							str = ' ';
-							stringify = '```\n' + str + '\n```';
-						} catch (e) {
-							str = options.invalidQuery;
-							stringify = '```\n' + str + '\n```';
-							edit();
-							str = ' ';
-							stringify = '```\n' + str + '\n```';
-						}
-					}
-				} else if (btn.customId === 'calDC') {
-					str = options.disabledQuery;
-					stringify = '```\n' + str + '\n```';
-					edit();
-					calc.stop();
-					lock();
-				} else {
-					str += btn.customId.replace('cal', '');
-					stringify = '```\n' + str + '\n```';
-					edit();
-				}
-			});
+	if (message.reply) {
+		await message.reply(replyOptions).then(async (msg) => {
+			await handleCalculatorInteraction(msg, options);
 		});
-}
+	} else if (message.deferReply) {
+		await message.deferReply();
+		const msg = await message.followUp(replyOptions);
+		await handleCalculatorInteraction(msg, options);
+	}
+};
+
+const handleCalculatorInteraction = async (msg, options) => {
+	let str = ' ';
+	let stringify = '```\n' + str + '\n```';
+
+	const row = [];
+	const rows = [];
+	const button = new Array([], [], [], [], []);
+	const buttons = new Array([], [], [], [], []);
+	const text = [
+		'(',
+		')',
+		'^',
+		'%',
+		'AC',
+		'7',
+		'8',
+		'9',
+		'÷',
+		'DC',
+		'4',
+		'5',
+		'6',
+		'x',
+		'⌫',
+		'1',
+		'2',
+		'3',
+		'-',
+		'\u200b',
+		'.',
+		'0',
+		'=',
+		'+',
+		'\u200b',
+	];
+	let cur = 0;
+
+	for (let i = 0; i < text.length; i++) {
+		if (button[cur].length === 5) cur++;
+		button[cur].push(
+			createButton(text[i], false, getRandomString),
+		);
+		if (i === text.length - 1) {
+			for (const btn of button) row.push(addRow(btn));
+		}
+	}
+
+	const edit = async () => {
+		const _embed = new EmbedBuilder()
+			.setTitle(options.embed.title)
+			.setDescription(stringify)
+			.setAuthor({ name: options.message.author?.username || options.message.user.username, iconURL: options.message.author?.displayAvatarURL() || options.message.user.displayAvatarURL() })
+			.setFooter({ text: options.embed.footer });
+		_embed.setTimestamp();
+
+		msg.edit({
+			embeds: [_embed],
+			components: row,
+		});
+	};
+
+	const lock = async () => {
+		const _embed = new EmbedBuilder()
+			.setTitle(options.embed.title)
+			.setDescription(stringify)
+			.setAuthor({ name: options.message.author?.username || options.message.user.username, iconURL: options.message.author?.displayAvatarURL() || options.message.user.displayAvatarURL() })
+			.setFooter({ text: options.embed.footer });
+		_embed.setTimestamp();
+		for (let i = 0; i < text.length; i++) {
+			if (buttons[cur].length === 5) cur++;
+			buttons[cur].push(
+				createButton(text[i], true, getRandomString),
+			);
+			if (i === text.length - 1) {
+				for (const btn of buttons) rows.push(addRow(btn));
+			}
+		}
+
+		msg.edit({
+			embeds: [_embed],
+			components: rows,
+		});
+	};
+
+	const calc = msg.createMessageComponentCollector({
+		filter: (fn) => fn,
+	});
+
+	calc.on('collect', async (btn) => {
+		if (btn.user.id !== options.message.author.id) {
+			return btn.reply({
+				content: options.othersMessage.replace(
+					'{{author}}',
+					options.message.author.id,
+				),
+				ephemeral: true,
+			});
+		}
+		await btn.deferUpdate();
+		if (btn.customId === 'calAC') {
+			str += ' ';
+			stringify = '```\n' + str + '\n```';
+			edit();
+		} else if (btn.customId === 'calx') {
+			str += '*';
+			stringify = '```\n' + str + '\n```';
+			edit();
+		} else if (btn.customId === 'cal÷') {
+			str += '/';
+			stringify = '```\n' + str + '\n```';
+			edit();
+		} else if (btn.customId === 'cal⌫') {
+			if (str === ' ' || str === '' || str === null || str === undefined) {
+				return;
+			} else {
+				str = str.split('');
+				str.pop();
+				str = str.join('');
+				stringify = '```\n' + str + '\n```';
+				edit();
+			}
+		} else if (btn.customId === 'cal=') {
+			if (str === ' ' || str === '' || str === null || str === undefined) {
+				return;
+			} else {
+				try {
+					str += ' = ' + evaluate(str);
+					stringify = '```\n' + str + '\n```';
+					edit();
+					str = ' ';
+					stringify = '```\n' + str + '\n```';
+				} catch (e) {
+					str = options.invalidQuery;
+					stringify = '```\n' + str + '\n```';
+					edit();
+					str = ' ';
+					stringify = '```\n' + str + '\n```';
+				}
+			}
+		} else if (btn.customId === 'calDC') {
+			str = options.disabledQuery;
+			stringify = '```\n' + str + '\n```';
+			edit();
+			calc.stop();
+			lock();
+		} else {
+			str += btn.customId.replace('cal', '');
+			stringify = '```\n' + str + '\n```';
+			edit();
+		}
+	});
+};
