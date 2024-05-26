@@ -2,8 +2,8 @@
   "name": "@m3rcena/weky",
   "version": "7.0.0-beta.1.0",
   "description": "A fun npm package to play games within Discord with buttons!",
-  "main": "./index.mjs",
-  "typings": "typings/index.d.ts",
+  "main": "./dist/index.cjs",
+  "types": "typings/index.d.ts",
   "type": "module",
   "scripts": {
     "test": "nodemon test/index.mjs",
@@ -46,5 +46,11 @@
   "directories": {
     "test": "test"
   },
-  "license": "ISC"
+  "license": "ISC",
+  "exports": {
+    ".": {
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.mjs"
+    }
+  }
 }
