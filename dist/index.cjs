@@ -354,22 +354,22 @@ const vaporwave = async function (string) {
 };
 
 exports.Snake = void 0; exports.Fight = void 0; exports.Trivia = void 0; exports.FastType = void 0; exports.QuickClick = void 0; exports.ChaosWords = void 0; exports.LieSwatter = void 0; exports.Calculator = void 0; exports.ShuffleGuess = void 0; exports.GuessTheNumber = void 0; exports.NeverHaveIEver = void 0; exports.WouldYouRather = void 0; exports.GuessThePokemon = void 0; exports.RockPaperScissors = void 0; exports.WillYouPressTheButton = void 0;
-	exports.Snake = Promise.resolve().then(function () { return require('./Snake-BB7dY1wn.js'); });
-	exports.Fight = Promise.resolve().then(function () { return require('./Fight-C5RQaITT.js'); });
-	exports.Trivia = Promise.resolve().then(function () { return require('./Trivia-Pqatr--A.js'); });
-	exports.FastType = Promise.resolve().then(function () { return require('./FastType-MDG2NIdk.js'); });
-	exports.QuickClick = Promise.resolve().then(function () { return require('./QuickClick-Dv6EHeR2.js'); });
-	exports.ChaosWords = Promise.resolve().then(function () { return require('./ChaosWords-CVmGR-vP.js'); });
-	exports.LieSwatter = Promise.resolve().then(function () { return require('./LieSwatter-BJqoVsdh.js'); });
-	exports.Calculator = Promise.resolve().then(function () { return require('./Calculator-CD_islqG.js'); });
-	exports.ShuffleGuess = Promise.resolve().then(function () { return require('./ShuffleGuess-DUJlbY9W.js'); });
-	exports.GuessTheNumber = Promise.resolve().then(function () { return require('./GuessTheNumber-DCKgh4h_.js'); });
-	exports.NeverHaveIEver = Promise.resolve().then(function () { return require('./NeverHaveIEver-BWTtskwo.js'); });
-	exports.WouldYouRather = Promise.resolve().then(function () { return require('./WouldYouRather-CWuMYZ3Y.js'); });
-	exports.GuessThePokemon = Promise.resolve().then(function () { return require('./GuessThePokemon-BgxCzWF-.js'); });
-	exports.RockPaperScissors = Promise.resolve().then(function () { return require('./RockPaperScissors-DMc1ljy3.js'); });
-	exports.WillYouPressTheButton = Promise.resolve().then(function () { return require('./WillYouPressTheButton-BGP3MxIS.js'); });
-	Promise.resolve().then(function () { return require('./TicTacToe-AV0sMj2f.js'); });
+	exports.Snake = Promise.resolve().then(function () { return require('./Snake-B-sF7Hdp.js'); });
+	exports.Fight = Promise.resolve().then(function () { return require('./Fight-NYxLCX77.cjs'); });
+	exports.Trivia = Promise.resolve().then(function () { return require('./Trivia-cdJ3vDK2.js'); });
+	exports.FastType = Promise.resolve().then(function () { return require('./FastType-BBLMG56-.cjs'); });
+	exports.QuickClick = Promise.resolve().then(function () { return require('./QuickClick-36kV3Bz9.cjs'); });
+	exports.ChaosWords = Promise.resolve().then(function () { return require('./ChaosWords-BOCxWTZ1.cjs'); });
+	exports.LieSwatter = Promise.resolve().then(function () { return require('./LieSwatter-e9Hf0RpW.cjs'); });
+	exports.Calculator = Promise.resolve().then(function () { return require('./Calculator-DfjIYxM4.js'); });
+	exports.ShuffleGuess = Promise.resolve().then(function () { return require('./ShuffleGuess-BoHRWdg0.js'); });
+	exports.GuessTheNumber = Promise.resolve().then(function () { return require('./GuessTheNumber-CuwMlUMy.cjs'); });
+	exports.NeverHaveIEver = Promise.resolve().then(function () { return require('./NeverHaveIEver-DVH85h1i.cjs'); });
+	exports.WouldYouRather = Promise.resolve().then(function () { return require('./WouldYouRather-D5W2WpZL.js'); });
+	exports.GuessThePokemon = Promise.resolve().then(function () { return require('./GuessThePokemon-31-OpyMg.cjs'); });
+	exports.RockPaperScissors = Promise.resolve().then(function () { return require('./RockPaperScissors-DeQLUSxj.cjs'); });
+	exports.WillYouPressTheButton = Promise.resolve().then(function () { return require('./WillYouPressTheButton-BDDq3zbh.js'); });
+	Promise.resolve().then(function () { return require('./TicTacToe-Co6ZdHlS.js'); });
 
 exports.bent = bent;
 exports.flip = flip;
