@@ -2,15 +2,14 @@ import axios from 'axios';
 import chalk from 'chalk';
 import cheerio from 'cheerio';
 import fetch from 'node-fetch';
-import words from '../data/words.json' assert { type: 'json' };
-import { boxConsole } from './boxConsole.mjs';
+import words from '../data/words.json';
+import { boxConsole } from './boxConsole';
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 
-export const fetchhtml = async function (url) {
-	const options = {
+export const fetchhtml = async function (url:string) {
+	const options:any = {
 		header: {
-			'user-agent':
-				'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36',
+			'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36',
 			referer: 'https://www.google.com/',
 		},
 	};
@@ -18,7 +17,7 @@ export const fetchhtml = async function (url) {
 	return cheerio.load(html.data);
 };
 
-export const getRandomString = function (length) {
+export const getRandomString = function (length:number) {
 	const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 	let result = '';
 	for (let i = 0; i < length; i++) {
@@ -27,7 +26,7 @@ export const getRandomString = function (length) {
 	return result;
 };
 
-export const getRandomSentence = function (length) {
+export const getRandomSentence = function (length:number) {
 	const word = [];
 	for (let i = 0; i < length; i++) {
 		word.push(words[Math.floor(Math.random() * words.length)]);
@@ -35,7 +34,7 @@ export const getRandomSentence = function (length) {
 	return word;
 };
 
-export const shuffleString = function (string) {
+export const shuffleString = function (string:string) {
 	const str = string.split('');
 	const length = str.length;
 	for (let i = length - 1; i > 0; i--) {
@@ -47,7 +46,7 @@ export const shuffleString = function (string) {
 	return str.join('');
 };
 
-export const convertTime = function (time) {
+export const convertTime = function (time:number) {
 	const absoluteSeconds = Math.floor((time / 1000) % 60);
 	const absoluteMinutes = Math.floor((time / (1000 * 60)) % 60);
 	const absoluteHours = Math.floor((time / (1000 * 60 * 60)) % 24);
@@ -80,7 +79,7 @@ export const convertTime = function (time) {
 	return absoluteTime.join(', ');
 };
 
-export const shuffleArray = function (array) {
+export const shuffleArray = function (array:[]) {
 	for (let i = array.length - 1; i > 0; i--) {
 		const j = Math.floor(Math.random() * (i + 1));
 		const temp = array[i];
@@ -100,7 +99,7 @@ export const randomHexColor = function () {
 export const WillYouPressTheButton = function () {
 	return fetch('https://api2.willyoupressthebutton.com/api/v2/dilemma ', {
 		method: 'POST',
-	}).then((data) => data.json()).then((data) => { return data.dilemma; });
+	}).then((data:any) => data.json()).then((data:any) => { return data.dilemma; });
 };
 
 export const checkForUpdates = async function() {
@@ -143,14 +142,14 @@ export const checkForUpdates = async function() {
 	}
 };
 
-export const addRow = function(btns) {
+export const addRow = function(btns:[]) {
 	const row = new ActionRowBuilder();
 	for (const btn of btns) {
 		row.addComponents(btn);
 	}
 	return row;
 };
-export const createButton = function(label, disabled, getRandomString) {
+export const createButton = function(label:string, disabled:boolean, getRandomString:any) {
 	let style = ButtonStyle.Primary;
 	if (label === 'AC' || label === 'DC' || label === '⌫') {
 		style = ButtonStyle.Success;

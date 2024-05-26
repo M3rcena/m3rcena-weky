@@ -1,4 +1,75 @@
-const map = {
+interface BentMap {
+	[key: string]: string;
+	a: string;
+	b: string;
+	c: string;
+	d: string;
+	e: string;
+	f: string;
+	g: string;
+	h: string;
+	i: string;
+	j: string;
+	k: string;
+	l: string;
+	m: string;
+	n: string;
+	o: string;
+	p: string;
+	q: string;
+	r: string;
+	s: string;
+	t: string;
+	u: string;
+	v: string;
+	w: string;
+	x: string;
+	y: string;
+	z: string;
+	A: string;
+	B: string;
+	C: string;
+	D: string;
+	E: string;
+	F: string;
+	G: string;
+	H: string;
+	I: string;
+	J: string;
+	K: string;
+	L: string;
+	M: string;
+	N: string;
+	O: string;
+	P: string;
+	Q: string;
+	R: string;
+	S: string;
+	T: string;
+	U: string;
+	V: string;
+	W: string;
+	X: string;
+	Y: string;
+	Z: string;
+	0: string;
+	1: string;
+	2: string;
+	3: string;
+	4: string;
+	5: string;
+	6: string;
+	7: string;
+	8: string;
+	9: string;
+	'&': string;
+	'(': string;
+	')': string;
+	'{': string;
+	'}': string;
+}
+
+const map: BentMap = {
 	a: '\u0105',
 	b: '\u048d',
 	c: '\u00e7',

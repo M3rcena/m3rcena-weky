@@ -1,6 +1,6 @@
 import { ButtonStyle, EmbedBuilder, ButtonBuilder } from 'discord.js';
 const data = new Set();
-import { getRandomString, getRandomSentence, convertTime, randomHexColor } from '../../functions/function.mjs';
+import { getRandomString, getRandomSentence, convertTime, randomHexColor } from '../../functions/function';
 import chalk from 'chalk';
 
 /**
@@ -38,7 +38,7 @@ import chalk from 'chalk';
  * @copyright All rights Reserved. Weky Development
  */
 
-export default async (options) => {
+export default async (options:any) => {
 	if (!options.message) {
 		throw new Error(`${chalk.red('Weky Error:')} message argument was not specified.`);
 	}
@@ -185,9 +185,9 @@ export default async (options) => {
 		getRandomString(20);
 
 	let tries = 0;
-	const array = [];
+	const array:any = [];
 	let remaining = 0;
-	const guessed = [];
+	const guessed:any = [];
 
 	if (options.words.join('').length > options.charGenerated) {
 		options.charGenerated = options.words.join('').length - 1;
@@ -201,7 +201,7 @@ export default async (options) => {
 		);
 	}
 
-	options.words.forEach((e) => {
+	options.words.forEach((e:any) => {
 		array.splice(Math.floor(Math.random() * array.length), 0, e);
 	});
 
@@ -231,13 +231,13 @@ export default async (options) => {
 	});
 
 	const gameCreatedAt = Date.now();
-	const filter = (m) => m.author.id === options.message.author.id;
+	const filter = (m:any) => m.author.id === options.message.author.id;
 	const game = await options.message.channel.createMessageCollector({
 		filter,
 		time: options.time,
 	});
 
-	game.on('collect', async (msg) => {
+	game.on('collect', async (msg:any) => {
 		const condition =
 			options.words.includes(msg.content.toLowerCase()) &&
 			!guessed.includes(msg.content.toLowerCase());
@@ -371,7 +371,7 @@ export default async (options) => {
 		}
 	});
 
-	game.on('end', (msg, reason) => {
+	game.on('end', (msg:any, reason:any) => {
 		if (reason === 'time') {
 			const _embed = new EmbedBuilder()
 				.setTitle(options.embed.title)
@@ -405,10 +405,10 @@ export default async (options) => {
 	});
 
 	const gameCollector = mes.createMessageComponentCollector({
-		filter: (fn) => fn,
+		filter: (fn:any) => fn,
 	});
 
-	gameCollector.on('collect', async (button) => {
+	gameCollector.on('collect', async (button:any) => {
 		if (button.user.id !== options.message.member.id) {
 			return button.reply({
 				content: options.othersMessage.replace(

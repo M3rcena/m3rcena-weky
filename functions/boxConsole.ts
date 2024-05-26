@@ -2,7 +2,7 @@ import chalk from 'chalk';
 import stringWidth from 'string-width';
 
 
-export const boxConsole = function (messages) {
+export const boxConsole = function (messages:any) {
 	let tips = [];
 	let maxLen = 0;
 	const defaultSpace = 4;
