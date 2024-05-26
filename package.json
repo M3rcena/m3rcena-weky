@@ -10,10 +10,7 @@
     "test-cjs": "nodemon test/index.cjs",
     "build": "rollup -c"
   },
-  "keywords": [
-    "weky",
-    "discord-games"
-  ],
+  "keywords": ["weky", "discord-games"],
   "homepage": "https://github.com/M3rcena/m3rcena-weky#readme",
   "bugs": {
     "url": "https://github.com/M3rcena/m3rcena-weky/issues"

@@ -1,11 +1,22 @@
 import commonjs from '@rollup/plugin-commonjs';
+import { nodeResolve } from '@rollup/plugin-node-resolve';
 import json from '@rollup/plugin-json';
 
-export default {
-  input: 'index.mjs',
-  output: {
-    dir: 'dist',
-    format: 'cjs'
+export default [
+  {
+    input: 'src/index.js',
+    output: {
+      file: 'dist/index.cjs',
+      format: 'cjs'
+    },
+    plugins: [commonjs(), nodeResolve(), json()]
   },
-  plugins: [commonjs(), json()]
-};
+  {
+    input: 'src/index.js',
+    output: {
+      file: 'dist/index.mjs',
+      format: 'esm'
+    },
+    plugins: [nodeResolve(), json()]
+  }
+];
