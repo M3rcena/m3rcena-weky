@@ -1,7 +1,7 @@
 'use strict';
 
 var discord_js = require('discord.js');
-var _function = require('./function-Bv9fWZf5.js');
+var _function = require('./function-Bv9fWZf5.cjs');
 require('axios');
 require('chalk');
 require('cheerio');
