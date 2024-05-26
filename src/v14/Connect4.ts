@@ -1,5 +1,5 @@
 import { filter, im } from "mathjs";
-import { randomHexColor } from "../../functions/function.mjs";
+import { randomHexColor } from "../../functions/function";
 import { ButtonBuilder, ButtonStyle, EmbedBuilder, ActionRowBuilder } from 'discord.js';
 import chalk from 'chalk';
 
@@ -20,7 +20,7 @@ import chalk from 'chalk';
  * @param emojis.player1 - The player1 emoji.
  * @param emojis.player2 - The player2 emoji.
  */
-export default async (options) => {
+export default async (options: any) => {
   // Basic
   if (!options.message) {
     throw new Error(`${chalk.red('Weky Error:')} Message argument was not specified.`);
@@ -58,7 +58,7 @@ export default async (options) => {
   };
 
   // Set Board Data
-  let [id1, id2, id3, id4, id5, id6, id7, id8, id9, id10, id11, id12, id13, id14, id15, id16, id17, id18, id19, id20] = getIds();
+  let [id1, id2, id3, id4, id5, id6, id7, id8, id9, id10, id11, id12, id13, id14, id15, id16, id17, id18, id19, id20]: any = getIds();
   let [a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20] = getBoard();
   let [b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13, b14, b15, b16, b17, b18, b19, b20] = getButtons();
 
@@ -94,14 +94,14 @@ export default async (options) => {
   let Embed;
   if (player === 0) {
     Embed = new EmbedBuilder()
-                  .setTitle(`🎮 __**${authorName}**__ VS ${options.opponent.username} 🎮`)
-                  .setDescription(`It is ${authorName}'s Turn!`)
-                  .setColor(3426654)
+      .setTitle(`🎮 __**${authorName}**__ VS ${options.opponent.username} 🎮`)
+      .setDescription(`It is ${authorName}'s Turn!`)
+      .setColor(3426654)
   } else {
     Embed = new EmbedBuilder()
-                  .setTitle(`🎮 __**${authorName}**__ VS ${options.opponent.username} 🎮`)
-                  .setDescription(`It is ${options.opponent.username}'s Turn!`)
-                  .setColor(3426654)
+      .setTitle(`🎮 __**${authorName}**__ VS ${options.opponent.username} 🎮`)
+      .setDescription(`It is ${options.opponent.username}'s Turn!`)
+      .setColor(3426654)
   };
 
   options.message.reply({
@@ -112,39 +112,39 @@ export default async (options) => {
       new ActionRowBuilder().addComponents([b11, b12, b13, b14, b15]),
       new ActionRowBuilder().addComponents([b16, b17, b18, b19, b20])
     ]
-  }).then(async (msg) => {
+  }).then(async (msg: any) => {
     midDuel.add(author);
     midDuel.add(opponent.id);
     const gameCollector = msg.createMessageComponentCollector({
-      filter: (i) => i.isButton() && i.user && (i.user.id === options.message.author.id || i.user.id === options.opponent.id) && i.message.author.id == options.message.client.user.id,
+      filter: (i: any) => i.isButton() && i.user && (i.user.id === options.message.author.id || i.user.id === options.opponent.id) && i.message.author.id == options.message.client.user.id,
     });
 
-    gameCollector.on('collect', async btn => {
+    gameCollector.on('collect', async (btn: any) => {
       if (gameData[player].member.id === btn.user.id) {
         btn.deferUpdate();
         try {
-            const isAuthorWinner = checkForWin(getBoard(btn.customId), options.emojis.player1);
-            const isOpponentWinner = checkForWin(getBoard(btn.customId), options.emojis.player2);
+          const isAuthorWinner = checkForWin(getBoard(btn.customId), options.emojis.player1);
+          const isOpponentWinner = checkForWin(getBoard(btn.customId), options.emojis.player2);
 
-            if (isAuthorWinner) {
-              return btn.message.update({
-                embeds: [Embed.setDescription(`**${authorName}** won the game!`).setColor(3426654)],
-                components: []
-              });
-            } else if (isOpponentWinner) {
-              return btn.message.update({
-                embeds: [Embed.setDescription(`**${options.opponent.username}** won the game!`).setColor(3426654)],
-                components: []
-              });
-            }
-          } catch (e) {
-            console.log(e.stack ? e.stack : e)
+          if (isAuthorWinner) {
+            return btn.message.update({
+              embeds: [Embed.setDescription(`**${authorName}** won the game!`).setColor(3426654)],
+              components: []
+            });
+          } else if (isOpponentWinner) {
+            return btn.message.update({
+              embeds: [Embed.setDescription(`**${options.opponent.username}** won the game!`).setColor(3426654)],
+              components: []
+            });
           }
+        } catch (e: any) {
+          console.log(e.stack ? e.stack : e)
         }
+      }
     })
   })
 
-  function checkForWin(board, player) {
+  function checkForWin(board: any, player: any) {
     const rows = 4;
     const cols = 5
 
@@ -152,9 +152,9 @@ export default async (options) => {
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
         if (board[row * cols + col] === player &&
-            board[row * cols + col + 1] === player &&
-            board[row * cols + col + 2] === player &&
-            board[row * cols + col + 3] === player
+          board[row * cols + col + 1] === player &&
+          board[row * cols + col + 2] === player &&
+          board[row * cols + col + 3] === player
         ) {
           return true;
         }
@@ -165,9 +165,9 @@ export default async (options) => {
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
         if (board[row * cols + col] === player &&
-            board[(row + 1) * cols + col] === player &&
-            board[(row + 2) * cols + col] === player &&
-            board[(row + 3) * cols + col] === player
+          board[(row + 1) * cols + col] === player &&
+          board[(row + 2) * cols + col] === player &&
+          board[(row + 3) * cols + col] === player
         ) {
           return true;
         }
@@ -178,16 +178,16 @@ export default async (options) => {
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
         if (board[row * cols + col] === player &&
-            board[(row + 1) * cols + col + 1] === player &&
-            board[(row + 2) * cols + col + 2] === player &&
-            board[(row + 3) * cols + col + 3] === player
+          board[(row + 1) * cols + col + 1] === player &&
+          board[(row + 2) * cols + col + 2] === player &&
+          board[(row + 3) * cols + col + 3] === player
         ) {
           return true;
         } // player wins upwords
         if (board[row * cols + col + 3] === player &&
-            board[(row + 1) * cols + col + 2] === player &&
-            board[(row + 2) * cols + col + 1] === player &&
-            board[(row + 3) * cols + col] === player
+          board[(row + 1) * cols + col + 2] === player &&
+          board[(row + 2) * cols + col + 1] === player &&
+          board[(row + 3) * cols + col] === player
         ) {
           return true;
         } // player wins downwards
@@ -211,9 +211,9 @@ export default async (options) => {
 
   function getIds() {
     "A1-1", "B1-2", "C1-3", "D1-4", "E1-5",
-    "A2-1", "B2-2", "C2-3", "D2-4", "E2-5",
-    "A3-1", "B3-2", "C3-3", "D3-4", "E3-5",
-    "A4-1", "B4-2", "C4-3", "D4-4", "E3-5"
+      "A2-1", "B2-2", "C2-3", "D2-4", "E2-5",
+      "A3-1", "B3-2", "C3-3", "D3-4", "E3-5",
+      "A4-1", "B4-2", "C4-3", "D4-4", "E3-5"
   };
 
   function getButtons() {

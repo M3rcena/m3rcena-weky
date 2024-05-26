@@ -1,5 +1,5 @@
 import { evaluate } from 'mathjs';
-import { EmbedBuilder } from 'discord.js';
+import { ActionRowBuilder, ButtonBuilder, EmbedBuilder } from 'discord.js';
 import { createButton, getRandomString, addRow } from '../../functions/function';
 import chalk from 'chalk';
 
@@ -96,14 +96,14 @@ export default async (options:any) => {
 		throw new TypeError(`${chalk.red('Weky Error:')} othersMessage must be a string.`);
 	}
 
-	let str = ' ';
+	let str:any = ' ';
 	let stringify = '```\n' + str + '\n```';
 
-	const row:[] = [];
-	const rows:[] = [];
+	const row:any = [];
+	const rows:any = [];
 
-	const button = new Array([], [], [], [], []);
-	const buttons = new Array([], [], [], [], []);
+	const button:any = new Array([], [], [], [], []);
+	const buttons:any = new Array([], [], [], [], []);
 
 	const text = [
 		'(',
@@ -159,7 +159,7 @@ export default async (options:any) => {
 			embeds: [embed],
 			components: row,
 		})
-		.then(async (msg) => {
+		.then(async (msg:any) => {
 			async function edit() {
 				const _embed = new EmbedBuilder()
 					.setTitle(options.embed.title)
@@ -200,10 +200,10 @@ export default async (options:any) => {
 			}
 
 			const calc = msg.createMessageComponentCollector({
-				filter: (fn) => fn,
+				filter: (fn:any) => fn,
 			});
 
-			calc.on('collect', async (btn) => {
+			calc.on('collect', async (btn:any) => {
 				if (btn.user.id !== options.message.author.id) {
 					return btn.reply({
 						content: options.othersMessage.replace(
