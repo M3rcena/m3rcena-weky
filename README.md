@@ -34,7 +34,7 @@ npm install @m3rcena/weky
 ```js
 const Discord = require('discord.js');
 const client = new Discord.Client();
-const { Calculator } = require('@m3rcena/weky/dist/index.cjs'); // temporary
+const { Calculator } = require('@m3rcena/weky/dist/index.js'); // temporary
 
 client.on('ready', async () => {
 	console.log(`Logged in as ${client.user.tag}`);

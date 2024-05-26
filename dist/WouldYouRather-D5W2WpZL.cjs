@@ -3,7 +3,7 @@
 var discord_js = require('discord.js');
 var fetch = require('node-fetch');
 var htmlEntities = require('html-entities');
-var _function = require('./function-Bv9fWZf5.js');
+var _function = require('./function-Bv9fWZf5.cjs');
 require('axios');
 require('chalk');
 require('cheerio');
