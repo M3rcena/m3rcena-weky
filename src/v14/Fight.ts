@@ -1,7 +1,7 @@
 import { ButtonStyle, ButtonBuilder, EmbedBuilder, ActionRowBuilder } from 'discord.js';
 const data = new Set();
 import db from 'quick.db';
-import { getRandomString } from '../../functions/function.mjs';
+import { getRandomString } from '../../functions/function.ts';
 import chalk from 'chalk';
 
 /**
@@ -46,7 +46,7 @@ import chalk from 'chalk';
  * @copyright All rights Reserved. Weky Development
  */
 
-export default async (options) => {
+export default async (options:any) => {
 	if (!options.message) {
 		throw new Error(`${chalk.red('Weky Error:')} message argument was not specified.`);
 	}
@@ -265,11 +265,11 @@ export default async (options) => {
 	});
 
 	const Collector = await question.createMessageComponentCollector({
-		filter: (fn) => fn,
+		filter: (fn:any) => fn,
 		time: 60000,
 	});
 
-	Collector.on('collect', async (_btn) => {
+	Collector.on('collect', async (_btn:any) => {
 		if (_btn.member.id !== oppenent.id) {
 			return _btn.reply({
 				content: options.othersMessage.replace(
@@ -363,12 +363,12 @@ export default async (options) => {
 				embeds: [_embed],
 				components: [row],
 			});
-			const checkHealth = (member) => {
+			const checkHealth = (member:any) => {
 				if (gameData[member].health <= 0) return true;
 				else return false;
 			};
-			const gameCollector = question.createMessageComponentCollector((fn) => fn);
-			gameCollector.on('collect', async (msg) => {
+			const gameCollector = question.createMessageComponentCollector((fn:any) => fn);
+			gameCollector.on('collect', async (msg:any) => {
 				if (gameData.some((x) => x.member.id === msg.member.id)) {
 					if (!checkHealth(player)) {
 						const btn = msg.member;
@@ -658,7 +658,7 @@ export default async (options) => {
 			});
 		}
 	});
-	Collector.on('end', async (msg, reason) => {
+	Collector.on('end', async (msg:any, reason:any) => {
 		if (reason === 'time') {
 			acceptbutton = new ButtonBuilder()
 				.setDisabled()

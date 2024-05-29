@@ -1,7 +1,7 @@
 import { ButtonStyle, ButtonBuilder, EmbedBuilder } from 'discord.js';
 const gameData = new Set();
 import fetch from 'node-fetch';
-import { getRandomString, convertTime } from '../../functions/function.mjs';
+import { getRandomString, convertTime } from '../../functions/function.ts';
 
 /**
  * Make a Guess The Pokémon game for your bot

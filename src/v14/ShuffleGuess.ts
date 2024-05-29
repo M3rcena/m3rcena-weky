@@ -1,6 +1,6 @@
 import { ButtonStyle, ButtonBuilder, EmbedBuilder } from 'discord.js';
 const data = new Set();
-import { getRandomString, getRandomSentence, shuffleString, convertTime } from '../../functions/function.mjs';
+import { getRandomString, getRandomSentence, shuffleString, convertTime } from '../../functions/function.ts';
 
 /**
  * Shuffle Guess Game for your bot!

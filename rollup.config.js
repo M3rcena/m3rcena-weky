@@ -1,22 +1,16 @@
 import commonjs from '@rollup/plugin-commonjs';
-import { nodeResolve } from '@rollup/plugin-node-resolve';
+import typescript from '@rollup/plugin-typescript';
 import json from '@rollup/plugin-json';
+import { format } from 'mathjs';
 
 export default [
   {
-    input: 'src/index.js',
+    input: 'index.ts',
     output: {
-      file: 'dist/index.cjs',
+      dir: 'dist',
       format: 'cjs'
     },
-    plugins: [commonjs(), nodeResolve(), json()]
+    plugins: [commonjs(), typescript(), json()],
+    external: ['chalk', 'discord.js', 'quick.db', 'node-fetch', 'html-entities', 'mathjs', 'axios', 'cheerio', 'string-width']
   },
-  {
-    input: 'src/index.js',
-    output: {
-      file: 'dist/index.mjs',
-      format: 'esm'
-    },
-    plugins: [nodeResolve(), json()]
-  }
 ];

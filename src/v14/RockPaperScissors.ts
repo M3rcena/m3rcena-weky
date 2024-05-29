@@ -1,7 +1,7 @@
 import { ButtonStyle, ButtonBuilder, EmbedBuilder, ActionRowBuilder } from 'discord.js';
 const data = new Set();
 import db from 'quick.db';
-import { getRandomString } from '../../functions/function.mjs';
+import { getRandomString } from '../../functions/function.ts';
 
 /**
  * Rock Paper Scissors game for your bot!

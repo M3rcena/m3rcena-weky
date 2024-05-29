@@ -1,5 +1,5 @@
 import { filter, im } from "mathjs";
-import { randomHexColor } from "../../functions/function";
+import { randomHexColor } from "../../functions/function.ts";
 import { ButtonBuilder, ButtonStyle, EmbedBuilder, ActionRowBuilder } from 'discord.js';
 import chalk from 'chalk';
 

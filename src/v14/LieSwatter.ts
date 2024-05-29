@@ -1,7 +1,7 @@
 import { ButtonStyle, ButtonBuilder, EmbedBuilder } from 'discord.js';
 import fetch from 'node-fetch';
 import { decode } from 'html-entities';
-import { getRandomString, convertTime } from '../../functions/function.mjs';
+import { getRandomString, convertTime } from '../../functions/function.ts';
 import chalk from 'chalk';
 
 /**

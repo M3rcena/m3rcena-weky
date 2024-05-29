@@ -1,6 +1,6 @@
 import { evaluate } from 'mathjs';
 import { ActionRowBuilder, ButtonBuilder, EmbedBuilder } from 'discord.js';
-import { createButton, getRandomString, addRow } from '../../functions/function';
+import { createButton, getRandomString, addRow } from '../../functions/function.ts';
 import chalk from 'chalk';
 
 /**

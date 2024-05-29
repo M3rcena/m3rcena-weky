@@ -4,7 +4,7 @@ import db from 'quick.db';
 import fetch from 'node-fetch';
 import { decode } from 'html-entities';
 const difficulties = ['hard', 'medium', 'easy'];
-import { getRandomString, convertTime, shuffleArray } from '../../functions/function.mjs';
+import { getRandomString, convertTime, shuffleArray } from '../../functions/function.ts';
 
 /**
  * Trivia Game for your Discord Bot!
