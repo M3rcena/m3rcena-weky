@@ -1,11 +1,15 @@
-import { Guild, GuildMember, Message, User } from 'discord.js';
+import { ColorResolvable, Guild, GuildMember, Interaction, Message, User } from 'discord.js';
 
 export interface Calc {
 	message: Message;
-	embed?: {
+	interaction: Interaction;
+	embed: {
 		title?: string;
-		color?: string;
-		footer?: string;
+		color?: ColorResolvable;
+		footer?: {
+			text: string;
+		    url?: string;
+		};
 		timestamp?: boolean;
 	};
 	disabledQuery?: string;

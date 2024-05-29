@@ -1,29 +1,10 @@
-import { evaluate } from 'mathjs';
-import { ActionRowBuilder, ButtonBuilder, EmbedBuilder } from 'discord.js';
+import { evaluate, string } from 'mathjs';
+import { ActionRowBuilder, ButtonBuilder, ButtonInteraction, ComponentType, EmbedBuilder } from 'discord.js';
 import { createButton, getRandomString, addRow } from '../../functions/function.ts';
 import chalk from 'chalk';
+import { Calc } from '../../typings/index.js';
 
-/**
- * Make a calculator for your bot
- * @param {object} options - Options for the calculator
- * @param {object} options.message - The message object
- * @param {object} options.interaction - The interaction object
- *  
- * @param {object} [options.embed] - The embed object
- * @param {string} [options.embed.title] - The title of the embed
- * @param {string} [options.embed.color] - The color of the embed
- * @param {string} [options.embed.footer] - The footer of the embed
- * @param {boolean} [options.embed.timestamp] - The timestamp of the embed
- * 
- * @param {string} [options.disabledQuery] - The disabled query message
- * @param {string} [options.invalidQuery] - The invalid query message
- * @param {string} [options.othersMessage] - The others message
- * 
- * @returns {Promise<void>}
- * @copyright All rights Reserved. Weky Development
- */
-
-export default async (options:any) => {
+export default async (options:Calc) => {
 	if (!options.message && !options.interaction) {
 		throw new TypeError(`${chalk.red('Weky Error:')} message or interaction must be provided.`)
 	}
@@ -44,7 +25,7 @@ export default async (options:any) => {
 		}
 	}
 
-	if (!options.embed) options.embed = {};
+	if (!options.embed) return;
 	if (typeof options.embed !== 'object') {
 		throw new TypeError(`${chalk.red('Weky Error:')} embed must be an object.`);
 	}
@@ -63,8 +44,10 @@ export default async (options:any) => {
 		throw new TypeError(`${chalk.red('Weky Error:')} color must be a string.`);
 	}
 
-	if (!options.embed.footer) {
-		options.embed.footer = '©️ M3rcena Development';
+	if (!options.embed.footer?.text) {
+		if (options.embed.footer) {
+			options.embed.footer.text = '©️ M3rcena Development';
+		}
 	}
 	if (typeof options.embed.footer !== 'string') {
 		throw new TypeError(`${chalk.red('Weky Error:')} footer must be a string.`);
@@ -96,14 +79,14 @@ export default async (options:any) => {
 		throw new TypeError(`${chalk.red('Weky Error:')} othersMessage must be a string.`);
 	}
 
-	let str:any = ' ';
+	let str = ' ';
 	let stringify = '```\n' + str + '\n```';
 
-	const row:any = [];
-	const rows:any = [];
+	const row:ActionRowBuilder<ButtonBuilder>[] = [];
+	const rows:ActionRowBuilder<ButtonBuilder>[] = [];
 
-	const button:any = new Array([], [], [], [], []);
-	const buttons:any = new Array([], [], [], [], []);
+	const button:ButtonBuilder[][] = new Array([], [], [], [], []);
+	const buttons:ButtonBuilder[][] = new Array([], [], [], [], []);
 
 	const text = [
 		'(',
@@ -150,7 +133,7 @@ export default async (options:any) => {
 		.setTitle(options.embed.title)
 		.setDescription(stringify)
 		.setColor(options.embed.color)
-		.setAuthor({ name: options.message.author.author, iconURL: options.message.author.displayAvatarURL() })
+		.setAuthor({ name: options.message.author.displayName, iconURL: options.message.author.displayAvatarURL() })
 		.setFooter({ text: options.embed.footer });
 	embed.setTimestamp();
 
@@ -159,14 +142,14 @@ export default async (options:any) => {
 			embeds: [embed],
 			components: row,
 		})
-		.then(async (msg:any) => {
+		.then(async (msg) => {
 			async function edit() {
 				const _embed = new EmbedBuilder()
-					.setTitle(options.embed.title)
+					.setTitle(options.embed.title ? options.embed.title : 'Calculator')
 					.setDescription(stringify)
-					.setColor(options.embed.color)
+					.setColor(options.embed.color ? options.embed.color : "Blurple")
 					.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
-					.setFooter({ text: options.embed.footer });
+					.setFooter({ text: options.embed.footer?.text ? options.embed.footer.text : "M3rcena Development", iconURL: options.embed.footer?.url ? options.embed.footer.url : undefined });
 				_embed.setTimestamp();
 
 				msg.edit({
@@ -177,11 +160,11 @@ export default async (options:any) => {
 
 			async function lock() {
 				const _embed = new EmbedBuilder()
-					.setTitle(options.embed.title)
+					.setTitle(options.embed.title ? options.embed.title : 'Calculator')
 					.setDescription(stringify)
-					.setColor(options.embed.color)
+					.setColor(options.embed.color ? options.embed.color : "Blurple")
 					.setAuthor({ name: options.message.author.username, iconURL: options.message.author.displayAvatarURL() })
-					.setFooter({ text: options.embed.footer });
+					.setFooter({ text: options.embed.footer?.text ? options.embed.footer.text : "M3rcena Development", iconURL: options.embed.footer?.url ? options.embed.footer.url : undefined });
 				_embed.setTimestamp();
 				for (let i = 0; i < text.length; i++) {
 					if (buttons[cur].length === 5) cur++;
@@ -200,13 +183,17 @@ export default async (options:any) => {
 			}
 
 			const calc = msg.createMessageComponentCollector({
-				filter: (fn:any) => fn,
+				componentType: ComponentType.Button,
+				filter: (fn) => fn,
 			});
 
-			calc.on('collect', async (btn:any) => {
-				if (btn.user.id !== options.message.author.id) {
+			calc.on('collect', async (interaction) => {
+				if (interaction.user.id !== options.message.author.id) {
 					return btn.reply({
-						content: options.othersMessage.replace(
+						content: options.othersMessage ? options.othersMessage.replace(
+							'{{author}}',
+							options.message.author.id,
+						) : 'Only <@{{author}}> can use the buttons!'.replace(
 							'{{author}}',
 							options.message.author.id,
 						),

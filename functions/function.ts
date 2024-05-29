@@ -142,8 +142,8 @@ export const checkForUpdates = async function() {
 	}
 };
 
-export const addRow = function(btns:[]) {
-	const row = new ActionRowBuilder();
+export const addRow = function(btns:ButtonBuilder[]) {
+	const row = new ActionRowBuilder<ButtonBuilder>();
 	for (const btn of btns) {
 		row.addComponents(btn);
 	}

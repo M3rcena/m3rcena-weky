@@ -7,10 +7,19 @@ export default [
   {
     input: 'index.ts',
     output: {
-      dir: 'dist',
+      dir: 'dist/cjs',
       format: 'cjs'
     },
     plugins: [commonjs(), typescript(), json()],
+    external: ['chalk', 'discord.js', 'quick.db', 'node-fetch', 'html-entities', 'mathjs', 'axios', 'cheerio', 'string-width']
+  },
+  {
+    input: 'index.ts',
+    output: {
+      dir: 'dist/esm',
+      format: 'esm'
+    },
+    plugins: [typescript(), json()],
     external: ['chalk', 'discord.js', 'quick.db', 'node-fetch', 'html-entities', 'mathjs', 'axios', 'cheerio', 'string-width']
   },
 ];
