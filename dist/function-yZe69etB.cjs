@@ -1,5 +1,6 @@
 'use strict';
 
+require('./index-B_cCIQRz.js');
 require('axios');
 require('chalk');
 require('cheerio');
@@ -1963,137 +1964,135 @@ var words = [
 ];
 
 const getRandomString = function (length) {
-	const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-	let result = '';
-	for (let i = 0; i < length; i++) {
-		result += randomChars.charAt(Math.floor(Math.random() * randomChars.length));
-	}
-	return result;
+    const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += randomChars.charAt(Math.floor(Math.random() * randomChars.length));
+    }
+    return result;
 };
-
 const getRandomSentence = function (length) {
-	const word = [];
-	for (let i = 0; i < length; i++) {
-		word.push(words[Math.floor(Math.random() * words.length)]);
-	}
-	return word;
+    const word = [];
+    for (let i = 0; i < length; i++) {
+        word.push(words[Math.floor(Math.random() * words.length)]);
+    }
+    return word;
 };
-
 const shuffleString = function (string) {
-	const str = string.split('');
-	const length = str.length;
-	for (let i = length - 1; i > 0; i--) {
-		const j = Math.floor(Math.random() * (i + 1));
-		const tmp = str[i];
-		str[i] = str[j];
-		str[j] = tmp;
-	}
-	return str.join('');
+    const str = string.split('');
+    const length = str.length;
+    for (let i = length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const tmp = str[i];
+        str[i] = str[j];
+        str[j] = tmp;
+    }
+    return str.join('');
 };
-
 const convertTime = function (time) {
-	const absoluteSeconds = Math.floor((time / 1000) % 60);
-	const absoluteMinutes = Math.floor((time / (1000 * 60)) % 60);
-	const absoluteHours = Math.floor((time / (1000 * 60 * 60)) % 24);
-	const absoluteDays = Math.floor(time / (1000 * 60 * 60 * 24));
-	const d = absoluteDays
-		? absoluteDays === 1
-			? '1 day'
-			: `${absoluteDays} days`
-		: null;
-	const h = absoluteHours
-		? absoluteHours === 1
-			? '1 hour'
-			: `${absoluteHours} hours`
-		: null;
-	const m = absoluteMinutes
-		? absoluteMinutes === 1
-			? '1 minute'
-			: `${absoluteMinutes} minutes`
-		: null;
-	const s = absoluteSeconds
-		? absoluteSeconds === 1
-			? '1 second'
-			: `${absoluteSeconds} seconds`
-		: null;
-	const absoluteTime = [];
-	if (d) absoluteTime.push(d);
-	if (h) absoluteTime.push(h);
-	if (m) absoluteTime.push(m);
-	if (s) absoluteTime.push(s);
-	return absoluteTime.join(', ');
+    const absoluteSeconds = Math.floor((time / 1000) % 60);
+    const absoluteMinutes = Math.floor((time / (1000 * 60)) % 60);
+    const absoluteHours = Math.floor((time / (1000 * 60 * 60)) % 24);
+    const absoluteDays = Math.floor(time / (1000 * 60 * 60 * 24));
+    const d = absoluteDays
+        ? absoluteDays === 1
+            ? '1 day'
+            : `${absoluteDays} days`
+        : null;
+    const h = absoluteHours
+        ? absoluteHours === 1
+            ? '1 hour'
+            : `${absoluteHours} hours`
+        : null;
+    const m = absoluteMinutes
+        ? absoluteMinutes === 1
+            ? '1 minute'
+            : `${absoluteMinutes} minutes`
+        : null;
+    const s = absoluteSeconds
+        ? absoluteSeconds === 1
+            ? '1 second'
+            : `${absoluteSeconds} seconds`
+        : null;
+    const absoluteTime = [];
+    if (d)
+        absoluteTime.push(d);
+    if (h)
+        absoluteTime.push(h);
+    if (m)
+        absoluteTime.push(m);
+    if (s)
+        absoluteTime.push(s);
+    return absoluteTime.join(', ');
 };
-
 const shuffleArray = function (array) {
-	for (let i = array.length - 1; i > 0; i--) {
-		const j = Math.floor(Math.random() * (i + 1));
-		const temp = array[i];
-		array[i] = array[j];
-		array[j] = temp;
-	}
-	return array;
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const temp = array[i];
+        array[i] = array[j];
+        array[j] = temp;
+    }
+    return array;
 };
-
 const randomHexColor = function () {
-	return (
-		'#' +
-		('000000' + Math.floor(Math.random() * 16777215).toString(16)).slice(-6)
-	);
+    return ('#' +
+        ('000000' + Math.floor(Math.random() * 16777215).toString(16)).slice(-6));
 };
-
 const WillYouPressTheButton = function () {
-	return fetch('https://api2.willyoupressthebutton.com/api/v2/dilemma ', {
-		method: 'POST',
-	}).then((data) => data.json()).then((data) => { return data.dilemma; });
+    return fetch('https://api2.willyoupressthebutton.com/api/v2/dilemma ', {
+        method: 'POST',
+    }).then((data) => data.json()).then((data) => { return data.dilemma; });
 };
-
-const addRow = function(btns) {
-	const row = new discord_js.ActionRowBuilder();
-	for (const btn of btns) {
-		row.addComponents(btn);
-	}
-	return row;
+const addRow = function (btns) {
+    const row = new discord_js.ActionRowBuilder();
+    for (const btn of btns) {
+        row.addComponents(btn);
+    }
+    return row;
 };
-const createButton = function(label, disabled, getRandomString) {
-	let style = discord_js.ButtonStyle.Primary;
-	if (label === 'AC' || label === 'DC' || label === '⌫') {
-		style = discord_js.ButtonStyle.Success;
-	} else if (label === '=') {
-		style = discord_js.ButtonStyle.Danger;
-	} else if (
-		label === '(' ||
-		label === ')' ||
-		label === '^' ||
-		label === '%' ||
-		label === '÷' ||
-		label === 'x' ||
-		label === '-' ||
-		label === '+' ||
-		label === '.'
-	) {
-		style = discord_js.ButtonStyle.Primary;
-	}
-	if (disabled) {
-		const btn = new discord_js.ButtonBuilder()
-			.setLabel(label)
-			.setStyle(style)
-			.setDisabled();
-		if (label === '\u200b') {
-			btn.setCustomId(getRandomString(10));
-		} else {
-			btn.setCustomId('cal' + label);
-		}
-		return btn;
-	} else {
-		const btn = new discord_js.ButtonBuilder().setLabel(label).setStyle(style);
-		if (label === '\u200b') {
-			btn.setDisabled();
-			btn.setCustomId(getRandomString(10));
-		} else {
-			btn.setCustomId('cal' + label);
-		}
-		return btn;
-	}
+const createButton = function (label, disabled, getRandomString) {
+    let style = discord_js.ButtonStyle.Primary;
+    if (label === 'AC' || label === 'DC' || label === '⌫') {
+        style = discord_js.ButtonStyle.Success;
+    }
+    else if (label === '=') {
+        style = discord_js.ButtonStyle.Danger;
+    }
+    else if (label === '(' ||
+        label === ')' ||
+        label === '^' ||
+        label === '%' ||
+        label === '÷' ||
+        label === 'x' ||
+        label === '-' ||
+        label === '+' ||
+        label === '.') {
+        style = discord_js.ButtonStyle.Primary;
+    }
+    if (disabled) {
+        const btn = new discord_js.ButtonBuilder()
+            .setLabel(label)
+            .setStyle(style)
+            .setDisabled();
+        if (label === '\u200b') {
+            btn.setCustomId(getRandomString(10));
+        }
+        else {
+            btn.setCustomId('cal' + label);
+        }
+        return btn;
+    }
+    else {
+        const btn = new discord_js.ButtonBuilder().setLabel(label).setStyle(style);
+        if (label === '\u200b') {
+            btn.setDisabled();
+            btn.setCustomId(getRandomString(10));
+        }
+        else {
+            btn.setCustomId('cal' + label);
+        }
+        return btn;
+    }
 };
 
 exports.WillYouPressTheButton = WillYouPressTheButton;

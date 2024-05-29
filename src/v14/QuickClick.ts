@@ -1,6 +1,6 @@
 import { ButtonStyle, ButtonBuilder, EmbedBuilder, ActionRowBuilder } from 'discord.js';
 const currentGames = new Object();
-import { getRandomString, convertTime, shuffleArray } from '../../functions/function.mjs';
+import { getRandomString, convertTime, shuffleArray } from '../../functions/function.ts';
 
 /**
  * Quick Click game for your bot!

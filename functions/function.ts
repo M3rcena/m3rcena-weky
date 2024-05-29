@@ -3,7 +3,7 @@ import chalk from 'chalk';
 import cheerio from 'cheerio';
 import fetch from 'node-fetch';
 import words from '../data/words.json';
-import { boxConsole } from './boxConsole';
+import { boxConsole } from './boxConsole.ts';
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 
 export const fetchhtml = async function (url:string) {

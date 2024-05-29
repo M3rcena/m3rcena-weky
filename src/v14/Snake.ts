@@ -1,6 +1,6 @@
 import { ButtonStyle, ButtonBuilder, EmbedBuilder } from 'discord.js';
 const data = new Set();
-import { getRandomString } from '../../functions/function.mjs';
+import { getRandomString } from '../../functions/function.ts';
 
 /**
  * Snake Game for your Discord Bot

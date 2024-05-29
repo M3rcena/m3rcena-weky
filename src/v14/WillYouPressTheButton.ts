@@ -1,6 +1,6 @@
 import { ButtonStyle, ButtonBuilder, EmbedBuilder } from 'discord.js';
 import { decode } from 'html-entities';
-import { getRandomString, WillYouPressTheButton } from '../../functions/function.mjs';
+import { getRandomString, WillYouPressTheButton } from '../../functions/function.ts';
 
 /**
  * Will You Press The Button? Game for your Discord Bot!

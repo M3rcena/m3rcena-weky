@@ -1,7 +1,7 @@
 import { ButtonStyle, ButtonBuilder, EmbedBuilder } from 'discord.js';
 import fetch from 'node-fetch';
 import { decode } from 'html-entities';
-import { getRandomString } from '../../functions/function.mjs';
+import { getRandomString } from '../../functions/function.ts';
 
 /**
  * Would You Rather? Game for your Discord Bot!

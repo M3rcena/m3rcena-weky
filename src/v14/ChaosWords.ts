@@ -1,6 +1,6 @@
 import { ButtonStyle, EmbedBuilder, ButtonBuilder } from 'discord.js';
 const data = new Set();
-import { getRandomString, getRandomSentence, convertTime, randomHexColor } from '../../functions/function';
+import { getRandomString, getRandomSentence, convertTime, randomHexColor } from '../../functions/function.ts';
 import chalk from 'chalk';
 
 /**

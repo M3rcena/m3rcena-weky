@@ -2,7 +2,7 @@ import { ButtonStyle, EmbedBuilder, ButtonBuilder } from 'discord.js';
 const data = new Set();
 import db from 'quick.db';
 const currentGames = new Object();
-import { getRandomString, convertTime } from '../../functions/function.mjs';
+import { getRandomString, convertTime } from '../../functions/function.ts';
 import chalk from 'chalk';
 
 /**

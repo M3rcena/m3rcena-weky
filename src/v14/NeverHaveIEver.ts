@@ -1,6 +1,6 @@
 import { ButtonStyle, ButtonBuilder, EmbedBuilder } from 'discord.js';
 import fetch from 'node-fetch';
-import { getRandomString } from '../../functions/function.mjs';
+import { getRandomString } from '../../functions/function.ts';
 
 /**
  * Play Never Have I Ever with your bot

@@ -1,9 +1,9 @@
 /* eslint-disable no-useless-escape */
 
-import flipMap from "./data/flip";
-import tinyMap from './data/tiny';
-import bentMap from './data/bent';
-import copyMap from './data/copy';
+import flipMap from "./data/flip.ts";
+import tinyMap from './data/tiny.ts';
+import bentMap from './data/bent.ts';
+import copyMap from './data/copy.ts';
 import chalk from 'chalk';
 
 export const bent = async function (str:string) {
@@ -105,21 +105,21 @@ export const vaporwave = async function (string:string) {
 };
 
 let Snake, Fight, Trivia, FastType, QuickClick, ChaosWords, LieSwatter, Calculator, ShuffleGuess, GuessTheNumber, NeverHaveIEver, WouldYouRather, GuessThePokemon, RockPaperScissors, WillYouPressTheButton, TicTacToe;
-	Snake = import('./src/v14/Snake');
-	Fight = import('./src/v14/Fight');
-	Trivia = import('./src/v14/Trivia');
-	FastType = import('./src/v14/FastType');
-	QuickClick = import('./src/v14/QuickClick');
-	ChaosWords = import('./src/v14/ChaosWords');
-	LieSwatter = import('./src/v14/LieSwatter');
-	Calculator = import('./src/v14/Calculator');
-	ShuffleGuess = import('./src/v14/ShuffleGuess');
-	GuessTheNumber = import('./src/v14/GuessTheNumber');
-	NeverHaveIEver = import('./src/v14/NeverHaveIEver');
-	WouldYouRather = import('./src/v14/WouldYouRather');
-	GuessThePokemon = import('./src/v14/GuessThePokemon');
-	RockPaperScissors = import('./src/v14/RockPaperScissors');
-	WillYouPressTheButton = import('./src/v14/WillYouPressTheButton');
-	TicTacToe = import('./src/v14/TicTacToe');
+	Snake = import('./src/v14/Snake.ts');
+	Fight = import('./src/v14/Fight.ts');
+	Trivia = import('./src/v14/Trivia.ts');
+	FastType = import('./src/v14/FastType.ts');
+	QuickClick = import('./src/v14/QuickClick.ts');
+	ChaosWords = import('./src/v14/ChaosWords.ts');
+	LieSwatter = import('./src/v14/LieSwatter.ts');
+	Calculator = import('./src/v14/Calculator.ts');
+	ShuffleGuess = import('./src/v14/ShuffleGuess.ts');
+	GuessTheNumber = import('./src/v14/GuessTheNumber.ts');
+	NeverHaveIEver = import('./src/v14/NeverHaveIEver.ts');
+	WouldYouRather = import('./src/v14/WouldYouRather.ts');
+	GuessThePokemon = import('./src/v14/GuessThePokemon.ts');
+	RockPaperScissors = import('./src/v14/RockPaperScissors.ts');
+	WillYouPressTheButton = import('./src/v14/WillYouPressTheButton.ts');
+	TicTacToe = import('./src/v14/TicTacToe.ts');
 
 export { Snake, Fight, Trivia, FastType, QuickClick, ChaosWords, LieSwatter, Calculator, ShuffleGuess, GuessTheNumber, NeverHaveIEver, WouldYouRather, GuessThePokemon, RockPaperScissors, WillYouPressTheButton };
