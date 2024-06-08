@@ -2,43 +2,9 @@ import { ButtonStyle, EmbedBuilder, ButtonBuilder } from 'discord.js';
 const data = new Set();
 import { getRandomString, getRandomSentence, convertTime, randomHexColor } from '../../functions/function.ts';
 import chalk from 'chalk';
+import type { Chaos } from '../../typings/index.d.ts';
 
-/**
- * Play Chaos Words with someone on discord!
- * @param {object} options - Options for the Chaos Words
- * @param {object} options.message - The message object
- * 
- * @param {object} [options.embed] - The embed object
- * @param {string} [options.embed.title] - The title of the embed
- * @param {string} [options.embed.description] - The description of the embed
- * @param {string} [options.embed.field1] - The field1 of the embed
- * @param {string} [options.embed.field2] - The field2 of the embed
- * @param {string} [options.embed.field3] - The field3 of the embed
- * @param {string} [options.embed.field4] - The field4 of the embed
- * @param {string} [options.embed.color] - The color of the embed
- * @param {string} [options.embed.footer] - The footer of the embed
- * @param {boolean} [options.embed.timestamp] - The timestamp of the embed
- * 
- * @param {string} [options.winMessage] - The win message
- * @param {string} [options.loseMessage] - The lose message
- * @param {string} [options.wrongWordMessage] - The wrong word message
- * @param {string} [options.correctWordMessage] - The correct word message
- * 
- * @param {number} [options.time] - The time of the game
- * 
- * @param {array} [options.words] - The words of the game
- * @param {number} [options.charGenerated] - The char generated of the game
- * 
- * @param {number} [options.maxTries] - The max tries of the game
- * 
- * @param {string} [options.othersMessage] - The others message
- * @param {string} [options.buttonText] - The button text
- * 
- * @returns {Promise<void>}
- * @copyright All rights Reserved. Weky Development
- */
-
-export default async (options:any) => {
+export default async (options:Chaos) => {
 	if (!options.message) {
 		throw new Error(`${chalk.red('Weky Error:')} message argument was not specified.`);
 	}
@@ -88,7 +54,7 @@ export default async (options:any) => {
 		throw new TypeError(`${chalk.red('Weky Error:')} field4 must be a string.`);
 	}
 
-	if (!options.embed.color) options.embed.color = randomHexColor();
+	if (!options.embed.color) options.embed.color = 'Blurple';
 	if (typeof options.embed.color !== 'string') {
 		throw new TypeError(`${chalk.red('Weky Error:')} color must be a string.`);
 	}
@@ -134,7 +100,7 @@ export default async (options:any) => {
 	}
 
 	if (!options.time) options.time = 60000;
-	if (parseInt(options.time) < 10000) {
+	if (options.time < 10000) {
 		throw new TypeError(`${chalk.red('Weky Error:')} time must be greater than 10000.`);
 	}
 	if (typeof options.time !== 'number') {
@@ -238,6 +204,7 @@ export default async (options:any) => {
 	});
 
 	game.on('collect', async (msg:any) => {
+		if (options.words === undefined) return;
 		const condition =
 			options.words.includes(msg.content.toLowerCase()) &&
 			!guessed.includes(msg.content.toLowerCase());
@@ -246,9 +213,9 @@ export default async (options:any) => {
 			array.splice(array.indexOf(msg.content.toLowerCase()), 1);
 			guessed.push(msg.content.toLowerCase());
 			const _embed = new EmbedBuilder()
-				.setTitle(options.embed.title)
+				.setTitle(options.embed?.title ? options.embed.title : 'Chaos Words | M3rcena Development')
 				.setDescription(
-					options.embed.description.replace(
+					options.embed.descriptions.replace(
 						'{{time}}',
 						convertTime(options.time),
 					),

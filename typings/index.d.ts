@@ -22,7 +22,7 @@ export interface Chaos {
 	embed?: {
 		title?: string;
 		description?: string;
-		color?: string;
+		color?: ColorResolvable;
 		field1?: string;
 		field2?: string;
 		field3?: string;

@@ -2,7 +2,7 @@ import { evaluate, string } from 'mathjs';
 import { ActionRowBuilder, ButtonBuilder, ButtonInteraction, ComponentType, EmbedBuilder } from 'discord.js';
 import { createButton, getRandomString, addRow } from '../../functions/function.ts';
 import chalk from 'chalk';
-import { Calc } from '../../typings/index.js';
+import type { Calc } from '../../typings/index.d.ts';
 
 export default async (options:Calc) => {
 	if (!options.message && !options.interaction) {
@@ -184,46 +184,32 @@ export default async (options:Calc) => {
 
 			const calc = msg.createMessageComponentCollector({
 				componentType: ComponentType.Button,
-				filter: (fn) => fn,
+				filter: (fn) => fn.id === options.message.author.id,
 			});
 
 			calc.on('collect', async (interaction) => {
-				if (interaction.user.id !== options.message.author.id) {
-					return btn.reply({
-						content: options.othersMessage ? options.othersMessage.replace(
-							'{{author}}',
-							options.message.author.id,
-						) : 'Only <@{{author}}> can use the buttons!'.replace(
-							'{{author}}',
-							options.message.author.id,
-						),
-						ephemeral: true,
-					});
-				}
-				await btn.deferUpdate();
-				if (btn.customId === 'calAC') {
+				await interaction.deferUpdate();
+				if (interaction.customId === 'calAC') {
 					str += ' ';
 					stringify = '```\n' + str + '\n```';
 					edit();
-				} else if (btn.customId === 'calx') {
+				} else if (interaction.customId === 'calx') {
 					str += '*';
 					stringify = '```\n' + str + '\n```';
 					edit();
-				} else if (btn.customId === 'cal÷') {
+				} else if (interaction.customId === 'cal÷') {
 					str += '/';
 					stringify = '```\n' + str + '\n```';
 					edit();
-				} else if (btn.customId === 'cal⌫') {
+				} else if (interaction.customId === 'cal⌫') {
 					if (str === ' ' || str === '' || str === null || str === undefined) {
 						return;
 					} else {
-						str = str.split('');
-						str.pop();
-						str = str.join('');
+						str.slice(0, -1);
 						stringify = '```\n' + str + '\n```';
 						edit();
 					}
-				} else if (btn.customId === 'cal=') {
+				} else if (interaction.customId === 'cal=') {
 					if (str === ' ' || str === '' || str === null || str === undefined) {
 						return;
 					} else {
@@ -234,21 +220,26 @@ export default async (options:Calc) => {
 							str = ' ';
 							stringify = '```\n' + str + '\n```';
 						} catch (e) {
-							str = options.invalidQuery;
-							stringify = '```\n' + str + '\n```';
-							edit();
-							str = ' ';
-							stringify = '```\n' + str + '\n```';
+							if (options.invalidQuery === undefined) {
+								return;
+							} else {
+								str = options.invalidQuery;
+								stringify = '```\n' + str + '\n```';
+								edit();
+								str = ' ';
+								stringify = '```\n' + str + '\n```';
+							}
 						}
 					}
-				} else if (btn.customId === 'calDC') {
+				} else if (interaction.customId === 'calDC') {
+					if (options.disabledQuery === undefined) return;
 					str = options.disabledQuery;
 					stringify = '```\n' + str + '\n```';
 					edit();
 					calc.stop();
 					lock();
 				} else {
-					str += btn.customId.replace('cal', '');
+					str += interaction.customId.replace('cal', '');
 					stringify = '```\n' + str + '\n```';
 					edit();
 				}
