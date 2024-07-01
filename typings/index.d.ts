@@ -284,7 +284,7 @@ export interface wyptb {
 	othersMessage: string;
 }
 
-declare module 'weky' {
+declare module '@m3rcena/weky' {
 	export function Calculator(options: Calc): void;
 	export function ChaosWords(options: Chaos): void;
 	export function FastType(options: Fast): void;
