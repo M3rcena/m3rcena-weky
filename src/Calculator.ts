@@ -1,21 +1,21 @@
 import chalk from "chalk";
-import { Calc } from "../typings";
+import type { Calc } from "../typings";
 import { ActionRowBuilder, ButtonBuilder, ChatInputCommandInteraction, Client, ComponentType, EmbedBuilder, Message, ModalBuilder, TextInputBuilder, TextInputStyle } from "discord.js";
 import { createButton, getRandomString, addRow } from "../functions/functions.js";
 import { evaluate } from "mathjs";
 
 const Calculator = async (options: Calc) => {
     // Check if the options object is provided
-    if (!options) throw new Error(chalk.red("[@m3rcena/Weky Error]") + " No options provided.");
+    if (!options) throw new Error(chalk.red("[@m3rcena/weky] Calculator Error:") + " No options provided.");
 
-    if (typeof options !== "object") throw new Error(chalk.red("[@m3rcena/Weky Error]") + " Options must be an object.");
+    if (typeof options !== "object") throw new Error(chalk.red("[@m3rcena/weky] Calculator TypeError:") + " Options must be an object.");
 
     // Check if the interaction object is provided
     let interaction;
-    if (!options.interaction) throw new Error(chalk.red("[@m3rcena/Weky Error]") + " No interaction provided.");
+    if (!options.interaction) throw new Error(chalk.red("[@m3rcena/weky] Calculator Error:") + " No interaction provided.");
 
     if (typeof options.interaction !== "object") {
-        throw new Error(chalk.red("[@m3rcena/Weky Error]") + " Interaction must be an object.");
+        throw new Error(chalk.red("[@m3rcena/weky] Calculator TypeError:") + " Interaction must be an object.");
     };
 
     if (options.interaction instanceof Message) {
@@ -26,77 +26,77 @@ const Calculator = async (options: Calc) => {
         interaction = options.interaction;
     }
 
-    if (!interaction) throw new Error(chalk.red("[@m3rcena/Weky Error]") + " No interaction provided.");
+    if (!interaction) throw new Error(chalk.red("[@m3rcena/weky] Calculator Error:") + " No interaction provided.");
 
-    if (!options.client) throw new Error(chalk.red("[@m3rcena/Weky Error]") + " No client provided.");
+    if (!options.client) throw new Error(chalk.red("[@m3rcena/weky] Calculator Error:") + " No client provided.");
 
     if (typeof options.client !== "object") {
-        throw new Error(chalk.red("[@m3rcena/Weky Error]") + " Client must be an object.");
+        throw new Error(chalk.red("[@m3rcena/weky] Calculator TypeError:") + " Client must be an object.");
     };
 
-    let client:Client = options.client;
+    let client: Client = options.client;
     // Check if the embed object is provided
 
-    if (!options.embed) throw new Error(chalk.red("[@m3rcena/Weky Error]") + " No embed options provided.");
+    if (!options.embed) throw new Error(chalk.red("[@m3rcena/weky] Calculator Error:") + " No embed options provided.");
 
     if (typeof options.embed !== "object") {
-        throw new Error(chalk.red("[@m3rcena/Weky Error]") + " Embed options must be an object.");
+        throw new Error(chalk.red("[@m3rcena/weky] Calculator TypeError:") + " Embed options must be an object.");
     };
 
-    if (!options.embed.color) throw new Error(chalk.red("[@m3rcena/Weky Error]") + " No embed color provided.");
+    if (!options.embed.color) throw new Error(chalk.red("[@m3rcena/weky] Calculator Error:") + " No embed color provided.");
 
-    if (!options.embed.title) throw new Error(chalk.red("[@m3rcena/Weky Error]") + " No embed title provided.");
+    if (!options.embed.title) throw new Error(chalk.red("[@m3rcena/weky] Calculator Error:") + " No embed title provided.");
 
     if (options.embed.url && typeof options.embed.url !== "string") {
-        throw new Error(chalk.red("[@m3rcena/Weky Error]") + " Embed URL must be a string.");
+        throw new Error(chalk.red("[@m3rcena/weky] Calculator TypeError:") + " Embed URL must be a string.");
     };
 
     if (options.embed.author) {
         if (typeof options.embed.author !== "object") {
-            throw new Error(chalk.red("[@m3rcena/Weky Error]") + " Embed author must be an object.");
+            throw new Error(chalk.red("[@m3rcena/weky] Calculator TypeError:") + " Embed author must be an object.");
         };
 
-        if (!options.embed.author.name) throw new Error(chalk.red("[@m3rcena/Weky Error]") + " No embed author name provided.");
+        if (!options.embed.author.name) throw new Error(chalk.red("[@m3rcena/weky] Calculator Error:") + " No embed author name provided.");
 
         if (options.embed.author.icon_url && typeof options.embed.author.icon_url !== "string") {
-            throw new Error(chalk.red("[@m3rcena/Weky Error]") + " Embed author icon URL must be a string.");
+            throw new Error(chalk.red("[@m3rcena/weky] Calculator TypeError:") + " Embed author icon URL must be a string.");
         };
 
         if (options.embed.author.url && typeof options.embed.author.url !== "string") {
-            throw new Error(chalk.red("[@m3rcena/Weky Error]") + " Embed author URL must be a string.");
+            throw new Error(chalk.red("[@m3rcena/weky] Calculator TypeError:") + " Embed author URL must be a string.");
         };
     };
 
     if (options.embed.description && typeof options.embed.description !== "string") {
-        throw new Error(chalk.red("[@m3rcena/Weky Error]") + " Embed description must be a string.");
+        throw new Error(chalk.red("[@m3rcena/weky] Calculator TypeError:") + " Embed description must be a string.");
     };
 
     if (options.embed.fields) {
         if (!Array.isArray(options.embed.fields)) {
-            throw new Error(chalk.red("[@m3rcena/Weky Error]") + " Embed fields must be an array.");
+            throw new Error(chalk.red("[@m3rcena/weky] Calculator TypeError:") + " Embed fields must be an array.");
         };
 
         for (const field of options.embed.fields) {
             if (typeof field !== "object") {
-                throw new Error(chalk.red("[@m3rcena/Weky Error]") + " Embed field must be an object.");
+                throw new Error(chalk.red("[@m3rcena/weky] Calculator TypeError:") + " Embed field must be an object.");
             };
 
-            if (!field.name) throw new Error(chalk.red("[@m3rcena/Weky Error]") + " No embed field name provided.");
+            if (!field.name) throw new Error(chalk.red("[@m3rcena/weky] Calculator Error:") + " No embed field name provided.");
 
-            if (!field.value) throw new Error(chalk.red("[@m3rcena/Weky Error]") + " No embed field value provided.");
+            if (!field.value) throw new Error(chalk.red("[@m3rcena/weky] Calculator Error:") + " No embed field value provided.");
 
             if (field.inline && typeof field.inline !== "boolean") {
-                throw new Error(chalk.red("[@m3rcena/Weky Error]") + " Embed field inline must be a boolean.");
+                throw new Error(chalk.red("[@m3rcena/weky] Calculator TypeError:") + " Embed field inline must be a boolean.");
             };
         };
     };
 
     if (options.embed.image && typeof options.embed.image !== "string") {
-        throw new Error(chalk.red("[@m3rcena/Weky Error]") + " Embed image must be a string.");
+        throw new Error(chalk.red("[@m3rcena/weky] Calculator TypeError:") + " Embed image must be a string.");
     };
 
     if (options.embed.timestamp && !(options.embed.timestamp instanceof Date)) {
-        throw new Error(chalk.red("[@m3rcena/Weky Error]") + " Embed timestamp must be a date.");
+        throw new Error(chalk.red("[@m3rcena/weky] Calculator TypeError:") + " Embed timestamp must be a date.");
     };
 
     // Main calculator Program
@@ -113,28 +113,28 @@ const Calculator = async (options: Calc) => {
         '(',
         ')',
         '^',
-		'%',
-		'AC',
-		'7',
-		'8',
-		'9',
-		'÷',
-		'DC',
-		'4',
-		'5',
-		'6',
-		'x',
-		'⌫',
-		'1',
-		'2',
-		'3',
-		' - ',
-		'LOG',
-		'.',
-		'0',
-		'=',
-		' + ',
-		'SQRT',
+        '%',
+        'AC',
+        '7',
+        '8',
+        '9',
+        '÷',
+        'DC',
+        '4',
+        '5',
+        '6',
+        'x',
+        '⌫',
+        '1',
+        '2',
+        '3',
+        ' - ',
+        'LOG',
+        '.',
+        '0',
+        '=',
+        ' + ',
+        'SQRT',
     ];
 
     let cur = 0;
@@ -150,7 +150,7 @@ const Calculator = async (options: Calc) => {
         }
     };
 
-    const iconURL = options.embed.footer? options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined : undefined;
+    const iconURL = options.embed.footer ? options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined : undefined;
     let embed = new EmbedBuilder()
         .setTitle(options.embed.title)
         .setDescription(stringify)
@@ -165,7 +165,7 @@ const Calculator = async (options: Calc) => {
         const author = ({
             name: options.embed.author.name,
             iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-            url: options.embed.author.url ? options.embed.author.url : undefined  
+            url: options.embed.author.url ? options.embed.author.url : undefined
         })
         embed.setAuthor(author);
     };
@@ -197,7 +197,7 @@ const Calculator = async (options: Calc) => {
                 const author = ({
                     name: options.embed.author.name,
                     iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                    url: options.embed.author.url ? options.embed.author.url : undefined  
+                    url: options.embed.author.url ? options.embed.author.url : undefined
                 })
                 _embed.setAuthor(author);
             };
@@ -226,12 +226,12 @@ const Calculator = async (options: Calc) => {
                 .addFields(options.embed.fields ? options.embed.fields : [])
                 .setImage(options.embed.image ? options.embed.image : null)
                 .setTimestamp(new Date());
-            
+
             if (options.embed.author) {
                 const author = ({
                     name: options.embed.author.name,
                     iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                    url: options.embed.author.url ? options.embed.author.url : undefined  
+                    url: options.embed.author.url ? options.embed.author.url : undefined
                 })
                 _embed.setAuthor(author);
             };
@@ -259,10 +259,22 @@ const Calculator = async (options: Calc) => {
         const calc = msg.createMessageComponentCollector({
             componentType: ComponentType.Button,
             time: 300000,
-            filter: (interacted) => interacted.user.id === id,
         });
 
         calc.on('collect', async (interact) => {
+            if (interact.user.id !== id) {
+                return interact.reply({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setTitle(options.embed.title ? options.embed.title : 'Error | Weky Calculator')
+                            .setDescription(`You are not allowed to interact with this calculator as you are not the user who initiated the command.\n\n**Note:** This calculator is only for the user <@${id}>`)
+                            .setColor('Red')
+                            .setTimestamp(new Date())
+                    ],
+                    ephemeral: true
+                });
+            }
+
             if (interact.customId !== 'calLOG' && interact.customId !== 'calSQRT') await interact.deferUpdate();
             if (interact.customId === 'calAC') {
                 str = ' ';

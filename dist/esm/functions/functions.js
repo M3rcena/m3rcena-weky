@@ -1,4 +1,5 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
+import wordList from "../data/words.json" assert { type: "json" };
 export const getRandomString = function (length) {
     const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let result = '';
@@ -57,4 +58,48 @@ export const addRow = function (btns) {
         row.addComponents(btn);
     }
     return row;
+};
+export const getRandomSentence = function (length) {
+    const word = [];
+    const words = wordList;
+    for (let i = 0; i < length; i++) {
+        word.push(words[Math.floor(Math.random() * words.length)]);
+    }
+    return word;
+};
+export const convertTime = function (time) {
+    const absoluteSeconds = Math.floor((time / 1000) % 60);
+    const absoluteMinutes = Math.floor((time / (1000 * 60)) % 60);
+    const absoluteHours = Math.floor((time / (1000 * 60 * 60)) % 24);
+    const absoluteDays = Math.floor((time / (1000 * 60 * 60 * 24)));
+    const d = absoluteDays
+        ? absoluteDays === 1
+            ? '1 day'
+            : `${absoluteDays} days`
+        : null;
+    const h = absoluteHours
+        ? absoluteHours === 1
+            ? '1 hour'
+            : `${absoluteHours} hours`
+        : null;
+    const m = absoluteMinutes
+        ? absoluteMinutes === 1
+            ? '1 minute'
+            : `${absoluteMinutes} minutes`
+        : null;
+    const s = absoluteSeconds
+        ? absoluteSeconds === 1
+            ? '1 second'
+            : `${absoluteSeconds} seconds`
+        : null;
+    const absoluteTime = [];
+    if (d)
+        absoluteTime.push(d);
+    if (h)
+        absoluteTime.push(h);
+    if (m)
+        absoluteTime.push(m);
+    if (s)
+        absoluteTime.push(s);
+    return absoluteTime.join(', ');
 };
