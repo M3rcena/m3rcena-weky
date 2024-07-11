@@ -1,2 +1,3 @@
 import Calculator from "./src/Calculator.js";
-export { Calculator };
+import ChaosWords from "./src/ChaosWords.js";
+export { Calculator, ChaosWords };
