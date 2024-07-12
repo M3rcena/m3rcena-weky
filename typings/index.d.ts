@@ -90,6 +90,39 @@ interface FastTypeTyping {
     buttonText?: string,
     othersMessage?: string,
     cancelMessage?: string,
+};
+
+interface LieSwatterTypes {
+    interaction: Message | ChatInputCommandInteraction,
+    client: Client,
+    embed: {
+        color: ColorResolvable,
+        title: string,
+        url?: string,
+        author?: {
+            name: string,
+            icon_url?: string,
+            url?: string
+        },
+        description?: string,
+        fields?: Fields[],
+        image?: string,
+        timestamp?: Date,
+        footer?: {
+            text: string,
+            icon_url?: string
+        },
+        thumbnail?: string
+    },
+    winMessage?: string,
+    loseMessage?: string,
+    othersMessage?: string,
+    thinkMessage?: string,
+    buttons?: {
+        true: string,
+        lie: string
+    },
+    time?: number,
 }
 interface Fields {
     name: string,
