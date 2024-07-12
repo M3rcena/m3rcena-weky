@@ -4,14 +4,14 @@ import { convertTime, getRandomSentence, getRandomString } from "../functions/fu
 const data = new Set();
 const FastType = async (options) => {
     if (!options)
-        throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No options provided.");
+        throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " No options provided.");
     if (typeof options !== "object")
-        throw new Error(chalk.red("[@m3rcena/weky] ChaosWords TypeError:") + " Options must be an object.");
+        throw new Error(chalk.red("[@m3rcena/weky] FastType TypeError:") + " Options must be an object.");
     let interaction;
     if (!options.interaction)
-        throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No interaction provided.");
+        throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " No interaction provided.");
     if (typeof options.interaction !== "object") {
-        throw new Error(chalk.red("[@m3rcena/weky] ChaosWords TypeError:") + " Interaction must be an object.");
+        throw new Error(chalk.red("[@m3rcena/weky] FastType TypeError:") + " Interaction must be an object.");
     }
     ;
     if (options.interaction instanceof Message) {
@@ -23,65 +23,65 @@ const FastType = async (options) => {
         interaction = options.interaction;
     }
     if (!interaction)
-        throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No interaction provided.");
+        throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " No interaction provided.");
     if (!options.client)
-        throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No client provided.");
+        throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " No client provided.");
     if (typeof options.client !== "object") {
-        throw new Error(chalk.red("[@m3rcena/weky] ChaosWords TypeError:") + " Client must be an object.");
+        throw new Error(chalk.red("[@m3rcena/weky] FastType TypeError:") + " Client must be an object.");
     }
     ;
     let client = options.client;
     if (!options.embed)
-        throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No embed options provided.");
+        throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " No embed options provided.");
     if (typeof options.embed !== "object") {
-        throw new Error(chalk.red("[@m3rcena/weky] ChaosWords TypeError:") + " Embed options must be an object.");
+        throw new Error(chalk.red("[@m3rcena/weky] FastType TypeError:") + " Embed options must be an object.");
     }
     ;
     if (!options.embed.color)
-        throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No embed color provided.");
+        throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " No embed color provided.");
     if (!options.embed.title)
-        throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No embed title provided.");
+        throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " No embed title provided.");
     if (options.embed.url && typeof options.embed.url !== "string") {
-        throw new Error(chalk.red("[@m3rcena/weky] ChaosWords TypeError:") + " Embed URL must be a string.");
+        throw new Error(chalk.red("[@m3rcena/weky] FastType TypeError:") + " Embed URL must be a string.");
     }
     ;
     if (options.embed.author) {
         if (typeof options.embed.author !== "object") {
-            throw new Error(chalk.red("[@m3rcena/weky] ChaosWords TypeError:") + " Embed author must be an object.");
+            throw new Error(chalk.red("[@m3rcena/weky] FastType TypeError:") + " Embed author must be an object.");
         }
         ;
         if (!options.embed.author.name)
-            throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No embed author name provided.");
+            throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " No embed author name provided.");
         if (options.embed.author.icon_url && typeof options.embed.author.icon_url !== "string") {
-            throw new Error(chalk.red("[@m3rcena/weky] ChaosWords TypeError:") + " Embed author icon URL must be a string.");
+            throw new Error(chalk.red("[@m3rcena/weky] FastType TypeError:") + " Embed author icon URL must be a string.");
         }
         ;
         if (options.embed.author.url && typeof options.embed.author.url !== "string") {
-            throw new Error(chalk.red("[@m3rcena/weky] ChaosWords TypeError:") + " Embed author URL must be a string.");
+            throw new Error(chalk.red("[@m3rcena/weky] FastType TypeError:") + " Embed author URL must be a string.");
         }
         ;
     }
     ;
     if (options.embed.description && typeof options.embed.description !== "string") {
-        throw new Error(chalk.red("[@m3rcena/weky] ChaosWords TypeError:") + " Embed description must be a string.");
+        throw new Error(chalk.red("[@m3rcena/weky] FastType TypeError:") + " Embed description must be a string.");
     }
     ;
     if (options.embed.fields) {
         if (!Array.isArray(options.embed.fields)) {
-            throw new Error(chalk.red("[@m3rcena/weky] ChaosWords TypeError:") + " Embed fields must be an array.");
+            throw new Error(chalk.red("[@m3rcena/weky] FastType TypeError:") + " Embed fields must be an array.");
         }
         ;
         for (const field of options.embed.fields) {
             if (typeof field !== "object") {
-                throw new Error(chalk.red("[@m3rcena/weky] ChaosWords TypeError:") + " Embed field must be an object.");
+                throw new Error(chalk.red("[@m3rcena/weky] FastType TypeError:") + " Embed field must be an object.");
             }
             ;
             if (!field.name)
-                throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No embed field name provided.");
+                throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " No embed field name provided.");
             if (!field.value)
-                throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No embed field value provided.");
+                throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " No embed field value provided.");
             if (field.inline && typeof field.inline !== "boolean") {
-                throw new Error(chalk.red("[@m3rcena/weky] ChaosWords TypeError:") + " Embed field inline must be a boolean.");
+                throw new Error(chalk.red("[@m3rcena/weky] FastType TypeError:") + " Embed field inline must be a boolean.");
             }
             ;
         }
@@ -89,11 +89,11 @@ const FastType = async (options) => {
     }
     ;
     if (options.embed.image && typeof options.embed.image !== "string") {
-        throw new Error(chalk.red("[@m3rcena/weky] ChaosWords TypeError:") + " Embed image must be a string.");
+        throw new Error(chalk.red("[@m3rcena/weky] FastType TypeError:") + " Embed image must be a string.");
     }
     ;
     if (options.embed.timestamp && !(options.embed.timestamp instanceof Date)) {
-        throw new Error(chalk.red("[@m3rcena/weky] ChaosWords TypeError:") + " Embed timestamp must be a date.");
+        throw new Error(chalk.red("[@m3rcena/weky] FastType TypeError:") + " Embed timestamp must be a date.");
     }
     ;
     let id = "";
