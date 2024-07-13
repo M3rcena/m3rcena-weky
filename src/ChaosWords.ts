@@ -30,8 +30,8 @@ const ChaosWords = async (options: Chaos) => {
 
     if (!options.client) throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No client provided.");
 
-    if (typeof options.client !== "object") {
-        throw new Error(chalk.red("[@m3rcena/weky] ChaosWords TypeError:") + " Client must be an object.");
+    if (!options.client as unknown as Object instanceof Client) {
+        throw new Error(chalk.red("[@m3rcena/weky] Calculator TypeError:") + " Client must be a Discord Client.");
     };
 
     let client: Client = options.client;
