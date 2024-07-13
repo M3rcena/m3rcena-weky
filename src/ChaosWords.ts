@@ -1,7 +1,7 @@
 import { ButtonBuilder, ButtonInteraction, ButtonStyle, ChatInputCommandInteraction, Client, ComponentType, EmbedBuilder, Message } from "discord.js";
 import type { Chaos, Fields } from "../typings"
 import chalk from "chalk";
-import { convertTime, getRandomSentence, getRandomString } from "../functions/functions.js";
+import { checkPackageUpdates, convertTime, getRandomSentence, getRandomString } from "../functions/functions.js";
 const data = new Set();
 
 const ChaosWords = async (options: Chaos) => {
@@ -736,7 +736,9 @@ const ChaosWords = async (options: Chaos) => {
         data.delete(id);
         gameCollector.stop();
         return game.stop();
-    })
+    });
+
+    checkPackageUpdates();
 };
 
 export default ChaosWords;

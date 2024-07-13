@@ -1,7 +1,7 @@
 import { ButtonStyle, ChatInputCommandInteraction, Client, Message, EmbedBuilder, ButtonBuilder, ComponentType } from "discord.js";
 import type { FastTypeTyping } from "../typings";
 import chalk from "chalk";
-import { convertTime, getRandomSentence, getRandomString } from "../functions/functions.js";
+import { checkPackageUpdates, convertTime, getRandomSentence, getRandomString } from "../functions/functions.js";
 const data = new Set();
 
 const FastType = async (options: FastTypeTyping) => {
@@ -343,6 +343,8 @@ const FastType = async (options: FastTypeTyping) => {
         data.delete(id);
         return collector.stop();
     });
+    
+    checkPackageUpdates()
 };
 
 export default FastType;

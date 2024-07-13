@@ -1,6 +1,6 @@
 import { ButtonStyle, ChatInputCommandInteraction, Message, EmbedBuilder, ButtonBuilder, ComponentType } from "discord.js";
 import chalk from "chalk";
-import { convertTime, getRandomSentence, getRandomString } from "../functions/functions.js";
+import { checkPackageUpdates, convertTime, getRandomSentence, getRandomString } from "../functions/functions.js";
 const data = new Set();
 const FastType = async (options) => {
     if (!options)
@@ -318,5 +318,6 @@ const FastType = async (options) => {
         data.delete(id);
         return collector.stop();
     });
+    checkPackageUpdates();
 };
 export default FastType;

@@ -1,7 +1,7 @@
 import { ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, Client, ComponentType, EmbedBuilder, Message } from "discord.js";
 import { LieSwatterTypes } from "../typings";
 import chalk from "chalk";
-import { convertTime, getRandomString } from "../functions/functions.js";
+import { checkPackageUpdates, convertTime, getRandomString } from "../functions/functions.js";
 import { decode } from "html-entities";
 
 const LieSwatter = async (options: LieSwatterTypes) => {
@@ -449,6 +449,8 @@ const LieSwatter = async (options: LieSwatterTypes) => {
             });
         }
     })
+
+    checkPackageUpdates();
 };
 
 export default LieSwatter;
