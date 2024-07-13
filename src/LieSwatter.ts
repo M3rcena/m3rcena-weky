@@ -30,8 +30,8 @@ const LieSwatter = async (options: LieSwatterTypes) => {
 
     if (!options.client) throw new Error(chalk.red("[@m3rcena/weky] LieSwatter Error:") + " No client provided.");
 
-    if (typeof options.client !== "object") {
-        throw new Error(chalk.red("[@m3rcena/weky] LieSwatter TypeError:") + " Client must be an object.");
+    if (!options.client as unknown as Object instanceof Client) {
+        throw new Error(chalk.red("[@m3rcena/weky] Calculator TypeError:") + " Client must be a Discord Client.");
     };
 
     let client: Client = options.client;
