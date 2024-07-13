@@ -1,5 +1,5 @@
 import chalk from "chalk";
-import { ActionRowBuilder, ChatInputCommandInteraction, ComponentType, EmbedBuilder, Message, ModalBuilder, TextInputBuilder, TextInputStyle } from "discord.js";
+import { ActionRowBuilder, ChatInputCommandInteraction, Client, ComponentType, EmbedBuilder, Message, ModalBuilder, TextInputBuilder, TextInputStyle } from "discord.js";
 import { createButton, addRow, checkPackageUpdates } from "../functions/functions.js";
 import { evaluate } from "mathjs";
 const Calculator = async (options) => {
@@ -26,8 +26,8 @@ const Calculator = async (options) => {
         throw new Error(chalk.red("[@m3rcena/weky] Calculator Error:") + " No interaction provided.");
     if (!options.client)
         throw new Error(chalk.red("[@m3rcena/weky] Calculator Error:") + " No client provided.");
-    if (typeof options.client !== "object") {
-        throw new Error(chalk.red("[@m3rcena/weky] Calculator TypeError:") + " Client must be an object.");
+    if (!options.client instanceof Client) {
+        throw new Error(chalk.red("[@m3rcena/weky] Calculator TypeError:") + " Client must be a Discord Client.");
     }
     ;
     let client = options.client;

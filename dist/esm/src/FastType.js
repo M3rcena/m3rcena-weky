@@ -1,4 +1,4 @@
-import { ButtonStyle, ChatInputCommandInteraction, Message, EmbedBuilder, ButtonBuilder, ComponentType } from "discord.js";
+import { ButtonStyle, ChatInputCommandInteraction, Client, Message, EmbedBuilder, ButtonBuilder, ComponentType } from "discord.js";
 import chalk from "chalk";
 import { checkPackageUpdates, convertTime, getRandomSentence, getRandomString } from "../functions/functions.js";
 const data = new Set();
@@ -26,8 +26,8 @@ const FastType = async (options) => {
         throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " No interaction provided.");
     if (!options.client)
         throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " No client provided.");
-    if (typeof options.client !== "object") {
-        throw new Error(chalk.red("[@m3rcena/weky] FastType TypeError:") + " Client must be an object.");
+    if (!options.client instanceof Client) {
+        throw new Error(chalk.red("[@m3rcena/weky] Calculator TypeError:") + " Client must be a Discord Client.");
     }
     ;
     let client = options.client;

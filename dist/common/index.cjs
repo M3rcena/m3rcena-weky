@@ -1963,7 +1963,7 @@ var wordList = [
 	"zulu"
 ];
 
-var version = "8.4.0";
+var version = "8.4.1";
 
 const getRandomString = function (length) {
     const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -2141,8 +2141,8 @@ const Calculator = async (options) => {
         throw new Error(chalk.red("[@m3rcena/weky] Calculator Error:") + " No interaction provided.");
     if (!options.client)
         throw new Error(chalk.red("[@m3rcena/weky] Calculator Error:") + " No client provided.");
-    if (typeof options.client !== "object") {
-        throw new Error(chalk.red("[@m3rcena/weky] Calculator TypeError:") + " Client must be an object.");
+    if (!options.client instanceof discord_js.Client) {
+        throw new Error(chalk.red("[@m3rcena/weky] Calculator TypeError:") + " Client must be a Discord Client.");
     }
     let client = options.client;
     if (!options.embed)
@@ -2774,8 +2774,8 @@ const ChaosWords = async (options) => {
         throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No interaction provided.");
     if (!options.client)
         throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No client provided.");
-    if (typeof options.client !== "object") {
-        throw new Error(chalk.red("[@m3rcena/weky] ChaosWords TypeError:") + " Client must be an object.");
+    if (!options.client instanceof discord_js.Client) {
+        throw new Error(chalk.red("[@m3rcena/weky] Calculator TypeError:") + " Client must be a Discord Client.");
     }
     options.client;
     if (!options.embed)
@@ -3424,8 +3424,8 @@ const FastType = async (options) => {
         throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " No interaction provided.");
     if (!options.client)
         throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " No client provided.");
-    if (typeof options.client !== "object") {
-        throw new Error(chalk.red("[@m3rcena/weky] FastType TypeError:") + " Client must be an object.");
+    if (!options.client instanceof discord_js.Client) {
+        throw new Error(chalk.red("[@m3rcena/weky] Calculator TypeError:") + " Client must be a Discord Client.");
     }
     options.client;
     if (!options.embed)
@@ -3714,8 +3714,8 @@ const LieSwatter = async (options) => {
         throw new Error(chalk.red("[@m3rcena/weky] LieSwatter Error:") + " No interaction provided.");
     if (!options.client)
         throw new Error(chalk.red("[@m3rcena/weky] LieSwatter Error:") + " No client provided.");
-    if (typeof options.client !== "object") {
-        throw new Error(chalk.red("[@m3rcena/weky] LieSwatter TypeError:") + " Client must be an object.");
+    if (!options.client instanceof discord_js.Client) {
+        throw new Error(chalk.red("[@m3rcena/weky] Calculator TypeError:") + " Client must be a Discord Client.");
     }
     options.client;
     if (!options.embed)
