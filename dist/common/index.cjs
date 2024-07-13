@@ -2,6 +2,9 @@
 
 var chalk = require('chalk');
 var discord_js = require('discord.js');
+var stringWidth = require('string-width');
+var child_process = require('child_process');
+var util = require('util');
 var mathjs = require('mathjs');
 var htmlEntities = require('html-entities');
 
@@ -1960,6 +1963,8 @@ var wordList = [
 	"zulu"
 ];
 
+var version = "8.4.0";
+
 const getRandomString = function (length) {
     const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let result = '';
@@ -1969,12 +1974,12 @@ const getRandomString = function (length) {
     return result;
 };
 const createButton = function (label, disabled) {
-    let style = discord_js.ButtonStyle.Primary;
+    let style = discord_js.ButtonStyle.Secondary;
     if (label === 'AC' || label === 'DC' || label === '⌫') {
-        style = discord_js.ButtonStyle.Success;
-    }
-    else if (label === '=') {
         style = discord_js.ButtonStyle.Danger;
+    }
+    else if (label === ' = ') {
+        style = discord_js.ButtonStyle.Success;
     }
     else if (label === '(' ||
         label === ')' ||
@@ -1982,9 +1987,20 @@ const createButton = function (label, disabled) {
         label === '%' ||
         label === '÷' ||
         label === 'x' ||
-        label === '-' ||
-        label === '+' ||
-        label === '.') {
+        label === ' - ' ||
+        label === ' + ' ||
+        label === '.' ||
+        label === 'RND' ||
+        label === 'SIN' ||
+        label === 'COS' ||
+        label === 'TAN' ||
+        label === 'LG' ||
+        label === 'LN' ||
+        label === 'SQRT' ||
+        label === 'x!' ||
+        label === '1/x' ||
+        label === 'π' ||
+        label === 'e') {
         style = discord_js.ButtonStyle.Primary;
     }
     {
@@ -2049,6 +2065,59 @@ const convertTime = function (time) {
     if (s)
         absoluteTime.push(s);
     return absoluteTime.join(', ');
+};
+const checkPackageUpdates = async function (disabled) {
+    try {
+        const execPromise = util.promisify(child_process.exec);
+        const { stdout } = await execPromise('npm show @m3rcena/weky version');
+        if (stdout.trim().toString() > version) {
+            const msg = chalk(`New ${chalk.green('version')} of ${chalk.yellow('@m3rcena/weky')} is available!`);
+            const msg2 = chalk(`${chalk.red(version)} -> ${chalk.green(stdout.trim().toString())}`);
+            const tip = chalk(`Registry: ${chalk.cyan('https://www.npmjs.com/package/@m3rcena/weky')}`);
+            const install = chalk(`Run ${chalk.green(`npm i @m3rcena/weky@${stdout.trim().toString()}`)} to update!`);
+            boxConsole([msg, msg2, tip, install]);
+        }
+    }
+    catch (error) {
+        console.error(error);
+    }
+};
+const boxConsole = function (messages) {
+    let tips = [];
+    let maxLen = 0;
+    const defaultSpace = 4;
+    const spaceWidth = stringWidth(' ');
+    if (Array.isArray(messages)) {
+        tips = Array.from(messages);
+    }
+    else {
+        tips = [messages];
+    }
+    tips = [' ', ...tips, ' '];
+    tips = tips.map((msg) => ({ val: msg, len: stringWidth(msg) }));
+    maxLen = tips.reduce((len, tip) => {
+        maxLen = Math.max(len, tip.len);
+        return maxLen;
+    }, maxLen);
+    maxLen += spaceWidth * 2 * defaultSpace;
+    tips = tips.map(({ val, len }) => {
+        let i = 0;
+        let j = 0;
+        while (len + i * 2 * spaceWidth < maxLen) {
+            i++;
+        }
+        j = i;
+        while (j > 0 && len + i * spaceWidth + j * spaceWidth > maxLen) {
+            j--;
+        }
+        return ' '.repeat(i) + val + ' '.repeat(j);
+    });
+    const line = chalk.yellow('─'.repeat(maxLen));
+    console.log(chalk.yellow('┌') + line + chalk.yellow('┐'));
+    for (const msg of tips) {
+        console.log(chalk.yellow('│') + msg + chalk.yellow('│'));
+    }
+    console.log(chalk.yellow('└') + line + chalk.yellow('┘'));
 };
 
 const Calculator = async (options) => {
@@ -2130,34 +2199,47 @@ const Calculator = async (options) => {
     let str = ' ';
     let stringify = '```\n' + str + '\n```';
     const row = [];
+    const row2 = [];
     const button = new Array([], [], [], [], []);
-    new Array([], [], [], [], []);
+    const buttons = new Array([], []);
     const text = [
+        '\u200b',
+        'RND',
+        'SIN',
+        'COS',
+        'TAN',
+        '^',
+        'LG',
+        'LN',
         '(',
         ')',
-        '^',
-        '%',
+        'SQRT',
         'AC',
+        '⌫',
+        '%',
+        '÷',
+        'x!',
         '7',
         '8',
         '9',
-        '÷',
-        'DC',
+        'x',
+        '1/x',
         '4',
         '5',
         '6',
-        'x',
-        '⌫',
+        ' - ',
+    ];
+    const text2 = [
+        'π',
         '1',
         '2',
         '3',
-        ' - ',
-        'LOG',
+        ' + ',
+        'e',
         '.',
         '0',
         '=',
-        ' + ',
-        'SQRT',
+        'DC'
     ];
     let current = 0;
     for (let i = 0; i < text.length; i++) {
@@ -2167,6 +2249,16 @@ const Calculator = async (options) => {
         if (i === text.length - 1) {
             for (const btn of button)
                 row.push(addRow(btn));
+        }
+    }
+    current = 0;
+    for (let z = 0; z < text2.length; z++) {
+        if (buttons[current].length === 5)
+            current++;
+        buttons[current].push(createButton(text2[z]));
+        if (z === text2.length - 1) {
+            for (const btns of buttons)
+                row2.push(addRow(btns));
         }
     }
     const iconURL = options.embed.footer ? options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined : undefined;
@@ -2194,10 +2286,18 @@ const Calculator = async (options) => {
         });
         embed.setFooter(footer);
     }
+    if (!interaction.channel || !interaction.channel.isTextBased()) {
+        throw new Error(chalk.red("[@m3rcena/weky] Calculator Error:") + " Interaction must be a text-based channel.");
+    }
+    const channel = interaction.channel;
     options.interaction.reply({
         embeds: [embed],
         components: row,
+        allowedMentions: { repliedUser: false }
     }).then(async (msg) => {
+        let msg2 = await channel.send({
+            components: row2,
+        });
         async function edit() {
             let _embed = new discord_js.EmbedBuilder()
                 .setTitle(options.embed.title)
@@ -2257,6 +2357,7 @@ const Calculator = async (options) => {
                 embeds: [_embed],
                 components: [],
             });
+            msg2.delete();
         }
         let id;
         if (interaction instanceof discord_js.Message) {
@@ -2265,7 +2366,7 @@ const Calculator = async (options) => {
         else if (interaction instanceof discord_js.ChatInputCommandInteraction) {
             id = interaction.user.id;
         }
-        const calc = msg.createMessageComponentCollector({
+        const calc = channel.createMessageComponentCollector({
             componentType: discord_js.ComponentType.Button,
             time: 300000,
         });
@@ -2282,7 +2383,15 @@ const Calculator = async (options) => {
                     ephemeral: true
                 });
             }
-            if (interact.customId !== 'calLOG' && interact.customId !== 'calSQRT')
+            if (interact.customId !== 'calLG'
+                && interact.customId !== 'calSQRT'
+                && interact.customId !== 'calRND'
+                && interact.customId !== 'calSIN'
+                && interact.customId !== 'calCOS'
+                && interact.customId !== 'calTAN'
+                && interact.customId !== 'calLN'
+                && interact.customId !== 'cal1/x'
+                && interact.customId !== 'calx!')
                 await interact.deferUpdate();
             if (interact.customId === 'calAC') {
                 str = ' ';
@@ -2309,45 +2418,13 @@ const Calculator = async (options) => {
                     edit();
                 }
             }
-            else if (interact.customId === 'cal=') {
-                if (str === ' ' || str === '' || str === null || str === undefined) {
-                    return;
-                }
-                else {
-                    try {
-                        str += ' = ' + mathjs.evaluate(str);
-                        stringify = '```\n' + str + '\n```';
-                        edit();
-                        str = ' ';
-                        stringify = '```\n' + str + '\n```';
-                    }
-                    catch (e) {
-                        if (options.invalidQuery === undefined) {
-                            return;
-                        }
-                        else {
-                            str = options.invalidQuery;
-                            stringify = '```\n' + str + '\n```';
-                            edit();
-                            str = ' ';
-                            stringify = '```\n' + str + '\n```';
-                        }
-                    }
-                }
-            }
-            else if (interact.customId === 'calDC') {
-                str = "Disabled Calculator";
-                stringify = '```\n' + str + '\n```';
-                edit();
-                calc.stop();
-            }
-            else if (interact.customId === 'calLOG') {
+            else if (interact.customId === 'calLG') {
                 const modal = new discord_js.ModalBuilder()
-                    .setTitle('Logarithm')
+                    .setTitle('Logarithm 10 (log10)')
                     .setCustomId('mdLog');
                 const input = new discord_js.TextInputBuilder()
                     .setCustomId('numberLog')
-                    .setLabel('Enter the number to log')
+                    .setLabel('Enter the number to log10')
                     .setStyle(discord_js.TextInputStyle.Short)
                     .setRequired(true);
                 const actionRow = new discord_js.ActionRowBuilder().addComponents(input);
@@ -2360,7 +2437,7 @@ const Calculator = async (options) => {
                         modal.deferUpdate();
                         const number = modal.fields.getTextInputValue('numberLog');
                         try {
-                            str += 'log(' + number + ')';
+                            str += 'log10(' + number + ')';
                             stringify = '```\n' + str + '\n```';
                             edit();
                         }
@@ -2403,6 +2480,262 @@ const Calculator = async (options) => {
                     }
                 });
             }
+            else if (interact.customId === 'calRND') {
+                const modal = new discord_js.ModalBuilder()
+                    .setTitle('Round Number')
+                    .setCustomId('mdRnd');
+                const input = new discord_js.TextInputBuilder()
+                    .setCustomId('numberRnd')
+                    .setLabel('Enter the number to round')
+                    .setStyle(discord_js.TextInputStyle.Short)
+                    .setRequired(true);
+                const actionRow = new discord_js.ActionRowBuilder().addComponents(input);
+                modal.addComponents(actionRow);
+                await interact.showModal(modal);
+                client.on('interactionCreate', async (modal) => {
+                    if (!modal.isModalSubmit())
+                        return;
+                    if (modal.customId === 'mdRnd') {
+                        modal.deferUpdate();
+                        const number = modal.fields.getTextInputValue('numberRnd');
+                        try {
+                            str += 'round(' + number + ')';
+                            stringify = '```\n' + str + '\n```';
+                            edit();
+                        }
+                        catch (e) {
+                            str = 'Invalid Number';
+                            stringify = '```\n' + str + '\n```';
+                            edit();
+                        }
+                    }
+                });
+            }
+            else if (interact.customId === 'calSIN') {
+                const modal = new discord_js.ModalBuilder()
+                    .setTitle('Sine')
+                    .setCustomId('mdSin');
+                const input = new discord_js.TextInputBuilder()
+                    .setCustomId('numberSin')
+                    .setLabel('Enter the number to find the sine')
+                    .setStyle(discord_js.TextInputStyle.Short)
+                    .setRequired(true);
+                const actionRow = new discord_js.ActionRowBuilder().addComponents(input);
+                modal.addComponents(actionRow);
+                await interact.showModal(modal);
+                client.on('interactionCreate', async (modal) => {
+                    if (!modal.isModalSubmit())
+                        return;
+                    if (modal.customId === 'mdSin') {
+                        modal.deferUpdate();
+                        const number = modal.fields.getTextInputValue('numberSin');
+                        try {
+                            str += 'sin(' + number + ')';
+                            stringify = '```\n' + str + '\n```';
+                            edit();
+                        }
+                        catch (e) {
+                            str = 'Invalid Number';
+                            stringify = '```\n' + str + '\n```';
+                            edit();
+                        }
+                    }
+                });
+            }
+            else if (interact.customId === 'calCOS') {
+                const modal = new discord_js.ModalBuilder()
+                    .setTitle('Cosine')
+                    .setCustomId('mdCos');
+                const input = new discord_js.TextInputBuilder()
+                    .setCustomId('numberCos')
+                    .setLabel('Enter the number to find the cosine')
+                    .setStyle(discord_js.TextInputStyle.Short)
+                    .setRequired(true);
+                const actionRow = new discord_js.ActionRowBuilder().addComponents(input);
+                modal.addComponents(actionRow);
+                await interact.showModal(modal);
+                client.on('interactionCreate', async (modal) => {
+                    if (!modal.isModalSubmit())
+                        return;
+                    if (modal.customId === 'mdCos') {
+                        modal.deferUpdate();
+                        const number = modal.fields.getTextInputValue('numberCos');
+                        try {
+                            str += 'cos(' + number + ')';
+                            stringify = '```\n' + str + '\n```';
+                            edit();
+                        }
+                        catch (e) {
+                            str = 'Invalid Number';
+                            stringify = '```\n' + str + '\n```';
+                            edit();
+                        }
+                    }
+                });
+            }
+            else if (interact.customId === 'calTAN') {
+                const modal = new discord_js.ModalBuilder()
+                    .setTitle('Tangent')
+                    .setCustomId('mdTan');
+                const input = new discord_js.TextInputBuilder()
+                    .setCustomId('numberTan')
+                    .setLabel('Enter the number to find the tangent')
+                    .setStyle(discord_js.TextInputStyle.Short)
+                    .setRequired(true);
+                const actionRow = new discord_js.ActionRowBuilder().addComponents(input);
+                modal.addComponents(actionRow);
+                await interact.showModal(modal);
+                client.on('interactionCreate', async (modal) => {
+                    if (!modal.isModalSubmit())
+                        return;
+                    if (modal.customId === 'mdTan') {
+                        modal.deferUpdate();
+                        const number = modal.fields.getTextInputValue('numberTan');
+                        try {
+                            str += 'tan(' + number + ')';
+                            stringify = '```\n' + str + '\n```';
+                            edit();
+                        }
+                        catch (e) {
+                            str = 'Invalid Number';
+                            stringify = '```\n' + str + '\n```';
+                            edit();
+                        }
+                    }
+                });
+            }
+            else if (interact.customId === 'calLN') {
+                const modal = new discord_js.ModalBuilder()
+                    .setTitle('Natural Logarithm (log)')
+                    .setCustomId('mdLn');
+                const input = new discord_js.TextInputBuilder()
+                    .setCustomId('numberLn')
+                    .setLabel('Enter the number for natural logarithm')
+                    .setStyle(discord_js.TextInputStyle.Short)
+                    .setRequired(true);
+                const actionRow = new discord_js.ActionRowBuilder().addComponents(input);
+                modal.addComponents(actionRow);
+                await interact.showModal(modal);
+                client.on('interactionCreate', async (modal) => {
+                    if (!modal.isModalSubmit())
+                        return;
+                    if (modal.customId === 'mdLn') {
+                        modal.deferUpdate();
+                        const number = modal.fields.getTextInputValue('numberLn');
+                        try {
+                            str += 'log(' + number + ')';
+                            stringify = '```\n' + str + '\n```';
+                            edit();
+                        }
+                        catch (e) {
+                            str = 'Invalid Number';
+                            stringify = '```\n' + str + '\n```';
+                            edit();
+                        }
+                    }
+                });
+            }
+            else if (interact.customId === 'cal1/x') {
+                const modal = new discord_js.ModalBuilder()
+                    .setTitle('Reciprocal')
+                    .setCustomId('mdReciprocal');
+                const input = new discord_js.TextInputBuilder()
+                    .setCustomId('numberReciprocal')
+                    .setLabel('Enter the number to find the reciprocal')
+                    .setStyle(discord_js.TextInputStyle.Short)
+                    .setRequired(true);
+                const actionRow = new discord_js.ActionRowBuilder().addComponents(input);
+                modal.addComponents(actionRow);
+                await interact.showModal(modal);
+                client.on('interactionCreate', async (modal) => {
+                    if (!modal.isModalSubmit())
+                        return;
+                    if (modal.customId === 'mdReciprocal') {
+                        modal.deferUpdate();
+                        const number = modal.fields.getTextInputValue('numberReciprocal');
+                        try {
+                            str += '1/(' + number + ')';
+                            stringify = '```\n' + str + '\n```';
+                            edit();
+                        }
+                        catch (e) {
+                            str = 'Invalid Number';
+                            stringify = '```\n' + str + '\n```';
+                            edit();
+                        }
+                    }
+                });
+            }
+            else if (interact.customId === 'calx!') {
+                const modal = new discord_js.ModalBuilder()
+                    .setTitle('Factorial')
+                    .setCustomId('mdFactorial');
+                const input = new discord_js.TextInputBuilder()
+                    .setCustomId('numberFactorial')
+                    .setLabel('Enter the number to find the factorial')
+                    .setStyle(discord_js.TextInputStyle.Short)
+                    .setRequired(true);
+                const actionRow = new discord_js.ActionRowBuilder().addComponents(input);
+                modal.addComponents(actionRow);
+                await interact.showModal(modal);
+                client.on('interactionCreate', async (modal) => {
+                    if (!modal.isModalSubmit())
+                        return;
+                    if (modal.customId === 'mdFactorial') {
+                        modal.deferUpdate();
+                        const number = modal.fields.getTextInputValue('numberFactorial');
+                        try {
+                            str += number + '!';
+                            stringify = '```\n' + str + '\n```';
+                            edit();
+                        }
+                        catch (e) {
+                            str = 'Invalid Number';
+                            stringify = '```\n' + str + '\n```';
+                            edit();
+                        }
+                    }
+                });
+            }
+            else if (interact.customId === 'calπ') {
+                str += 'pi';
+                stringify = '```\n' + str + '\n```';
+                edit();
+            }
+            else if (interact.customId === 'cale') {
+                str += 'e';
+                stringify = '```\n' + str + '\n```';
+                edit();
+            }
+            else if (interact.customId === 'cal=') {
+                if (str === ' ' || str === '' || str === null || str === undefined) {
+                    return;
+                }
+                else {
+                    try {
+                        str += ' = ' + mathjs.evaluate(str);
+                        stringify = '```\n' + str + '\n```';
+                        edit();
+                        str = ' ';
+                        stringify = '```\n' + str + '\n```';
+                    }
+                    catch (e) {
+                        if (options.invalidQuery === undefined) {
+                            return;
+                        }
+                        else {
+                            str = options.invalidQuery;
+                            stringify = '```\n' + str + '\n```';
+                            edit();
+                            str = ' ';
+                            stringify = '```\n' + str + '\n```';
+                        }
+                    }
+                }
+            }
+            else if (interact.customId === 'calDC') {
+                calc.stop();
+            }
             else {
                 str += interact.customId.replace('cal', '');
                 stringify = '```\n' + str + '\n```';
@@ -2416,6 +2749,7 @@ const Calculator = async (options) => {
             lock();
         });
     });
+    checkPackageUpdates();
 };
 
 const data$1 = new Set();
@@ -3065,6 +3399,7 @@ const ChaosWords = async (options) => {
         gameCollector.stop();
         return game.stop();
     });
+    checkPackageUpdates();
 };
 
 const data = new Set();
@@ -3355,6 +3690,7 @@ const FastType = async (options) => {
         data.delete(id);
         return collector.stop();
     });
+    checkPackageUpdates();
 };
 
 const LieSwatter = async (options) => {
@@ -3733,6 +4069,7 @@ const LieSwatter = async (options) => {
             });
         }
     });
+    checkPackageUpdates();
 };
 
 exports.Calculator = Calculator;

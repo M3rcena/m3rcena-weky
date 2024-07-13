@@ -1,6 +1,6 @@
 import { ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, ComponentType, EmbedBuilder, Message } from "discord.js";
 import chalk from "chalk";
-import { convertTime, getRandomString } from "../functions/functions.js";
+import { checkPackageUpdates, convertTime, getRandomString } from "../functions/functions.js";
 import { decode } from "html-entities";
 const LieSwatter = async (options) => {
     if (!options)
@@ -416,5 +416,6 @@ const LieSwatter = async (options) => {
             });
         }
     });
+    checkPackageUpdates();
 };
 export default LieSwatter;
