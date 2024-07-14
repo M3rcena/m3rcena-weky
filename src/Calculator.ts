@@ -3,7 +3,7 @@ import type { Calc } from "../typings";
 import { ActionRowBuilder, ButtonBuilder, ChatInputCommandInteraction, Client, ComponentType, EmbedBuilder, Message, ModalBuilder, TextInputBuilder, TextInputStyle } from "discord.js";
 import { createButton, getRandomString, addRow, checkPackageUpdates } from "../functions/functions.js";
 import { evaluate } from "mathjs";
-import { OptionsChecking } from "../functions/OptionChecking";
+import { OptionsChecking } from "../functions/OptionChecking.js";
 
 const Calculator = async (options: Calc) => {
     // Check type
