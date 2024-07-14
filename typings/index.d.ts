@@ -56,7 +56,7 @@ interface Chaos {
     charGenerated?: number,
     startMessage?: string,
     endMessage?: string,
-    maxTries?: string,
+    maxTries?: number,
     buttonText?: string,
     otherMessage?: string,
 };
