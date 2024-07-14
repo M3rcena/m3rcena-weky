@@ -1,4 +1,4 @@
-import { ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, ComponentType, EmbedBuilder, Message } from "discord.js";
+import { ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, Client, ComponentType, EmbedBuilder, Message } from "discord.js";
 import chalk from "chalk";
 import { checkPackageUpdates, convertTime, getRandomSentence, getRandomString } from "../functions/functions.js";
 const data = new Set();
@@ -26,8 +26,8 @@ const ChaosWords = async (options) => {
         throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No interaction provided.");
     if (!options.client)
         throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No client provided.");
-    if (typeof options.client !== "object") {
-        throw new Error(chalk.red("[@m3rcena/weky] ChaosWords TypeError:") + " Client must be an object.");
+    if (!options.client instanceof Client) {
+        throw new Error(chalk.red("[@m3rcena/weky] Calculator TypeError:") + " Client must be a Discord Client.");
     }
     ;
     let client = options.client;
