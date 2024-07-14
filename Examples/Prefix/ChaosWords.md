@@ -1,23 +1,23 @@
-# Example for Calculator
+# Example for ChaosWords
 
 ### Common js
 ```ts
-const { Calculator } = require('@m3rcena/weky');
+const { ChaosWords } = require('@m3rcena/weky');
 ```
 
 ### ES Module
 ```ts
-import { Calculator } from '@m3rcena/weky';
+import { ChaosWords } from '@m3rcena/weky';
 ```
 
 ### Usage
 ```ts
-await Calculator({
+await ChaosWords({
     interaction: message,
     client: client,
     embed: {
         color: "Blurple",
-        title: "Calculator | M3rcena Development",
+        title: "ChaosWords | M3rcena Development",
         // Optional
         url: "https://m3rcena.gitbook.io/docs"
         author: {
@@ -43,7 +43,17 @@ await Calculator({
         thumbnail: "Updated at"
     },
     // Optional
-    invalidQuery: "Invalid Number given"
-    disabledQuery: "The calculator has been disabled"
+    winMessage: "You just won",
+    loseMessage: "Better luck next time!",
+    wrongWord: "You provided wrong word",
+    correctWord: "That was correct",
+    time: 120000,
+    words: ["Apple", "Banana"],
+    charGenerated: 320,
+    startMessage: "Lets begin!",
+    endMessage: "Game Over!",
+    maxTries: 10,
+    buttonText: "Cancel",
+    otherMessage: "This is not your game!"
 });
 ```
