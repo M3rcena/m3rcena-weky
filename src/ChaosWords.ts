@@ -2,7 +2,7 @@ import { ButtonBuilder, ButtonInteraction, ButtonStyle, ChatInputCommandInteract
 import type { Chaos, Fields } from "../typings"
 import chalk from "chalk";
 import { checkPackageUpdates, convertTime, getRandomSentence, getRandomString } from "../functions/functions.js";
-import { OptionsChecking } from "../functions/OptionChecking";
+import { OptionsChecking } from "../functions/OptionChecking.js";
 const data = new Set();
 
 const ChaosWords = async (options: Chaos) => {
