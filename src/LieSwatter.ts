@@ -3,7 +3,7 @@ import { LieSwatterTypes } from "../typings";
 import chalk from "chalk";
 import { checkPackageUpdates, convertTime, getRandomString } from "../functions/functions.js";
 import { decode } from "html-entities";
-import { OptionsChecking } from "../functions/OptionChecking";
+import { OptionsChecking } from "../functions/OptionChecking.js";
 
 const LieSwatter = async (options: LieSwatterTypes) => {
     // Check types
