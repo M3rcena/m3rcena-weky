@@ -4,8 +4,7 @@ import chalk from "chalk";
 import stringWidth from 'string-width';
 import { exec } from 'child_process';
 
-// @ts-ignore
-import { dependencies } from "../../../../package.json" assert { type: "json" };
+import { dependencies } from "../package.json" assert { type: "json" };
 import { version } from "../package.json" assert { type: "json" };
 import { promisify } from "util";
 
