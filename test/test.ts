@@ -3,6 +3,7 @@ import Calculator from "../src/Calculator";
 import ChaosWords from "../src/ChaosWords";
 import FastType from "../src/FastType";
 import LieSwatter from "../src/LieSwatter";
+import WouldYouRather from "../src/WouldYouRather";
 
 export interface ExtendedClient extends Client {
     commands: Collection<string, any>;
@@ -69,6 +70,21 @@ client.on("messageCreate", async (message) => {
 
     if (message.content === "!lie-swatter") {
         LieSwatter({
+            interaction: message,
+            client: client,
+            embed: {
+                color: "Blurple",
+                title: "Lie Swatter | M3rcena Development",
+                footer: {
+                    text: '©️ M3rcena Development'
+                },
+                timestamp: new Date(),
+            }
+        })
+    };
+
+    if (message.content === "!wyr") {
+        WouldYouRather({
             interaction: message,
             client: client,
             embed: {
