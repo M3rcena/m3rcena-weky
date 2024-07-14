@@ -8,20 +8,7 @@ on:
     types: [created]
 
 jobs:
-  tsc:
-    name: tsc
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v3
-      with:
-        node-version: 20
-        registry-url: https://registry.npmjs.org/
-    - name: tsc
-      uses: icrawl/action-tsc@v1
-  
   publish-npm:
-    needs: tsc
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,6 +17,8 @@ jobs:
           node-version: 20
           registry-url: https://registry.npmjs.org/
       - run: npm i
+      - name: tsc
+        uses: icrawl/action-tsc@v1
       - run: npm run build
       - run: npm publish
         env:
