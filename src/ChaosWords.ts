@@ -2,21 +2,14 @@ import { ButtonBuilder, ButtonInteraction, ButtonStyle, ChatInputCommandInteract
 import type { Chaos, Fields } from "../typings"
 import chalk from "chalk";
 import { checkPackageUpdates, convertTime, getRandomSentence, getRandomString } from "../functions/functions.js";
+import { OptionsChecking } from "../functions/OptionChecking.js";
 const data = new Set();
 
 const ChaosWords = async (options: Chaos) => {
-    // Check if the options object is provided
-    if (!options) throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No options provided.");
-
-    if (typeof options !== "object") throw new Error(chalk.red("[@m3rcena/weky] ChaosWords TypeError:") + " Options must be an object.");
-
-    // Check if the interaction object is provided
+    // Check types
+    OptionsChecking(options, "ChaosWords")
+    
     let interaction;
-    if (!options.interaction) throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No interaction provided.");
-
-    if (typeof options.interaction !== "object") {
-        throw new Error(chalk.red("[@m3rcena/weky] ChaosWords TypeError:") + " Interaction must be an object.");
-    };
 
     if (options.interaction instanceof Message) {
         interaction: Message
@@ -28,76 +21,7 @@ const ChaosWords = async (options: Chaos) => {
 
     if (!interaction) throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No interaction provided.");
 
-    if (!options.client) throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No client provided.");
-
-    if (!options.client as unknown as Object instanceof Client) {
-        throw new Error(chalk.red("[@m3rcena/weky] Calculator TypeError:") + " Client must be a Discord Client.");
-    };
-
     let client: Client = options.client;
-    // Check if the embed object is provided
-
-    if (!options.embed) throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No embed options provided.");
-
-    if (typeof options.embed !== "object") {
-        throw new Error(chalk.red("[@m3rcena/weky] ChaosWords TypeError:") + " Embed options must be an object.");
-    };
-
-    if (!options.embed.color) throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No embed color provided.");
-
-    if (!options.embed.title) throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No embed title provided.");
-
-    if (options.embed.url && typeof options.embed.url !== "string") {
-        throw new Error(chalk.red("[@m3rcena/weky] ChaosWords TypeError:") + " Embed URL must be a string.");
-    };
-
-    if (options.embed.author) {
-        if (typeof options.embed.author !== "object") {
-            throw new Error(chalk.red("[@m3rcena/weky] ChaosWords TypeError:") + " Embed author must be an object.");
-        };
-
-        if (!options.embed.author.name) throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No embed author name provided.");
-
-        if (options.embed.author.icon_url && typeof options.embed.author.icon_url !== "string") {
-            throw new Error(chalk.red("[@m3rcena/weky] ChaosWords TypeError:") + " Embed author icon URL must be a string.");
-        };
-
-        if (options.embed.author.url && typeof options.embed.author.url !== "string") {
-            throw new Error(chalk.red("[@m3rcena/weky] ChaosWords TypeError:") + " Embed author URL must be a string.");
-        };
-    };
-
-    if (options.embed.description && typeof options.embed.description !== "string") {
-        throw new Error(chalk.red("[@m3rcena/weky] ChaosWords TypeError:") + " Embed description must be a string.");
-    };
-
-    if (options.embed.fields) {
-        if (!Array.isArray(options.embed.fields)) {
-            throw new Error(chalk.red("[@m3rcena/weky] ChaosWords TypeError:") + " Embed fields must be an array.");
-        };
-
-        for (const field of options.embed.fields) {
-            if (typeof field !== "object") {
-                throw new Error(chalk.red("[@m3rcena/weky] ChaosWords TypeError:") + " Embed field must be an object.");
-            };
-
-            if (!field.name) throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No embed field name provided.");
-
-            if (!field.value) throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No embed field value provided.");
-
-            if (field.inline && typeof field.inline !== "boolean") {
-                throw new Error(chalk.red("[@m3rcena/weky] ChaosWords TypeError:") + " Embed field inline must be a boolean.");
-            };
-        };
-    };
-
-    if (options.embed.image && typeof options.embed.image !== "string") {
-        throw new Error(chalk.red("[@m3rcena/weky] ChaosWords TypeError:") + " Embed image must be a string.");
-    };
-
-    if (options.embed.timestamp && !(options.embed.timestamp instanceof Date)) {
-        throw new Error(chalk.red("[@m3rcena/weky] ChaosWords TypeError:") + " Embed timestamp must be a date.");
-    };
 
     let id: string = "";
     if (options.interaction instanceof Message) {
