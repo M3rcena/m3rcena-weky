@@ -4,6 +4,7 @@ import ChaosWords from "../src/ChaosWords";
 import FastType from "../src/FastType";
 import LieSwatter from "../src/LieSwatter";
 import WouldYouRather from "../src/WouldYouRather";
+import GuessTheNumber from "../src/GuessTheNumber";
 
 export interface ExtendedClient extends Client {
     commands: Collection<string, any>;
@@ -95,6 +96,22 @@ client.on("messageCreate", async (message) => {
                 },
                 timestamp: new Date(),
             }
+        })
+    };
+
+    if (message.content === "!gtn") {
+        GuessTheNumber({
+            interaction: message,
+            client: client,
+            embed: {
+                color: "Blurple",
+                title: "Guess The Number | M3rcena Development",
+                footer: {
+                    text: '©️ M3rcena Development'
+                },
+                timestamp: new Date(),
+            },
+            publicGame: true
         })
     };
 });

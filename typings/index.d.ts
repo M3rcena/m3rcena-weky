@@ -154,10 +154,49 @@ interface WouldYouRatherTypes {
         optionB: string
     },
     time?: number,
+};
+
+interface GuessTheNumberTypes {
+    interaction: Message | ChatInputCommandInteraction,
+    client: Client,
+    embed: {
+        color: ColorResolvable,
+        title: string,
+        url?: string,
+        author?: {
+            name: string,
+            icon_url?: string,
+            url?: string
+        },
+        description?: string,
+        fields?: Fields[],
+        image?: string,
+        timestamp?: Date,
+        footer?: {
+            text: string,
+            icon_url?: string
+        },
+        thumbnail?: string
+    },
+    publicGame?: boolean,
+    winMessage?: {
+        publicGame?: string,
+        privateGame?: string
+    },
+    loseMessage?: string,
+    bigNumber?: string,
+    smallNumber?: string,
+    otherMessage?: string,
+    ongoingMessage?: string,
+    returnWinner?: boolean,
+    button?: string,
+    number?: number,
+    time?: number,
+    gameID?: string,
 }
 
 interface Fields {
     name: string,
     value: string,
     inline?: boolean
-}
+};
