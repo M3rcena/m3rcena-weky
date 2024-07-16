@@ -1,8 +1,8 @@
 import { ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, Client, ComponentType, EmbedBuilder, Message } from "discord.js";
-import { OptionsChecking } from "../functions/OptionChecking";
+import { OptionsChecking } from "../functions/OptionChecking.js";
 import { GuessTheNumberTypes } from "../typings";
 import chalk from "chalk";
-import { convertTime, getRandomString } from "../functions/functions";
+import { convertTime, getRandomString } from "../functions/functions.js";
 
 import { QuickDB } from 'quick.db';
 const db = new QuickDB();

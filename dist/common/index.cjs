@@ -1965,7 +1965,7 @@ var wordList = [
 	"zulu"
 ];
 
-var version = "8.6.0";
+var version = "8.6.1";
 
 const getRandomString = function (length) {
     const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
