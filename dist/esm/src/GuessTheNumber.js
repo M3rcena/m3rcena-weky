@@ -2,8 +2,7 @@ import { ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, ComponentType,
 import { OptionsChecking } from "../functions/OptionChecking.js";
 import chalk from "chalk";
 import { convertTime, getRandomString } from "../functions/functions.js";
-import { QuickDB } from 'quick.db';
-const db = new QuickDB();
+const db = new Map();
 const data = new Set();
 const currentGames = new Object();
 const GuessTheNumber = async (options) => {

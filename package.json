@@ -1,6 +1,6 @@
 {
   "name": "@m3rcena/weky",
-  "version": "8.6.1",
+  "version": "8.7.0",
   "description": "A fun npm package to play games within Discord with buttons!",
   "main": "./dist/index.js",
   "type": "module",
@@ -17,11 +17,21 @@
   "bugs": {
     "url": "https://github.com/M3rcena/m3rcena-weky/issues"
   },
-  "author": "Face#5454 + sujalgoel + rayz#4986 + d4rk.s0ul",
+  "author": "d4rk.s0ul",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/M3rcena/m3rcena-weky.git"
   },
+  "contributors": [
+    {
+      "name": "vuthanhtrung2010",
+      "email": "vuthanhtrungsuper@gmail.com"
+    },
+    {
+      "name": "alex-724",
+      "email": "sahandsame31@gmail.com"
+    }
+  ],
   "dependencies": {
     "axios": "^1.7.2",
     "chalk": "^5.3.0",

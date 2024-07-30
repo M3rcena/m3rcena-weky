@@ -1,10 +1,11 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
-import wordList from "../data/words.json" assert { type: "json" };
+import wordList from "../data/words.json";
 import chalk from "chalk";
 import stringWidth from 'string-width';
 import { exec } from 'child_process';
-import { version } from "../package.json" assert { type: "json" };
+import { version } from "../package.json";
 import { promisify } from "util";
+import { ofetch } from "ofetch";
 export const getRandomString = function (length) {
     const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let result = '';
@@ -173,4 +174,14 @@ export const boxConsole = function (messages) {
         console.log(chalk.yellow('│') + msg + chalk.yellow('│'));
     }
     console.log(chalk.yellow('└') + line + chalk.yellow('┘'));
+};
+export const replaceHexCharacters = function (text) {
+    const hexRegex = /&#x([a-fA-F0-9]+);/g;
+    return text.replace(hexRegex, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+};
+export const getButtonDilemma = async function () {
+    const data = await ofetch('https://weky.miv4.com/api/wyptb', {
+        method: 'GET',
+    });
+    return data;
 };
