@@ -8,7 +8,6 @@ var util = require('util');
 var ofetch = require('ofetch');
 var mathjs = require('mathjs');
 var htmlEntities = require('html-entities');
-var quick_db = require('quick.db');
 
 var wordList = [
 	"ability",
@@ -4154,7 +4153,7 @@ const WouldYouRather = async (options) => {
     });
 };
 
-const db = new quick_db.QuickDB();
+const db = new Map();
 const data = new Set();
 const currentGames = new Object();
 const GuessTheNumber = async (options) => {
