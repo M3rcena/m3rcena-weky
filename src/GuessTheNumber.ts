@@ -4,8 +4,7 @@ import { GuessTheNumberTypes } from "../typings";
 import chalk from "chalk";
 import { convertTime, getRandomString } from "../functions/functions.js";
 
-import { QuickDB } from 'quick.db';
-const db = new QuickDB();
+const db = new Map();
 
 const data = new Set();
 const currentGames: any = new Object();
