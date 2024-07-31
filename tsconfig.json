@@ -11,6 +11,7 @@
     "outDir": "dist/esm",
     "removeComments": true,
   },
+  "include": ["rollup.config.ts"],
   "exclude": [
     "node_modules",
     "dist",
