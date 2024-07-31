@@ -7,7 +7,7 @@
   "scripts": {
     "test": "npx tsx --tsconfig ./tsconfig.json ./test/test.ts",
     "test-cjs": "nodemon test/index.cjs",
-    "build": "npx rollup --config rollup.config.js"
+    "build": "npx rollup --config rollup.config.ts --configPlugin @rollup/plugin-typescript"
   },
   "keywords": [
     "weky",

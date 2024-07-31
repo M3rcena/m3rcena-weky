@@ -1,6 +1,7 @@
 import json from '@rollup/plugin-json';
+import type { RollupOptions } from 'rollup';
 
-export default {
+const config: RollupOptions = {
   input: 'dist/esm/index.js',
   output: {
     file: 'dist/common/index.cjs',
@@ -8,3 +9,5 @@ export default {
   },
   plugins: [json()]
 };
+
+export default config;
