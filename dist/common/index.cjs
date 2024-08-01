@@ -1964,7 +1964,7 @@ var wordList = [
 	"zulu"
 ];
 
-var version = "8.7.0";
+var version = "8.7.1";
 
 const getRandomString = function (length) {
     const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -2250,7 +2250,7 @@ const Calculator = async (options) => {
     const button = new Array([], [], [], [], []);
     const buttons = new Array([], []);
     const text = [
-        '\u200b',
+        'DC',
         'RND',
         'SIN',
         'COS',
@@ -2261,10 +2261,10 @@ const Calculator = async (options) => {
         '(',
         ')',
         'SQRT',
-        'AC',
-        '⌫',
         '%',
         '÷',
+        'AC',
+        '⌫',
         'x!',
         '7',
         '8',
@@ -2282,11 +2282,11 @@ const Calculator = async (options) => {
         '2',
         '3',
         ' + ',
+        '\u200b',
         'e',
-        '.',
         '0',
-        '=',
-        'DC'
+        '.',
+        '='
     ];
     let current = 0;
     for (let i = 0; i < text.length; i++) {

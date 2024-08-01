@@ -1,6 +1,6 @@
 {
   "name": "@m3rcena/weky",
-  "version": "8.7.0",
+  "version": "8.7.1",
   "description": "A fun npm package to play games within Discord with buttons!",
   "main": "./dist/index.js",
   "type": "module",

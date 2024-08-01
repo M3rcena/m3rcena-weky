@@ -24,7 +24,7 @@ const Calculator = async (options) => {
     const button = new Array([], [], [], [], []);
     const buttons = new Array([], []);
     const text = [
-        '\u200b',
+        'DC',
         'RND',
         'SIN',
         'COS',
@@ -35,10 +35,10 @@ const Calculator = async (options) => {
         '(',
         ')',
         'SQRT',
-        'AC',
-        '⌫',
         '%',
         '÷',
+        'AC',
+        '⌫',
         'x!',
         '7',
         '8',
@@ -56,11 +56,11 @@ const Calculator = async (options) => {
         '2',
         '3',
         ' + ',
+        '\u200b',
         'e',
-        '.',
         '0',
-        '=',
-        'DC'
+        '.',
+        '='
     ];
     let cur = 0;
     let current = 0;
