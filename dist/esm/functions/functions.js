@@ -41,7 +41,8 @@ export const createButton = function (label, disabled) {
         label === 'x!' ||
         label === '1/x' ||
         label === 'π' ||
-        label === 'e') {
+        label === 'e' ||
+        label === 'ans') {
         style = ButtonStyle.Primary;
     }
     if (disabled) {

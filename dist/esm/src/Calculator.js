@@ -56,7 +56,7 @@ const Calculator = async (options) => {
         '2',
         '3',
         ' + ',
-        '\u200b',
+        'ans',
         'e',
         '0',
         '.',
@@ -199,6 +199,7 @@ const Calculator = async (options) => {
             componentType: ComponentType.Button,
             time: 300000,
         });
+        let answer = 0;
         calc.on('collect', async (interact) => {
             if (interact.user.id !== id) {
                 return interact.reply({
@@ -536,6 +537,11 @@ const Calculator = async (options) => {
                 stringify = '```\n' + str + '\n```';
                 edit();
             }
+            else if (interact.customId === 'calans') {
+                str += `${answer}`;
+                stringify = '```\n' + str + '\n```';
+                edit();
+            }
             else if (interact.customId === 'cal=') {
                 if (str === ' ' || str === '' || str === null || str === undefined) {
                     return;
@@ -543,6 +549,7 @@ const Calculator = async (options) => {
                 else {
                     try {
                         str += ' = ' + evaluate(str);
+                        answer = evaluate(str);
                         stringify = '```\n' + str + '\n```';
                         edit();
                         str = ' ';
@@ -554,6 +561,7 @@ const Calculator = async (options) => {
                         }
                         else {
                             str = options.invalidQuery;
+                            answer = 0;
                             stringify = '```\n' + str + '\n```';
                             edit();
                             str = ' ';
