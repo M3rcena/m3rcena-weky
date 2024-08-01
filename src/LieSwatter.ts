@@ -5,6 +5,18 @@ import { checkPackageUpdates, convertTime, getRandomString } from "../functions/
 import { decode } from "html-entities";
 import { OptionsChecking } from "../functions/OptionChecking.js";
 
+interface OpenTDBResponse {
+    response_code: number;
+    results: {
+      category: string;
+      type: string;
+      difficulty: string;
+      question: string;
+      correct_answer: string;
+      incorrect_answers: string[];
+    }[];
+  }
+
 const LieSwatter = async (options: LieSwatterTypes) => {
     // Check types
     OptionsChecking(options, "LieSwatter")
@@ -122,7 +134,7 @@ const LieSwatter = async (options: LieSwatterTypes) => {
 
     const result = await fetch(
         `https://opentdb.com/api.php?amount=1&type=boolean`,
-    ).then((res) => res.json());
+    ).then((res) => res.json()) as OpenTDBResponse;
 
     const question = result.results[0];
 
