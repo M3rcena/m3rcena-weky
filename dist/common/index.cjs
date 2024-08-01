@@ -1964,7 +1964,7 @@ var wordList = [
 	"zulu"
 ];
 
-var version = "8.7.1";
+var version = "8.7.2";
 
 const getRandomString = function (length) {
     const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -2418,7 +2418,7 @@ const Calculator = async (options) => {
             componentType: discord_js.ComponentType.Button,
             time: 300000,
         });
-        let answer = 0;
+        let answer = '0';
         calc.on('collect', async (interact) => {
             if (interact.user.id !== id) {
                 return interact.reply({
@@ -2767,8 +2767,8 @@ const Calculator = async (options) => {
                 }
                 else {
                     try {
-                        str += ' = ' + mathjs.evaluate(str);
                         answer = mathjs.evaluate(str);
+                        str += ' = ' + mathjs.evaluate(str);
                         stringify = '```\n' + str + '\n```';
                         edit();
                         str = ' ';
@@ -2780,7 +2780,7 @@ const Calculator = async (options) => {
                         }
                         else {
                             str = options.invalidQuery;
-                            answer = 0;
+                            answer = '0';
                             stringify = '```\n' + str + '\n```';
                             edit();
                             str = ' ';
