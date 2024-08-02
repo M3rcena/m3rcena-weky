@@ -237,6 +237,6 @@ const FastType = async (options) => {
         data.delete(id);
         return collector.stop();
     });
-    checkPackageUpdates();
+    checkPackageUpdates("FastType", options.notifyUpdate);
 };
 export default FastType;

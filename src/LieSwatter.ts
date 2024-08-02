@@ -391,7 +391,7 @@ const LieSwatter = async (options: LieSwatterTypes) => {
         }
     })
 
-    checkPackageUpdates();
+    checkPackageUpdates("LieSwatter", options.notifyUpdate);
 };
 
 export default LieSwatter;

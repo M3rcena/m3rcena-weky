@@ -2149,16 +2149,19 @@ const convertTime = function (time) {
         absoluteTime.push(s);
     return absoluteTime.join(', ');
 };
-const checkPackageUpdates = async function (disabled) {
+const checkPackageUpdates = async function (name, disabled) {
+    if (disabled)
+        return;
     try {
         const execPromise = util.promisify(child_process.exec);
         const { stdout } = await execPromise('npm show @m3rcena/weky version');
         if (stdout.trim().toString() > weky_package.version) {
+            const advertise = chalk(`Are you using ${chalk.red(name)}? Don't lose out on new features!`);
             const msg = chalk(`New ${chalk.green('version')} of ${chalk.yellow('@m3rcena/weky')} is available!`);
             const msg2 = chalk(`${chalk.red(weky_package.version)} -> ${chalk.green(stdout.trim().toString())}`);
             const tip = chalk(`Registry: ${chalk.cyan('https://www.npmjs.com/package/@m3rcena/weky')}`);
             const install = chalk(`Run ${chalk.green(`npm i @m3rcena/weky@${stdout.trim().toString()}`)} to update!`);
-            boxConsole([msg, msg2, tip, install]);
+            boxConsole([advertise, msg, msg2, tip, install]);
         }
     }
     catch (error) {
@@ -2886,7 +2889,7 @@ const Calculator = async (options) => {
             lock();
         });
     });
-    checkPackageUpdates();
+    checkPackageUpdates("Calculator", options.notifyUpdate);
 };
 
 const data$2 = new Set();
@@ -3472,7 +3475,7 @@ const ChaosWords = async (options) => {
         gameCollector.stop();
         return game.stop();
     });
-    checkPackageUpdates();
+    checkPackageUpdates("ChaosWords", options.notifyUpdate);
 };
 
 const data$1 = new Set();
@@ -3699,7 +3702,7 @@ const FastType = async (options) => {
         data$1.delete(id);
         return collector.stop();
     });
-    checkPackageUpdates();
+    checkPackageUpdates("FastType", options.notifyUpdate);
 };
 
 const LieSwatter = async (options) => {
@@ -4020,7 +4023,7 @@ const LieSwatter = async (options) => {
             });
         }
     });
-    checkPackageUpdates();
+    checkPackageUpdates("LieSwatter", options.notifyUpdate);
 };
 
 const WouldYouRather = async (options) => {
@@ -4247,6 +4250,7 @@ const WouldYouRather = async (options) => {
             });
         }
     });
+    checkPackageUpdates("WouldYouRather", options.notifyUpdate);
 };
 
 const db = new Map();
@@ -4849,6 +4853,7 @@ const GuessTheNumber = async (options) => {
             data.delete(id);
         });
     }
+    checkPackageUpdates("GuessTheNumber", options.notifyUpdate);
 };
 
 const WillYouPressTheButton = async (options) => {
@@ -5055,6 +5060,7 @@ const WillYouPressTheButton = async (options) => {
             });
         }
     });
+    checkPackageUpdates("WillYouPressTheButton", options.notifyUpdate);
 };
 
 exports.Calculator = Calculator;

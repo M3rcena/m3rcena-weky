@@ -1,7 +1,7 @@
 import { ButtonBuilder, ButtonStyle, ComponentType, EmbedBuilder } from "discord.js";
 import { OptionsChecking } from "../functions/OptionChecking.js";
 import chalk from "chalk";
-import { convertTime, getRandomString } from "../functions/functions.js";
+import { checkPackageUpdates, convertTime, getRandomString } from "../functions/functions.js";
 const db = new Map();
 const data = new Set();
 const currentGames = new Object();
@@ -626,5 +626,6 @@ const GuessTheNumber = async (options) => {
             data.delete(id);
         });
     }
+    checkPackageUpdates("GuessTheNumber", options.notifyUpdate);
 };
 export default GuessTheNumber;

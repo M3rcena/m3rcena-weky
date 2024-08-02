@@ -2,7 +2,7 @@ import { ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, Client, Compon
 import { OptionsChecking } from "../functions/OptionChecking.js";
 import { GuessTheNumberTypes } from "../typings";
 import chalk from "chalk";
-import { convertTime, getRandomString } from "../functions/functions.js";
+import { checkPackageUpdates, convertTime, getRandomString } from "../functions/functions.js";
 
 const db = new Map();
 
@@ -772,6 +772,8 @@ const GuessTheNumber = async (options: GuessTheNumberTypes) => {
             data.delete(id);
         });
     }
+
+    checkPackageUpdates("GuessTheNumber", options.notifyUpdate);
 };
 
 export default GuessTheNumber;

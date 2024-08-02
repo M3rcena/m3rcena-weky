@@ -584,6 +584,6 @@ const Calculator = async (options) => {
             lock(true);
         });
     });
-    checkPackageUpdates();
+    checkPackageUpdates("Calculator", options.notifyUpdate);
 };
 export default Calculator;

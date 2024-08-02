@@ -121,18 +121,19 @@ export const convertTime = function (time) {
         absoluteTime.push(s);
     return absoluteTime.join(', ');
 };
-export const checkPackageUpdates = async function (disabled) {
+export const checkPackageUpdates = async function (name, disabled) {
     if (disabled)
         return;
     try {
         const execPromise = promisify(exec);
         const { stdout } = await execPromise('npm show @m3rcena/weky version');
         if (stdout.trim().toString() > weky_package.version) {
+            const advertise = chalk(`Are you using ${chalk.red(name)}? Don't lose out on new features!`);
             const msg = chalk(`New ${chalk.green('version')} of ${chalk.yellow('@m3rcena/weky')} is available!`);
             const msg2 = chalk(`${chalk.red(weky_package.version)} -> ${chalk.green(stdout.trim().toString())}`);
             const tip = chalk(`Registry: ${chalk.cyan('https://www.npmjs.com/package/@m3rcena/weky')}`);
             const install = chalk(`Run ${chalk.green(`npm i @m3rcena/weky@${stdout.trim().toString()}`)} to update!`);
-            boxConsole([msg, msg2, tip, install]);
+            boxConsole([advertise, msg, msg2, tip, install]);
         }
     }
     catch (error) {

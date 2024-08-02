@@ -2,7 +2,7 @@ import { ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, Client, EmbedB
 import { OptionsChecking } from "../functions/OptionChecking.js";
 import { WillYouPressTheButtonTypes } from "../typings";
 import chalk from "chalk";
-import { getButtonDilemma, getRandomString } from "../functions/functions.js";
+import { checkPackageUpdates, getButtonDilemma, getRandomString } from "../functions/functions.js";
 
 const WillYouPressTheButton = async (options: WillYouPressTheButtonTypes) => {
     // Options Check
@@ -245,7 +245,9 @@ const WillYouPressTheButton = async (options: WillYouPressTheButtonTypes) => {
                 ]
             });
         }
-    })
+    });
+
+    checkPackageUpdates("WillYouPressTheButton", options.notifyUpdate);
 };
 
 export default WillYouPressTheButton;

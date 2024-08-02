@@ -23,6 +23,7 @@ interface Calc {
     },
     invalidQuery?: string,
     disabledQuery?: string,
+    notifyUpdate?: boolean,
 };
 
 interface Chaos {
@@ -59,6 +60,7 @@ interface Chaos {
     maxTries?: number,
     buttonText?: string,
     otherMessage?: string,
+    notifyUpdate?: boolean,
 };
 
 interface FastTypeTyping {
@@ -90,6 +92,7 @@ interface FastTypeTyping {
     buttonText?: string,
     othersMessage?: string,
     cancelMessage?: string,
+    notifyUpdate?: boolean,
 };
 
 interface LieSwatterTypes {
@@ -123,6 +126,7 @@ interface LieSwatterTypes {
         lie: string
     },
     time?: number,
+    notifyUpdate?: boolean,
 };
 
 interface WouldYouRatherTypes {
@@ -154,6 +158,7 @@ interface WouldYouRatherTypes {
         optionB: string
     },
     time?: number,
+    notifyUpdate?: boolean,
 };
 
 interface GuessTheNumberTypes {
@@ -193,6 +198,7 @@ interface GuessTheNumberTypes {
     number?: number,
     time?: number,
     gameID?: string,
+    notifyUpdate?: boolean,
 };
 
 interface WillYouPressTheButtonTypes {
@@ -224,6 +230,7 @@ interface WillYouPressTheButtonTypes {
     thinkMessage?: string,
     othersMessage?: string,
     time?: number,
+    notifyUpdate?: boolean,
 }
 
 interface Fields {

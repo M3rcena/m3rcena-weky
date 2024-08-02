@@ -129,13 +129,17 @@ export const convertTime = function(time:number) {
 	return absoluteTime.join(', ');
 };
 
-export const checkPackageUpdates = async function(disabled?: boolean) {
+export const checkPackageUpdates = async function(name: string,disabled?: boolean) {
 	if (disabled) return;
 	try {
 		const execPromise = promisify(exec);
 		const { stdout } = await execPromise('npm show @m3rcena/weky version');
 		
 		if (stdout.trim().toString() > weky_package.version) {
+			const advertise = chalk(
+				`Are you using ${chalk.red(name)}? Don't lose out on new features!`
+			)
+
 			const msg = chalk(
 				`New ${chalk.green('version')} of ${chalk.yellow('@m3rcena/weky')} is available!`,
 			);
@@ -151,7 +155,7 @@ export const checkPackageUpdates = async function(disabled?: boolean) {
 				`Run ${chalk.green(`npm i @m3rcena/weky@${stdout.trim().toString()}`)} to update!`,
 			);
 
-			boxConsole([msg, msg2, tip, install])
+			boxConsole([advertise, msg, msg2, tip, install])
 		}
 	} catch (error) {
 		console.error(error);

@@ -660,7 +660,7 @@ const ChaosWords = async (options: Chaos) => {
         return game.stop();
     });
 
-    checkPackageUpdates();
+    checkPackageUpdates("ChaosWords", options.notifyUpdate);
 };
 
 export default ChaosWords;

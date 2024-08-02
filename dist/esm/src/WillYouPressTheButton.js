@@ -1,7 +1,7 @@
 import { ButtonBuilder, ButtonStyle, EmbedBuilder } from "discord.js";
 import { OptionsChecking } from "../functions/OptionChecking.js";
 import chalk from "chalk";
-import { getButtonDilemma, getRandomString } from "../functions/functions.js";
+import { checkPackageUpdates, getButtonDilemma, getRandomString } from "../functions/functions.js";
 const WillYouPressTheButton = async (options) => {
     OptionsChecking(options, "WillYouPressTheButton");
     let interaction;
@@ -218,5 +218,6 @@ const WillYouPressTheButton = async (options) => {
             });
         }
     });
+    checkPackageUpdates("WillYouPressTheButton", options.notifyUpdate);
 };
 export default WillYouPressTheButton;

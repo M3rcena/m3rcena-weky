@@ -2,7 +2,7 @@ import { ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, Client, Compon
 import { OptionsChecking } from "../functions/OptionChecking.js";
 import { WouldYouRatherTypes } from "../typings";
 import chalk from "chalk";
-import { getRandomString } from "../functions/functions.js";
+import { checkPackageUpdates, getRandomString } from "../functions/functions.js";
 import { decode } from "html-entities";
 import { ofetch } from "ofetch";
 
@@ -284,6 +284,8 @@ const WouldYouRather = async (options: WouldYouRatherTypes) => {
             });
         }
     })
+
+    checkPackageUpdates("WouldYouRather", options.notifyUpdate);
 };
 
 export default WouldYouRather;
