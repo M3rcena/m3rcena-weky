@@ -341,6 +341,6 @@ const LieSwatter = async (options) => {
             });
         }
     });
-    checkPackageUpdates();
+    checkPackageUpdates(options.notifyUpdates);
 };
 export default LieSwatter;

@@ -72,6 +72,57 @@ export const createButton = function(label:string, disabled: boolean) {
 	}
 };
 
+export const createEmptyDisabledButton = function(label:string) {
+	let style = ButtonStyle.Secondary;
+    if (label === 'AC' || label === 'DC' || label === '⌫') {
+		style = ButtonStyle.Danger;
+	} else if (label === ' = ') {
+		style = ButtonStyle.Success;
+	} else if (
+		label === '(' ||
+		label === ')' ||
+		label === '^' ||
+		label === '%' ||
+		label === '÷' ||
+		label === 'x' ||
+		label === ' - ' ||
+		label === ' + ' ||
+		label === '.' ||
+		label === 'RND' ||
+		label === 'SIN' ||
+		label === 'COS' ||
+		label === 'TAN' ||
+		label === 'LG' ||
+		label === 'LN' ||
+		label === 'SQRT' ||
+		label === 'x!' ||
+		label === '1/x' ||
+		label === 'π' ||
+		label === 'e' ||
+		label === 'ans'
+	) {
+		style = ButtonStyle.Primary;
+	}
+	if (label === '^' || label === "%" || label === "÷" || label === "AC" || label === "⌫" || label === "x!" || label === "x" || label === "1/x") {
+		const btn = new ButtonBuilder()
+			.setLabel(label)
+			.setStyle(style)
+			.setDisabled();
+			
+		btn.setCustomId('cal' + label);
+		return btn;
+	} else {
+		const btn = new ButtonBuilder().setLabel(label).setStyle(style);
+		if (label === '\u200b') {
+			btn.setDisabled();
+			btn.setCustomId(getRandomString(10));
+		} else {
+			btn.setCustomId('cal' + label);
+		}
+		return btn;
+	}
+}
+
 export const addRow = function(btns:ButtonBuilder[]) {
 	const row = new ActionRowBuilder<ButtonBuilder>();
 	for (const btn of btns) {

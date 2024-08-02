@@ -608,6 +608,6 @@ const ChaosWords = async (options) => {
         gameCollector.stop();
         return game.stop();
     });
-    checkPackageUpdates();
+    checkPackageUpdates(options.notifyUpdates);
 };
 export default ChaosWords;

@@ -1965,7 +1965,7 @@ var wordList = [
 ];
 
 var name = "@m3rcena/weky";
-var version = "8.7.3";
+var version = "8.7.4";
 var description = "A fun npm package to play games within Discord with buttons!";
 var main = "./dist/index.js";
 var type = "module";
@@ -2098,6 +2098,57 @@ const createButton = function (label, disabled) {
         return btn;
     }
 };
+const createEmptyDisabledButton = function (label) {
+    let style = discord_js.ButtonStyle.Secondary;
+    if (label === 'AC' || label === 'DC' || label === '⌫') {
+        style = discord_js.ButtonStyle.Danger;
+    }
+    else if (label === ' = ') {
+        style = discord_js.ButtonStyle.Success;
+    }
+    else if (label === '(' ||
+        label === ')' ||
+        label === '^' ||
+        label === '%' ||
+        label === '÷' ||
+        label === 'x' ||
+        label === ' - ' ||
+        label === ' + ' ||
+        label === '.' ||
+        label === 'RND' ||
+        label === 'SIN' ||
+        label === 'COS' ||
+        label === 'TAN' ||
+        label === 'LG' ||
+        label === 'LN' ||
+        label === 'SQRT' ||
+        label === 'x!' ||
+        label === '1/x' ||
+        label === 'π' ||
+        label === 'e' ||
+        label === 'ans') {
+        style = discord_js.ButtonStyle.Primary;
+    }
+    if (label === '^' || label === "%" || label === "÷" || label === "AC" || label === "⌫" || label === "x!" || label === "x" || label === "1/x") {
+        const btn = new discord_js.ButtonBuilder()
+            .setLabel(label)
+            .setStyle(style)
+            .setDisabled();
+        btn.setCustomId('cal' + label);
+        return btn;
+    }
+    else {
+        const btn = new discord_js.ButtonBuilder().setLabel(label).setStyle(style);
+        if (label === '\u200b') {
+            btn.setDisabled();
+            btn.setCustomId(getRandomString(10));
+        }
+        else {
+            btn.setCustomId('cal' + label);
+        }
+        return btn;
+    }
+};
 const addRow = function (btns) {
     const row = new discord_js.ActionRowBuilder();
     for (const btn of btns) {
@@ -2150,6 +2201,8 @@ const convertTime = function (time) {
     return absoluteTime.join(', ');
 };
 const checkPackageUpdates = async function (disabled) {
+    if (disabled)
+        return;
     try {
         const execPromise = util.promisify(child_process.exec);
         const { stdout } = await execPromise('npm show @m3rcena/weky version');
@@ -2488,6 +2541,62 @@ const Calculator = async (options) => {
             });
             msg2.delete();
         }
+        async function lockEmpty() {
+            let current = 0;
+            for (let i = 0; i < text.length; i++) {
+                if (button[current].length === 5)
+                    current++;
+                button[current].push(createEmptyDisabledButton(text[i]));
+                if (i === text.length - 1) {
+                    for (const btn of button)
+                        row.push(addRow(btn));
+                }
+            }
+            current = 0;
+            for (let z = 0; z < text2.length; z++) {
+                if (buttons[current].length === 5)
+                    current++;
+                buttons[current].push(createEmptyDisabledButton(text2[z]));
+                if (z === text2.length - 1) {
+                    for (const btns of buttons)
+                        row2.push(addRow(btns));
+                }
+            }
+            msg.edit({
+                components: row
+            });
+            msg2.edit({
+                components: row2
+            });
+        }
+        async function unlockEmpty() {
+            let current = 0;
+            for (let i = 0; i < text.length; i++) {
+                if (button[current].length === 5)
+                    current++;
+                button[current].push(createButton(text[i]));
+                if (i === text.length - 1) {
+                    for (const btn of button)
+                        row.push(addRow(btn));
+                }
+            }
+            current = 0;
+            for (let z = 0; z < text2.length; z++) {
+                if (buttons[current].length === 5)
+                    current++;
+                buttons[current].push(createButton(text2[z]));
+                if (z === text2.length - 1) {
+                    for (const btns of buttons)
+                        row2.push(addRow(btns));
+                }
+            }
+            msg.edit({
+                components: row
+            });
+            msg2.edit({
+                components: row2
+            });
+        }
         let id;
         if (interaction.author) {
             id = interaction.author.id;
@@ -2500,6 +2609,7 @@ const Calculator = async (options) => {
             time: 300000,
         });
         let answer = '0';
+        let lastcommand = 'empty';
         calc.on('collect', async (interact) => {
             if (interact.user.id !== id) {
                 return interact.reply({
@@ -2524,22 +2634,27 @@ const Calculator = async (options) => {
                 && interact.customId !== 'calx!')
                 await interact.deferUpdate();
             if (interact.customId === 'calAC') {
+                lastcommand = "empty";
                 str = ' ';
                 stringify = '```\n' + str + '\n```';
                 edit();
             }
             else if (interact.customId === 'calx') {
+                lastcommand = interact.customId;
                 str += ' * ';
                 stringify = '```\n' + str + '\n```';
                 edit();
             }
             else if (interact.customId === 'cal÷') {
+                lastcommand = interact.customId;
                 str += ' / ';
                 stringify = '```\n' + str + '\n```';
                 edit();
             }
             else if (interact.customId === 'cal⌫') {
+                lastcommand = interact.customId;
                 if (str === ' ' || str === '' || str === null || str === undefined) {
+                    lastcommand = "empty";
                     return;
                 }
                 else {
@@ -2549,6 +2664,7 @@ const Calculator = async (options) => {
                 }
             }
             else if (interact.customId === 'calLG') {
+                lastcommand = interact.customId;
                 const modal = new discord_js.ModalBuilder()
                     .setTitle('Logarithm 10 (log10)')
                     .setCustomId('mdLog');
@@ -2580,6 +2696,7 @@ const Calculator = async (options) => {
                 });
             }
             else if (interact.customId === 'calSQRT') {
+                lastcommand = interact.customId;
                 const modal = new discord_js.ModalBuilder()
                     .setTitle('Square Root')
                     .setCustomId('mdSqrt');
@@ -2611,6 +2728,7 @@ const Calculator = async (options) => {
                 });
             }
             else if (interact.customId === 'calRND') {
+                lastcommand = interact.customId;
                 const modal = new discord_js.ModalBuilder()
                     .setTitle('Round Number')
                     .setCustomId('mdRnd');
@@ -2642,6 +2760,7 @@ const Calculator = async (options) => {
                 });
             }
             else if (interact.customId === 'calSIN') {
+                lastcommand = interact.customId;
                 const modal = new discord_js.ModalBuilder()
                     .setTitle('Sine')
                     .setCustomId('mdSin');
@@ -2673,6 +2792,7 @@ const Calculator = async (options) => {
                 });
             }
             else if (interact.customId === 'calCOS') {
+                lastcommand = interact.customId;
                 const modal = new discord_js.ModalBuilder()
                     .setTitle('Cosine')
                     .setCustomId('mdCos');
@@ -2704,6 +2824,7 @@ const Calculator = async (options) => {
                 });
             }
             else if (interact.customId === 'calTAN') {
+                lastcommand = interact.customId;
                 const modal = new discord_js.ModalBuilder()
                     .setTitle('Tangent')
                     .setCustomId('mdTan');
@@ -2735,6 +2856,7 @@ const Calculator = async (options) => {
                 });
             }
             else if (interact.customId === 'calLN') {
+                lastcommand = interact.customId;
                 const modal = new discord_js.ModalBuilder()
                     .setTitle('Natural Logarithm (log)')
                     .setCustomId('mdLn');
@@ -2766,6 +2888,7 @@ const Calculator = async (options) => {
                 });
             }
             else if (interact.customId === 'cal1/x') {
+                lastcommand = interact.customId;
                 const modal = new discord_js.ModalBuilder()
                     .setTitle('Reciprocal')
                     .setCustomId('mdReciprocal');
@@ -2797,6 +2920,7 @@ const Calculator = async (options) => {
                 });
             }
             else if (interact.customId === 'calx!') {
+                lastcommand = interact.customId;
                 const modal = new discord_js.ModalBuilder()
                     .setTitle('Factorial')
                     .setCustomId('mdFactorial');
@@ -2828,21 +2952,25 @@ const Calculator = async (options) => {
                 });
             }
             else if (interact.customId === 'calπ') {
+                lastcommand = interact.customId;
                 str += 'pi';
                 stringify = '```\n' + str + '\n```';
                 edit();
             }
             else if (interact.customId === 'cale') {
+                lastcommand = interact.customId;
                 str += 'e';
                 stringify = '```\n' + str + '\n```';
                 edit();
             }
             else if (interact.customId === 'calans') {
+                lastcommand = interact.customId;
                 str += `${answer}`;
                 stringify = '```\n' + str + '\n```';
                 edit();
             }
             else if (interact.customId === 'cal=') {
+                lastcommand = "empty";
                 if (str === ' ' || str === '' || str === null || str === undefined) {
                     return;
                 }
@@ -2874,9 +3002,23 @@ const Calculator = async (options) => {
                 calc.stop();
             }
             else {
-                str += interact.customId.replace('cal', '');
-                stringify = '```\n' + str + '\n```';
-                edit();
+                if (lastcommand === "empty") {
+                    str += `${answer} ${interact.customId.replace('cal', '')}`;
+                    stringify = '```\n' + str + '\n```';
+                    edit();
+                }
+                else {
+                    lastcommand = interact.customId;
+                    str += interact.customId.replace('cal', '');
+                    stringify = '```\n' + str + '\n```';
+                    edit();
+                }
+            }
+            if (lastcommand === "empty") {
+                lockEmpty();
+            }
+            else {
+                unlockEmpty();
             }
         });
         calc.on('end', async () => {
@@ -2886,7 +3028,7 @@ const Calculator = async (options) => {
             lock();
         });
     });
-    checkPackageUpdates();
+    checkPackageUpdates(options.notifyUpdates);
 };
 
 const data$2 = new Set();
@@ -3472,7 +3614,7 @@ const ChaosWords = async (options) => {
         gameCollector.stop();
         return game.stop();
     });
-    checkPackageUpdates();
+    checkPackageUpdates(options.notifyUpdates);
 };
 
 const data$1 = new Set();
@@ -3699,7 +3841,7 @@ const FastType = async (options) => {
         data$1.delete(id);
         return collector.stop();
     });
-    checkPackageUpdates();
+    checkPackageUpdates(options.notifyUpdates);
 };
 
 const LieSwatter = async (options) => {
@@ -4020,7 +4162,7 @@ const LieSwatter = async (options) => {
             });
         }
     });
-    checkPackageUpdates();
+    checkPackageUpdates(options.notifyUpdates);
 };
 
 const WouldYouRather = async (options) => {

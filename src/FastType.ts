@@ -267,7 +267,7 @@ const FastType = async (options: FastTypeTyping) => {
         return collector.stop();
     });
     
-    checkPackageUpdates()
+    checkPackageUpdates(options.notifyUpdates)
 };
 
 export default FastType;
