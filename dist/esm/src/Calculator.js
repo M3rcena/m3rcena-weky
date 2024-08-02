@@ -1,17 +1,15 @@
 import chalk from "chalk";
-import { ActionRowBuilder, ChatInputCommandInteraction, ComponentType, EmbedBuilder, Message, ModalBuilder, TextInputBuilder, TextInputStyle } from "discord.js";
+import { ActionRowBuilder, ComponentType, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } from "discord.js";
 import { createButton, addRow, checkPackageUpdates } from "../functions/functions.js";
 import { evaluate } from "mathjs";
 import { OptionsChecking } from "../functions/OptionChecking.js";
 const Calculator = async (options) => {
     OptionsChecking(options, "Calculator");
     let interaction;
-    if (options.interaction instanceof Message) {
-        interaction: Message;
+    if (options.interaction.author) {
         interaction = options.interaction;
     }
-    else if (options.interaction instanceof ChatInputCommandInteraction) {
-        interaction: ChatInputCommandInteraction;
+    else {
         interaction = options.interaction;
     }
     if (!interaction)
@@ -189,10 +187,10 @@ const Calculator = async (options) => {
             msg2.delete();
         }
         let id;
-        if (interaction instanceof Message) {
+        if (interaction.author) {
             id = interaction.author.id;
         }
-        else if (interaction instanceof ChatInputCommandInteraction) {
+        else {
             id = interaction.user.id;
         }
         const calc = channel.createMessageComponentCollector({

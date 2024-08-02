@@ -18,7 +18,7 @@ export function OptionsChecking(options: Calc | Chaos | FastTypeTyping | GuessTh
     if (!options.client) throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " No client provided.");
 
     if (!options.client as unknown as Object instanceof Client) {
-        throw new Error(chalk.red("[@m3rcena/weky] Calculator TypeError:") + " Client must be a Discord Client.");
+        throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} TypeError:`) + " Client must be a Discord Client.");
     };
 
     if (!options.embed) throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " No embed options provided.");

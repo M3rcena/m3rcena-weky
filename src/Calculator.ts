@@ -12,12 +12,10 @@ const Calculator = async (options: Calc) => {
     // Check if the interaction object is provided
     let interaction;
 
-    if (options.interaction instanceof Message) {
-        interaction: Message
-        interaction = options.interaction;
-    } else if (options.interaction instanceof ChatInputCommandInteraction) {
-        interaction: ChatInputCommandInteraction
-        interaction = options.interaction;
+    if ((options.interaction as Message).author) {
+        interaction = options.interaction as Message;
+    } else {
+        interaction = options.interaction as ChatInputCommandInteraction;
     }
 
     if (!interaction) throw new Error(chalk.red("[@m3rcena/weky] Calculator Error:") + " No interaction provided.");
@@ -213,10 +211,10 @@ const Calculator = async (options: Calc) => {
         }
 
         let id: string;
-        if (interaction instanceof Message) {
-            id = interaction.author.id;
-        } else if (interaction instanceof ChatInputCommandInteraction) {
-            id = interaction.user.id;
+        if ((interaction as Message).author) {
+            id = (interaction as Message).author.id;
+        } else {
+            id = (interaction as ChatInputCommandInteraction).user.id;
         }
         const calc = channel.createMessageComponentCollector({
             componentType: ComponentType.Button,

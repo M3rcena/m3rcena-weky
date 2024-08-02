@@ -1,4 +1,4 @@
-import { ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, ComponentType, EmbedBuilder, Message } from "discord.js";
+import { ButtonBuilder, ButtonStyle, ComponentType, EmbedBuilder } from "discord.js";
 import { OptionsChecking } from "../functions/OptionChecking.js";
 import chalk from "chalk";
 import { convertTime, getRandomString } from "../functions/functions.js";
@@ -8,22 +8,20 @@ const currentGames = new Object();
 const GuessTheNumber = async (options) => {
     OptionsChecking(options, 'GuessTheNumber');
     let interaction;
-    if (options.interaction instanceof Message) {
-        interaction: Message;
+    if (options.interaction.author) {
         interaction = options.interaction;
     }
-    else if (options.interaction instanceof ChatInputCommandInteraction) {
-        interaction: ChatInputCommandInteraction;
+    else {
         interaction = options.interaction;
     }
     if (!interaction)
         throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No interaction provided.");
     let client = options.client;
     let id = "";
-    if (options.interaction instanceof Message) {
+    if (options.interaction.author) {
         id = options.interaction.author.id;
     }
-    else if (options.interaction instanceof ChatInputCommandInteraction) {
+    else {
         id = options.interaction.user.id;
     }
     ;
@@ -173,6 +171,7 @@ const GuessTheNumber = async (options) => {
         });
         currentGames[interaction.guild.id] = true;
         currentGames[`${interaction.guild.id}_channel`] = interaction.channel.id;
+        const guildId = interaction.guild.id;
         collector.on('collect', async (_msg) => {
             if (!participants.includes(_msg.author.id)) {
                 participants.push(_msg.author.id);
@@ -228,7 +227,7 @@ const GuessTheNumber = async (options) => {
                         throw new Error(chalk.red("[@m3rcena/weky] GuessTheNumber Error:") + " gameID must be a string.");
                     }
                     ;
-                    db.set(`GuessTheNumber_${interaction.guild.id}_${options.gameID}`, _msg.author.id);
+                    db.set(`GuessTheNumber_${guildId}_${options.gameID}`, _msg.author.id);
                 }
             }
             if (parseInt(_msg.content) < number) {
@@ -348,7 +347,7 @@ const GuessTheNumber = async (options) => {
             }
         });
         collector.on('end', async (_collected, reason) => {
-            delete currentGames[interaction.guild.id];
+            delete currentGames[guildId];
             if (reason === 'time') {
                 const _embed = new EmbedBuilder()
                     .setTitle(options.embed.title)

@@ -1,4 +1,4 @@
-import { ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, ComponentType, EmbedBuilder, Message } from "discord.js";
+import { ButtonBuilder, ButtonStyle, ComponentType, EmbedBuilder } from "discord.js";
 import { OptionsChecking } from "../functions/OptionChecking.js";
 import chalk from "chalk";
 import { getRandomString } from "../functions/functions.js";
@@ -7,22 +7,20 @@ import { ofetch } from "ofetch";
 const WouldYouRather = async (options) => {
     OptionsChecking(options, "WouldYouRather");
     let interaction;
-    if (options.interaction instanceof Message) {
-        interaction: Message;
+    if (options.interaction.author) {
         interaction = options.interaction;
     }
-    else if (options.interaction instanceof ChatInputCommandInteraction) {
-        interaction: ChatInputCommandInteraction;
+    else {
         interaction = options.interaction;
     }
     if (!interaction)
         throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " No interaction provided.");
     let client = options.client;
     let id = "";
-    if (options.interaction instanceof Message) {
+    if (options.interaction.author) {
         id = options.interaction.author.id;
     }
-    else if (options.interaction instanceof ChatInputCommandInteraction) {
+    else {
         id = options.interaction.user.id;
     }
     ;

@@ -1964,7 +1964,88 @@ var wordList = [
 	"zulu"
 ];
 
-var version = "8.7.2";
+var name = "@m3rcena/weky";
+var version = "8.7.3";
+var description = "A fun npm package to play games within Discord with buttons!";
+var main = "./dist/index.js";
+var type = "module";
+var scripts = {
+	test: "npx tsx --tsconfig ./tsconfig.json ./test/test.ts",
+	"test-cjs": "nodemon test/index.cjs",
+	build: "npx rollup --config rollup.config.ts --configPlugin @rollup/plugin-typescript"
+};
+var keywords = [
+	"weky",
+	"discord-games"
+];
+var homepage = "https://github.com/M3rcena/m3rcena-weky#readme";
+var bugs = {
+	url: "https://github.com/M3rcena/m3rcena-weky/issues"
+};
+var author = "d4rk.s0ul";
+var repository = {
+	type: "git",
+	url: "git+https://github.com/M3rcena/m3rcena-weky.git"
+};
+var contributors = [
+	{
+		name: "vuthanhtrung2010",
+		email: "vuthanhtrungsuper@gmail.com"
+	},
+	{
+		name: "alex-724",
+		email: "sahandsame31@gmail.com"
+	}
+];
+var dependencies = {
+	axios: "^1.7.2",
+	chalk: "^4.1.2",
+	cheerio: "^1.0.0-rc.12",
+	"discord.js": "^14.15.3",
+	"html-entities": "^2.5.2",
+	mathjs: "^13.0.2",
+	"node-fetch": "^3.3.2",
+	ofetch: "^1.3.4",
+	"string-width": "^4.2.3",
+	typescript: "^5.5.3",
+	util: "^0.12.5"
+};
+var devDependencies = {
+	"@rollup/plugin-commonjs": "^26.0.1",
+	"@rollup/plugin-json": "^6.1.0",
+	"@rollup/plugin-node-resolve": "^15.2.3",
+	"@rollup/plugin-typescript": "^11.1.6",
+	"@types/node-fetch": "^2.6.11",
+	nodemon: "^3.1.4",
+	rollup: "^4.18.1"
+};
+var directories = {
+	test: "test"
+};
+var license = "ISC";
+var exports$1 = {
+	"import": "./dist/esm/index.js",
+	require: "./dist/common/index.cjs"
+};
+var weky_package = {
+	name: name,
+	version: version,
+	description: description,
+	main: main,
+	type: type,
+	scripts: scripts,
+	keywords: keywords,
+	homepage: homepage,
+	bugs: bugs,
+	author: author,
+	repository: repository,
+	contributors: contributors,
+	dependencies: dependencies,
+	devDependencies: devDependencies,
+	directories: directories,
+	license: license,
+	exports: exports$1
+};
 
 const getRandomString = function (length) {
     const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -2072,9 +2153,9 @@ const checkPackageUpdates = async function (disabled) {
     try {
         const execPromise = util.promisify(child_process.exec);
         const { stdout } = await execPromise('npm show @m3rcena/weky version');
-        if (stdout.trim().toString() > version) {
+        if (stdout.trim().toString() > weky_package.version) {
             const msg = chalk(`New ${chalk.green('version')} of ${chalk.yellow('@m3rcena/weky')} is available!`);
-            const msg2 = chalk(`${chalk.red(version)} -> ${chalk.green(stdout.trim().toString())}`);
+            const msg2 = chalk(`${chalk.red(weky_package.version)} -> ${chalk.green(stdout.trim().toString())}`);
             const tip = chalk(`Registry: ${chalk.cyan('https://www.npmjs.com/package/@m3rcena/weky')}`);
             const install = chalk(`Run ${chalk.green(`npm i @m3rcena/weky@${stdout.trim().toString()}`)} to update!`);
             boxConsole([msg, msg2, tip, install]);
@@ -2142,7 +2223,7 @@ function OptionsChecking(options, GameName) {
     if (!options.client)
         throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " No client provided.");
     if (!options.client instanceof discord_js.Client) {
-        throw new Error(chalk.red("[@m3rcena/weky] Calculator TypeError:") + " Client must be a Discord Client.");
+        throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} TypeError:`) + " Client must be a Discord Client.");
     }
     if (!options.embed)
         throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " No embed options provided.");
@@ -2235,10 +2316,10 @@ function OptionsChecking(options, GameName) {
 const Calculator = async (options) => {
     OptionsChecking(options, "Calculator");
     let interaction;
-    if (options.interaction instanceof discord_js.Message) {
+    if (options.interaction.author) {
         interaction = options.interaction;
     }
-    else if (options.interaction instanceof discord_js.ChatInputCommandInteraction) {
+    else {
         interaction = options.interaction;
     }
     if (!interaction)
@@ -2408,10 +2489,10 @@ const Calculator = async (options) => {
             msg2.delete();
         }
         let id;
-        if (interaction instanceof discord_js.Message) {
+        if (interaction.author) {
             id = interaction.author.id;
         }
-        else if (interaction instanceof discord_js.ChatInputCommandInteraction) {
+        else {
             id = interaction.user.id;
         }
         const calc = channel.createMessageComponentCollector({
@@ -2812,20 +2893,20 @@ const data$2 = new Set();
 const ChaosWords = async (options) => {
     OptionsChecking(options, "ChaosWords");
     let interaction;
-    if (options.interaction instanceof discord_js.Message) {
+    if (options.interaction.author) {
         interaction = options.interaction;
     }
-    else if (options.interaction instanceof discord_js.ChatInputCommandInteraction) {
+    else {
         interaction = options.interaction;
     }
     if (!interaction)
         throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No interaction provided.");
     options.client;
     let id = "";
-    if (options.interaction instanceof discord_js.Message) {
+    if (options.interaction.author) {
         id = options.interaction.author.id;
     }
-    else if (options.interaction instanceof discord_js.ChatInputCommandInteraction) {
+    else {
         id = options.interaction.user.id;
     }
     if (data$2.has(id))
@@ -3398,20 +3479,20 @@ const data$1 = new Set();
 const FastType = async (options) => {
     OptionsChecking(options, "FastType");
     let interaction;
-    if (options.interaction instanceof discord_js.Message) {
+    if (options.interaction.author) {
         interaction = options.interaction;
     }
-    else if (options.interaction instanceof discord_js.ChatInputCommandInteraction) {
+    else {
         interaction = options.interaction;
     }
     if (!interaction)
         throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " No interaction provided.");
     options.client;
     let id = "";
-    if (options.interaction instanceof discord_js.Message) {
+    if (options.interaction.author) {
         id = options.interaction.author.id;
     }
-    else if (options.interaction instanceof discord_js.ChatInputCommandInteraction) {
+    else {
         id = options.interaction.user.id;
     }
     if (data$1.has(id))
@@ -3624,20 +3705,20 @@ const FastType = async (options) => {
 const LieSwatter = async (options) => {
     OptionsChecking(options, "LieSwatter");
     let interaction;
-    if (options.interaction instanceof discord_js.Message) {
+    if (options.interaction.author) {
         interaction = options.interaction;
     }
-    else if (options.interaction instanceof discord_js.ChatInputCommandInteraction) {
+    else {
         interaction = options.interaction;
     }
     if (!interaction)
         throw new Error(chalk.red("[@m3rcena/weky] LieSwatter Error:") + " No interaction provided.");
     options.client;
     let id = "";
-    if (options.interaction instanceof discord_js.Message) {
+    if (options.interaction.author) {
         id = options.interaction.author.id;
     }
-    else if (options.interaction instanceof discord_js.ChatInputCommandInteraction) {
+    else {
         id = options.interaction.user.id;
     }
     const id1 = getRandomString(20) +
@@ -3819,10 +3900,12 @@ const LieSwatter = async (options) => {
                 .setURL(options.embed.url ? options.embed.url : null)
                 .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
                 .setImage(options.embed.image ? options.embed.image : null);
+            const username = options.interaction.author ? options.interaction.author.username : options.interaction.user.username;
+            const iconUrl = options.interaction.author ? options.interaction.author.displayAvatarURL() : options.interaction.user.displayAvatarURL();
             if (options.embed.author) {
                 winEmbed.setAuthor({
-                    name: interaction.user.username,
-                    iconURL: interaction.user.displayAvatarURL()
+                    name: username,
+                    iconURL: iconUrl
                 });
             }
             if (options.embed.footer) {
@@ -3867,10 +3950,12 @@ const LieSwatter = async (options) => {
                 .setURL(options.embed.url ? options.embed.url : null)
                 .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
                 .setImage(options.embed.image ? options.embed.image : null);
+            const username = options.interaction.author ? options.interaction.author.username : options.interaction.user.username;
+            const iconUrl = options.interaction.author ? options.interaction.author.displayAvatarURL() : options.interaction.user.displayAvatarURL();
             if (options.embed.author) {
                 lostEmbed.setAuthor({
-                    name: interaction.user.username,
-                    iconURL: interaction.user.displayAvatarURL()
+                    name: username,
+                    iconURL: iconUrl
                 });
             }
             if (options.embed.footer) {
@@ -3916,10 +4001,12 @@ const LieSwatter = async (options) => {
                 .setURL(options.embed.url ? options.embed.url : null)
                 .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
                 .setImage(options.embed.image ? options.embed.image : null);
+            const username = options.interaction.author ? options.interaction.author.username : options.interaction.user.username;
+            const iconUrl = options.interaction.author ? options.interaction.author.displayAvatarURL() : options.interaction.user.displayAvatarURL();
             if (options.embed.author) {
                 lostEmbed.setAuthor({
-                    name: interaction.user.username,
-                    iconURL: interaction.user.displayAvatarURL()
+                    name: username,
+                    iconURL: iconUrl
                 });
             }
             if (options.embed.footer) {
@@ -3939,20 +4026,20 @@ const LieSwatter = async (options) => {
 const WouldYouRather = async (options) => {
     OptionsChecking(options, "WouldYouRather");
     let interaction;
-    if (options.interaction instanceof discord_js.Message) {
+    if (options.interaction.author) {
         interaction = options.interaction;
     }
-    else if (options.interaction instanceof discord_js.ChatInputCommandInteraction) {
+    else {
         interaction = options.interaction;
     }
     if (!interaction)
         throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " No interaction provided.");
     options.client;
     let id = "";
-    if (options.interaction instanceof discord_js.Message) {
+    if (options.interaction.author) {
         id = options.interaction.author.id;
     }
-    else if (options.interaction instanceof discord_js.ChatInputCommandInteraction) {
+    else {
         id = options.interaction.user.id;
     }
     const id1 = getRandomString(20) +
@@ -4168,20 +4255,20 @@ const currentGames = new Object();
 const GuessTheNumber = async (options) => {
     OptionsChecking(options, 'GuessTheNumber');
     let interaction;
-    if (options.interaction instanceof discord_js.Message) {
+    if (options.interaction.author) {
         interaction = options.interaction;
     }
-    else if (options.interaction instanceof discord_js.ChatInputCommandInteraction) {
+    else {
         interaction = options.interaction;
     }
     if (!interaction)
         throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No interaction provided.");
     options.client;
     let id = "";
-    if (options.interaction instanceof discord_js.Message) {
+    if (options.interaction.author) {
         id = options.interaction.author.id;
     }
-    else if (options.interaction instanceof discord_js.ChatInputCommandInteraction) {
+    else {
         id = options.interaction.user.id;
     }
     if (!interaction.guild) {
@@ -4317,6 +4404,7 @@ const GuessTheNumber = async (options) => {
         });
         currentGames[interaction.guild.id] = true;
         currentGames[`${interaction.guild.id}_channel`] = interaction.channel.id;
+        const guildId = interaction.guild.id;
         collector.on('collect', async (_msg) => {
             if (!participants.includes(_msg.author.id)) {
                 participants.push(_msg.author.id);
@@ -4370,7 +4458,7 @@ const GuessTheNumber = async (options) => {
                     if (typeof options.gameID !== "string") {
                         throw new Error(chalk.red("[@m3rcena/weky] GuessTheNumber Error:") + " gameID must be a string.");
                     }
-                    db.set(`GuessTheNumber_${interaction.guild.id}_${options.gameID}`, _msg.author.id);
+                    db.set(`GuessTheNumber_${guildId}_${options.gameID}`, _msg.author.id);
                 }
             }
             if (parseInt(_msg.content) < number) {
@@ -4485,7 +4573,7 @@ const GuessTheNumber = async (options) => {
             }
         });
         collector.on('end', async (_collected, reason) => {
-            delete currentGames[interaction.guild.id];
+            delete currentGames[guildId];
             if (reason === 'time') {
                 const _embed = new discord_js.EmbedBuilder()
                     .setTitle(options.embed.title)
@@ -4766,20 +4854,20 @@ const GuessTheNumber = async (options) => {
 const WillYouPressTheButton = async (options) => {
     OptionsChecking(options, "WillYouPressTheButton");
     let interaction;
-    if (options.interaction instanceof discord_js.Message) {
+    if (options.interaction.author) {
         interaction = options.interaction;
     }
-    else if (options.interaction instanceof discord_js.ChatInputCommandInteraction) {
+    else {
         interaction = options.interaction;
     }
     if (!interaction)
         throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " No interaction provided.");
     options.client;
     let id = "";
-    if (options.interaction instanceof discord_js.Message) {
+    if (options.interaction.author) {
         id = options.interaction.author.id;
     }
-    else if (options.interaction instanceof discord_js.ChatInputCommandInteraction) {
+    else {
         id = options.interaction.user.id;
     }
     if (!options.button)
