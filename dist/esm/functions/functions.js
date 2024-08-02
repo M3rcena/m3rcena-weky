@@ -1,9 +1,9 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
-import wordList from "../data/words.json";
+import wordList from "../data/words.json" assert { type: "json" };
 import chalk from "chalk";
 import stringWidth from 'string-width';
 import { exec } from 'child_process';
-import { version } from "../package.json";
+import weky_package from "../package.json" assert { type: "json" };
 import { promisify } from "util";
 import { ofetch } from "ofetch";
 export const getRandomString = function (length) {
@@ -127,9 +127,9 @@ export const checkPackageUpdates = async function (disabled) {
     try {
         const execPromise = promisify(exec);
         const { stdout } = await execPromise('npm show @m3rcena/weky version');
-        if (stdout.trim().toString() > version) {
+        if (stdout.trim().toString() > weky_package.version) {
             const msg = chalk(`New ${chalk.green('version')} of ${chalk.yellow('@m3rcena/weky')} is available!`);
-            const msg2 = chalk(`${chalk.red(version)} -> ${chalk.green(stdout.trim().toString())}`);
+            const msg2 = chalk(`${chalk.red(weky_package.version)} -> ${chalk.green(stdout.trim().toString())}`);
             const tip = chalk(`Registry: ${chalk.cyan('https://www.npmjs.com/package/@m3rcena/weky')}`);
             const install = chalk(`Run ${chalk.green(`npm i @m3rcena/weky@${stdout.trim().toString()}`)} to update!`);
             boxConsole([msg, msg2, tip, install]);

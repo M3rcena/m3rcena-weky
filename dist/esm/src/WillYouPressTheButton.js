@@ -1,26 +1,24 @@
-import { ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, EmbedBuilder, Message } from "discord.js";
+import { ButtonBuilder, ButtonStyle, EmbedBuilder } from "discord.js";
 import { OptionsChecking } from "../functions/OptionChecking.js";
 import chalk from "chalk";
 import { getButtonDilemma, getRandomString } from "../functions/functions.js";
 const WillYouPressTheButton = async (options) => {
     OptionsChecking(options, "WillYouPressTheButton");
     let interaction;
-    if (options.interaction instanceof Message) {
-        interaction: Message;
+    if (options.interaction.author) {
         interaction = options.interaction;
     }
-    else if (options.interaction instanceof ChatInputCommandInteraction) {
-        interaction: ChatInputCommandInteraction;
+    else {
         interaction = options.interaction;
     }
     if (!interaction)
         throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " No interaction provided.");
     let client = options.client;
     let id = "";
-    if (options.interaction instanceof Message) {
+    if (options.interaction.author) {
         id = options.interaction.author.id;
     }
-    else if (options.interaction instanceof ChatInputCommandInteraction) {
+    else {
         id = options.interaction.user.id;
     }
     ;

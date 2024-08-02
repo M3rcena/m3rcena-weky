@@ -12,12 +12,10 @@ const WouldYouRather = async (options: WouldYouRatherTypes) => {
 
     let interaction;
 
-    if (options.interaction instanceof Message) {
-        interaction: Message
-        interaction = options.interaction;
-    } else if (options.interaction instanceof ChatInputCommandInteraction) {
-        interaction: ChatInputCommandInteraction
-        interaction = options.interaction;
+    if ((options.interaction as Message).author) {
+        interaction = options.interaction as Message;
+    } else {
+        interaction = options.interaction as ChatInputCommandInteraction;
     }
 
     if (!interaction) throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " No interaction provided.");
@@ -25,10 +23,10 @@ const WouldYouRather = async (options: WouldYouRatherTypes) => {
     let client: Client = options.client;
 
     let id: string = "";
-    if (options.interaction instanceof Message) {
-        id = options.interaction.author.id;
-    } else if (options.interaction instanceof ChatInputCommandInteraction) {
-        id = options.interaction.user.id;
+    if ((options.interaction as Message).author) {
+        id = (options.interaction as Message).author.id;
+    } else {
+        id = (options.interaction as ChatInputCommandInteraction).user.id;
     };
 
     const id1 =

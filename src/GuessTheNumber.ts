@@ -14,12 +14,10 @@ const GuessTheNumber = async (options: GuessTheNumberTypes) => {
 
     let interaction;
 
-    if (options.interaction instanceof Message) {
-        interaction: Message
-        interaction = options.interaction;
-    } else if (options.interaction instanceof ChatInputCommandInteraction) {
-        interaction: ChatInputCommandInteraction
-        interaction = options.interaction;
+    if ((options.interaction as Message).author) {
+        interaction = options.interaction as Message;
+    } else {
+        interaction = options.interaction as ChatInputCommandInteraction;
     }
 
     if (!interaction) throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No interaction provided.");
@@ -27,10 +25,10 @@ const GuessTheNumber = async (options: GuessTheNumberTypes) => {
     let client: Client = options.client;
 
     let id: string = "";
-    if (options.interaction instanceof Message) {
-        id = options.interaction.author.id;
-    } else if (options.interaction instanceof ChatInputCommandInteraction) {
-        id = options.interaction.user.id;
+    if ((options.interaction as Message).author) {
+        id = (options.interaction as Message).author.id;
+    } else {
+        id = (options.interaction as ChatInputCommandInteraction).user.id;
     };
 
     if (!interaction.guild) {
@@ -198,6 +196,7 @@ const GuessTheNumber = async (options: GuessTheNumberTypes) => {
         currentGames[interaction.guild.id] = true;
         currentGames[`${interaction.guild.id}_channel`] = interaction.channel.id;
 
+        const guildId = interaction.guild.id;
         collector.on('collect', async (_msg) => {
             if (!participants.includes(_msg.author.id)) {
                 participants.push(_msg.author.id);
@@ -262,7 +261,7 @@ const GuessTheNumber = async (options: GuessTheNumberTypes) => {
                         throw new Error(chalk.red("[@m3rcena/weky] GuessTheNumber Error:") + " gameID must be a string.");
                     };
                     db.set(
-                        `GuessTheNumber_${interaction.guild.id}_${options.gameID}`,
+                        `GuessTheNumber_${guildId}_${options.gameID}`,
                         _msg.author.id
                     );
                 }
@@ -417,7 +416,7 @@ const GuessTheNumber = async (options: GuessTheNumberTypes) => {
         });
 
         collector.on('end', async (_collected, reason) => {
-            delete currentGames[interaction.guild.id];
+            delete currentGames[guildId];
             if (reason === 'time') {
                 const _embed = new EmbedBuilder()
                     .setTitle(options.embed.title)

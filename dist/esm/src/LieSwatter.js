@@ -1,4 +1,4 @@
-import { ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, ComponentType, EmbedBuilder, Message } from "discord.js";
+import { ButtonBuilder, ButtonStyle, ComponentType, EmbedBuilder } from "discord.js";
 import chalk from "chalk";
 import { checkPackageUpdates, convertTime, getRandomString } from "../functions/functions.js";
 import { decode } from "html-entities";
@@ -6,22 +6,20 @@ import { OptionsChecking } from "../functions/OptionChecking.js";
 const LieSwatter = async (options) => {
     OptionsChecking(options, "LieSwatter");
     let interaction;
-    if (options.interaction instanceof Message) {
-        interaction: Message;
+    if (options.interaction.author) {
         interaction = options.interaction;
     }
-    else if (options.interaction instanceof ChatInputCommandInteraction) {
-        interaction: ChatInputCommandInteraction;
+    else {
         interaction = options.interaction;
     }
     if (!interaction)
         throw new Error(chalk.red("[@m3rcena/weky] LieSwatter Error:") + " No interaction provided.");
     let client = options.client;
     let id = "";
-    if (options.interaction instanceof Message) {
+    if (options.interaction.author) {
         id = options.interaction.author.id;
     }
-    else if (options.interaction instanceof ChatInputCommandInteraction) {
+    else {
         id = options.interaction.user.id;
     }
     ;
@@ -217,10 +215,12 @@ const LieSwatter = async (options) => {
                 .setURL(options.embed.url ? options.embed.url : null)
                 .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
                 .setImage(options.embed.image ? options.embed.image : null);
+            const username = options.interaction.author ? options.interaction.author.username : options.interaction.user.username;
+            const iconUrl = options.interaction.author ? options.interaction.author.displayAvatarURL() : options.interaction.user.displayAvatarURL();
             if (options.embed.author) {
                 winEmbed.setAuthor({
-                    name: interaction.user.username,
-                    iconURL: interaction.user.displayAvatarURL()
+                    name: username,
+                    iconURL: iconUrl
                 });
             }
             ;
@@ -267,10 +267,12 @@ const LieSwatter = async (options) => {
                 .setURL(options.embed.url ? options.embed.url : null)
                 .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
                 .setImage(options.embed.image ? options.embed.image : null);
+            const username = options.interaction.author ? options.interaction.author.username : options.interaction.user.username;
+            const iconUrl = options.interaction.author ? options.interaction.author.displayAvatarURL() : options.interaction.user.displayAvatarURL();
             if (options.embed.author) {
                 lostEmbed.setAuthor({
-                    name: interaction.user.username,
-                    iconURL: interaction.user.displayAvatarURL()
+                    name: username,
+                    iconURL: iconUrl
                 });
             }
             ;
@@ -318,10 +320,12 @@ const LieSwatter = async (options) => {
                 .setURL(options.embed.url ? options.embed.url : null)
                 .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
                 .setImage(options.embed.image ? options.embed.image : null);
+            const username = options.interaction.author ? options.interaction.author.username : options.interaction.user.username;
+            const iconUrl = options.interaction.author ? options.interaction.author.displayAvatarURL() : options.interaction.user.displayAvatarURL();
             if (options.embed.author) {
                 lostEmbed.setAuthor({
-                    name: interaction.user.username,
-                    iconURL: interaction.user.displayAvatarURL()
+                    name: username,
+                    iconURL: iconUrl
                 });
             }
             ;

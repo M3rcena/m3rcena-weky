@@ -23,12 +23,10 @@ const LieSwatter = async (options: LieSwatterTypes) => {
 
     let interaction;
 
-    if (options.interaction instanceof Message) {
-        interaction: Message
-        interaction = options.interaction;
-    } else if (options.interaction instanceof ChatInputCommandInteraction) {
-        interaction: ChatInputCommandInteraction
-        interaction = options.interaction;
+    if ((options.interaction as Message).author) {
+        interaction = options.interaction as Message;
+    } else {
+        interaction = options.interaction as ChatInputCommandInteraction;
     }
 
     if (!interaction) throw new Error(chalk.red("[@m3rcena/weky] LieSwatter Error:") + " No interaction provided.");
@@ -37,10 +35,10 @@ const LieSwatter = async (options: LieSwatterTypes) => {
     // Check if the embed object is provided
 
     let id: string = "";
-    if (options.interaction instanceof Message) {
-        id = options.interaction.author.id;
-    } else if (options.interaction instanceof ChatInputCommandInteraction) {
-        id = options.interaction.user.id;
+    if ((options.interaction as Message).author) {
+        id = (options.interaction as Message).author.id;
+    } else {
+        id = (options.interaction as ChatInputCommandInteraction).user.id;
     };
 
     const id1 =
@@ -252,10 +250,12 @@ const LieSwatter = async (options: LieSwatterTypes) => {
                 .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
                 .setImage(options.embed.image ? options.embed.image : null);
 
+            const username = (options.interaction as Message).author ? (options.interaction as Message).author.username : (options.interaction as ChatInputCommandInteraction).user.username;
+            const iconUrl = (options.interaction as Message).author ? (options.interaction as Message).author.displayAvatarURL() : (options.interaction as ChatInputCommandInteraction).user.displayAvatarURL();
             if (options.embed.author) {
                 winEmbed.setAuthor({
-                    name: interaction.user.username,
-                    iconURL: interaction.user.displayAvatarURL()
+                    name: username,
+                    iconURL: iconUrl
                 });
             };
 
@@ -308,10 +308,12 @@ const LieSwatter = async (options: LieSwatterTypes) => {
                 .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
                 .setImage(options.embed.image ? options.embed.image : null);
 
+            const username = (options.interaction as Message).author ? (options.interaction as Message).author.username : (options.interaction as ChatInputCommandInteraction).user.username;
+            const iconUrl = (options.interaction as Message).author ? (options.interaction as Message).author.displayAvatarURL() : (options.interaction as ChatInputCommandInteraction).user.displayAvatarURL();
             if (options.embed.author) {
                 lostEmbed.setAuthor({
-                    name: interaction.user.username,
-                    iconURL: interaction.user.displayAvatarURL()
+                    name: username,
+                    iconURL: iconUrl
                 });
             };
 
@@ -367,10 +369,12 @@ const LieSwatter = async (options: LieSwatterTypes) => {
                 .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
                 .setImage(options.embed.image ? options.embed.image : null);
 
+            const username = (options.interaction as Message).author ? (options.interaction as Message).author.username : (options.interaction as ChatInputCommandInteraction).user.username;
+            const iconUrl = (options.interaction as Message).author ? (options.interaction as Message).author.displayAvatarURL() : (options.interaction as ChatInputCommandInteraction).user.displayAvatarURL();
             if (options.embed.author) {
                 lostEmbed.setAuthor({
-                    name: interaction.user.username,
-                    iconURL: interaction.user.displayAvatarURL()
+                    name: username,
+                    iconURL: iconUrl
                 });
             };
 
