@@ -1,6 +1,6 @@
 import chalk from "chalk";
 import { ActionRowBuilder, ComponentType, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } from "discord.js";
-import { createButton, addRow, checkPackageUpdates } from "../functions/functions.js";
+import { createButton, addRow, checkPackageUpdates, createDisabledButton } from "../functions/functions.js";
 import { evaluate } from "mathjs";
 import { OptionsChecking } from "../functions/OptionChecking.js";
 const Calculator = async (options) => {
@@ -60,12 +60,13 @@ const Calculator = async (options) => {
         '.',
         '='
     ];
-    let cur = 0;
     let current = 0;
+    let disabled = true;
+    let lastInput;
     for (let i = 0; i < text.length; i++) {
         if (button[current].length === 5)
             current++;
-        button[current].push(createButton(text[i], false));
+        button[current].push(createDisabledButton(text[i]));
         if (i === text.length - 1) {
             for (const btn of button)
                 row.push(addRow(btn));
@@ -76,7 +77,7 @@ const Calculator = async (options) => {
     for (let z = 0; z < text2.length; z++) {
         if (buttons[current].length === 5)
             current++;
-        buttons[current].push(createButton(text2[z], false));
+        buttons[current].push(createDisabledButton(text2[z]));
         if (z === text2.length - 1) {
             for (const btns of buttons)
                 row2.push(addRow(btns));
@@ -149,7 +150,6 @@ const Calculator = async (options) => {
             ;
             msg.edit({
                 embeds: [_embed],
-                components: row,
             });
         }
         ;
@@ -185,6 +185,82 @@ const Calculator = async (options) => {
                 components: [],
             });
             msg2.delete();
+        }
+        ;
+        async function enableButtons() {
+            disabled = false;
+            let cur = 0;
+            const customRow = [];
+            const customButton = new Array([], [], [], [], []);
+            for (let i = 0; i < text.length; i++) {
+                if (customButton[cur].length === 5)
+                    cur++;
+                customButton[cur].push(createButton(text[i], false));
+                if (i === text.length - 1) {
+                    for (const btn of customButton) {
+                        customRow.push(addRow(btn));
+                    }
+                    ;
+                    await msg.edit({
+                        components: customRow
+                    });
+                }
+            }
+            ;
+            cur = 0;
+            const customRow2 = [];
+            const customButtons = new Array([], []);
+            for (let z = 0; z < text2.length; z++) {
+                if (customButtons[cur].length === 5)
+                    cur++;
+                customButtons[cur].push(createButton(text2[z], false));
+                if (z === text2.length - 1) {
+                    for (const btns of customButtons)
+                        customRow2.push(addRow(btns));
+                    msg2.edit({
+                        components: customRow2
+                    });
+                }
+            }
+            ;
+        }
+        ;
+        async function disableButtons() {
+            disabled = true;
+            let cur = 0;
+            const customRow = [];
+            const customButton = new Array([], [], [], [], []);
+            for (let i = 0; i < text.length; i++) {
+                if (customButton[cur].length === 5)
+                    cur++;
+                customButton[cur].push(createDisabledButton(text[i]));
+                if (i === text.length - 1) {
+                    for (const btn of customButton) {
+                        customRow.push(addRow(btn));
+                    }
+                    ;
+                    await msg.edit({
+                        components: customRow
+                    });
+                }
+            }
+            ;
+            cur = 0;
+            const customRow2 = [];
+            const customButtons = new Array([], []);
+            for (let z = 0; z < text2.length; z++) {
+                if (customButtons[cur].length === 5)
+                    cur++;
+                customButtons[cur].push(createDisabledButton(text2[z]));
+                if (z === text2.length - 1) {
+                    for (const btns of customButtons)
+                        customRow2.push(addRow(btns));
+                    msg2.edit({
+                        components: customRow2
+                    });
+                }
+            }
+            ;
         }
         let id;
         if (interaction.author) {
@@ -222,26 +298,39 @@ const Calculator = async (options) => {
                 && interact.customId !== 'calx!')
                 await interact.deferUpdate();
             if (interact.customId === 'calAC') {
+                lastInput = null;
                 str = ' ';
                 stringify = '```\n' + str + '\n```';
                 edit();
             }
             else if (interact.customId === 'calx') {
+                lastInput = interact.customId;
                 str += ' * ';
                 stringify = '```\n' + str + '\n```';
                 edit();
             }
             else if (interact.customId === 'cal÷') {
+                lastInput = interact.customId;
                 str += ' / ';
                 stringify = '```\n' + str + '\n```';
                 edit();
             }
             else if (interact.customId === 'cal⌫') {
                 if (str === ' ' || str === '' || str === null || str === undefined) {
+                    lastInput = null;
                     return;
                 }
                 else {
-                    str.slice(0, -1);
+                    lastInput = interact.customId;
+                    if (str.slice(0, -1) === ' ' || str.slice(0, -1) === '' || str.slice(0, -1) === null || str.slice(0, -1) === undefined) {
+                        lastInput = null;
+                    }
+                    if (str.slice(-1) === ' ') {
+                        str = str.slice(0, -3);
+                    }
+                    else {
+                        str = str.slice(0, -1);
+                    }
                     stringify = '```\n' + str + '\n```';
                     edit();
                 }
@@ -267,6 +356,7 @@ const Calculator = async (options) => {
                         try {
                             str += 'log10(' + number + ')';
                             stringify = '```\n' + str + '\n```';
+                            lastInput = interact.customId;
                             edit();
                         }
                         catch (e) {
@@ -298,6 +388,7 @@ const Calculator = async (options) => {
                         try {
                             str += 'sqrt(' + number + ')';
                             stringify = '```\n' + str + '\n```';
+                            lastInput = interact.customId;
                             edit();
                         }
                         catch (e) {
@@ -329,6 +420,7 @@ const Calculator = async (options) => {
                         try {
                             str += 'round(' + number + ')';
                             stringify = '```\n' + str + '\n```';
+                            lastInput = interact.customId;
                             edit();
                         }
                         catch (e) {
@@ -360,6 +452,7 @@ const Calculator = async (options) => {
                         try {
                             str += 'sin(' + number + ')';
                             stringify = '```\n' + str + '\n```';
+                            lastInput = interact.customId;
                             edit();
                         }
                         catch (e) {
@@ -391,6 +484,7 @@ const Calculator = async (options) => {
                         try {
                             str += 'cos(' + number + ')';
                             stringify = '```\n' + str + '\n```';
+                            lastInput = interact.customId;
                             edit();
                         }
                         catch (e) {
@@ -422,6 +516,7 @@ const Calculator = async (options) => {
                         try {
                             str += 'tan(' + number + ')';
                             stringify = '```\n' + str + '\n```';
+                            lastInput = interact.customId;
                             edit();
                         }
                         catch (e) {
@@ -453,6 +548,7 @@ const Calculator = async (options) => {
                         try {
                             str += 'log(' + number + ')';
                             stringify = '```\n' + str + '\n```';
+                            lastInput = interact.customId;
                             edit();
                         }
                         catch (e) {
@@ -484,6 +580,7 @@ const Calculator = async (options) => {
                         try {
                             str += '1/(' + number + ')';
                             stringify = '```\n' + str + '\n```';
+                            lastInput = interact.customId;
                             edit();
                         }
                         catch (e) {
@@ -515,6 +612,7 @@ const Calculator = async (options) => {
                         try {
                             str += number + '!';
                             stringify = '```\n' + str + '\n```';
+                            lastInput = interact.customId;
                             edit();
                         }
                         catch (e) {
@@ -526,21 +624,25 @@ const Calculator = async (options) => {
                 });
             }
             else if (interact.customId === 'calπ') {
+                lastInput = interact.customId;
                 str += 'pi';
                 stringify = '```\n' + str + '\n```';
                 edit();
             }
             else if (interact.customId === 'cale') {
+                lastInput = interact.customId;
                 str += 'e';
                 stringify = '```\n' + str + '\n```';
                 edit();
             }
             else if (interact.customId === 'calans') {
+                lastInput = interact.customId;
                 str += `${answer}`;
                 stringify = '```\n' + str + '\n```';
                 edit();
             }
             else if (interact.customId === 'cal=') {
+                lastInput = null;
                 if (str === ' ' || str === '' || str === null || str === undefined) {
                     return;
                 }
@@ -572,10 +674,22 @@ const Calculator = async (options) => {
                 calc.stop();
             }
             else {
+                lastInput = interact.customId;
                 str += interact.customId.replace('cal', '');
                 stringify = '```\n' + str + '\n```';
                 edit();
             }
+            ;
+            if (disabled === true && lastInput !== null && lastInput !== undefined) {
+                enableButtons();
+            }
+            else if (disabled === false && lastInput === null || lastInput === undefined) {
+                disableButtons();
+            }
+            else if (disabled === false && lastInput !== null || lastInput !== undefined) {
+                return;
+            }
+            ;
         });
         calc.on('end', async () => {
             str = 'Calculator has been stopped';

@@ -9,7 +9,7 @@ import { promisify } from "util";
 import { ofetch } from "ofetch";
 
 
-export const getRandomString = function (length:number) {
+export const getRandomString = function (length: number) {
 	const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 	let result = '';
 	for (let i = 0; i < length; i++) {
@@ -18,9 +18,9 @@ export const getRandomString = function (length:number) {
 	return result;
 };
 
-export const createButton = function(label:string, disabled: boolean) {
-    let style = ButtonStyle.Secondary;
-    if (label === 'AC' || label === 'DC' || label === '⌫') {
+export const createButton = function (label: string, disabled: boolean) {
+	let style = ButtonStyle.Secondary;
+	if (label === 'AC' || label === 'DC' || label === '⌫') {
 		style = ButtonStyle.Danger;
 	} else if (label === ' = ') {
 		style = ButtonStyle.Success;
@@ -72,7 +72,54 @@ export const createButton = function(label:string, disabled: boolean) {
 	}
 };
 
-export const addRow = function(btns:ButtonBuilder[]) {
+export const createDisabledButton = function (label: string) {
+	let style = ButtonStyle.Secondary;
+	if (label === 'AC' || label === 'DC' || label === '⌫') {
+		style = ButtonStyle.Danger;
+	} else if (label === ' = ') {
+		style = ButtonStyle.Success;
+	} else if (
+		label === '(' ||
+		label === ')' ||
+		label === '^' ||
+		label === '%' ||
+		label === '÷' ||
+		label === 'x' ||
+		label === ' - ' ||
+		label === ' + ' ||
+		label === '.' ||
+		label === 'RND' ||
+		label === 'SIN' ||
+		label === 'COS' ||
+		label === 'TAN' ||
+		label === 'LG' ||
+		label === 'LN' ||
+		label === 'SQRT' ||
+		label === 'x!' ||
+		label === '1/x' ||
+		label === 'π' ||
+		label === 'e' ||
+		label === 'ans'
+	) {
+		style = ButtonStyle.Primary;
+	}
+
+	const btn = new ButtonBuilder().setLabel(label).setStyle(style);
+	if (label === '\u200b') {
+		btn.setDisabled();
+		btn.setCustomId(getRandomString(10));
+	} else {
+		btn.setCustomId('cal' + label);
+	}
+
+	const disabledLabels = ["^", "%", '÷', 'AC', '⌫', 'x!', 'x', '1/x']
+	if (disabledLabels.includes(label)) {
+		btn.setDisabled(true)
+	};
+	return btn;
+};
+
+export const addRow = function (btns: ButtonBuilder[]) {
 	const row = new ActionRowBuilder<ButtonBuilder>();
 	for (const btn of btns) {
 		row.addComponents(btn);
@@ -80,7 +127,7 @@ export const addRow = function(btns:ButtonBuilder[]) {
 	return row;
 };
 
-export const getRandomSentence = function(length:number) {
+export const getRandomSentence = function (length: number) {
 	const word = []
 	const words: string[] = wordList;
 
@@ -91,18 +138,18 @@ export const getRandomSentence = function(length:number) {
 	return word;
 }
 
-export const convertTime = function(time:number) {
+export const convertTime = function (time: number) {
 	const absoluteSeconds = Math.floor((time / 1000) % 60);
 	const absoluteMinutes = Math.floor((time / (1000 * 60)) % 60);
 	const absoluteHours = Math.floor((time / (1000 * 60 * 60)) % 24);
 	const absoluteDays = Math.floor((time / (1000 * 60 * 60 * 24)));
-	
+
 	const d = absoluteDays
 		? absoluteDays === 1
 			? '1 day'
 			: `${absoluteDays} days`
 		: null;
-	
+
 	const h = absoluteHours
 		? absoluteHours === 1
 			? '1 hour'
@@ -129,12 +176,12 @@ export const convertTime = function(time:number) {
 	return absoluteTime.join(', ');
 };
 
-export const checkPackageUpdates = async function(name: string,disabled?: boolean) {
-	if (disabled) return;
+export const checkPackageUpdates = async function (name: string, notifyUpdate?: boolean) {
+	if (notifyUpdate === false) return;
 	try {
 		const execPromise = promisify(exec);
 		const { stdout } = await execPromise('npm show @m3rcena/weky version');
-		
+
 		if (stdout.trim().toString() > weky_package.version) {
 			const advertise = chalk(
 				`Are you using ${chalk.red(name)}? Don't lose out on new features!`
@@ -143,7 +190,7 @@ export const checkPackageUpdates = async function(name: string,disabled?: boolea
 			const msg = chalk(
 				`New ${chalk.green('version')} of ${chalk.yellow('@m3rcena/weky')} is available!`,
 			);
-			
+
 			const msg2 = chalk(
 				`${chalk.red(weky_package.version)} -> ${chalk.green(stdout.trim().toString())}`,
 			)
@@ -203,7 +250,7 @@ export const replaceHexCharacters = function (text: string) {
 	const hexRegex = /&#x([a-fA-F0-9]+);/g;
 
 	return text.replace(hexRegex, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
-} 
+}
 
 export const getButtonDilemma = async function () {
 	const data = await ofetch('https://weky.miv4.com/api/wyptb', {
