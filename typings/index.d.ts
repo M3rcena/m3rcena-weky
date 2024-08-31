@@ -24,7 +24,7 @@ interface Calc {
     invalidQuery?: string,
     disabledQuery?: string,
     notifyUpdate?: boolean,
-};
+}
 
 interface Chaos {
     interaction: Message | ChatInputCommandInteraction,
@@ -61,7 +61,7 @@ interface Chaos {
     buttonText?: string,
     otherMessage?: string,
     notifyUpdate?: boolean,
-};
+}
 
 interface FastTypeTyping {
     interaction: Message | ChatInputCommandInteraction,
@@ -93,7 +93,7 @@ interface FastTypeTyping {
     othersMessage?: string,
     cancelMessage?: string,
     notifyUpdate?: boolean,
-};
+}
 
 interface LieSwatterTypes {
     interaction: Message | ChatInputCommandInteraction,
@@ -127,7 +127,7 @@ interface LieSwatterTypes {
     },
     time?: number,
     notifyUpdate?: boolean,
-};
+}
 
 interface WouldYouRatherTypes {
     interaction: Message | ChatInputCommandInteraction,
@@ -159,7 +159,7 @@ interface WouldYouRatherTypes {
     },
     time?: number,
     notifyUpdate?: boolean,
-};
+}
 
 interface GuessTheNumberTypes {
     interaction: Message | ChatInputCommandInteraction,
@@ -199,7 +199,7 @@ interface GuessTheNumberTypes {
     time?: number,
     gameID?: string,
     notifyUpdate?: boolean,
-};
+}
 
 interface WillYouPressTheButtonTypes {
     interaction: Message | ChatInputCommandInteraction,
@@ -230,6 +230,38 @@ interface WillYouPressTheButtonTypes {
     thinkMessage?: string,
     othersMessage?: string,
     time?: number,
+    notifyUpdate?: boolean,
+}
+
+interface QuickClickTypes {
+    interaction: Message | ChatInputCommandInteraction,
+    client: Client,
+    embed: {
+        color: ColorResolvable,
+        title: string,
+        url?: string,
+        author?: {
+            name: string,
+            icon_url?: string,
+            url?: string
+        },
+        description?: string,
+        fields?: Fields[],
+        image?: string,
+        timestamp?: Date,
+        footer?: {
+            text: string,
+            icon_url?: string
+        },
+        thumbnail?: string
+    },
+    waitMessage?: string,
+    startMessage?: string,
+    winMessage?: string,
+    loseMessage?: string,
+    ongoingMessage?: string,
+    time?: number,
+    emoji?: string,
     notifyUpdate?: boolean,
 }
 

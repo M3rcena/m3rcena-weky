@@ -1965,7 +1965,7 @@ var wordList = [
 ];
 
 var name = "@m3rcena/weky";
-var version = "8.7.5";
+var version = "8.8.0";
 var description = "A fun npm package to play games within Discord with buttons!";
 var main = "./dist/index.js";
 var type = "module";
@@ -2255,6 +2255,15 @@ const getButtonDilemma = async function () {
         method: 'GET',
     });
     return data;
+};
+const shuffleArray = function (array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const temp = array[i];
+        array[i] = array[j];
+        array[j] = temp;
+    }
+    return array;
 };
 
 function OptionsChecking(options, GameName) {
@@ -4405,7 +4414,7 @@ const WouldYouRather = async (options) => {
 
 const db = new Map();
 const data = new Set();
-const currentGames = new Object();
+const currentGames$1 = new Object();
 const GuessTheNumber = async (options) => {
     OptionsChecking(options, 'GuessTheNumber');
     let interaction;
@@ -4490,9 +4499,9 @@ const GuessTheNumber = async (options) => {
     }
     if (options.publicGame) {
         const participants = [];
-        if (currentGames[interaction.guild.id]) {
+        if (currentGames$1[interaction.guild.id]) {
             let embed = new discord_js.EmbedBuilder()
-                .setDescription(options.ongoingMessage.replace(/{{channel}}/g, currentGames[`${interaction.guild.id}_channel`]))
+                .setDescription(options.ongoingMessage.replace(/{{channel}}/g, currentGames$1[`${interaction.guild.id}_channel`]))
                 .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null);
             if (options.embed.author) {
                 embed.setAuthor({
@@ -4556,8 +4565,8 @@ const GuessTheNumber = async (options) => {
         const gameCollector = msg.createMessageComponentCollector({
             componentType: discord_js.ComponentType.Button,
         });
-        currentGames[interaction.guild.id] = true;
-        currentGames[`${interaction.guild.id}_channel`] = interaction.channel.id;
+        currentGames$1[interaction.guild.id] = true;
+        currentGames$1[`${interaction.guild.id}_channel`] = interaction.channel.id;
         const guildId = interaction.guild.id;
         collector.on('collect', async (_msg) => {
             if (!participants.includes(_msg.author.id)) {
@@ -4727,7 +4736,7 @@ const GuessTheNumber = async (options) => {
             }
         });
         collector.on('end', async (_collected, reason) => {
-            delete currentGames[guildId];
+            delete currentGames$1[guildId];
             if (reason === 'time') {
                 const _embed = new discord_js.EmbedBuilder()
                     .setTitle(options.embed.title)
@@ -5213,10 +5222,281 @@ const WillYouPressTheButton = async (options) => {
     checkPackageUpdates("WillYouPressTheButton", options.notifyUpdate);
 };
 
+const currentGames = {};
+const QuickClick = async (options) => {
+    OptionsChecking(options, 'GuessTheNumber');
+    let interaction;
+    if (options.interaction.author) {
+        interaction = options.interaction;
+    }
+    else {
+        interaction = options.interaction;
+    }
+    if (!interaction)
+        throw new Error(chalk.red("[@m3rcena/weky] QuickClick Error:") + " No interaction provided.");
+    if (!interaction.guild) {
+        throw new Error(chalk.red("[@m3rcena/weky] QuickClick Error:") + " Guild is not available in this interaction.");
+    }
+    if (!interaction.channel) {
+        throw new Error(chalk.red("[@m3rcena/weky] QuickClick Error:") + " Channel is not available in this interaction.");
+    }
+    options.client;
+    if (options.interaction.author) {
+        options.interaction.author.id;
+    }
+    else {
+        options.interaction.user.id;
+    }
+    if (!options.time)
+        options.time = 60000;
+    if (options.time < 10000) {
+        throw new Error(chalk.red("[@m3rcena/weky] QuickClick Error:") + " Time argument must be greater than 10 Seconds (in ms i.e. 10000).");
+    }
+    if (!options.waitMessage)
+        options.waitMessage = 'The buttons may appear anytime now!';
+    if (typeof options.waitMessage !== 'string') {
+        throw new TypeError(chalk.red("[@m3rcena/weky] QuickClick Error:") + " waitMessage must be a string");
+    }
+    if (!options.startMessage)
+        options.startMessage = 'First person to press the correct button will win. You have **{{time}}**!';
+    if (typeof options.startMessage !== 'string') {
+        throw new TypeError(chalk.red("[@m3rcena/weky] QuickClick Error:") + " startMessage must be a string");
+    }
+    if (!options.winMessage)
+        options.winMessage = 'GG, <@{{winner}}> pressed the button in **{{time}} seconds**.';
+    if (typeof options.winMessage !== 'string') {
+        throw new TypeError(chalk.red("[@m3rcena/weky] QuickClick Error:") + " winMessage must be a string");
+    }
+    if (!options.loseMessage)
+        options.loseMessage = 'No one pressed the button in time. So, I dropped the game!';
+    if (typeof options.loseMessage !== 'string') {
+        throw new TypeError(chalk.red("[@m3rcena/weky] QuickClick Error:") + " loseMessage must be a string");
+    }
+    if (!options.emoji)
+        options.emoji = '👆';
+    if (typeof options.emoji !== 'string') {
+        throw new TypeError(chalk.red("[@m3rcena/weky] QuickClick Error:") + " emoji must be a string");
+    }
+    if (!options.ongoingMessage)
+        options.ongoingMessage = 'A game is already runnning in <#{{channel}}>. You can\'t start a new one!';
+    if (typeof options.ongoingMessage !== 'string') {
+        throw new TypeError(chalk.red("[@m3rcena/weky] QuickClick Error:") + " ongoingMessage must be a string");
+    }
+    if (currentGames[interaction.guild.id]) {
+        let embed = new discord_js.EmbedBuilder()
+            .setTitle(options.embed.title)
+            .setDescription(options.ongoingMessage ? options.ongoingMessage.replace('{{channel}}', `${currentGames[`${interaction.guild.id}_channel`]}`) : `A game is already runnning in <#${currentGames[`${interaction.guild.id}_channel`]}>. You can\'t start a new one!`)
+            .setColor(options.embed.color)
+            .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
+            .setURL(options.embed.url ? options.embed.url : null)
+            .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
+            .setImage(options.embed.image ? options.embed.image : null);
+        if (options.embed.author) {
+            embed.setAuthor({
+                name: options.embed.author.name,
+                iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
+                url: options.embed.author.url ? options.embed.author.url : undefined
+            });
+        }
+        if (options.embed.footer) {
+            embed.setFooter({
+                text: options.embed.footer.text,
+                iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
+            });
+        }
+        if (options.embed.fields) {
+            embed.setFields(options.embed.fields);
+        }
+        return interaction.reply({ embeds: [embed] });
+    }
+    let embed = new discord_js.EmbedBuilder()
+        .setTitle(options.embed.title)
+        .setDescription(options.waitMessage ? options.waitMessage : 'The buttons may appear anytime now!')
+        .setColor(options.embed.color)
+        .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
+        .setURL(options.embed.url ? options.embed.url : null)
+        .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
+        .setImage(options.embed.image ? options.embed.image : null);
+    if (options.embed.author) {
+        embed.setAuthor({
+            name: options.embed.author.name,
+            iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
+            url: options.embed.author.url ? options.embed.author.url : undefined
+        });
+    }
+    if (options.embed.footer) {
+        embed.setFooter({
+            text: options.embed.footer.text,
+            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
+        });
+    }
+    if (options.embed.fields) {
+        embed.setFields(options.embed.fields);
+    }
+    const msg = await interaction.reply({ embeds: [embed] });
+    currentGames[interaction.guild.id] = true;
+    currentGames[`${interaction.guild.id}_channel`] = interaction.channel.id;
+    setTimeout(async function () {
+        const rows = [];
+        const buttons = [];
+        const gameCreatedAt = Date.now();
+        for (let i = 0; i < 24; i++) {
+            buttons.push(new discord_js.ButtonBuilder()
+                .setDisabled()
+                .setLabel('\u200b')
+                .setStyle(discord_js.ButtonStyle.Primary)
+                .setCustomId(getRandomString(20)));
+        }
+        buttons.push(new discord_js.ButtonBuilder()
+            .setStyle(discord_js.ButtonStyle.Primary)
+            .setEmoji(options.emoji ? options.emoji : '👆')
+            .setCustomId('CORRECT'));
+        shuffleArray(buttons);
+        for (let i = 0; i < 5; i++) {
+            rows.push(new discord_js.ActionRowBuilder());
+        }
+        rows.forEach((row, i) => {
+            row.addComponents(buttons.slice(0 + i * 5, 5 + i * 5));
+        });
+        let _embed = new discord_js.EmbedBuilder()
+            .setTitle(options.embed.title)
+            .setDescription(options.startMessage ? options.startMessage.replace('{{time}}', convertTime(options.time ? options.time : 60000)) : `First person to press the correct button will win. You have **${convertTime(options.time ? options.time : 60000)}**!`)
+            .setColor(options.embed.color)
+            .setTimestamp(options.embed.timestamp ? new Date() : null)
+            .setURL(options.embed.url ? options.embed.url : null)
+            .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
+            .setImage(options.embed.image ? options.embed.image : null);
+        if (options.embed.author) {
+            _embed.setAuthor({
+                name: options.embed.author.name,
+                iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
+                url: options.embed.author.url ? options.embed.author.url : undefined
+            });
+        }
+        if (options.embed.footer) {
+            _embed.setFooter({
+                text: options.embed.footer.text,
+                iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
+            });
+        }
+        if (options.embed.fields) {
+            _embed.setFields(options.embed.fields);
+        }
+        await msg.edit({
+            embeds: [_embed],
+            components: rows,
+        });
+        const Collector = msg.createMessageComponentCollector({
+            filter: (fn) => fn.message.id === msg.id,
+            time: options.time,
+        });
+        Collector.on('collect', async (button) => {
+            if (!interaction.guild) {
+                throw new Error(chalk.red("[@m3rcena/weky] QuickClick Error:") + " Guild is not available in this interaction.");
+            }
+            if (button.customId === 'CORRECT') {
+                await button.deferUpdate();
+                Collector.stop();
+                buttons.forEach((element) => {
+                    element.setDisabled();
+                });
+                rows.length = 0;
+                for (let i = 0; i < 5; i++) {
+                    rows.push(new discord_js.ActionRowBuilder());
+                }
+                rows.forEach((row, i) => {
+                    row.addComponents(buttons.slice(0 + i * 5, 5 + i * 5));
+                });
+                let __embed = new discord_js.EmbedBuilder()
+                    .setTitle(options.embed.title)
+                    .setDescription(options.winMessage ? options.winMessage
+                    .replace('{{winner}}', button.user.id)
+                    .replace('{{time}}', `${(Date.now() - gameCreatedAt) / 1000}`)
+                    : `GG, <@${button.user.id}> pressed the button in **${(Date.now() - gameCreatedAt) / 1000} seconds**.`)
+                    .setColor(options.embed.color)
+                    .setTimestamp(options.embed.timestamp ? new Date() : null)
+                    .setURL(options.embed.url ? options.embed.url : null)
+                    .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
+                    .setImage(options.embed.image ? options.embed.image : null);
+                if (options.embed.author) {
+                    __embed.setAuthor({
+                        name: options.embed.author.name,
+                        iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
+                        url: options.embed.author.url ? options.embed.author.url : undefined
+                    });
+                }
+                if (options.embed.footer) {
+                    __embed.setFooter({
+                        text: options.embed.footer.text,
+                        iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
+                    });
+                }
+                if (options.embed.fields) {
+                    __embed.setFields(options.embed.fields);
+                }
+                await msg.edit({
+                    embeds: [__embed],
+                    components: rows,
+                });
+            }
+            return delete currentGames[interaction.guild.id];
+        });
+        Collector.on('end', async (_msg, reason) => {
+            if (reason === 'time') {
+                buttons.forEach((element) => {
+                    element.setDisabled();
+                });
+                rows.length = 0;
+                for (let i = 0; i < 5; i++) {
+                    rows.push(new discord_js.ActionRowBuilder());
+                }
+                rows.forEach((row, i) => {
+                    row.addComponents(buttons.slice(0 + i * 5, 5 + i * 5));
+                });
+                let __embed = new discord_js.EmbedBuilder()
+                    .setTitle(options.embed.title)
+                    .setDescription(options.loseMessage ? options.loseMessage
+                    : 'No one pressed the button in time. So, I dropped the game!')
+                    .setColor(options.embed.color)
+                    .setTimestamp(options.embed.timestamp ? new Date() : null)
+                    .setURL(options.embed.url ? options.embed.url : null)
+                    .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
+                    .setImage(options.embed.image ? options.embed.image : null);
+                if (options.embed.author) {
+                    __embed.setAuthor({
+                        name: options.embed.author.name,
+                        iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
+                        url: options.embed.author.url ? options.embed.author.url : undefined
+                    });
+                }
+                if (options.embed.footer) {
+                    __embed.setFooter({
+                        text: options.embed.footer.text,
+                        iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
+                    });
+                }
+                if (options.embed.fields) {
+                    __embed.setFields(options.embed.fields);
+                }
+                await msg.edit({
+                    embeds: [__embed],
+                    components: rows,
+                });
+                if (!interaction.guild) {
+                    return;
+                }
+                return delete currentGames[interaction.guild.id];
+            }
+        });
+    }, Math.floor(Math.random() * 5000) + 1000);
+    checkPackageUpdates('QuickClick', options.notifyUpdate);
+};
+
 exports.Calculator = Calculator;
 exports.ChaosWords = ChaosWords;
 exports.FastType = FastType;
 exports.GuessTheNumber = GuessTheNumber;
 exports.LieSwatter = LieSwatter;
+exports.QuickClick = QuickClick;
 exports.WillYouPressTheButton = WillYouPressTheButton;
 exports.WouldYouRather = WouldYouRather;

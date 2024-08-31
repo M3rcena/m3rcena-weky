@@ -5,6 +5,7 @@ import FastType from "../src/FastType";
 import LieSwatter from "../src/LieSwatter";
 import WouldYouRather from "../src/WouldYouRather";
 import GuessTheNumber from "../src/GuessTheNumber";
+import QuickClick from "../src/QuickClick";
 
 export interface ExtendedClient extends Client {
     commands: Collection<string, any>;
@@ -112,6 +113,21 @@ client.on("messageCreate", async (message) => {
                 timestamp: new Date(),
             },
             publicGame: true
+        })
+    };
+
+    if (message.content === '!quickclick') {
+        QuickClick({
+            interaction: message,
+            client: client,
+            embed: {
+                color: "Blurple",
+                title: "Quick Click | M3rcena Development",
+                footer: {
+                    text: '©️ M3rcena Development'
+                },
+                timestamp: new Date(),
+            }
         })
     };
 });
