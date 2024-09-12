@@ -16,6 +16,8 @@ const ChaosWords = async (options) => {
         throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No interaction provided.");
     if (!interaction.channel)
         throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No channel found on Interaction.");
+    if (!interaction.channel.isSendable())
+        throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " Channel is not sendable.");
     let client = options.client;
     let id = "";
     if (options.interaction.author) {
@@ -158,7 +160,7 @@ const ChaosWords = async (options) => {
         });
     }
     ;
-    if (!interaction.channel)
+    if (!interaction.channel || !interaction.channel.isSendable())
         return;
     game.on('collect', async (mes) => {
         if (words === undefined)
@@ -237,7 +239,7 @@ const ChaosWords = async (options) => {
                 components: [{ type: 1, components: [btn1] }]
             });
             if (remaining === words.length) {
-                if (!interaction.channel)
+                if (!interaction.channel || !interaction.channel.isSendable())
                     return;
                 btn1 = new ButtonBuilder()
                     .setStyle(ButtonStyle.Danger)
@@ -421,7 +423,7 @@ const ChaosWords = async (options) => {
                     embeds: [_embed],
                     components: [{ type: 1, components: [btn1] }]
                 });
-                if (!interaction.channel)
+                if (!interaction.channel || !interaction.channel.isSendable())
                     return;
                 await interaction.channel.send({
                     embeds: [_embed],
@@ -533,7 +535,7 @@ const ChaosWords = async (options) => {
                 embeds: [embed],
                 components: [{ type: 1, components: [btn1] }]
             });
-            if (!interaction.channel)
+            if (!interaction.channel || !interaction.channel.isSendable())
                 return;
             data.delete(id);
             interaction.channel.send({
@@ -611,7 +613,7 @@ const ChaosWords = async (options) => {
             });
         }
         ;
-        if (!interaction.channel)
+        if (!interaction.channel || !interaction.channel.isSendable())
             return;
         await interaction.channel.send({
             embeds: [_embed],

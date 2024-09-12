@@ -23,13 +23,13 @@ const QuickClick = async (options: QuickClickTypes) => {
 
     if (!interaction) throw new Error(chalk.red("[@m3rcena/weky] QuickClick Error:") + " No interaction provided.");
 
-    if (!interaction.channel) throw new Error(chalk.red("[@m3rcena/weky] QuickClick Error:") + " Channel is not available in this interaction.");
+    if (!interaction.channel || !interaction.channel.isSendable()) throw new Error(chalk.red("[@m3rcena/weky] QuickClick Error:") + " Channel is not available in this interaction.");
 
     if (!interaction.guild) {
         throw new Error(chalk.red("[@m3rcena/weky] QuickClick Error:") + " Guild is not available in this interaction.");
     };
 
-    if (!interaction.channel) {
+    if (!interaction.channel || !interaction.channel.isSendable()) {
         throw new Error(chalk.red("[@m3rcena/weky] QuickClick Error:") + " Channel is not available in this interaction.");
     };
 

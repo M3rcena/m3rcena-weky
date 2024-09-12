@@ -31,7 +31,7 @@ const LieSwatter = async (options: LieSwatterTypes) => {
 
     if (!interaction) throw new Error(chalk.red("[@m3rcena/weky] LieSwatter Error:") + " No interaction provided.");
 
-    if (!interaction.channel) throw new Error(chalk.red("[@m3rcena/weky] LieSwatter Error:") + " No channel found.");
+    if (!interaction.channel || !interaction.channel.isSendable()) throw new Error(chalk.red("[@m3rcena/weky] LieSwatter Error:") + " No channel found.");
 
     let client: Client = options.client;
     // Check if the embed object is provided
@@ -268,7 +268,7 @@ const LieSwatter = async (options: LieSwatterTypes) => {
                 });
             };
 
-            if (!interaction.channel) return;
+            if (!interaction.channel || !interaction.channel.isSendable()) return;
 
             await interaction.channel.send({
                 embeds: [winEmbed]
@@ -328,7 +328,7 @@ const LieSwatter = async (options: LieSwatterTypes) => {
                 });
             };
 
-            if (!interaction.channel) return;
+            if (!interaction.channel || !interaction.channel.isSendable()) return;
             await interaction.channel.send({
                 embeds: [lostEmbed]
             })
@@ -390,7 +390,7 @@ const LieSwatter = async (options: LieSwatterTypes) => {
                 });
             };
 
-            if (!interaction.channel) return;
+            if (!interaction.channel || !interaction.channel.isSendable()) return;
             await interaction.channel.send({
                 embeds: [lostEmbed]
             });

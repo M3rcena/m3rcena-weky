@@ -2001,7 +2001,7 @@ var dependencies = {
 	axios: "^1.7.2",
 	chalk: "^4.1.2",
 	cheerio: "^1.0.0-rc.12",
-	"discord.js": "^14.15.3",
+	"discord.js": "^14.16.2",
 	"html-entities": "^2.5.2",
 	mathjs: "^13.0.2",
 	"node-fetch": "^3.3.2",
@@ -2468,7 +2468,7 @@ const Calculator = async (options) => {
         });
         embed.setFooter(footer);
     }
-    if (!interaction.channel || !interaction.channel.isTextBased()) {
+    if (!interaction.channel || !interaction.channel.isTextBased() || !interaction.channel.isSendable()) {
         throw new Error(chalk.red("[@m3rcena/weky] Calculator Error:") + " Interaction must be a text-based channel.");
     }
     const channel = interaction.channel;
@@ -3623,6 +3623,8 @@ const ChaosWords = async (options) => {
         throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No interaction provided.");
     if (!interaction.channel)
         throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No channel found on Interaction.");
+    if (!interaction.channel.isSendable())
+        throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " Channel is not sendable.");
     options.client;
     let id = "";
     if (options.interaction.author) {
@@ -3758,7 +3760,7 @@ const ChaosWords = async (options) => {
             time: options.time ? options.time : 60000
         });
     }
-    if (!interaction.channel)
+    if (!interaction.channel || !interaction.channel.isSendable())
         return;
     game.on('collect', async (mes) => {
         if (words === undefined)
@@ -3834,7 +3836,7 @@ const ChaosWords = async (options) => {
                 components: [{ type: 1, components: [btn1] }]
             });
             if (remaining === words.length) {
-                if (!interaction.channel)
+                if (!interaction.channel || !interaction.channel.isSendable())
                     return;
                 btn1 = new discord_js.ButtonBuilder()
                     .setStyle(discord_js.ButtonStyle.Danger)
@@ -4011,7 +4013,7 @@ const ChaosWords = async (options) => {
                     embeds: [_embed],
                     components: [{ type: 1, components: [btn1] }]
                 });
-                if (!interaction.channel)
+                if (!interaction.channel || !interaction.channel.isSendable())
                     return;
                 await interaction.channel.send({
                     embeds: [_embed],
@@ -4119,7 +4121,7 @@ const ChaosWords = async (options) => {
                 embeds: [embed],
                 components: [{ type: 1, components: [btn1] }]
             });
-            if (!interaction.channel)
+            if (!interaction.channel || !interaction.channel.isSendable())
                 return;
             data$2.delete(id);
             interaction.channel.send({
@@ -4195,7 +4197,7 @@ const ChaosWords = async (options) => {
                 iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
             });
         }
-        if (!interaction.channel)
+        if (!interaction.channel || !interaction.channel.isSendable())
             return;
         await interaction.channel.send({
             embeds: [_embed],
@@ -4219,7 +4221,7 @@ const FastType = async (options) => {
     }
     if (!interaction)
         throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " No interaction provided.");
-    if (!interaction.channel)
+    if (!interaction.channel || !interaction.channel.isSendable())
         throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " Interaction channel is not provided.");
     options.client;
     let id = "";
@@ -4319,7 +4321,7 @@ const FastType = async (options) => {
                     iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
                 });
             }
-            if (!interaction.channel)
+            if (!interaction.channel || !interaction.channel.isSendable())
                 return;
             embed.setTimestamp(options.embed.timestamp ? new Date() : null);
             await interaction.channel.send({ embeds: [_embed] });
@@ -4356,7 +4358,7 @@ const FastType = async (options) => {
                     iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
                 });
             }
-            if (!interaction.channel)
+            if (!interaction.channel || !interaction.channel.isSendable())
                 return;
             embed.setTimestamp(options.embed.timestamp ? new Date() : null);
             await interaction.channel.send({ embeds: [_embed] });
@@ -4395,7 +4397,7 @@ const FastType = async (options) => {
                     iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
                 });
             }
-            if (!interaction.channel)
+            if (!interaction.channel || !interaction.channel.isSendable())
                 return;
             embed.setTimestamp(options.embed.timestamp ? new Date() : null);
             await interaction.channel.send({ embeds: [_embed] });
@@ -4453,7 +4455,7 @@ const LieSwatter = async (options) => {
     }
     if (!interaction)
         throw new Error(chalk.red("[@m3rcena/weky] LieSwatter Error:") + " No interaction provided.");
-    if (!interaction.channel)
+    if (!interaction.channel || !interaction.channel.isSendable())
         throw new Error(chalk.red("[@m3rcena/weky] LieSwatter Error:") + " No channel found.");
     options.client;
     let id = "";
@@ -4656,7 +4658,7 @@ const LieSwatter = async (options) => {
                     iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
                 });
             }
-            if (!interaction.channel)
+            if (!interaction.channel || !interaction.channel.isSendable())
                 return;
             await interaction.channel.send({
                 embeds: [winEmbed]
@@ -4708,7 +4710,7 @@ const LieSwatter = async (options) => {
                     iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
                 });
             }
-            if (!interaction.channel)
+            if (!interaction.channel || !interaction.channel.isSendable())
                 return;
             await interaction.channel.send({
                 embeds: [lostEmbed]
@@ -4761,7 +4763,7 @@ const LieSwatter = async (options) => {
                     iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
                 });
             }
-            if (!interaction.channel)
+            if (!interaction.channel || !interaction.channel.isSendable())
                 return;
             await interaction.channel.send({
                 embeds: [lostEmbed]
@@ -4782,7 +4784,7 @@ const WouldYouRather = async (options) => {
     }
     if (!interaction)
         throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " No interaction provided.");
-    if (!interaction.channel)
+    if (!interaction.channel || !interaction.channel.isSendable())
         throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " No channel provided in interaction.");
     options.client;
     let id = "";
@@ -5012,8 +5014,6 @@ const GuessTheNumber = async (options) => {
     else {
         interaction = options.interaction;
     }
-    if (!interaction.channel)
-        return;
     if (!interaction)
         throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No interaction provided.");
     options.client;
@@ -5027,7 +5027,7 @@ const GuessTheNumber = async (options) => {
     if (!interaction.guild) {
         throw new Error(chalk.red("[@m3rcena/weky] GuessTheNumber Error:") + " Guild is not available in this interaction.");
     }
-    if (!interaction.channel) {
+    if (!interaction.channel || !interaction.channel.isSendable()) {
         throw new Error(chalk.red("[@m3rcena/weky] GuessTheNumber Error:") + " Channel is not available in this interaction.");
     }
     if (!options.ongoingMessage) {
@@ -5360,7 +5360,7 @@ const GuessTheNumber = async (options) => {
                     embeds: [embed],
                     components: [{ type: 1, components: [btn1] }]
                 });
-                if (!interaction.channel)
+                if (!interaction.channel || !interaction.channel.isSendable())
                     return;
                 return interaction.channel.send({ embeds: [_embed] });
             }
@@ -5599,7 +5599,7 @@ const GuessTheNumber = async (options) => {
                     embeds: [embed],
                     components: [{ type: 1, components: [btn1] }]
                 });
-                if (!interaction.channel)
+                if (!interaction.channel || !interaction.channel.isSendable())
                     return;
                 return interaction.channel.send({ embeds: [_embed] });
             }
@@ -5620,7 +5620,7 @@ const WillYouPressTheButton = async (options) => {
     }
     if (!interaction)
         throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " No interaction provided.");
-    if (!interaction.channel)
+    if (!interaction.channel || !interaction.channel.isSendable())
         throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " No channel provided in interaction.");
     options.client;
     let id = "";
@@ -5830,12 +5830,12 @@ const QuickClick = async (options) => {
     }
     if (!interaction)
         throw new Error(chalk.red("[@m3rcena/weky] QuickClick Error:") + " No interaction provided.");
-    if (!interaction.channel)
+    if (!interaction.channel || !interaction.channel.isSendable())
         throw new Error(chalk.red("[@m3rcena/weky] QuickClick Error:") + " Channel is not available in this interaction.");
     if (!interaction.guild) {
         throw new Error(chalk.red("[@m3rcena/weky] QuickClick Error:") + " Guild is not available in this interaction.");
     }
-    if (!interaction.channel) {
+    if (!interaction.channel || !interaction.channel.isSendable()) {
         throw new Error(chalk.red("[@m3rcena/weky] QuickClick Error:") + " Channel is not available in this interaction.");
     }
     options.client;

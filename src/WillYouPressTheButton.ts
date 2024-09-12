@@ -17,7 +17,7 @@ const WillYouPressTheButton = async (options: WillYouPressTheButtonTypes) => {
     }
     if (!interaction) throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " No interaction provided.");
 
-    if (!interaction.channel) throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " No channel provided in interaction.");
+    if (!interaction.channel || !interaction.channel.isSendable()) throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " No channel provided in interaction.");
 
     let client: Client = options.client;
 

@@ -14,7 +14,7 @@ const FastType = async (options) => {
     }
     if (!interaction)
         throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " No interaction provided.");
-    if (!interaction.channel)
+    if (!interaction.channel || !interaction.channel.isSendable())
         throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " Interaction channel is not provided.");
     let client = options.client;
     let id = "";
@@ -120,7 +120,7 @@ const FastType = async (options) => {
                 });
             }
             ;
-            if (!interaction.channel)
+            if (!interaction.channel || !interaction.channel.isSendable())
                 return;
             embed.setTimestamp(options.embed.timestamp ? new Date() : null);
             await interaction.channel.send({ embeds: [_embed] });
@@ -159,7 +159,7 @@ const FastType = async (options) => {
                 });
             }
             ;
-            if (!interaction.channel)
+            if (!interaction.channel || !interaction.channel.isSendable())
                 return;
             embed.setTimestamp(options.embed.timestamp ? new Date() : null);
             await interaction.channel.send({ embeds: [_embed] });
@@ -200,7 +200,7 @@ const FastType = async (options) => {
                 });
             }
             ;
-            if (!interaction.channel)
+            if (!interaction.channel || !interaction.channel.isSendable())
                 return;
             embed.setTimestamp(options.embed.timestamp ? new Date() : null);
             await interaction.channel.send({ embeds: [_embed] });

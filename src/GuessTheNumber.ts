@@ -20,8 +20,6 @@ const GuessTheNumber = async (options: GuessTheNumberTypes) => {
         interaction = options.interaction as ChatInputCommandInteraction;
     }
 
-    if (!interaction.channel) return;
-
     if (!interaction) throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No interaction provided.");
 
     let client: Client = options.client;
@@ -37,7 +35,7 @@ const GuessTheNumber = async (options: GuessTheNumberTypes) => {
         throw new Error(chalk.red("[@m3rcena/weky] GuessTheNumber Error:") + " Guild is not available in this interaction.");
     };
 
-    if (!interaction.channel) {
+    if (!interaction.channel || !interaction.channel.isSendable()) {
         throw new Error(chalk.red("[@m3rcena/weky] GuessTheNumber Error:") + " Channel is not available in this interaction.");
     }
 
@@ -463,7 +461,7 @@ const GuessTheNumber = async (options: GuessTheNumberTypes) => {
                     components: [{ type: 1, components: [btn1] }]
                 });
 
-                if (!interaction.channel) return;
+                if (!interaction.channel || !interaction.channel.isSendable()) return;
                 return interaction.channel.send({ embeds: [_embed] });
             }
         });
@@ -770,7 +768,7 @@ const GuessTheNumber = async (options: GuessTheNumberTypes) => {
                     components: [{ type: 1, components: [btn1] }]
                 });
 
-                if (!interaction.channel) return;
+                if (!interaction.channel || !interaction.channel.isSendable()) return;
                 return interaction.channel.send({ embeds: [_embed] });
             }
             data.delete(id);

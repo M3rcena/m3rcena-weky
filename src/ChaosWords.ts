@@ -21,6 +21,8 @@ const ChaosWords = async (options: Chaos) => {
 
     if (!interaction.channel) throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No channel found on Interaction.");
 
+    if (!interaction.channel.isSendable()) throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " Channel is not sendable.");
+
     let client: Client = options.client;
 
     let id: string = "";
@@ -179,7 +181,7 @@ const ChaosWords = async (options: Chaos) => {
         });
     };
 
-    if (!interaction.channel) return;
+    if (!interaction.channel || !interaction.channel.isSendable()) return;
     game.on('collect', async (mes: Message) => {
         if (words === undefined) return;
         const condition =
@@ -266,7 +268,7 @@ const ChaosWords = async (options: Chaos) => {
             });
 
             if (remaining === words.length) {
-                if (!interaction.channel) return;
+                if (!interaction.channel || !interaction.channel.isSendable()) return;
                 btn1 = new ButtonBuilder()
                     .setStyle(ButtonStyle.Danger)
                     .setLabel(options.buttonText ? options.buttonText : "Cancel")
@@ -455,7 +457,7 @@ const ChaosWords = async (options: Chaos) => {
                     components: [{ type: 1, components: [btn1] }]
                 });
 
-                if (!interaction.channel) return;
+                if (!interaction.channel || !interaction.channel.isSendable()) return;
                 await interaction.channel.send({
                     embeds: [_embed],
                 });
@@ -574,7 +576,7 @@ const ChaosWords = async (options: Chaos) => {
                 components: [{ type: 1, components: [btn1] }]
             });
 
-            if (!interaction.channel) return;
+            if (!interaction.channel || !interaction.channel.isSendable()) return;
             data.delete(id);
             interaction.channel.send({
                 embeds: [_embed],
@@ -658,7 +660,7 @@ const ChaosWords = async (options: Chaos) => {
             });
         };
 
-        if (!interaction.channel) return;
+        if (!interaction.channel || !interaction.channel.isSendable()) return;
         await interaction.channel.send({
             embeds: [_embed],
         });

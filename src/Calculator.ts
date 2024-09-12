@@ -122,7 +122,7 @@ const Calculator = async (options: Calc) => {
         embed.setFooter(footer);
     }
 
-    if (!interaction.channel || !interaction.channel.isTextBased()) {
+    if (!interaction.channel || !interaction.channel.isTextBased() || !interaction.channel.isSendable()) {
         throw new Error(chalk.red("[@m3rcena/weky] Calculator Error:") + " Interaction must be a text-based channel.");
     }
 
