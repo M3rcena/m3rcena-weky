@@ -19,6 +19,8 @@ const ChaosWords = async (options: Chaos) => {
 
     if (!interaction) throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No interaction provided.");
 
+    if (!interaction.channel) throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No channel found on Interaction.");
+
     let client: Client = options.client;
 
     let id: string = "";
@@ -177,6 +179,7 @@ const ChaosWords = async (options: Chaos) => {
         });
     };
 
+    if (!interaction.channel) return;
     game.on('collect', async (mes: Message) => {
         if (words === undefined) return;
         const condition =
@@ -257,19 +260,20 @@ const ChaosWords = async (options: Chaos) => {
                 .setLabel(options.buttonText ? options.buttonText : "Cancel")
                 .setCustomId(ids);
 
-            msg.edit({
+            await msg.edit({
                 embeds: [_embed],
                 components: [{ type: 1, components: [btn1] }]
             });
 
             if (remaining === words.length) {
+                if (!interaction.channel) return;
                 btn1 = new ButtonBuilder()
                     .setStyle(ButtonStyle.Danger)
                     .setLabel(options.buttonText ? options.buttonText : "Cancel")
                     .setDisabled()
                     .setCustomId(ids);
 
-                msg.edit({
+                await msg.edit({
                     embeds: [embed],
                     components: [{
                         type: 1,
@@ -341,12 +345,12 @@ const ChaosWords = async (options: Chaos) => {
                     __embed.setFields(_field);
                 };
 
-                msg.edit({
+                await msg.edit({
                     embeds: [__embed],
                     components: []
                 });
 
-                interaction.reply({
+                await interaction.channel.send({
                     embeds: [__embed],
                 })
                 data.delete(id);
@@ -446,12 +450,13 @@ const ChaosWords = async (options: Chaos) => {
                     .setDisabled()
                     .setCustomId(ids);
 
-                msg.edit({
+                await msg.edit({
                     embeds: [_embed],
                     components: [{ type: 1, components: [btn1] }]
                 });
 
-                interaction.reply({
+                if (!interaction.channel) return;
+                await interaction.channel.send({
                     embeds: [_embed],
                 });
                 data.delete(id);
@@ -569,8 +574,9 @@ const ChaosWords = async (options: Chaos) => {
                 components: [{ type: 1, components: [btn1] }]
             });
 
+            if (!interaction.channel) return;
             data.delete(id);
-            interaction.reply({
+            interaction.channel.send({
                 embeds: [_embed],
             });
         }
@@ -623,7 +629,7 @@ const ChaosWords = async (options: Chaos) => {
             embed.setFields(_fields);
         }
         
-        msg.edit({
+        await msg.edit({
             embeds: [embed],
             components: [{ type: 1, components: [btn1] }]
         });
@@ -652,7 +658,8 @@ const ChaosWords = async (options: Chaos) => {
             });
         };
 
-        interaction.reply({
+        if (!interaction.channel) return;
+        await interaction.channel.send({
             embeds: [_embed],
         });
         data.delete(id);

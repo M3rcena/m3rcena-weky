@@ -20,6 +20,8 @@ const FastType = async (options: FastTypeTyping) => {
 
     if (!interaction) throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " No interaction provided.");
 
+    if (!interaction.channel) throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " Interaction channel is not provided.");
+
     let client: Client = options.client;
 
     let id: string = "";
@@ -141,8 +143,9 @@ const FastType = async (options: FastTypeTyping) => {
                 });
             };
 
+            if (!interaction.channel) return;
             embed.setTimestamp(options.embed.timestamp ? new Date() : null);
-            interaction.reply({ embeds: [_embed] });
+            await interaction.channel.send({ embeds: [_embed] });
             btn1 = new ButtonBuilder()
                 .setStyle(ButtonStyle.Danger)
                 .setLabel(options.buttonText ? options.buttonText : "Cancel")
@@ -178,8 +181,9 @@ const FastType = async (options: FastTypeTyping) => {
                 });
             };
 
+            if (!interaction.channel) return;
             embed.setTimestamp(options.embed.timestamp ? new Date() : null);
-            interaction.reply({ embeds: [_embed] });
+            await interaction.channel.send({ embeds: [_embed] });
             collector.stop(mes.author.username);
             data.delete(id);
             btn1 = new ButtonBuilder()
@@ -219,8 +223,9 @@ const FastType = async (options: FastTypeTyping) => {
                 });
             };
 
+            if (!interaction.channel) return;
             embed.setTimestamp(options.embed.timestamp ? new Date() : null);
-            interaction.reply({ embeds: [_embed] });
+            await interaction.channel.send({ embeds: [_embed] });
             btn1 = new ButtonBuilder()
                 .setStyle(ButtonStyle.Danger)
                 .setLabel(options.buttonText ? options.buttonText : "Cancel")

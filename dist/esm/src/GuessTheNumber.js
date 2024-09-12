@@ -14,6 +14,8 @@ const GuessTheNumber = async (options) => {
     else {
         interaction = options.interaction;
     }
+    if (!interaction.channel)
+        return;
     if (!interaction)
         throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No interaction provided.");
     let client = options.client;
@@ -381,7 +383,9 @@ const GuessTheNumber = async (options) => {
                     embeds: [embed],
                     components: [{ type: 1, components: [btn1] }]
                 });
-                return interaction.reply({ embeds: [_embed] });
+                if (!interaction.channel)
+                    return;
+                return interaction.channel.send({ embeds: [_embed] });
             }
         });
     }
@@ -469,7 +473,7 @@ const GuessTheNumber = async (options) => {
                     embeds: [embed],
                     components: [{ type: 1, components: [btn1] }]
                 });
-                _msg.reply({ embeds: [_embed] });
+                await _msg.reply({ embeds: [_embed] });
                 gameCollector.stop();
                 collector.stop();
             }
@@ -503,7 +507,7 @@ const GuessTheNumber = async (options) => {
                 if (options.embed.fields) {
                     _embed.setFields(options.embed.fields);
                 }
-                _msg.reply({ embeds: [_embed] });
+                await _msg.reply({ embeds: [_embed] });
             }
             ;
             if (parseInt(_msg.content) > number) {
@@ -535,7 +539,7 @@ const GuessTheNumber = async (options) => {
                 if (options.embed.fields) {
                     _embed.setFields(options.embed.fields);
                 }
-                _msg.reply({ embeds: [_embed] });
+                await _msg.reply({ embeds: [_embed] });
             }
             ;
         });
@@ -554,7 +558,7 @@ const GuessTheNumber = async (options) => {
                 gameCollector.stop();
                 collector.stop();
                 embed.setTimestamp(options.embed.timestamp ? new Date() : null);
-                msg.edit({
+                await msg.edit({
                     embeds: [embed],
                     components: [{ type: 1, components: [btn1] }]
                 });
@@ -584,7 +588,7 @@ const GuessTheNumber = async (options) => {
                 if (options.embed.fields) {
                     _embed.setFields(options.embed.fields);
                 }
-                msg.edit({ embeds: [_embed] });
+                await msg.edit({ embeds: [_embed] });
             }
         });
         collector.on('end', async (_collected, reason) => {
@@ -621,7 +625,9 @@ const GuessTheNumber = async (options) => {
                     embeds: [embed],
                     components: [{ type: 1, components: [btn1] }]
                 });
-                return interaction.reply({ embeds: [_embed] });
+                if (!interaction.channel)
+                    return;
+                return interaction.channel.send({ embeds: [_embed] });
             }
             data.delete(id);
         });
