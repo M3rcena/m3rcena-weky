@@ -95,7 +95,12 @@ const NeverHaveIEver = async (options: NeverHaveIEverTypes) => {
         embeds: [embed]
     });
 
-    let { statement } = await fetch("https://api.boozee.app/v2/statements/next?language=en&category=harmless").then((res) => res.json());
+    interface ApiResponse {
+        statement: string;
+    }
+
+    let { statement } = await fetch("https://api.boozee.app/v2/statements/next?language=en&category=harmless")
+        .then((res) => res.json() as Promise<ApiResponse>);
 
     statement = statement.trim();
 
