@@ -6,6 +6,7 @@ import LieSwatter from "../src/LieSwatter";
 import WouldYouRather from "../src/WouldYouRather";
 import GuessTheNumber from "../src/GuessTheNumber";
 import QuickClick from "../src/QuickClick";
+import NeverHaveIEver from "../src/NeverHaveIEver";
 
 export interface ExtendedClient extends Client {
     commands: Collection<string, any>;
@@ -128,6 +129,21 @@ client.on("messageCreate", async (message) => {
                 },
                 timestamp: new Date(),
             }
+        })
+    };
+
+    if (message.content === '!nhie') {
+        NeverHaveIEver({
+            interaction: message,
+            client: client,
+            embed: {
+                color: "Blurple",
+                title: "Never Have I Ever | M3rcena Development",
+                footer: {
+                    text: '©️ M3rcena Development'
+                },
+                timestamp: new Date(),
+            },
         })
     };
 });

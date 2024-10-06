@@ -6,4 +6,5 @@ import WouldYouRather from "./src/WouldYouRather.js";
 import GuessTheNumber from "./src/GuessTheNumber.js";
 import WillYouPressTheButton from "./src/WillYouPressTheButton.js";
 import QuickClick from "./src/QuickClick.js";
-export { Calculator, ChaosWords, FastType, LieSwatter, WouldYouRather, GuessTheNumber, WillYouPressTheButton, QuickClick };
+import NeverHaveIEver from "./src/NeverHaveIEver.js";
+export { Calculator, ChaosWords, FastType, LieSwatter, WouldYouRather, GuessTheNumber, WillYouPressTheButton, QuickClick, NeverHaveIEver };

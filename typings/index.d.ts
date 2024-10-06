@@ -265,6 +265,38 @@ interface QuickClickTypes {
     notifyUpdate?: boolean,
 }
 
+interface NeverHaveIEverTypes {
+    interaction: Message | ChatInputCommandInteraction,
+    client: Client,
+    embed: {
+        color: ColorResolvable,
+        title: string,
+        url?: string,
+        author?: {
+            name: string,
+            icon_url?: string,
+            url?: string
+        },
+        description?: string,
+        fields?: Fields[],
+        image?: string,
+        timestamp?: Date,
+        footer?: {
+            text: string,
+            icon_url?: string
+        },
+        thumbnail?: string
+    },
+    thinkMessage?: string,
+    othersMessage?: string,
+    buttons?: {
+        optionA?: string,
+        optionB?: string
+    },
+    notifyUpdate?: boolean,
+    time?: number,
+}
+
 interface Fields {
     name: string,
     value: string,
