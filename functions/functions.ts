@@ -1,10 +1,10 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js"
-import wordList from "../data/words.json" assert { type: "json" };
+import wordList from "../data/words.json" with { type: "json" };
 import chalk from "chalk";
 import stringWidth from 'string-width';
 import { exec } from 'child_process';
 
-import weky_package from "../package.json" assert { type: "json" };
+import weky_package from "../package.json" with { type: "json" };
 import { promisify } from "util";
 import { ofetch } from "ofetch";
 
