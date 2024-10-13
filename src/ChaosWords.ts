@@ -1,4 +1,4 @@
-import { ButtonBuilder, ButtonInteraction, ButtonStyle, ChatInputCommandInteraction, Client, ComponentType, EmbedBuilder, Message } from "discord.js";
+import { ButtonBuilder, ButtonInteraction, ButtonStyle, ChatInputCommandInteraction, ComponentType, DMChannel, EmbedBuilder, Message, NewsChannel, PartialGroupDMChannel, PrivateThreadChannel, PublicThreadChannel, StageChannel, TextChannel, VoiceChannel } from "discord.js";
 import type { Chaos, Fields } from "../typings"
 import chalk from "chalk";
 import { checkPackageUpdates, convertTime, getRandomSentence, getRandomString } from "../functions/functions.js";
@@ -22,8 +22,6 @@ const ChaosWords = async (options: Chaos) => {
     if (!interaction.channel) throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No channel found on Interaction.");
 
     if (!interaction.channel.isSendable()) throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " Channel is not sendable.");
-
-    let client: Client = options.client;
 
     let id: string = "";
     if ((options.interaction as Message).author) {
@@ -66,8 +64,6 @@ const ChaosWords = async (options: Chaos) => {
     words.forEach((e) => {
         array.splice(Math.floor(Math.random() * array.length), 0, e)
     });
-
-    const arr = array.join('');
 
     let fields: Fields[] = [];
     if (!options.embed.fields) {
@@ -175,7 +171,7 @@ const ChaosWords = async (options: Chaos) => {
         })
     } else {
         if (!interaction.channel || !interaction.channel.isTextBased()) return;
-        game = interaction.channel.createMessageCollector({
+        game = (interaction.channel as VoiceChannel | TextChannel | NewsChannel | DMChannel | StageChannel | PublicThreadChannel | PrivateThreadChannel).createMessageCollector({
             filter,
             time: options.time ? options.time : 60000
         });
