@@ -1965,12 +1965,12 @@ var wordList = [
 ];
 
 var name = "@m3rcena/weky";
-var version = "8.9.1";
+var version = "8.9.2";
 var description = "A fun npm package to play games within Discord with buttons!";
 var main = "./dist/index.js";
 var type = "module";
 var scripts = {
-	test: "npx tsx --tsconfig ./tsconfig.json ./test/test.ts",
+	test: "npx tsx --tsconfig ./tsconfig.json ./test/index.ts",
 	"test-cjs": "nodemon test/index.cjs",
 	build: "npx rollup --config rollup.config.ts --configPlugin @rollup/plugin-typescript"
 };
@@ -2507,9 +2507,16 @@ const Calculator = async (options) => {
                     });
                     _embed.setFooter(footer);
                 }
-                msg.edit({
-                    embeds: [_embed],
-                });
+                if (msg.editable) {
+                    await msg.edit({
+                        embeds: [_embed],
+                    });
+                }
+                else {
+                    await msgInteraction.reply({
+                        content: `An error occured while trying to edit the calculator.`
+                    });
+                }
             }
             async function lock(disabled) {
                 let _embed = new discord_js.EmbedBuilder()
@@ -2536,11 +2543,19 @@ const Calculator = async (options) => {
                     });
                     _embed.setFooter(footer);
                 }
-                msg.edit({
-                    embeds: [_embed],
-                    components: [],
-                });
-                msg2.delete();
+                if (msg.editable) {
+                    await msg.edit({
+                        embeds: [_embed],
+                        components: [],
+                    });
+                }
+                else {
+                    await msgInteraction.reply({
+                        content: `An error occured while trying to lock the calculator.`
+                    });
+                }
+                if (msg2.deletable)
+                    msg2.delete();
             }
             async function enableButtons() {
                 disabled = false;
@@ -2555,9 +2570,16 @@ const Calculator = async (options) => {
                         for (const btn of customButton) {
                             customRow.push(addRow(btn));
                         }
-                        await msg.edit({
-                            components: customRow
-                        });
+                        if (msg.editable) {
+                            await msg.edit({
+                                components: customRow
+                            });
+                        }
+                        else {
+                            await msgInteraction.reply({
+                                content: `An error occured while trying to enable the buttons.`
+                            });
+                        }
                     }
                 }
                 cur = 0;
@@ -2570,7 +2592,7 @@ const Calculator = async (options) => {
                     if (z === text2.length - 1) {
                         for (const btns of customButtons)
                             customRow2.push(addRow(btns));
-                        msg2.edit({
+                        await msg2.edit({
                             components: customRow2
                         });
                     }
@@ -2589,9 +2611,16 @@ const Calculator = async (options) => {
                         for (const btn of customButton) {
                             customRow.push(addRow(btn));
                         }
-                        await msg.edit({
-                            components: customRow
-                        });
+                        if (msg.editable) {
+                            await msg.edit({
+                                components: customRow
+                            });
+                        }
+                        else {
+                            await msgInteraction.reply({
+                                content: `An error occured while trying to disable the buttons.`
+                            });
+                        }
                     }
                 }
                 cur = 0;
@@ -2604,7 +2633,7 @@ const Calculator = async (options) => {
                     if (z === text2.length - 1) {
                         for (const btns of customButtons)
                             customRow2.push(addRow(btns));
-                        msg2.edit({
+                        await msg2.edit({
                             components: customRow2
                         });
                     }
@@ -3024,7 +3053,7 @@ const Calculator = async (options) => {
                 if (disabled === true && lastInput !== null && lastInput !== undefined) {
                     enableButtons();
                 }
-                else if (disabled === false && lastInput === null || lastInput === undefined) {
+                else if ((disabled === false && lastInput === null || lastInput === undefined) && interact.customId !== "calDC") {
                     disableButtons();
                 }
                 else if (disabled === false && lastInput !== null || lastInput !== undefined) {
@@ -3074,9 +3103,16 @@ const Calculator = async (options) => {
                     });
                     _embed.setFooter(footer);
                 }
-                await msg.edit({
-                    embeds: [_embed],
-                });
+                if (msg.editable) {
+                    await msg.edit({
+                        embeds: [_embed],
+                    });
+                }
+                else {
+                    await cmdInteraction.editReply({
+                        content: `An error occured while trying to edit the calculator.`
+                    });
+                }
             }
             async function lock(disabled) {
                 let _embed = new discord_js.EmbedBuilder()
@@ -3103,11 +3139,19 @@ const Calculator = async (options) => {
                     });
                     _embed.setFooter(footer);
                 }
-                await msg.edit({
-                    embeds: [_embed],
-                    components: [],
-                });
-                await msg2.delete();
+                if (msg.editable) {
+                    await msg.edit({
+                        embeds: [_embed],
+                        components: [],
+                    });
+                }
+                else {
+                    await cmdInteraction.editReply({
+                        content: `An error occured while trying to lock the calculator.`
+                    });
+                }
+                if (msg2.deletable)
+                    msg2.delete();
             }
             async function enableButtons() {
                 disabled = false;
@@ -3122,9 +3166,16 @@ const Calculator = async (options) => {
                         for (const btn of customButton) {
                             customRow.push(addRow(btn));
                         }
-                        await msg.edit({
-                            components: customRow
-                        });
+                        if (msg.editable) {
+                            await msg.edit({
+                                components: customRow
+                            });
+                        }
+                        else {
+                            await cmdInteraction.editReply({
+                                content: `An error occured while trying to enable the buttons.`
+                            });
+                        }
                     }
                 }
                 cur = 0;
@@ -3156,9 +3207,16 @@ const Calculator = async (options) => {
                         for (const btn of customButton) {
                             customRow.push(addRow(btn));
                         }
-                        await msg.edit({
-                            components: customRow
-                        });
+                        if (msg.editable) {
+                            await msg.edit({
+                                components: customRow
+                            });
+                        }
+                        else {
+                            await cmdInteraction.editReply({
+                                content: `An error occured while trying to disable the buttons.`
+                            });
+                        }
                     }
                 }
                 cur = 0;
@@ -3591,7 +3649,7 @@ const Calculator = async (options) => {
                 if (disabled === true && lastInput !== null && lastInput !== undefined) {
                     enableButtons();
                 }
-                else if (disabled === false && lastInput === null || lastInput === undefined) {
+                else if ((disabled === false && lastInput === null || lastInput === undefined) && interact.customId !== "calDC") {
                     disableButtons();
                 }
                 else if (disabled === false && lastInput !== null || lastInput !== undefined) {
@@ -6143,7 +6201,8 @@ const NeverHaveIEver = async (options) => {
         id = options.interaction.user.id;
     }
     let embed = new discord_js.EmbedBuilder()
-        .setTitle(options.thinkMessage ? options.thinkMessage : "I am thinking...");
+        .setTitle(options.thinkMessage ? options.thinkMessage : "I am thinking...")
+        .setColor(options.embed.color);
     if (options.embed.author) {
         embed.setAuthor({
             name: options.embed.author.name,

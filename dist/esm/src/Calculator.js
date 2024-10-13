@@ -144,9 +144,17 @@ const Calculator = async (options) => {
                     _embed.setFooter(footer);
                 }
                 ;
-                msg.edit({
-                    embeds: [_embed],
-                });
+                if (msg.editable) {
+                    await msg.edit({
+                        embeds: [_embed],
+                    });
+                }
+                else {
+                    await msgInteraction.reply({
+                        content: `An error occured while trying to edit the calculator.`
+                    });
+                }
+                ;
             }
             ;
             async function lock(disabled) {
@@ -176,11 +184,19 @@ const Calculator = async (options) => {
                     _embed.setFooter(footer);
                 }
                 ;
-                msg.edit({
-                    embeds: [_embed],
-                    components: [],
-                });
-                msg2.delete();
+                if (msg.editable) {
+                    await msg.edit({
+                        embeds: [_embed],
+                        components: [],
+                    });
+                }
+                else {
+                    await msgInteraction.reply({
+                        content: `An error occured while trying to lock the calculator.`
+                    });
+                }
+                if (msg2.deletable)
+                    msg2.delete();
             }
             ;
             async function enableButtons() {
@@ -197,9 +213,16 @@ const Calculator = async (options) => {
                             customRow.push(addRow(btn));
                         }
                         ;
-                        await msg.edit({
-                            components: customRow
-                        });
+                        if (msg.editable) {
+                            await msg.edit({
+                                components: customRow
+                            });
+                        }
+                        else {
+                            await msgInteraction.reply({
+                                content: `An error occured while trying to enable the buttons.`
+                            });
+                        }
                     }
                 }
                 ;
@@ -213,7 +236,7 @@ const Calculator = async (options) => {
                     if (z === text2.length - 1) {
                         for (const btns of customButtons)
                             customRow2.push(addRow(btns));
-                        msg2.edit({
+                        await msg2.edit({
                             components: customRow2
                         });
                     }
@@ -235,9 +258,17 @@ const Calculator = async (options) => {
                             customRow.push(addRow(btn));
                         }
                         ;
-                        await msg.edit({
-                            components: customRow
-                        });
+                        if (msg.editable) {
+                            await msg.edit({
+                                components: customRow
+                            });
+                        }
+                        else {
+                            await msgInteraction.reply({
+                                content: `An error occured while trying to disable the buttons.`
+                            });
+                        }
+                        ;
                     }
                 }
                 ;
@@ -251,7 +282,7 @@ const Calculator = async (options) => {
                     if (z === text2.length - 1) {
                         for (const btns of customButtons)
                             customRow2.push(addRow(btns));
-                        msg2.edit({
+                        await msg2.edit({
                             components: customRow2
                         });
                     }
@@ -673,7 +704,7 @@ const Calculator = async (options) => {
                 if (disabled === true && lastInput !== null && lastInput !== undefined) {
                     enableButtons();
                 }
-                else if (disabled === false && lastInput === null || lastInput === undefined) {
+                else if ((disabled === false && lastInput === null || lastInput === undefined) && interact.customId !== "calDC") {
                     disableButtons();
                 }
                 else if (disabled === false && lastInput !== null || lastInput !== undefined) {
@@ -726,9 +757,16 @@ const Calculator = async (options) => {
                     _embed.setFooter(footer);
                 }
                 ;
-                await msg.edit({
-                    embeds: [_embed],
-                });
+                if (msg.editable) {
+                    await msg.edit({
+                        embeds: [_embed],
+                    });
+                }
+                else {
+                    await cmdInteraction.editReply({
+                        content: `An error occured while trying to edit the calculator.`
+                    });
+                }
             }
             ;
             async function lock(disabled) {
@@ -758,11 +796,19 @@ const Calculator = async (options) => {
                     _embed.setFooter(footer);
                 }
                 ;
-                await msg.edit({
-                    embeds: [_embed],
-                    components: [],
-                });
-                await msg2.delete();
+                if (msg.editable) {
+                    await msg.edit({
+                        embeds: [_embed],
+                        components: [],
+                    });
+                }
+                else {
+                    await cmdInteraction.editReply({
+                        content: `An error occured while trying to lock the calculator.`
+                    });
+                }
+                if (msg2.deletable)
+                    msg2.delete();
             }
             ;
             async function enableButtons() {
@@ -779,9 +825,17 @@ const Calculator = async (options) => {
                             customRow.push(addRow(btn));
                         }
                         ;
-                        await msg.edit({
-                            components: customRow
-                        });
+                        if (msg.editable) {
+                            await msg.edit({
+                                components: customRow
+                            });
+                        }
+                        else {
+                            await cmdInteraction.editReply({
+                                content: `An error occured while trying to enable the buttons.`
+                            });
+                        }
+                        ;
                     }
                 }
                 ;
@@ -817,9 +871,17 @@ const Calculator = async (options) => {
                             customRow.push(addRow(btn));
                         }
                         ;
-                        await msg.edit({
-                            components: customRow
-                        });
+                        if (msg.editable) {
+                            await msg.edit({
+                                components: customRow
+                            });
+                        }
+                        else {
+                            await cmdInteraction.editReply({
+                                content: `An error occured while trying to disable the buttons.`
+                            });
+                        }
+                        ;
                     }
                 }
                 ;
@@ -1255,7 +1317,7 @@ const Calculator = async (options) => {
                 if (disabled === true && lastInput !== null && lastInput !== undefined) {
                     enableButtons();
                 }
-                else if (disabled === false && lastInput === null || lastInput === undefined) {
+                else if ((disabled === false && lastInput === null || lastInput === undefined) && interact.customId !== "calDC") {
                     disableButtons();
                 }
                 else if (disabled === false && lastInput !== null || lastInput !== undefined) {
