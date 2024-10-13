@@ -1,11 +1,11 @@
 {
   "name": "@m3rcena/weky",
-  "version": "8.9.1",
+  "version": "8.9.2",
   "description": "A fun npm package to play games within Discord with buttons!",
   "main": "./dist/index.js",
   "type": "module",
   "scripts": {
-    "test": "npx tsx --tsconfig ./tsconfig.json ./test/test.ts",
+    "test": "npx tsx --tsconfig ./tsconfig.json ./test/index.ts",
     "test-cjs": "nodemon test/index.cjs",
     "build": "npx rollup --config rollup.config.ts --configPlugin @rollup/plugin-typescript"
   },

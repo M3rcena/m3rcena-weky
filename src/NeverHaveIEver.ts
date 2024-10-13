@@ -68,9 +68,9 @@ const NeverHaveIEver = async (options: NeverHaveIEverTypes) => {
     };
 
 
-    // Main calculator Program
     let embed = new EmbedBuilder()
-        .setTitle(options.thinkMessage ? options.thinkMessage : "I am thinking...");
+        .setTitle(options.thinkMessage ? options.thinkMessage : "I am thinking...")
+        .setColor(options.embed.color);
 
     if (options.embed.author) {
         embed.setAuthor({

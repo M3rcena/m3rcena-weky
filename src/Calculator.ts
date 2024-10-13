@@ -149,7 +149,7 @@ const Calculator = async (options: Calc) => {
                     .addFields(options.embed.fields ? options.embed.fields : [])
                     .setImage(options.embed.image ? options.embed.image : null)
                     .setTimestamp(new Date());
-    
+
                 if (options.embed.author) {
                     const author = ({
                         name: options.embed.author.name,
@@ -158,7 +158,7 @@ const Calculator = async (options: Calc) => {
                     })
                     _embed.setAuthor(author);
                 };
-    
+
                 if (options.embed.footer) {
                     const footer = ({
                         text: options.embed.footer.text,
@@ -166,12 +166,18 @@ const Calculator = async (options: Calc) => {
                     })
                     _embed.setFooter(footer);
                 };
-    
-                msg.edit({
-                    embeds: [_embed],
-                })
+
+                if (msg.editable) {
+                    await msg.edit({
+                        embeds: [_embed],
+                    })
+                } else {
+                    await msgInteraction.reply({
+                        content: `An error occured while trying to edit the calculator.`
+                    });
+                };
             };
-    
+
             async function lock(disabled: boolean) {
                 let _embed = new EmbedBuilder()
                     .setTitle(options.embed.title)
@@ -182,7 +188,7 @@ const Calculator = async (options: Calc) => {
                     .addFields(options.embed.fields ? options.embed.fields : [])
                     .setImage(options.embed.image ? options.embed.image : null)
                     .setTimestamp(new Date());
-    
+
                 if (options.embed.author) {
                     const author = ({
                         name: options.embed.author.name,
@@ -191,7 +197,7 @@ const Calculator = async (options: Calc) => {
                     })
                     _embed.setAuthor(author);
                 };
-    
+
                 if (options.embed.footer) {
                     const footer = ({
                         text: options.embed.footer.text,
@@ -199,19 +205,25 @@ const Calculator = async (options: Calc) => {
                     })
                     _embed.setFooter(footer);
                 };
-    
-                msg.edit({
-                    embeds: [_embed],
-                    components: [],
-                });
-    
-                msg2.delete();
+
+                if (msg.editable) {
+                    await msg.edit({
+                        embeds: [_embed],
+                        components: [],
+                    });
+                } else {
+                    await msgInteraction.reply({
+                        content: `An error occured while trying to lock the calculator.`
+                    });
+                }
+
+                if (msg2.deletable) msg2.delete();
             };
-    
+
             async function enableButtons() {
                 disabled = false;
                 let cur = 0;
-    
+
                 const customRow: ActionRowBuilder<ButtonBuilder>[] = [];
                 const customButton: ButtonBuilder[][] = new Array([], [], [], [], []);
                 for (let i = 0; i < text.length; i++) {
@@ -223,13 +235,19 @@ const Calculator = async (options: Calc) => {
                         for (const btn of customButton) {
                             customRow.push(addRow(btn))
                         };
-    
-                        await msg.edit({
-                            components: customRow
-                        });
+
+                        if (msg.editable) {
+                            await msg.edit({
+                                components: customRow
+                            });
+                        } else {
+                            await msgInteraction.reply({
+                                content: `An error occured while trying to enable the buttons.`
+                            });
+                        }
                     }
                 };
-    
+
                 cur = 0;
                 const customRow2: ActionRowBuilder<ButtonBuilder>[] = [];
                 const customButtons: ButtonBuilder[][] = new Array([], []);
@@ -240,19 +258,19 @@ const Calculator = async (options: Calc) => {
                     );
                     if (z === text2.length - 1) {
                         for (const btns of customButtons) customRow2.push(addRow(btns));
-    
-                        msg2.edit({
+
+                        await msg2.edit({
                             components: customRow2
                         })
                     }
                 };
             };
-    
+
             async function disableButtons() {
                 disabled = true;
-    
+
                 let cur = 0;
-    
+
                 const customRow: ActionRowBuilder<ButtonBuilder>[] = [];
                 const customButton: ButtonBuilder[][] = new Array([], [], [], [], []);
                 for (let i = 0; i < text.length; i++) {
@@ -264,13 +282,19 @@ const Calculator = async (options: Calc) => {
                         for (const btn of customButton) {
                             customRow.push(addRow(btn))
                         };
-    
-                        await msg.edit({
-                            components: customRow
-                        });
+
+                        if (msg.editable) {
+                            await msg.edit({
+                                components: customRow
+                            });
+                        } else {
+                            await msgInteraction.reply({
+                                content: `An error occured while trying to disable the buttons.`
+                            });
+                        };
                     }
                 };
-    
+
                 cur = 0;
                 const customRow2: ActionRowBuilder<ButtonBuilder>[] = [];
                 const customButtons: ButtonBuilder[][] = new Array([], []);
@@ -281,21 +305,21 @@ const Calculator = async (options: Calc) => {
                     );
                     if (z === text2.length - 1) {
                         for (const btns of customButtons) customRow2.push(addRow(btns));
-    
-                        msg2.edit({
+
+                        await msg2.edit({
                             components: customRow2
                         })
                     }
                 };
             }
-    
+
             let id = msgInteraction.author.id;
 
             const calc = channel.createMessageComponentCollector({
                 componentType: ComponentType.Button,
                 time: 300000,
             });
-    
+
             let answer = '0';
             calc.on('collect', async (interact) => {
                 if (interact.user.id !== id) {
@@ -310,7 +334,7 @@ const Calculator = async (options: Calc) => {
                         ephemeral: true
                     });
                 }
-    
+
                 if (interact.customId !== 'calLG'
                     && interact.customId !== 'calSQRT'
                     && interact.customId !== 'calRND'
@@ -356,19 +380,19 @@ const Calculator = async (options: Calc) => {
                     const modal = new ModalBuilder()
                         .setTitle('Logarithm 10 (log10)')
                         .setCustomId('mdLog')
-    
+
                     const input = new TextInputBuilder()
                         .setCustomId('numberLog')
                         .setLabel('Enter the number to log10')
                         .setStyle(TextInputStyle.Short)
                         .setRequired(true);
-    
+
                     const actionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(input);
-    
+
                     modal.addComponents(actionRow);
-    
+
                     await interact.showModal(modal);
-    
+
                     client.on('interactionCreate', async (modal) => {
                         if (!modal.isModalSubmit()) return;
                         if (modal.customId === 'mdLog') {
@@ -390,19 +414,19 @@ const Calculator = async (options: Calc) => {
                     const modal = new ModalBuilder()
                         .setTitle('Square Root')
                         .setCustomId('mdSqrt')
-    
+
                     const input = new TextInputBuilder()
                         .setCustomId('numberSqrt')
                         .setLabel('Enter the number to square root')
                         .setStyle(TextInputStyle.Short)
                         .setRequired(true);
-    
+
                     const actionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(input);
-    
+
                     modal.addComponents(actionRow);
-    
+
                     await interact.showModal(modal);
-    
+
                     client.on('interactionCreate', async (modal) => {
                         if (!modal.isModalSubmit()) return;
                         if (modal.customId === 'mdSqrt') {
@@ -424,19 +448,19 @@ const Calculator = async (options: Calc) => {
                     const modal = new ModalBuilder()
                         .setTitle('Round Number')
                         .setCustomId('mdRnd')
-    
+
                     const input = new TextInputBuilder()
                         .setCustomId('numberRnd')
                         .setLabel('Enter the number to round')
                         .setStyle(TextInputStyle.Short)
                         .setRequired(true);
-    
+
                     const actionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(input);
-    
+
                     modal.addComponents(actionRow);
-    
+
                     await interact.showModal(modal);
-    
+
                     client.on('interactionCreate', async (modal) => {
                         if (!modal.isModalSubmit()) return;
                         if (modal.customId === 'mdRnd') {
@@ -458,19 +482,19 @@ const Calculator = async (options: Calc) => {
                     const modal = new ModalBuilder()
                         .setTitle('Sine')
                         .setCustomId('mdSin')
-    
+
                     const input = new TextInputBuilder()
                         .setCustomId('numberSin')
                         .setLabel('Enter the number to find the sine')
                         .setStyle(TextInputStyle.Short)
                         .setRequired(true);
-    
+
                     const actionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(input);
-    
+
                     modal.addComponents(actionRow);
-    
+
                     await interact.showModal(modal);
-    
+
                     client.on('interactionCreate', async (modal) => {
                         if (!modal.isModalSubmit()) return;
                         if (modal.customId === 'mdSin') {
@@ -492,19 +516,19 @@ const Calculator = async (options: Calc) => {
                     const modal = new ModalBuilder()
                         .setTitle('Cosine')
                         .setCustomId('mdCos')
-    
+
                     const input = new TextInputBuilder()
                         .setCustomId('numberCos')
                         .setLabel('Enter the number to find the cosine')
                         .setStyle(TextInputStyle.Short)
                         .setRequired(true);
-    
+
                     const actionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(input);
-    
+
                     modal.addComponents(actionRow);
-    
+
                     await interact.showModal(modal);
-    
+
                     client.on('interactionCreate', async (modal) => {
                         if (!modal.isModalSubmit()) return;
                         if (modal.customId === 'mdCos') {
@@ -526,19 +550,19 @@ const Calculator = async (options: Calc) => {
                     const modal = new ModalBuilder()
                         .setTitle('Tangent')
                         .setCustomId('mdTan')
-    
+
                     const input = new TextInputBuilder()
                         .setCustomId('numberTan')
                         .setLabel('Enter the number to find the tangent')
                         .setStyle(TextInputStyle.Short)
                         .setRequired(true);
-    
+
                     const actionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(input);
-    
+
                     modal.addComponents(actionRow);
-    
+
                     await interact.showModal(modal);
-    
+
                     client.on('interactionCreate', async (modal) => {
                         if (!modal.isModalSubmit()) return;
                         if (modal.customId === 'mdTan') {
@@ -560,19 +584,19 @@ const Calculator = async (options: Calc) => {
                     const modal = new ModalBuilder()
                         .setTitle('Natural Logarithm (log)')
                         .setCustomId('mdLn')
-    
+
                     const input = new TextInputBuilder()
                         .setCustomId('numberLn')
                         .setLabel('Enter the number for natural logarithm')
                         .setStyle(TextInputStyle.Short)
                         .setRequired(true);
-    
+
                     const actionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(input);
-    
+
                     modal.addComponents(actionRow);
-    
+
                     await interact.showModal(modal);
-    
+
                     client.on('interactionCreate', async (modal) => {
                         if (!modal.isModalSubmit()) return;
                         if (modal.customId === 'mdLn') {
@@ -594,19 +618,19 @@ const Calculator = async (options: Calc) => {
                     const modal = new ModalBuilder()
                         .setTitle('Reciprocal')
                         .setCustomId('mdReciprocal')
-    
+
                     const input = new TextInputBuilder()
                         .setCustomId('numberReciprocal')
                         .setLabel('Enter the number to find the reciprocal')
                         .setStyle(TextInputStyle.Short)
                         .setRequired(true);
-    
+
                     const actionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(input);
-    
+
                     modal.addComponents(actionRow);
-    
+
                     await interact.showModal(modal);
-    
+
                     client.on('interactionCreate', async (modal) => {
                         if (!modal.isModalSubmit()) return;
                         if (modal.customId === 'mdReciprocal') {
@@ -628,19 +652,19 @@ const Calculator = async (options: Calc) => {
                     const modal = new ModalBuilder()
                         .setTitle('Factorial')
                         .setCustomId('mdFactorial')
-    
+
                     const input = new TextInputBuilder()
                         .setCustomId('numberFactorial')
                         .setLabel('Enter the number to find the factorial')
                         .setStyle(TextInputStyle.Short)
                         .setRequired(true);
-    
+
                     const actionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(input);
-    
+
                     modal.addComponents(actionRow);
-    
+
                     await interact.showModal(modal);
-    
+
                     client.on('interactionCreate', async (modal) => {
                         if (!modal.isModalSubmit()) return;
                         if (modal.customId === 'mdFactorial') {
@@ -706,16 +730,16 @@ const Calculator = async (options: Calc) => {
                     stringify = '```\n' + str + '\n```';
                     edit();
                 };
-    
+
                 if (disabled === true && lastInput !== null && lastInput !== undefined) {
                     enableButtons();
-                } else if (disabled === false && lastInput === null || lastInput === undefined) {
+                } else if ((disabled === false && lastInput === null || lastInput === undefined) && interact.customId !== "calDC") {
                     disableButtons();
                 } else if (disabled === false && lastInput !== null || lastInput !== undefined) {
                     return;
                 };
             });
-    
+
             calc.on('end', async () => {
                 str = 'Calculator has been stopped';
                 stringify = '```\n' + str + '\n```';
@@ -743,7 +767,7 @@ const Calculator = async (options: Calc) => {
                     .addFields(options.embed.fields ? options.embed.fields : [])
                     .setImage(options.embed.image ? options.embed.image : null)
                     .setTimestamp(new Date());
-    
+
                 if (options.embed.author) {
                     const author = ({
                         name: options.embed.author.name,
@@ -752,7 +776,7 @@ const Calculator = async (options: Calc) => {
                     })
                     _embed.setAuthor(author);
                 };
-    
+
                 if (options.embed.footer) {
                     const footer = ({
                         text: options.embed.footer.text,
@@ -760,12 +784,18 @@ const Calculator = async (options: Calc) => {
                     })
                     _embed.setFooter(footer);
                 };
-    
-                await msg.edit({
-                    embeds: [_embed],
-                })
+
+                if (msg.editable) {
+                    await msg.edit({
+                        embeds: [_embed],
+                    })
+                } else {
+                    await cmdInteraction.editReply({
+                        content: `An error occured while trying to edit the calculator.`
+                    });
+                }
             };
-    
+
             async function lock(disabled: boolean) {
                 let _embed = new EmbedBuilder()
                     .setTitle(options.embed.title)
@@ -776,7 +806,7 @@ const Calculator = async (options: Calc) => {
                     .addFields(options.embed.fields ? options.embed.fields : [])
                     .setImage(options.embed.image ? options.embed.image : null)
                     .setTimestamp(new Date());
-    
+
                 if (options.embed.author) {
                     const author = ({
                         name: options.embed.author.name,
@@ -785,7 +815,7 @@ const Calculator = async (options: Calc) => {
                     })
                     _embed.setAuthor(author);
                 };
-    
+
                 if (options.embed.footer) {
                     const footer = ({
                         text: options.embed.footer.text,
@@ -793,19 +823,25 @@ const Calculator = async (options: Calc) => {
                     })
                     _embed.setFooter(footer);
                 };
-    
-                await msg.edit({
-                    embeds: [_embed],
-                    components: [],
-                });
-    
-                await msg2.delete();
+
+                if (msg.editable) {
+                    await msg.edit({
+                        embeds: [_embed],
+                        components: [],
+                    });
+                } else {
+                    await cmdInteraction.editReply({
+                        content: `An error occured while trying to lock the calculator.`
+                    })
+                }
+
+                if (msg2.deletable) msg2.delete();
             };
-    
+
             async function enableButtons() {
                 disabled = false;
                 let cur = 0;
-    
+
                 const customRow: ActionRowBuilder<ButtonBuilder>[] = [];
                 const customButton: ButtonBuilder[][] = new Array([], [], [], [], []);
                 for (let i = 0; i < text.length; i++) {
@@ -817,13 +853,19 @@ const Calculator = async (options: Calc) => {
                         for (const btn of customButton) {
                             customRow.push(addRow(btn))
                         };
-    
-                        await msg.edit({
-                            components: customRow
-                        });
+
+                        if (msg.editable) {
+                            await msg.edit({
+                                components: customRow
+                            });
+                        } else {
+                            await cmdInteraction.editReply({
+                                content: `An error occured while trying to enable the buttons.`
+                            });
+                        };
                     }
                 };
-    
+
                 cur = 0;
                 const customRow2: ActionRowBuilder<ButtonBuilder>[] = [];
                 const customButtons: ButtonBuilder[][] = new Array([], []);
@@ -834,19 +876,19 @@ const Calculator = async (options: Calc) => {
                     );
                     if (z === text2.length - 1) {
                         for (const btns of customButtons) customRow2.push(addRow(btns));
-    
+
                         await msg2.edit({
                             components: customRow2
                         })
                     }
                 };
             };
-    
+
             async function disableButtons() {
                 disabled = true;
-    
+
                 let cur = 0;
-    
+
                 const customRow: ActionRowBuilder<ButtonBuilder>[] = [];
                 const customButton: ButtonBuilder[][] = new Array([], [], [], [], []);
                 for (let i = 0; i < text.length; i++) {
@@ -858,13 +900,19 @@ const Calculator = async (options: Calc) => {
                         for (const btn of customButton) {
                             customRow.push(addRow(btn))
                         };
-    
-                        await msg.edit({
-                            components: customRow
-                        });
+
+                        if (msg.editable) {
+                            await msg.edit({
+                                components: customRow
+                            });
+                        } else {
+                            await cmdInteraction.editReply({
+                                content: `An error occured while trying to disable the buttons.`
+                            });
+                        };
                     }
                 };
-    
+
                 cur = 0;
                 const customRow2: ActionRowBuilder<ButtonBuilder>[] = [];
                 const customButtons: ButtonBuilder[][] = new Array([], []);
@@ -875,7 +923,7 @@ const Calculator = async (options: Calc) => {
                     );
                     if (z === text2.length - 1) {
                         for (const btns of customButtons) customRow2.push(addRow(btns));
-    
+
                         await msg2.edit({
                             components: customRow2
                         })
@@ -888,7 +936,7 @@ const Calculator = async (options: Calc) => {
                 componentType: ComponentType.Button,
                 time: 300000,
             });
-    
+
             let answer = '0';
             calc.on('collect', async (interact) => {
                 if (interact.user.id !== id) {
@@ -903,7 +951,7 @@ const Calculator = async (options: Calc) => {
                         ephemeral: true
                     });
                 }
-    
+
                 if (interact.customId !== 'calLG'
                     && interact.customId !== 'calSQRT'
                     && interact.customId !== 'calRND'
@@ -949,19 +997,19 @@ const Calculator = async (options: Calc) => {
                     const modal = new ModalBuilder()
                         .setTitle('Logarithm 10 (log10)')
                         .setCustomId('mdLog')
-    
+
                     const input = new TextInputBuilder()
                         .setCustomId('numberLog')
                         .setLabel('Enter the number to log10')
                         .setStyle(TextInputStyle.Short)
                         .setRequired(true);
-    
+
                     const actionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(input);
-    
+
                     modal.addComponents(actionRow);
-    
+
                     await interact.showModal(modal);
-    
+
                     client.on('interactionCreate', async (modal) => {
                         if (!modal.isModalSubmit()) return;
                         if (modal.customId === 'mdLog') {
@@ -983,19 +1031,19 @@ const Calculator = async (options: Calc) => {
                     const modal = new ModalBuilder()
                         .setTitle('Square Root')
                         .setCustomId('mdSqrt')
-    
+
                     const input = new TextInputBuilder()
                         .setCustomId('numberSqrt')
                         .setLabel('Enter the number to square root')
                         .setStyle(TextInputStyle.Short)
                         .setRequired(true);
-    
+
                     const actionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(input);
-    
+
                     modal.addComponents(actionRow);
-    
+
                     await interact.showModal(modal);
-    
+
                     client.on('interactionCreate', async (modal) => {
                         if (!modal.isModalSubmit()) return;
                         if (modal.customId === 'mdSqrt') {
@@ -1017,19 +1065,19 @@ const Calculator = async (options: Calc) => {
                     const modal = new ModalBuilder()
                         .setTitle('Round Number')
                         .setCustomId('mdRnd')
-    
+
                     const input = new TextInputBuilder()
                         .setCustomId('numberRnd')
                         .setLabel('Enter the number to round')
                         .setStyle(TextInputStyle.Short)
                         .setRequired(true);
-    
+
                     const actionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(input);
-    
+
                     modal.addComponents(actionRow);
-    
+
                     await interact.showModal(modal);
-    
+
                     client.on('interactionCreate', async (modal) => {
                         if (!modal.isModalSubmit()) return;
                         if (modal.customId === 'mdRnd') {
@@ -1051,19 +1099,19 @@ const Calculator = async (options: Calc) => {
                     const modal = new ModalBuilder()
                         .setTitle('Sine')
                         .setCustomId('mdSin')
-    
+
                     const input = new TextInputBuilder()
                         .setCustomId('numberSin')
                         .setLabel('Enter the number to find the sine')
                         .setStyle(TextInputStyle.Short)
                         .setRequired(true);
-    
+
                     const actionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(input);
-    
+
                     modal.addComponents(actionRow);
-    
+
                     await interact.showModal(modal);
-    
+
                     client.on('interactionCreate', async (modal) => {
                         if (!modal.isModalSubmit()) return;
                         if (modal.customId === 'mdSin') {
@@ -1085,19 +1133,19 @@ const Calculator = async (options: Calc) => {
                     const modal = new ModalBuilder()
                         .setTitle('Cosine')
                         .setCustomId('mdCos')
-    
+
                     const input = new TextInputBuilder()
                         .setCustomId('numberCos')
                         .setLabel('Enter the number to find the cosine')
                         .setStyle(TextInputStyle.Short)
                         .setRequired(true);
-    
+
                     const actionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(input);
-    
+
                     modal.addComponents(actionRow);
-    
+
                     await interact.showModal(modal);
-    
+
                     client.on('interactionCreate', async (modal) => {
                         if (!modal.isModalSubmit()) return;
                         if (modal.customId === 'mdCos') {
@@ -1119,19 +1167,19 @@ const Calculator = async (options: Calc) => {
                     const modal = new ModalBuilder()
                         .setTitle('Tangent')
                         .setCustomId('mdTan')
-    
+
                     const input = new TextInputBuilder()
                         .setCustomId('numberTan')
                         .setLabel('Enter the number to find the tangent')
                         .setStyle(TextInputStyle.Short)
                         .setRequired(true);
-    
+
                     const actionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(input);
-    
+
                     modal.addComponents(actionRow);
-    
+
                     await interact.showModal(modal);
-    
+
                     client.on('interactionCreate', async (modal) => {
                         if (!modal.isModalSubmit()) return;
                         if (modal.customId === 'mdTan') {
@@ -1153,19 +1201,19 @@ const Calculator = async (options: Calc) => {
                     const modal = new ModalBuilder()
                         .setTitle('Natural Logarithm (log)')
                         .setCustomId('mdLn')
-    
+
                     const input = new TextInputBuilder()
                         .setCustomId('numberLn')
                         .setLabel('Enter the number for natural logarithm')
                         .setStyle(TextInputStyle.Short)
                         .setRequired(true);
-    
+
                     const actionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(input);
-    
+
                     modal.addComponents(actionRow);
-    
+
                     await interact.showModal(modal);
-    
+
                     client.on('interactionCreate', async (modal) => {
                         if (!modal.isModalSubmit()) return;
                         if (modal.customId === 'mdLn') {
@@ -1187,19 +1235,19 @@ const Calculator = async (options: Calc) => {
                     const modal = new ModalBuilder()
                         .setTitle('Reciprocal')
                         .setCustomId('mdReciprocal')
-    
+
                     const input = new TextInputBuilder()
                         .setCustomId('numberReciprocal')
                         .setLabel('Enter the number to find the reciprocal')
                         .setStyle(TextInputStyle.Short)
                         .setRequired(true);
-    
+
                     const actionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(input);
-    
+
                     modal.addComponents(actionRow);
-    
+
                     await interact.showModal(modal);
-    
+
                     client.on('interactionCreate', async (modal) => {
                         if (!modal.isModalSubmit()) return;
                         if (modal.customId === 'mdReciprocal') {
@@ -1221,19 +1269,19 @@ const Calculator = async (options: Calc) => {
                     const modal = new ModalBuilder()
                         .setTitle('Factorial')
                         .setCustomId('mdFactorial')
-    
+
                     const input = new TextInputBuilder()
                         .setCustomId('numberFactorial')
                         .setLabel('Enter the number to find the factorial')
                         .setStyle(TextInputStyle.Short)
                         .setRequired(true);
-    
+
                     const actionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(input);
-    
+
                     modal.addComponents(actionRow);
-    
+
                     await interact.showModal(modal);
-    
+
                     client.on('interactionCreate', async (modal) => {
                         if (!modal.isModalSubmit()) return;
                         if (modal.customId === 'mdFactorial') {
@@ -1299,16 +1347,16 @@ const Calculator = async (options: Calc) => {
                     stringify = '```\n' + str + '\n```';
                     edit();
                 };
-    
+
                 if (disabled === true && lastInput !== null && lastInput !== undefined) {
                     enableButtons();
-                } else if (disabled === false && lastInput === null || lastInput === undefined) {
+                } else if ((disabled === false && lastInput === null || lastInput === undefined) && interact.customId !== "calDC") {
                     disableButtons();
                 } else if (disabled === false && lastInput !== null || lastInput !== undefined) {
                     return;
                 };
             });
-    
+
             calc.on('end', async () => {
                 str = 'Calculator has been stopped';
                 stringify = '```\n' + str + '\n```';
@@ -1317,7 +1365,7 @@ const Calculator = async (options: Calc) => {
             });
         });
     }
-    
+
 
     checkPackageUpdates("Calculator", options.notifyUpdate);
 };
