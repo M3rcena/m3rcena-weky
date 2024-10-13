@@ -18,7 +18,6 @@ const ChaosWords = async (options) => {
         throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No channel found on Interaction.");
     if (!interaction.channel.isSendable())
         throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " Channel is not sendable.");
-    let client = options.client;
     let id = "";
     if (options.interaction.author) {
         id = options.interaction.author.id;
@@ -53,7 +52,6 @@ const ChaosWords = async (options) => {
     words.forEach((e) => {
         array.splice(Math.floor(Math.random() * array.length), 0, e);
     });
-    const arr = array.join('');
     let fields = [];
     if (!options.embed.fields) {
         fields = [

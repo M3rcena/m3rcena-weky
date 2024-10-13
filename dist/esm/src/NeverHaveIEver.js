@@ -86,7 +86,8 @@ const NeverHaveIEver = async (options) => {
     const think = await interaction.reply({
         embeds: [embed]
     });
-    let { statement } = await fetch("https://api.boozee.app/v2/statements/next?language=en&category=harmless").then((res) => res.json());
+    let { statement } = await fetch("https://api.boozee.app/v2/statements/next?language=en&category=harmless")
+        .then((res) => res.json());
     statement = statement.trim();
     let btn = new ButtonBuilder()
         .setStyle(ButtonStyle.Primary)

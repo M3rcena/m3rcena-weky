@@ -1965,7 +1965,7 @@ var wordList = [
 ];
 
 var name = "@m3rcena/weky";
-var version = "8.9.0";
+var version = "8.9.1";
 var description = "A fun npm package to play games within Discord with buttons!";
 var main = "./dist/index.js";
 var type = "module";
@@ -3625,7 +3625,6 @@ const ChaosWords = async (options) => {
         throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " No channel found on Interaction.");
     if (!interaction.channel.isSendable())
         throw new Error(chalk.red("[@m3rcena/weky] ChaosWords Error:") + " Channel is not sendable.");
-    options.client;
     let id = "";
     if (options.interaction.author) {
         id = options.interaction.author.id;
@@ -6164,7 +6163,8 @@ const NeverHaveIEver = async (options) => {
     const think = await interaction.reply({
         embeds: [embed]
     });
-    let { statement } = await fetch("https://api.boozee.app/v2/statements/next?language=en&category=harmless").then((res) => res.json());
+    let { statement } = await fetch("https://api.boozee.app/v2/statements/next?language=en&category=harmless")
+        .then((res) => res.json());
     statement = statement.trim();
     let btn = new discord_js.ButtonBuilder()
         .setStyle(discord_js.ButtonStyle.Primary)
