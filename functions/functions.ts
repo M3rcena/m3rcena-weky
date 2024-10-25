@@ -8,8 +8,8 @@ import weky_package from "../package.json" with { type: "json" };
 import { promisify } from "util";
 import { ofetch } from "ofetch";
 
-import { createCanvas } from "canvas";
-import type { CanvasRenderingContext2D } from "canvas";
+import { createCanvas } from "@napi-rs/canvas";
+import type { SKRSContext2D } from "@napi-rs/canvas";
 
 export const getRandomString = function (length: number) {
 	const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -308,11 +308,11 @@ export const createHangman = async function (state = 0): Promise<BufferResolvabl
 		createLine(ctx, 200, 200, 180, 230, state < 5 ? "#a3a3a3" : "#000000");
 		createLine(ctx, 200, 200, 220, 230, state < 6 ? "#a3a3a3" : "#000000");
 
-		res(canvas.toBuffer());
+		res(canvas.toBuffer("image/png"));
 	});
 };
 
-function createLine(ctx: CanvasRenderingContext2D, fromX: number, fromY: number, toX: number, toY: number, color = "#000000") {
+function createLine(ctx: SKRSContext2D, fromX: number, fromY: number, toX: number, toY: number, color = "#000000") {
 	ctx.beginPath();
 
 	ctx.strokeStyle = color;
