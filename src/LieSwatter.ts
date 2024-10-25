@@ -34,7 +34,6 @@ const LieSwatter = async (options: LieSwatterTypes) => {
     if (!interaction.channel || !interaction.channel.isSendable()) throw new Error(chalk.red("[@m3rcena/weky] LieSwatter Error:") + " No channel found.");
 
     let client: Client = options.client;
-    // Check if the embed object is provided
 
     let id: string = "";
     if ((options.interaction as Message).author) {

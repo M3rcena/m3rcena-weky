@@ -6,10 +6,11 @@ var stringWidth = require('string-width');
 var child_process = require('child_process');
 var util = require('util');
 var ofetch = require('ofetch');
+var canvas = require('canvas');
 var mathjs = require('mathjs');
 var htmlEntities = require('html-entities');
 
-var wordList = [
+var words = [
 	"ability",
 	"able",
 	"aboard",
@@ -1965,12 +1966,12 @@ var wordList = [
 ];
 
 var name = "@m3rcena/weky";
-var version = "8.9.2";
+var version = "9.0.0";
 var description = "A fun npm package to play games within Discord with buttons!";
 var main = "./dist/index.js";
 var type = "module";
 var scripts = {
-	test: "npx tsx --tsconfig ./tsconfig.json ./test/index.ts",
+	test: "npx tsx --tsconfig ./tsconfig.json ./test/test.ts",
 	"test-cjs": "nodemon test/index.cjs",
 	build: "npx rollup --config rollup.config.ts --configPlugin @rollup/plugin-typescript"
 };
@@ -1999,6 +2000,7 @@ var contributors = [
 ];
 var dependencies = {
 	axios: "^1.7.2",
+	canvas: "^2.11.2",
 	chalk: "^4.1.2",
 	cheerio: "^1.0.0-rc.12",
 	"discord.js": "^14.16.2",
@@ -2152,9 +2154,9 @@ const addRow = function (btns) {
 };
 const getRandomSentence = function (length) {
     const word = [];
-    const words = wordList;
+    const words$1 = words;
     for (let i = 0; i < length; i++) {
-        word.push(words[Math.floor(Math.random() * words.length)]);
+        word.push(words$1[Math.floor(Math.random() * words$1.length)]);
     }
     return word;
 };
@@ -2265,6 +2267,36 @@ const shuffleArray = function (array) {
     }
     return array;
 };
+const createHangman = async function (state = 0) {
+    return new Promise((res) => {
+        const canvas$1 = canvas.createCanvas(300, 350);
+        const ctx = canvas$1.getContext('2d');
+        ctx.lineWidth = 5;
+        createLine(ctx, 50, 330, 150, 330);
+        createLine(ctx, 100, 330, 100, 50);
+        createLine(ctx, 100, 50, 200, 50);
+        createLine(ctx, 200, 50, 200, 80);
+        ctx.strokeStyle = state < 1 ? "#a3a3a3" : "#000000";
+        ctx.beginPath();
+        ctx.arc(200, 100, 20, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.closePath();
+        createLine(ctx, 200, 120, 200, 200, state < 2 ? "#a3a3a3" : "#000000");
+        createLine(ctx, 200, 150, 170, 130, state < 3 ? "#a3a3a3" : "#000000");
+        createLine(ctx, 200, 150, 230, 130, state < 4 ? "#a3a3a3" : "#000000");
+        createLine(ctx, 200, 200, 180, 230, state < 5 ? "#a3a3a3" : "#000000");
+        createLine(ctx, 200, 200, 220, 230, state < 6 ? "#a3a3a3" : "#000000");
+        res(canvas$1.toBuffer());
+    });
+};
+function createLine(ctx, fromX, fromY, toX, toY, color = "#000000") {
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.moveTo(fromX, fromY);
+    ctx.lineTo(toX, toY);
+    ctx.stroke();
+    ctx.closePath();
+}
 
 function OptionsChecking(options, GameName) {
     const URLPattern = new RegExp("^https:\\/\\/([a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,}(:[0-9]+)?(\\/.*)?$");
@@ -6340,10 +6372,142 @@ const NeverHaveIEver = async (options) => {
     checkPackageUpdates("NeverHaveIEver", options.notifyUpdate);
 };
 
+const Hangman = async (options) => {
+    OptionsChecking(options, "Hangman");
+    let interaction;
+    if (options.interaction.author) {
+        interaction = options.interaction;
+    }
+    else {
+        interaction = options.interaction;
+    }
+    if (!interaction)
+        throw new Error(chalk.red("[@m3rcena/weky] Hangman Error:") + " No interaction provided.");
+    if (!interaction.channel || !interaction.channel.isSendable())
+        throw new Error(chalk.red("[@m3rcena/weky] Hangman Error:") + " No channel found.");
+    options.client;
+    let id = "";
+    if (options.interaction.author) {
+        id = options.interaction.author.id;
+    }
+    else {
+        id = options.interaction.user.id;
+    }
+    let wrongs = 0;
+    let at = new discord_js.AttachmentBuilder(await createHangman(wrongs), {
+        name: "game.png"
+    });
+    let word = words[Math.floor(Math.random() * words.length)];
+    let used = [];
+    let embed = new discord_js.EmbedBuilder()
+        .setTitle(options.embed.title ? options.embed.title : "Hangman Game")
+        .setDescription(options.embed.description ? options.embed.description.replace(`{{word}}`, `\`\`\`${word.split("").map(v => used.includes(v) ? v.toUpperCase() : "_").join(" ")}`) :
+        `Type a character to guess the word\n\n\`\`\`${word.split("").map(v => used.includes(v) ? v.toUpperCase() : "_").join(" ")}\`\`\``)
+        .setColor(options.embed.color ? options.embed.color : "Blue")
+        .setImage("attachment://game.png")
+        .setTimestamp(options.embed.timestamp ? Date.now() : null);
+    if (options.embed.author) {
+        embed.setAuthor({
+            name: options.embed.author.name,
+            iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
+            url: options.embed.author.url ? options.embed.author.url : undefined
+        });
+    }
+    if (options.embed.footer) {
+        embed.setFooter({
+            text: options.embed.footer.text,
+            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
+        });
+    }
+    if (options.embed.fields) {
+        embed.setFields(options.embed.fields);
+    }
+    const msg = await interaction.channel.send({
+        files: [at],
+        embeds: [embed]
+    });
+    const channel = await interaction.channel;
+    const col = channel.createMessageCollector({
+        filter: (m) => m.author.id === id,
+        time: options.time ? options.time : 180000
+    });
+    col.on('collect', async (msg2) => {
+        const char = msg2.content[0]?.toLowerCase();
+        if (!/[a-z]/i.test(char))
+            return msg2.reply("You have to **provide** a **letter**, **not** a **number/symbol**!").then(m => setTimeout(() => {
+                if (m.deletable)
+                    m.delete();
+            }, 5000));
+        if (used.includes(char))
+            return msg2.reply("You have **already** used this **letter**!").then(m => setTimeout(() => {
+                if (m.deletable)
+                    m.delete();
+            }, 5000));
+        used.push(char);
+        if (!word.includes(char)) {
+            wrongs++;
+        }
+        let done = word.split("").every(v => used.includes(v));
+        let description = wrongs === 6 || done ? `You ${done ? "won" : "lost"} the game, The word was **${word}**` : `Type a character to guess the word\n\n\`\`\`${word.split("").map(v => used.includes(v) ? v.toUpperCase() : "_").join(" ")}\`\`\``;
+        at = new discord_js.AttachmentBuilder(await createHangman(wrongs), {
+            name: "game.png"
+        });
+        embed = new discord_js.EmbedBuilder()
+            .setTitle(options.embed.title ? options.embed.title : "Hangman Game")
+            .setDescription(description)
+            .setColor(options.embed.color ? options.embed.color : wrongs === 6 ? "#ff0000" : done ? "Green" : "Blue")
+            .setImage("attachment://game.png")
+            .setTimestamp(options.embed.timestamp ? Date.now() : null);
+        if (options.embed.author) {
+            embed.setAuthor({
+                name: options.embed.author.name,
+                iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
+                url: options.embed.author.url ? options.embed.author.url : undefined
+            });
+        }
+        if (options.embed.footer) {
+            embed.setFooter({
+                text: options.embed.footer.text,
+                iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
+            });
+        }
+        if (options.embed.fields) {
+            embed.setFields(options.embed.fields);
+        }
+        if (msg.editable) {
+            await msg.edit({
+                files: [at],
+                embeds: [embed]
+            });
+        }
+        if (wrongs === 6 || done) {
+            col.stop();
+        }
+    });
+    col.on('end', async (s, r) => {
+        if (r === "time") {
+            let embed = new discord_js.EmbedBuilder()
+                .setTitle("⛔ Game Ended")
+                .setDescription(`\`\`\`You took too much time to respond\`\`\``)
+                .setColor("Red")
+                .setTimestamp();
+            if (msg.editable) {
+                await msg.edit({
+                    attachments: [],
+                    files: [],
+                    embeds: [embed]
+                });
+            }
+        }
+    });
+    checkPackageUpdates("Hangman", options.notifyUpdate);
+};
+
 exports.Calculator = Calculator;
 exports.ChaosWords = ChaosWords;
 exports.FastType = FastType;
 exports.GuessTheNumber = GuessTheNumber;
+exports.Hangman = Hangman;
 exports.LieSwatter = LieSwatter;
 exports.NeverHaveIEver = NeverHaveIEver;
 exports.QuickClick = QuickClick;

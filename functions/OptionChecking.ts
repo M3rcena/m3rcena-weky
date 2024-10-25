@@ -1,8 +1,8 @@
 import chalk from "chalk";
-import { Calc, Chaos, FastTypeTyping, GuessTheNumberTypes, LieSwatterTypes, WillYouPressTheButtonTypes, WouldYouRatherTypes } from "../typings";
+import { Calc, Chaos, FastTypeTyping, GuessTheNumberTypes, LieSwatterTypes, WillYouPressTheButtonTypes, WouldYouRatherTypes, HangmanTypes, NeverHaveIEverTypes, QuickClickTypes } from "../typings";
 import { Client } from "discord.js";
 
-export function OptionsChecking(options: Calc | Chaos | FastTypeTyping | GuessTheNumberTypes | LieSwatterTypes | WouldYouRatherTypes | WillYouPressTheButtonTypes, GameName: string) {
+export function OptionsChecking(options: Calc | Chaos | FastTypeTyping | GuessTheNumberTypes | LieSwatterTypes | WouldYouRatherTypes | WillYouPressTheButtonTypes | HangmanTypes | NeverHaveIEverTypes | QuickClickTypes, GameName: string) {
     const URLPattern = new RegExp("^https:\\/\\/([a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,}(:[0-9]+)?(\\/.*)?$");
     if (!options) throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " No options provided.");
 

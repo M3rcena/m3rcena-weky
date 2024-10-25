@@ -297,6 +297,32 @@ interface NeverHaveIEverTypes {
     time?: number,
 }
 
+interface HangmanTypes {
+    interaction: Message | ChatInputCommandInteraction,
+    client: Client,
+    embed: {
+        color: ColorResolvable,
+        title: string,
+        url?: string,
+        author?: {
+            name: string,
+            icon_url?: string,
+            url?: string
+        },
+        description?: string,
+        fields?: Fields[],
+        image?: string,
+        timestamp?: Date,
+        footer?: {
+            text: string,
+            icon_url?: string
+        },
+        thumbnail?: string
+    },
+    notifyUpdate?: boolean,
+    time?: number,
+}
+
 interface Fields {
     name: string,
     value: string,
