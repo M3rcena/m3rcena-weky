@@ -1966,7 +1966,7 @@ var words = [
 ];
 
 var name = "@m3rcena/weky";
-var version = "9.0.0";
+var version = "9.0.1";
 var description = "A fun npm package to play games within Discord with buttons!";
 var main = "./dist/index.js";
 var type = "module";
@@ -6422,9 +6422,10 @@ const Hangman = async (options) => {
     if (options.embed.fields) {
         embed.setFields(options.embed.fields);
     }
-    const msg = await interaction.channel.send({
+    const msg = await interaction.reply({
         files: [at],
-        embeds: [embed]
+        embeds: [embed],
+        fetchReply: true
     });
     const channel = await interaction.channel;
     const col = channel.createMessageCollector({

@@ -58,9 +58,10 @@ const Hangman = async (options) => {
         embed.setFields(options.embed.fields);
     }
     ;
-    const msg = await interaction.channel.send({
+    const msg = await interaction.reply({
         files: [at],
-        embeds: [embed]
+        embeds: [embed],
+        fetchReply: true
     });
     const channel = await interaction.channel;
     const col = channel.createMessageCollector({
