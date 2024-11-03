@@ -2,13 +2,337 @@
 
 var chalk = require('chalk');
 var discord_js = require('discord.js');
-var stringWidth = require('string-width');
-var child_process = require('child_process');
-var util = require('util');
-var ofetch = require('ofetch');
-var canvas = require('canvas');
 var mathjs = require('mathjs');
+var child_process = require('child_process');
+var ofetch = require('ofetch');
+var stringWidth = require('string-width');
+var util = require('util');
+var canvas = require('@napi-rs/canvas');
 var htmlEntities = require('html-entities');
+
+function OptionsChecking(options, GameName) {
+    const URLPattern = new RegExp("^https:\\/\\/([a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,}(:[0-9]+)?(\\/.*)?$");
+    if (!options)
+        throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " No options provided.");
+    if (typeof options !== "object")
+        throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} TypeError:`) + " Options must be an object.");
+    if (!options.interaction)
+        throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " No interaction provided.");
+    if (typeof options.interaction !== "object") {
+        throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} TypeError:`) + " Interaction must be an object.");
+    }
+    if (!options.client)
+        throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " No client provided.");
+    if (!options.client instanceof discord_js.Client) {
+        throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} TypeError:`) + " Client must be a Discord Client.");
+    }
+    if (!options.embed)
+        throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " No embed options provided.");
+    if (typeof options.embed !== "object") {
+        throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed options must be an object.");
+    }
+    if (!options.embed.color)
+        throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " No embed color provided.");
+    if (!options.embed.title)
+        throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " No embed title provided.");
+    if (options.embed.title) {
+        if (typeof options.embed.title !== "string")
+            throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed title must be a string.");
+        if (options.embed.title.length > 256)
+            throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed title length must be less than 256 characters.");
+    }
+    if (options.embed.url) {
+        if (typeof options.embed.url !== "string")
+            throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed URL must be a string.");
+        if (!URLPattern.test(options.embed.url))
+            throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed URL must be a valid URL.");
+    }
+    if (options.embed.author) {
+        if (typeof options.embed.author !== "object") {
+            throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed author must be an object.");
+        }
+        if (!options.embed.author.name)
+            throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " No embed author name provided.");
+        if (options.embed.author.icon_url) {
+            if (typeof options.embed.author.icon_url !== "string")
+                throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed author icon URL must be a string.");
+            else if (!URLPattern.test(options.embed.author.icon_url))
+                throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Invalid embed author icon URL.");
+        }
+        if (options.embed.author.url) {
+            if (typeof options.embed.author.url !== "string")
+                throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed author URL must be a string.");
+            else if (!URLPattern.test(options.embed.author.url))
+                throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed author URL must be a valid URL.");
+        }
+    }
+    if (options.embed.description) {
+        if (typeof options.embed.description !== "string") {
+            throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed description must be a string.");
+        }
+        else if (options.embed.description.length > 4096) {
+            throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed description length must less than 4096 characters.");
+        }
+    }
+    if (options.embed.fields) {
+        if (!Array.isArray(options.embed.fields)) {
+            throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed fields must be an array.");
+        }
+        for (const field of options.embed.fields) {
+            if (typeof field !== "object") {
+                throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed field must be an object.");
+            }
+            if (!field.name)
+                throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " No embed field name provided.");
+            if (field.name) {
+                if (typeof field.name !== "string")
+                    throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Field name must be a string.");
+                if (field.name.length > 256)
+                    throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Field name must be 256 characters fewer in length.");
+            }
+            if (!field.value)
+                throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " No embed field value provided.");
+            if (field.value) {
+                if (typeof field.value !== "string")
+                    throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Field value must be a string.");
+                if (field.value.length > 256)
+                    throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Field value must be 1024 characters fewer in length.");
+            }
+            if (field.inline && typeof field.inline !== "boolean") {
+                throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed field inline must be a boolean.");
+            }
+        }
+    }
+    if (options.embed.image) {
+        if (typeof options.embed.image !== "string")
+            throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed image must be a string.");
+        else if (!URLPattern.test(options.embed.image))
+            throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed image must be a valid URL.");
+    }
+    if (options.embed.timestamp && !(options.embed.timestamp instanceof Date)) {
+        throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed timestamp must be a date.");
+    }
+}
+
+const mini2048 = async (options) => {
+    OptionsChecking(options, "2048");
+    let interaction = options.interaction;
+    if (!interaction)
+        throw new Error(chalk.red("[@m3rcena/weky] 2048 Error:") + " No interaction provided.");
+    options.client;
+    if (!interaction.channel)
+        throw new Error(chalk.red("[@m3rcena/weky] 2048 Error:") + " No channel found on Interaction.");
+    if (!interaction.channel.isSendable())
+        throw new Error(chalk.red("[@m3rcena/weky] 2048 Error:") + " Channel is not sendable.");
+    if (!interaction.guild)
+        throw new Error(chalk.red("[@m3rcena/weky] 2048 Error:") + " No guild found on Interaction.");
+    let id = "";
+    if (options.interaction.author) {
+        id = options.interaction.author.id;
+    }
+    else {
+        id = options.interaction.user.id;
+    }
+    const msg = await interaction.reply({ content: "Starting the game...", fetchReply: true, allowedMentions: { repliedUser: false } });
+    const gameData = await fetch(`https://weky.miv4.com/api/2048/new`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            id: id,
+            guild: interaction.guild.id,
+            channel: interaction.channel.id,
+            message: msg.id,
+        })
+    }).then(res => res.json());
+    if (gameData.error && gameData.error !== "Id already exists") {
+        if (msg.editable) {
+            const embed = new discord_js.EmbedBuilder()
+                .setTitle("Failed to start the game.")
+                .setDescription(`\`\`\`${gameData.error}\`\`\``)
+                .setColor("Red")
+                .setTimestamp(new Date());
+            return await msg.edit({ content: ``, embeds: [embed] });
+        }
+    }
+    else if (gameData.error && gameData.error === "Id already exists") {
+        const embed = new discord_js.EmbedBuilder()
+            .setTitle("Failed to start the game.")
+            .setDescription(`You already have a game running!`)
+            .setColor("Red")
+            .setTimestamp(new Date());
+        new discord_js.ButtonBuilder()
+            .setStyle(discord_js.ButtonStyle.Danger)
+            .setLabel("Quit Game")
+            .setCustomId("quit")
+            .setEmoji("🛑");
+        const msg = await interaction.reply({ content: ``, embeds: [embed], ephemeral: true });
+        const collector = msg.createMessageComponentCollector({
+            time: 60000,
+            componentType: discord_js.ComponentType.Button
+        });
+        collector.on("collect", async (btn) => {
+            if (btn.user.id !== id) {
+                return btn.reply({ content: "This is not your game!", ephemeral: true });
+            }
+            if (btn.customId === "quit") {
+                collector.stop("quit");
+            }
+        });
+        collector.on("end", async (_, reason) => {
+            if (reason === "quit") {
+                const del = await fetch(`https://weky.miv4.com/api/2048/${id}/quit`, {
+                    method: "GET"
+                }).then(res => res.json());
+                if (del.error) {
+                    throw new Error(chalk.red("[@m3rcena/weky] 2048 Error:") + ` Failed to delete the game data: ${del.error}`);
+                }
+                const embed = new discord_js.EmbedBuilder()
+                    .setTitle("Game Stopped!")
+                    .setDescription(`You have stopped the game.`)
+                    .setColor("Red")
+                    .setTimestamp(new Date());
+                return await msg.edit({ content: ``, embeds: [embed], components: [] }).catch(() => { });
+            }
+            return msg.delete().catch(() => { });
+        });
+    }
+    const img = new discord_js.AttachmentBuilder(Buffer.from(gameData.grid), {
+        name: "2048.png"
+    });
+    let embed = new discord_js.EmbedBuilder()
+        .setTitle(options.embed.title || "2048 Game")
+        .setDescription(options.embed.description?.replace(`{{score}}`, `${gameData.data.score}`).replace(`{{id}}`, `${gameData.data.id}`) || `ID: \`${gameData.data.id}\`\nScore: \`${gameData.data.score}\``)
+        .setImage(`attachment://2048.png`)
+        .setColor(options.embed.color || "Blurple")
+        .setTimestamp(options.embed.timestamp ? new Date() : null)
+        .setFooter({
+        text: "©️ M3rcena Development | Powered by Mivator",
+        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+    });
+    if (options.embed.author) {
+        embed.setAuthor({
+            name: options.embed.author.name,
+            iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
+            url: options.embed.author.url ? options.embed.author.url : undefined
+        });
+    }
+    if (options.embed.fields) {
+        embed.setFields(options.embed.fields);
+    }
+    const up = new discord_js.ButtonBuilder()
+        .setStyle(discord_js.ButtonStyle.Secondary)
+        .setLabel(options.emojis ? options.emojis.up || "⬆️" : "⬆️")
+        .setCustomId("up");
+    const down = new discord_js.ButtonBuilder()
+        .setStyle(discord_js.ButtonStyle.Secondary)
+        .setLabel(options.emojis ? options.emojis.down || "⬇️" : "⬇️")
+        .setCustomId("down");
+    const left = new discord_js.ButtonBuilder()
+        .setStyle(discord_js.ButtonStyle.Secondary)
+        .setLabel(options.emojis ? options.emojis.left || "⬅️" : "⬅️")
+        .setCustomId("left");
+    const right = new discord_js.ButtonBuilder()
+        .setStyle(discord_js.ButtonStyle.Secondary)
+        .setLabel(options.emojis ? options.emojis.right || "➡️" : "➡️")
+        .setCustomId("right");
+    const stop = new discord_js.ButtonBuilder()
+        .setStyle(discord_js.ButtonStyle.Danger)
+        .setLabel("Quit Game")
+        .setCustomId("quit")
+        .setEmoji("🛑");
+    const row = new discord_js.ActionRowBuilder().addComponents(left, up, down, right);
+    const row2 = new discord_js.ActionRowBuilder().addComponents(stop);
+    if (!msg.editable)
+        return;
+    await msg.edit({
+        content: `React with the buttons to play the game!`,
+        embeds: [embed],
+        components: [row, row2],
+        files: [img]
+    });
+    const collector = msg.createMessageComponentCollector({
+        time: options.time || 600_000,
+        componentType: discord_js.ComponentType.Button
+    });
+    collector.on("collect", async (btn) => {
+        if (btn.user.id !== id) {
+            return btn.reply({ content: "This is not your game!", ephemeral: true });
+        }
+        if (btn.customId === "quit") {
+            return collector.stop("quit");
+        }
+        const data = await fetch(`https://weky.miv4.com/api/2048/${btn.user.id}/${btn.customId}`, {
+            method: "GET"
+        }).then(res => res.json());
+        if (data.error) {
+            const embed = new discord_js.EmbedBuilder()
+                .setTitle("Failed to make a move.")
+                .setDescription(`\`\`\`${data.error}\`\`\``)
+                .setColor("Red")
+                .setTimestamp(new Date());
+            return await btn.reply({ content: ``, embeds: [embed] });
+        }
+        if (data.gameover) {
+            return collector.stop("gameover");
+        }
+        const img = new discord_js.AttachmentBuilder(Buffer.from(data.data.grid), {
+            name: "2048.png"
+        });
+        const embed = new discord_js.EmbedBuilder()
+            .setTitle(options.embed.title || "2048 Game")
+            .setDescription(options.embed.description?.replace(`{{score}}`, `${data.data.score}`).replace(`{{id}}`, `${data.data.id}`) || `ID: \`${data.data.id}\`\nScore: \`${data.data.score}\``)
+            .setImage(`attachment://2048.png`)
+            .setColor(options.embed.color || "Blurple")
+            .setTimestamp(options.embed.timestamp ? new Date() : null)
+            .setFooter({
+            text: "©️ M3rcena Development | Powered by Mivator",
+            iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+        });
+        if (options.embed.author) {
+            embed.setAuthor({
+                name: options.embed.author.name,
+                iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
+                url: options.embed.author.url ? options.embed.author.url : undefined
+            });
+        }
+        if (options.embed.fields) {
+            embed.setFields(options.embed.fields);
+        }
+        await btn.update({
+            content: ``,
+            embeds: [embed],
+            components: [row, row2],
+            files: [img]
+        });
+    });
+    collector.on("end", async (_, reason) => {
+        const data = await fetch(`https://weky.miv4.com/api/2048/${id}/get`, {
+            method: "GET"
+        }).then(res => res.json());
+        const img = new discord_js.AttachmentBuilder(Buffer.from(data.grid), {
+            name: "2048.png"
+        });
+        const score = data.data.score;
+        embed.setTitle("Game Over!")
+            .setDescription(`You scored \`${score}\` points!`)
+            .setImage(`attachment://2048.png`)
+            .setColor("Red");
+        await msg.edit({
+            content: ``,
+            embeds: [embed],
+            components: [],
+            files: [img]
+        });
+        const del = await fetch(`https://weky.miv4.com/api/2048/${id}/quit`, {
+            method: "GET"
+        }).then(res => res.json());
+        if (del.error) {
+            throw new Error(chalk.red("[@m3rcena/weky] 2048 Error:") + ` Failed to delete the game data: ${del.error}`);
+        }
+    });
+};
 
 var words = [
 	"ability",
@@ -1966,7 +2290,7 @@ var words = [
 ];
 
 var name = "@m3rcena/weky";
-var version = "9.0.1";
+var version = "9.1.0";
 var description = "A fun npm package to play games within Discord with buttons!";
 var main = "./dist/index.js";
 var type = "module";
@@ -1999,8 +2323,8 @@ var contributors = [
 	}
 ];
 var dependencies = {
+	"@napi-rs/canvas": "^0.1.58",
 	axios: "^1.7.2",
-	canvas: "^2.11.2",
 	chalk: "^4.1.2",
 	cheerio: "^1.0.0-rc.12",
 	"discord.js": "^14.16.2",
@@ -2286,7 +2610,7 @@ const createHangman = async function (state = 0) {
         createLine(ctx, 200, 150, 230, 130, state < 4 ? "#a3a3a3" : "#000000");
         createLine(ctx, 200, 200, 180, 230, state < 5 ? "#a3a3a3" : "#000000");
         createLine(ctx, 200, 200, 220, 230, state < 6 ? "#a3a3a3" : "#000000");
-        res(canvas$1.toBuffer());
+        res(canvas$1.toBuffer("image/png"));
     });
 };
 function createLine(ctx, fromX, fromY, toX, toY, color = "#000000") {
@@ -2296,110 +2620,6 @@ function createLine(ctx, fromX, fromY, toX, toY, color = "#000000") {
     ctx.lineTo(toX, toY);
     ctx.stroke();
     ctx.closePath();
-}
-
-function OptionsChecking(options, GameName) {
-    const URLPattern = new RegExp("^https:\\/\\/([a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,}(:[0-9]+)?(\\/.*)?$");
-    if (!options)
-        throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " No options provided.");
-    if (typeof options !== "object")
-        throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} TypeError:`) + " Options must be an object.");
-    if (!options.interaction)
-        throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " No interaction provided.");
-    if (typeof options.interaction !== "object") {
-        throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} TypeError:`) + " Interaction must be an object.");
-    }
-    if (!options.client)
-        throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " No client provided.");
-    if (!options.client instanceof discord_js.Client) {
-        throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} TypeError:`) + " Client must be a Discord Client.");
-    }
-    if (!options.embed)
-        throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " No embed options provided.");
-    if (typeof options.embed !== "object") {
-        throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed options must be an object.");
-    }
-    if (!options.embed.color)
-        throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " No embed color provided.");
-    if (!options.embed.title)
-        throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " No embed title provided.");
-    if (options.embed.title) {
-        if (typeof options.embed.title !== "string")
-            throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed title must be a string.");
-        if (options.embed.title.length > 256)
-            throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed title length must be less than 256 characters.");
-    }
-    if (options.embed.url) {
-        if (typeof options.embed.url !== "string")
-            throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed URL must be a string.");
-        if (!URLPattern.test(options.embed.url))
-            throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed URL must be a valid URL.");
-    }
-    if (options.embed.author) {
-        if (typeof options.embed.author !== "object") {
-            throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed author must be an object.");
-        }
-        if (!options.embed.author.name)
-            throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " No embed author name provided.");
-        if (options.embed.author.icon_url) {
-            if (typeof options.embed.author.icon_url !== "string")
-                throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed author icon URL must be a string.");
-            else if (!URLPattern.test(options.embed.author.icon_url))
-                throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Invalid embed author icon URL.");
-        }
-        if (options.embed.author.url) {
-            if (typeof options.embed.author.url !== "string")
-                throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed author URL must be a string.");
-            else if (!URLPattern.test(options.embed.author.url))
-                throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed author URL must be a valid URL.");
-        }
-    }
-    if (options.embed.description) {
-        if (typeof options.embed.description !== "string") {
-            throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed description must be a string.");
-        }
-        else if (options.embed.description.length > 4096) {
-            throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed description length must less than 4096 characters.");
-        }
-    }
-    if (options.embed.fields) {
-        if (!Array.isArray(options.embed.fields)) {
-            throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed fields must be an array.");
-        }
-        for (const field of options.embed.fields) {
-            if (typeof field !== "object") {
-                throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed field must be an object.");
-            }
-            if (!field.name)
-                throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " No embed field name provided.");
-            if (field.name) {
-                if (typeof field.name !== "string")
-                    throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Field name must be a string.");
-                if (field.name.length > 256)
-                    throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Field name must be 256 characters fewer in length.");
-            }
-            if (!field.value)
-                throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " No embed field value provided.");
-            if (field.value) {
-                if (typeof field.value !== "string")
-                    throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Field value must be a string.");
-                if (field.value.length > 256)
-                    throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Field value must be 1024 characters fewer in length.");
-            }
-            if (field.inline && typeof field.inline !== "boolean") {
-                throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed field inline must be a boolean.");
-            }
-        }
-    }
-    if (options.embed.image) {
-        if (typeof options.embed.image !== "string")
-            throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed image must be a string.");
-        else if (!URLPattern.test(options.embed.image))
-            throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed image must be a valid URL.");
-    }
-    if (options.embed.timestamp && !(options.embed.timestamp instanceof Date)) {
-        throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed timestamp must be a date.");
-    }
 }
 
 const Calculator = async (options) => {
@@ -2475,7 +2695,6 @@ const Calculator = async (options) => {
                 row2.push(addRow(btns));
         }
     }
-    const iconURL = options.embed.footer ? options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined : undefined;
     let embed = new discord_js.EmbedBuilder()
         .setTitle(options.embed.title)
         .setDescription(stringify)
@@ -2484,7 +2703,11 @@ const Calculator = async (options) => {
         .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
         .addFields(options.embed.fields ? options.embed.fields : [])
         .setImage(options.embed.image ? options.embed.image : null)
-        .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null);
+        .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
+        .setFooter({
+        text: "©️ M3rcena Development | Powered by Mivator",
+        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+    });
     if (options.embed.author) {
         const author = ({
             name: options.embed.author.name,
@@ -2492,13 +2715,6 @@ const Calculator = async (options) => {
             url: options.embed.author.url ? options.embed.author.url : undefined
         });
         embed.setAuthor(author);
-    }
-    if (options.embed.footer) {
-        const footer = ({
-            text: options.embed.footer.text,
-            iconURL: iconURL ? iconURL : undefined
-        });
-        embed.setFooter(footer);
     }
     if (!interaction.channel || !interaction.channel.isTextBased() || !interaction.channel.isSendable()) {
         throw new Error(chalk.red("[@m3rcena/weky] Calculator Error:") + " Interaction must be a text-based channel.");
@@ -2523,7 +2739,11 @@ const Calculator = async (options) => {
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
                     .addFields(options.embed.fields ? options.embed.fields : [])
                     .setImage(options.embed.image ? options.embed.image : null)
-                    .setTimestamp(new Date());
+                    .setTimestamp(new Date())
+                    .setFooter({
+                    text: "©️ M3rcena Development | Powered by Mivator",
+                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+                });
                 if (options.embed.author) {
                     const author = ({
                         name: options.embed.author.name,
@@ -2531,13 +2751,6 @@ const Calculator = async (options) => {
                         url: options.embed.author.url ? options.embed.author.url : undefined
                     });
                     _embed.setAuthor(author);
-                }
-                if (options.embed.footer) {
-                    const footer = ({
-                        text: options.embed.footer.text,
-                        iconURL: iconURL ? iconURL : undefined
-                    });
-                    _embed.setFooter(footer);
                 }
                 if (msg.editable) {
                     await msg.edit({
@@ -2559,7 +2772,11 @@ const Calculator = async (options) => {
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
                     .addFields(options.embed.fields ? options.embed.fields : [])
                     .setImage(options.embed.image ? options.embed.image : null)
-                    .setTimestamp(new Date());
+                    .setTimestamp(new Date())
+                    .setFooter({
+                    text: "©️ M3rcena Development | Powered by Mivator",
+                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+                });
                 if (options.embed.author) {
                     const author = ({
                         name: options.embed.author.name,
@@ -2567,13 +2784,6 @@ const Calculator = async (options) => {
                         url: options.embed.author.url ? options.embed.author.url : undefined
                     });
                     _embed.setAuthor(author);
-                }
-                if (options.embed.footer) {
-                    const footer = ({
-                        text: options.embed.footer.text,
-                        iconURL: iconURL ? iconURL : undefined
-                    });
-                    _embed.setFooter(footer);
                 }
                 if (msg.editable) {
                     await msg.edit({
@@ -3119,7 +3329,11 @@ const Calculator = async (options) => {
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
                     .addFields(options.embed.fields ? options.embed.fields : [])
                     .setImage(options.embed.image ? options.embed.image : null)
-                    .setTimestamp(new Date());
+                    .setTimestamp(new Date())
+                    .setFooter({
+                    text: "©️ M3rcena Development | Powered by Mivator",
+                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+                });
                 if (options.embed.author) {
                     const author = ({
                         name: options.embed.author.name,
@@ -3127,13 +3341,6 @@ const Calculator = async (options) => {
                         url: options.embed.author.url ? options.embed.author.url : undefined
                     });
                     _embed.setAuthor(author);
-                }
-                if (options.embed.footer) {
-                    const footer = ({
-                        text: options.embed.footer.text,
-                        iconURL: iconURL ? iconURL : undefined
-                    });
-                    _embed.setFooter(footer);
                 }
                 if (msg.editable) {
                     await msg.edit({
@@ -3155,7 +3362,11 @@ const Calculator = async (options) => {
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
                     .addFields(options.embed.fields ? options.embed.fields : [])
                     .setImage(options.embed.image ? options.embed.image : null)
-                    .setTimestamp(new Date());
+                    .setTimestamp(new Date())
+                    .setFooter({
+                    text: "©️ M3rcena Development | Powered by Mivator",
+                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+                });
                 if (options.embed.author) {
                     const author = ({
                         name: options.embed.author.name,
@@ -3163,13 +3374,6 @@ const Calculator = async (options) => {
                         url: options.embed.author.url ? options.embed.author.url : undefined
                     });
                     _embed.setAuthor(author);
-                }
-                if (options.embed.footer) {
-                    const footer = ({
-                        text: options.embed.footer.text,
-                        iconURL: iconURL ? iconURL : undefined
-                    });
-                    _embed.setFooter(footer);
                 }
                 if (msg.editable) {
                     await msg.edit({
@@ -3777,18 +3981,16 @@ const ChaosWords = async (options) => {
         .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
         .setURL(options.embed.url ? options.embed.url : null)
         .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-        .setImage(options.embed.image ? options.embed.image : null);
+        .setImage(options.embed.image ? options.embed.image : null)
+        .setFooter({
+        text: "©️ M3rcena Development | Powered by Mivator",
+        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+    });
     if (options.embed.author) {
         embed.setAuthor({
             name: options.embed.author.name,
             iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
             url: options.embed.author.url ? options.embed.author.url : undefined
-        });
-    }
-    if (options.embed.footer) {
-        embed.setFooter({
-            text: options.embed.footer.text,
-            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
         });
     }
     if (options.embed.fields) {
@@ -3869,18 +4071,16 @@ const ChaosWords = async (options) => {
                 .setTimestamp(options.embed.timestamp ? new Date() : null)
                 .setURL(options.embed.url ? options.embed.url : null)
                 .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                .setImage(options.embed.image ? options.embed.image : null);
+                .setImage(options.embed.image ? options.embed.image : null)
+                .setFooter({
+                text: "©️ M3rcena Development | Powered by Mivator",
+                iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+            });
             if (options.embed.author) {
                 _embed.setAuthor({
                     name: options.embed.author.name,
                     iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
                     url: options.embed.author.url ? options.embed.author.url : undefined
-                });
-            }
-            if (options.embed.footer) {
-                _embed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
                 });
             }
             if (options.embed.fields) {
@@ -3947,18 +4147,16 @@ const ChaosWords = async (options) => {
                     .setTimestamp(options.embed.timestamp ? new Date() : null)
                     .setURL(options.embed.url ? options.embed.url : null)
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                    .setImage(options.embed.image ? options.embed.image : null);
+                    .setImage(options.embed.image ? options.embed.image : null)
+                    .setFooter({
+                    text: "©️ M3rcena Development | Powered by Mivator",
+                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+                });
                 if (options.embed.author) {
                     __embed.setAuthor({
                         name: options.embed.author.name,
                         iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
                         url: options.embed.author.url ? options.embed.author.url : undefined
-                    });
-                }
-                if (options.embed.footer) {
-                    __embed.setFooter({
-                        text: options.embed.footer.text,
-                        iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
                     });
                 }
                 if (options.embed.fields) {
@@ -4019,13 +4217,11 @@ const ChaosWords = async (options) => {
                 : `GG, **${mes.content.toLowerCase()}** was correct! You have to find **${words.length - remaining}** more word(s).`}
                     `)
                 .setColor(options.embed.color)
-                .setTimestamp(options.embed.timestamp ? new Date() : null);
-            if (options.embed.footer) {
-                __embed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                });
-            }
+                .setTimestamp(options.embed.timestamp ? new Date() : null)
+                .setFooter({
+                text: "©️ M3rcena Development | Powered by Mivator",
+                iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+            });
             mes.reply({
                 embeds: [__embed],
             });
@@ -4040,18 +4236,16 @@ const ChaosWords = async (options) => {
                     .setTimestamp(options.embed.timestamp ? new Date() : null)
                     .setURL(options.embed.url ? options.embed.url : null)
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                    .setImage(options.embed.image ? options.embed.image : null);
+                    .setImage(options.embed.image ? options.embed.image : null)
+                    .setFooter({
+                    text: "©️ M3rcena Development | Powered by Mivator",
+                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+                });
                 if (options.embed.author) {
                     _embed.setAuthor({
                         name: options.embed.author.name,
                         iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
                         url: options.embed.author.url ? options.embed.author.url : undefined
-                    });
-                }
-                if (options.embed.footer) {
-                    _embed.setFooter({
-                        text: options.embed.footer.text,
-                        iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
                     });
                 }
                 if (options.embed.fields) {
@@ -4117,13 +4311,11 @@ const ChaosWords = async (options) => {
                 `**${mes.content.toLowerCase()}** is not the correct word. You have **${options.maxTries ? options.maxTries : 10 - tries}** tries left.`}
                     `)
                 .setColor(options.embed.color)
-                .setTimestamp(options.embed.timestamp ? new Date() : null);
-            if (options.embed.footer) {
-                _embed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                });
-            }
+                .setTimestamp(options.embed.timestamp ? new Date() : null)
+                .setFooter({
+                text: "©️ M3rcena Development | Powered by Mivator",
+                iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+            });
             mes.reply({
                 embeds: [_embed],
             });
@@ -4138,18 +4330,16 @@ const ChaosWords = async (options) => {
                 .setTimestamp(options.embed.timestamp ? new Date() : null)
                 .setURL(options.embed.url ? options.embed.url : null)
                 .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                .setImage(options.embed.image ? options.embed.image : null);
+                .setImage(options.embed.image ? options.embed.image : null)
+                .setFooter({
+                text: "©️ M3rcena Development | Powered by Mivator",
+                iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+            });
             if (options.embed.author) {
                 _embed.setAuthor({
                     name: options.embed.author.name,
                     iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
                     url: options.embed.author.url ? options.embed.author.url : undefined
-                });
-            }
-            if (options.embed.footer) {
-                _embed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
                 });
             }
             if (options.embed.fields) {
@@ -4272,18 +4462,16 @@ const ChaosWords = async (options) => {
             .setTimestamp(options.embed.timestamp ? new Date() : null)
             .setURL(options.embed.url ? options.embed.url : null)
             .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-            .setImage(options.embed.image ? options.embed.image : null);
+            .setImage(options.embed.image ? options.embed.image : null)
+            .setFooter({
+            text: "©️ M3rcena Development | Powered by Mivator",
+            iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+        });
         if (options.embed.author) {
             _embed.setAuthor({
                 name: options.embed.author.name,
                 iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
                 url: options.embed.author.url ? options.embed.author.url : undefined
-            });
-        }
-        if (options.embed.footer) {
-            _embed.setFooter({
-                text: options.embed.footer.text,
-                iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
             });
         }
         if (!interaction.channel || !interaction.channel.isSendable())
@@ -4350,18 +4538,16 @@ const FastType = async (options) => {
         .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
         .setURL(options.embed.url ? options.embed.url : null)
         .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-        .setImage(options.embed.image ? options.embed.image : null);
+        .setImage(options.embed.image ? options.embed.image : null)
+        .setFooter({
+        text: "©️ M3rcena Development | Powered by Mivator",
+        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+    });
     if (options.embed.author) {
         embed.setAuthor({
             name: options.embed.author.name,
             iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
             url: options.embed.author.url ? options.embed.author.url : undefined
-        });
-    }
-    if (options.embed.footer) {
-        embed.setFooter({
-            text: options.embed.footer.text,
-            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
         });
     }
     if (options.embed.fields) {
@@ -4396,18 +4582,16 @@ const FastType = async (options) => {
                 .setTimestamp(options.embed.timestamp ? new Date() : null)
                 .setURL(options.embed.url ? options.embed.url : null)
                 .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                .setImage(options.embed.image ? options.embed.image : null);
+                .setImage(options.embed.image ? options.embed.image : null)
+                .setFooter({
+                text: "©️ M3rcena Development | Powered by Mivator",
+                iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+            });
             if (options.embed.author) {
                 _embed.setAuthor({
                     name: options.embed.author.name,
                     iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
                     url: options.embed.author.url ? options.embed.author.url : undefined
-                });
-            }
-            if (options.embed.footer) {
-                _embed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
                 });
             }
             if (!interaction.channel || !interaction.channel.isSendable())
@@ -4433,18 +4617,16 @@ const FastType = async (options) => {
                 .setTimestamp(options.embed.timestamp ? new Date() : null)
                 .setURL(options.embed.url ? options.embed.url : null)
                 .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                .setImage(options.embed.image ? options.embed.image : null);
+                .setImage(options.embed.image ? options.embed.image : null)
+                .setFooter({
+                text: "©️ M3rcena Development | Powered by Mivator",
+                iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+            });
             if (options.embed.author) {
                 _embed.setAuthor({
                     name: options.embed.author.name,
                     iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
                     url: options.embed.author.url ? options.embed.author.url : undefined
-                });
-            }
-            if (options.embed.footer) {
-                _embed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
                 });
             }
             if (!interaction.channel || !interaction.channel.isSendable())
@@ -4472,18 +4654,16 @@ const FastType = async (options) => {
                 .setTimestamp(options.embed.timestamp ? new Date() : null)
                 .setURL(options.embed.url ? options.embed.url : null)
                 .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                .setImage(options.embed.image ? options.embed.image : null);
+                .setImage(options.embed.image ? options.embed.image : null)
+                .setFooter({
+                text: "©️ M3rcena Development | Powered by Mivator",
+                iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+            });
             if (options.embed.author) {
                 _embed.setAuthor({
                     name: options.embed.author.name,
                     iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
                     url: options.embed.author.url ? options.embed.author.url : undefined
-                });
-            }
-            if (options.embed.footer) {
-                _embed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
                 });
             }
             if (!interaction.channel || !interaction.channel.isSendable())
@@ -4531,564 +4711,6 @@ const FastType = async (options) => {
         return collector.stop();
     });
     checkPackageUpdates("FastType", options.notifyUpdate);
-};
-
-const LieSwatter = async (options) => {
-    OptionsChecking(options, "LieSwatter");
-    let interaction;
-    if (options.interaction.author) {
-        interaction = options.interaction;
-    }
-    else {
-        interaction = options.interaction;
-    }
-    if (!interaction)
-        throw new Error(chalk.red("[@m3rcena/weky] LieSwatter Error:") + " No interaction provided.");
-    if (!interaction.channel || !interaction.channel.isSendable())
-        throw new Error(chalk.red("[@m3rcena/weky] LieSwatter Error:") + " No channel found.");
-    options.client;
-    let id = "";
-    if (options.interaction.author) {
-        id = options.interaction.author.id;
-    }
-    else {
-        id = options.interaction.user.id;
-    }
-    const id1 = getRandomString(20) +
-        "-" +
-        getRandomString(20) +
-        "-" +
-        getRandomString(20) +
-        "-" +
-        getRandomString(20);
-    const id2 = getRandomString(20) +
-        "-" +
-        getRandomString(20) +
-        "-" +
-        getRandomString(20) +
-        "-" +
-        getRandomString(20);
-    if (!options.winMessage)
-        options.winMessage = "GG, It was a **{{answer}}**. You got it correct in **{{time}}**.";
-    if (typeof options.winMessage !== "string") {
-        throw new Error(chalk.red("[@m3rcena/weky] LieSwatter TypeError:") + " Win message must be a string.");
-    }
-    if (!options.loseMessage)
-        options.loseMessage = "Better luck next time! It was a **{{answer}}**.";
-    if (typeof options.loseMessage !== "string") {
-        throw new Error(chalk.red("[@m3rcena/weky] LieSwatter TypeError:") + " Lose message must be a string.");
-    }
-    if (!options.othersMessage)
-        options.othersMessage = "Only <@{{author}}> can use the buttons!";
-    if (typeof options.othersMessage !== "string") {
-        throw new Error(chalk.red("[@m3rcena/weky] LieSwatter TypeError:") + " Others message must be a string.");
-    }
-    if (!options.buttons)
-        options.buttons = {
-            true: "Truth",
-            lie: "Lie"
-        };
-    if (typeof options.buttons !== "object") {
-        throw new Error(chalk.red("[@m3rcena/weky] LieSwatter TypeError:") + " Buttons must be an object.");
-    }
-    if (!options.buttons.true)
-        options.buttons.true = "Truth";
-    if (typeof options.buttons.true !== "string") {
-        throw new Error(chalk.red("[@m3rcena/weky] LieSwatter TypeError:") + " True button text must be a string.");
-    }
-    if (!options.buttons.lie)
-        options.buttons.lie = "Lie";
-    if (typeof options.buttons.lie !== "string") {
-        throw new Error(chalk.red("[@m3rcena/weky] LieSwatter TypeError:") + " Lie button text must be a string.");
-    }
-    if (!options.thinkMessage)
-        options.thinkMessage = "I am thinking...";
-    if (typeof options.thinkMessage !== "string") {
-        throw new Error(chalk.red("[@m3rcena/weky] LieSwatter TypeError:") + " Think message must be a string.");
-    }
-    let embed = new discord_js.EmbedBuilder()
-        .setTitle(options.embed.title)
-        .setDescription(options.thinkMessage)
-        .setColor(options.embed.color)
-        .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
-        .setURL(options.embed.url ? options.embed.url : null)
-        .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-        .setImage(options.embed.image ? options.embed.image : null);
-    if (options.embed.author) {
-        embed.setAuthor({
-            name: options.embed.author.name,
-            iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-            url: options.embed.author.url ? options.embed.author.url : undefined
-        });
-    }
-    if (options.embed.footer) {
-        embed.setFooter({
-            text: options.embed.footer.text,
-            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-        });
-    }
-    if (options.embed.fields) {
-        embed.setFields(options.embed.fields);
-    }
-    const msg = await interaction.reply({
-        embeds: [embed]
-    });
-    const result = await fetch(`https://opentdb.com/api.php?amount=1&type=boolean`).then((res) => res.json());
-    const question = result.results[0];
-    let answer;
-    let winningID;
-    if (question.correct_answer === "True") {
-        winningID = id1;
-        answer = options.buttons.true;
-    }
-    else {
-        winningID = id2;
-        answer = options.buttons.lie;
-    }
-    let btn1 = new discord_js.ButtonBuilder()
-        .setCustomId(id1)
-        .setLabel(options.buttons.true)
-        .setStyle(discord_js.ButtonStyle.Primary);
-    let btn2 = new discord_js.ButtonBuilder()
-        .setCustomId(id2)
-        .setLabel(options.buttons.lie)
-        .setStyle(discord_js.ButtonStyle.Primary);
-    embed = new discord_js.EmbedBuilder()
-        .setTitle(options.embed.title)
-        .setDescription(htmlEntities.decode(question.question))
-        .setColor(options.embed.color)
-        .setTimestamp(options.embed.timestamp ? new Date() : null)
-        .setURL(options.embed.url ? options.embed.url : null)
-        .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-        .setImage(options.embed.image ? options.embed.image : null);
-    if (options.embed.author) {
-        embed.setAuthor({
-            name: options.embed.author.name,
-            iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-            url: options.embed.author.url ? options.embed.author.url : undefined
-        });
-    }
-    if (options.embed.footer) {
-        embed.setFooter({
-            text: options.embed.footer.text,
-            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-        });
-    }
-    if (options.embed.fields) {
-        embed.setFields(options.embed.fields);
-    }
-    await msg.edit({
-        embeds: [embed],
-        components: [
-            { type: 1, components: [btn1, btn2] }
-        ]
-    });
-    const gameCreatedAt = Date.now();
-    const gameCollector = msg.createMessageComponentCollector({
-        componentType: discord_js.ComponentType.Button,
-        time: 60000
-    });
-    gameCollector.on("collect", async (button) => {
-        if (button.user.id !== id) {
-            return button.reply({
-                content: options.othersMessage ?
-                    options.othersMessage.replace(`{{author}}`, id) :
-                    "Only <@" + id + "> can use the buttons!",
-                ephemeral: true
-            });
-        }
-        await button.deferUpdate();
-        if (button.customId === winningID) {
-            btn1 = new discord_js.ButtonBuilder()
-                .setCustomId(id1)
-                .setLabel(options.buttons ? options.buttons.true : "Truth")
-                .setDisabled();
-            btn2 = new discord_js.ButtonBuilder()
-                .setCustomId(id2)
-                .setLabel(options.buttons ? options.buttons.lie : "Lie")
-                .setDisabled();
-            gameCollector.stop();
-            if (winningID === id1) {
-                btn1.setStyle(discord_js.ButtonStyle.Success);
-                btn2.setStyle(discord_js.ButtonStyle.Danger);
-            }
-            else {
-                btn1.setStyle(discord_js.ButtonStyle.Danger);
-                btn2.setStyle(discord_js.ButtonStyle.Success);
-            }
-            embed.setTimestamp(options.embed.timestamp ? new Date() : null);
-            await msg.edit({
-                embeds: [embed],
-                components: [{ type: 1, components: [btn1, btn2] }]
-            });
-            const time = convertTime(Date.now() - gameCreatedAt);
-            const winEmbed = new discord_js.EmbedBuilder()
-                .setDescription(`${options.winMessage ?
-                options.winMessage
-                    .replace(`{{answer}}`, htmlEntities.decode(answer))
-                    .replace(`{{time}}`, time) :
-                `GG, It was a **${htmlEntities.decode(answer)}**. You got it correct in **${time}**.`}`)
-                .setColor(options.embed.color)
-                .setTimestamp(options.embed.timestamp ? new Date() : null)
-                .setURL(options.embed.url ? options.embed.url : null)
-                .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                .setImage(options.embed.image ? options.embed.image : null);
-            const username = options.interaction.author ? options.interaction.author.username : options.interaction.user.username;
-            const iconUrl = options.interaction.author ? options.interaction.author.displayAvatarURL() : options.interaction.user.displayAvatarURL();
-            if (options.embed.author) {
-                winEmbed.setAuthor({
-                    name: username,
-                    iconURL: iconUrl
-                });
-            }
-            if (options.embed.footer) {
-                winEmbed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                });
-            }
-            if (!interaction.channel || !interaction.channel.isSendable())
-                return;
-            await interaction.channel.send({
-                embeds: [winEmbed]
-            });
-        }
-        else {
-            btn1 = new discord_js.ButtonBuilder()
-                .setCustomId(id1)
-                .setLabel(options.buttons ? options.buttons.true : "Truth")
-                .setDisabled();
-            btn2 = new discord_js.ButtonBuilder()
-                .setCustomId(id2)
-                .setLabel(options.buttons ? options.buttons.lie : "Lie")
-                .setDisabled();
-            gameCollector.stop();
-            if (winningID === id1) {
-                btn1.setStyle(discord_js.ButtonStyle.Success);
-                btn2.setStyle(discord_js.ButtonStyle.Danger);
-            }
-            else {
-                btn1.setStyle(discord_js.ButtonStyle.Danger);
-                btn2.setStyle(discord_js.ButtonStyle.Success);
-            }
-            embed.setTimestamp(options.embed.timestamp ? new Date() : null);
-            await msg.edit({
-                embeds: [embed],
-                components: [{ type: 1, components: [btn1, btn2] }]
-            });
-            const lostEmbed = new discord_js.EmbedBuilder()
-                .setDescription(`${options.loseMessage ?
-                options.loseMessage.replace('{{answer}}', htmlEntities.decode(answer)) :
-                `Better luck next time! It was a **${htmlEntities.decode(answer)}**.`}`)
-                .setColor(options.embed.color)
-                .setTimestamp(options.embed.timestamp ? new Date() : null)
-                .setURL(options.embed.url ? options.embed.url : null)
-                .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                .setImage(options.embed.image ? options.embed.image : null);
-            const username = options.interaction.author ? options.interaction.author.username : options.interaction.user.username;
-            const iconUrl = options.interaction.author ? options.interaction.author.displayAvatarURL() : options.interaction.user.displayAvatarURL();
-            if (options.embed.author) {
-                lostEmbed.setAuthor({
-                    name: username,
-                    iconURL: iconUrl
-                });
-            }
-            if (options.embed.footer) {
-                lostEmbed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                });
-            }
-            if (!interaction.channel || !interaction.channel.isSendable())
-                return;
-            await interaction.channel.send({
-                embeds: [lostEmbed]
-            });
-        }
-    });
-    gameCollector.on("end", async (collected, reason) => {
-        if (reason === "time") {
-            btn1 = new discord_js.ButtonBuilder()
-                .setCustomId(id1)
-                .setLabel(options.buttons ? options.buttons.true : "Truth")
-                .setDisabled();
-            btn2 = new discord_js.ButtonBuilder()
-                .setCustomId(id2)
-                .setLabel(options.buttons ? options.buttons.lie : "Lie")
-                .setDisabled();
-            if (winningID === id1) {
-                btn1.setStyle(discord_js.ButtonStyle.Success);
-                btn2.setStyle(discord_js.ButtonStyle.Danger);
-            }
-            else {
-                btn1.setStyle(discord_js.ButtonStyle.Danger);
-                btn2.setStyle(discord_js.ButtonStyle.Success);
-            }
-            embed.setTimestamp(options.embed.timestamp ? new Date() : null);
-            await msg.edit({
-                embeds: [embed],
-                components: [{ type: 1, components: [btn1, btn2] }]
-            });
-            const lostEmbed = new discord_js.EmbedBuilder()
-                .setDescription(`${options.loseMessage ?
-                options.loseMessage.replace('{{answer}}', htmlEntities.decode(answer)) :
-                `**You run out of Time**\nBetter luck next time! It was a **${htmlEntities.decode(answer)}**.`}`)
-                .setColor(options.embed.color)
-                .setTimestamp(options.embed.timestamp ? new Date() : null)
-                .setURL(options.embed.url ? options.embed.url : null)
-                .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                .setImage(options.embed.image ? options.embed.image : null);
-            const username = options.interaction.author ? options.interaction.author.username : options.interaction.user.username;
-            const iconUrl = options.interaction.author ? options.interaction.author.displayAvatarURL() : options.interaction.user.displayAvatarURL();
-            if (options.embed.author) {
-                lostEmbed.setAuthor({
-                    name: username,
-                    iconURL: iconUrl
-                });
-            }
-            if (options.embed.footer) {
-                lostEmbed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                });
-            }
-            if (!interaction.channel || !interaction.channel.isSendable())
-                return;
-            await interaction.channel.send({
-                embeds: [lostEmbed]
-            });
-        }
-    });
-    checkPackageUpdates("LieSwatter", options.notifyUpdate);
-};
-
-const WouldYouRather = async (options) => {
-    OptionsChecking(options, "WouldYouRather");
-    let interaction;
-    if (options.interaction.author) {
-        interaction = options.interaction;
-    }
-    else {
-        interaction = options.interaction;
-    }
-    if (!interaction)
-        throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " No interaction provided.");
-    if (!interaction.channel || !interaction.channel.isSendable())
-        throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " No channel provided in interaction.");
-    options.client;
-    let id = "";
-    if (options.interaction.author) {
-        id = options.interaction.author.id;
-    }
-    else {
-        id = options.interaction.user.id;
-    }
-    const id1 = getRandomString(20) +
-        '-' +
-        getRandomString(20) +
-        '-' +
-        getRandomString(20) +
-        '-' +
-        getRandomString(20);
-    const id2 = getRandomString(20) +
-        '-' +
-        getRandomString(20) +
-        '-' +
-        getRandomString(20) +
-        '-' +
-        getRandomString(20);
-    let embed = new discord_js.EmbedBuilder()
-        .setTitle(options.embed.title)
-        .setDescription(options.thinkMessage ?
-        options.thinkMessage :
-        `I am thinking...`)
-        .setColor(options.embed.color)
-        .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
-        .setURL(options.embed.url ? options.embed.url : null)
-        .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-        .setImage(options.embed.image ? options.embed.image : null);
-    if (options.embed.author) {
-        embed.setAuthor({
-            name: options.embed.author.name,
-            iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-            url: options.embed.author.url ? options.embed.author.url : undefined
-        });
-    }
-    if (options.embed.footer) {
-        embed.setFooter({
-            text: options.embed.footer.text,
-            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-        });
-    }
-    if (options.embed.fields) {
-        embed.setFields(options.embed.fields);
-    }
-    const think = await interaction.reply({
-        embeds: [embed]
-    });
-    const number = Math.floor(Math.random() * (700 - 1 + 1)) + 1;
-    const response = await ofetch.ofetch(`https://wouldurather.io/api/question?id=${number}`);
-    const data = response;
-    const res = {
-        questions: [data.option1, data.option2],
-        percentage: {
-            1: ((parseInt(data.option1Votes) /
-                (parseInt(data.option1Votes) + parseInt(data.option2Votes))) *
-                100).toFixed(2) + '%',
-            2: ((parseInt(data.option2Votes) /
-                (parseInt(data.option1Votes) + parseInt(data.option2Votes))) *
-                100).toFixed(2) + '%',
-        },
-    };
-    let btn = new discord_js.ButtonBuilder()
-        .setStyle(discord_js.ButtonStyle.Primary)
-        .setLabel(options.buttons ? options.buttons.optionA : "Option A")
-        .setCustomId(id1);
-    let btn2 = new discord_js.ButtonBuilder()
-        .setStyle(discord_js.ButtonStyle.Primary)
-        .setLabel(options.buttons ? options.buttons.optionB : "Option B")
-        .setCustomId(id2);
-    embed = new discord_js.EmbedBuilder()
-        .setTitle(options.embed.title)
-        .setDescription(`**Option A:** ${htmlEntities.decode(res.questions[0])}\n**Option B:** ${htmlEntities.decode(res.questions[1])}`)
-        .setColor(options.embed.color)
-        .setTimestamp(options.embed.timestamp ? new Date() : null)
-        .setURL(options.embed.url ? options.embed.url : null)
-        .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-        .setImage(options.embed.image ? options.embed.image : null);
-    if (options.embed.author) {
-        embed.setAuthor({
-            name: options.embed.author.name,
-            iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-            url: options.embed.author.url ? options.embed.author.url : undefined
-        });
-    }
-    if (options.embed.footer) {
-        embed.setFooter({
-            text: options.embed.footer.text,
-            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-        });
-    }
-    if (options.embed.fields) {
-        embed.setFields(options.embed.fields);
-    }
-    await think.edit({
-        embeds: [embed],
-        components: [
-            {
-                type: 1,
-                components: [btn, btn2]
-            }
-        ]
-    });
-    const gameCollector = think.createMessageComponentCollector({
-        componentType: discord_js.ComponentType.Button,
-        time: options.time ? options.time : undefined
-    });
-    gameCollector.on('collect', async (wyr) => {
-        if (wyr.user.id !== id) {
-            return wyr.reply({
-                content: options.othersMessage ?
-                    options.othersMessage.replace('{{author}}', id) :
-                    `This is not your game!`,
-                ephemeral: true
-            });
-        }
-        await wyr.deferUpdate();
-        if (wyr.customId === id1) {
-            btn = new discord_js.ButtonBuilder()
-                .setStyle(discord_js.ButtonStyle.Primary)
-                .setLabel(`${options.buttons ? options.buttons.optionA : "Option A"}` + ` (${res.percentage['1']})`)
-                .setCustomId(id1)
-                .setDisabled();
-            btn2 = new discord_js.ButtonBuilder()
-                .setStyle(discord_js.ButtonStyle.Secondary)
-                .setLabel(`${options.buttons ? options.buttons.optionB : "Option B"}` + ` (${res.percentage['2']})`)
-                .setCustomId(id2)
-                .setDisabled();
-            gameCollector.stop();
-            const _embed = new discord_js.EmbedBuilder()
-                .setTitle(options.embed.title)
-                .setDescription(`**Option A:** ${htmlEntities.decode(res.questions[0])} (${res.percentage['1']})\n**Option B:** ${htmlEntities.decode(res.questions[1])} (${res.percentage['2']})`)
-                .setColor(options.embed.color)
-                .setTimestamp(options.embed.timestamp ? new Date() : null)
-                .setURL(options.embed.url ? options.embed.url : null)
-                .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                .setImage(options.embed.image ? options.embed.image : null);
-            if (options.embed.author) {
-                _embed.setAuthor({
-                    name: options.embed.author.name,
-                    iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                    url: options.embed.author.url ? options.embed.author.url : undefined
-                });
-            }
-            if (options.embed.footer) {
-                _embed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                });
-            }
-            if (options.embed.fields) {
-                _embed.setFields(options.embed.fields);
-            }
-            await wyr.editReply({
-                embeds: [_embed],
-                components: [
-                    {
-                        type: 1,
-                        components: [btn, btn2]
-                    }
-                ]
-            });
-        }
-        else if (wyr.customId === id2) {
-            btn = new discord_js.ButtonBuilder()
-                .setStyle(discord_js.ButtonStyle.Secondary)
-                .setLabel(`${options.buttons ? options.buttons.optionA : "Option A"}` + ` (${res.percentage['1']})`)
-                .setCustomId(id1)
-                .setDisabled();
-            btn2 = new discord_js.ButtonBuilder()
-                .setStyle(discord_js.ButtonStyle.Primary)
-                .setLabel(`${options.buttons ? options.buttons.optionB : "Option B"}` + ` (${res.percentage['2']})`)
-                .setCustomId(id2)
-                .setDisabled();
-            gameCollector.stop();
-            const _embed = new discord_js.EmbedBuilder()
-                .setTitle(options.embed.title)
-                .setDescription(`**Option A:** ${htmlEntities.decode(res.questions[0])} (${res.percentage['1']})\n**Option B:** ${htmlEntities.decode(res.questions[1])} (${res.percentage['2']})`)
-                .setColor(options.embed.color)
-                .setTimestamp(options.embed.timestamp ? new Date() : null)
-                .setURL(options.embed.url ? options.embed.url : null)
-                .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                .setImage(options.embed.image ? options.embed.image : null);
-            if (options.embed.author) {
-                _embed.setAuthor({
-                    name: options.embed.author.name,
-                    iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                    url: options.embed.author.url ? options.embed.author.url : undefined
-                });
-            }
-            if (options.embed.footer) {
-                _embed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                });
-            }
-            if (options.embed.fields) {
-                _embed.setFields(options.embed.fields);
-            }
-            await wyr.editReply({
-                embeds: [_embed],
-                components: [
-                    {
-                        type: 1,
-                        components: [btn, btn2]
-                    }
-                ]
-            });
-        }
-    });
-    checkPackageUpdates("WouldYouRather", options.notifyUpdate);
 };
 
 const db = new Map();
@@ -5181,18 +4803,16 @@ const GuessTheNumber = async (options) => {
         if (currentGames$1[interaction.guild.id]) {
             let embed = new discord_js.EmbedBuilder()
                 .setDescription(options.ongoingMessage.replace(/{{channel}}/g, currentGames$1[`${interaction.guild.id}_channel`]))
-                .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null);
+                .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
+                .setFooter({
+                text: "©️ M3rcena Development | Powered by Mivator",
+                iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+            });
             if (options.embed.author) {
                 embed.setAuthor({
                     name: options.embed.author.name,
                     iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
                     url: options.embed.author.url ? options.embed.author.url : undefined
-                });
-            }
-            if (options.embed.footer) {
-                embed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
                 });
             }
             if (options.embed.fields) {
@@ -5211,18 +4831,16 @@ const GuessTheNumber = async (options) => {
             .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
             .setURL(options.embed.url ? options.embed.url : null)
             .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-            .setImage(options.embed.image ? options.embed.image : null);
+            .setImage(options.embed.image ? options.embed.image : null)
+            .setFooter({
+            text: "©️ M3rcena Development | Powered by Mivator",
+            iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+        });
         if (options.embed.author) {
             embed.setAuthor({
                 name: options.embed.author.name,
                 iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
                 url: options.embed.author.url ? options.embed.author.url : undefined
-            });
-        }
-        if (options.embed.footer) {
-            embed.setFooter({
-                text: options.embed.footer.text,
-                iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
             });
         }
         if (options.embed.fields) {
@@ -5267,18 +4885,16 @@ const GuessTheNumber = async (options) => {
                     .setTimestamp(options.embed.timestamp ? new Date() : null)
                     .setURL(options.embed.url ? options.embed.url : null)
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                    .setImage(options.embed.image ? options.embed.image : null);
+                    .setImage(options.embed.image ? options.embed.image : null)
+                    .setFooter({
+                    text: "©️ M3rcena Development | Powered by Mivator",
+                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+                });
                 if (options.embed.author) {
                     _embed.setAuthor({
                         name: options.embed.author.name,
                         iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
                         url: options.embed.author.url ? options.embed.author.url : undefined
-                    });
-                }
-                if (options.embed.footer) {
-                    _embed.setFooter({
-                        text: options.embed.footer.text,
-                        iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
                     });
                 }
                 if (options.embed.fields) {
@@ -5315,18 +4931,16 @@ const GuessTheNumber = async (options) => {
                     .setTimestamp(options.embed.timestamp ? new Date() : null)
                     .setURL(options.embed.url ? options.embed.url : null)
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                    .setImage(options.embed.image ? options.embed.image : null);
+                    .setImage(options.embed.image ? options.embed.image : null)
+                    .setFooter({
+                    text: "©️ M3rcena Development | Powered by Mivator",
+                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+                });
                 if (options.embed.author) {
                     _embed.setAuthor({
                         name: options.embed.author.name,
                         iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
                         url: options.embed.author.url ? options.embed.author.url : undefined
-                    });
-                }
-                if (options.embed.footer) {
-                    _embed.setFooter({
-                        text: options.embed.footer.text,
-                        iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
                     });
                 }
                 if (options.embed.fields) {
@@ -5346,18 +4960,16 @@ const GuessTheNumber = async (options) => {
                     .setTimestamp(options.embed.timestamp ? new Date() : null)
                     .setURL(options.embed.url ? options.embed.url : null)
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                    .setImage(options.embed.image ? options.embed.image : null);
+                    .setImage(options.embed.image ? options.embed.image : null)
+                    .setFooter({
+                    text: "©️ M3rcena Development | Powered by Mivator",
+                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+                });
                 if (options.embed.author) {
                     _embed.setAuthor({
                         name: options.embed.author.name,
                         iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
                         url: options.embed.author.url ? options.embed.author.url : undefined
-                    });
-                }
-                if (options.embed.footer) {
-                    _embed.setFooter({
-                        text: options.embed.footer.text,
-                        iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
                     });
                 }
                 if (options.embed.fields) {
@@ -5394,18 +5006,16 @@ const GuessTheNumber = async (options) => {
                     .setTimestamp(options.embed.timestamp ? new Date() : null)
                     .setURL(options.embed.url ? options.embed.url : null)
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                    .setImage(options.embed.image ? options.embed.image : null);
+                    .setImage(options.embed.image ? options.embed.image : null)
+                    .setFooter({
+                    text: "©️ M3rcena Development | Powered by Mivator",
+                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+                });
                 if (options.embed.author) {
                     _embed.setAuthor({
                         name: options.embed.author.name,
                         iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
                         url: options.embed.author.url ? options.embed.author.url : undefined
-                    });
-                }
-                if (options.embed.footer) {
-                    _embed.setFooter({
-                        text: options.embed.footer.text,
-                        iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
                     });
                 }
                 if (options.embed.fields) {
@@ -5426,18 +5036,16 @@ const GuessTheNumber = async (options) => {
                     .setTimestamp(options.embed.timestamp ? new Date() : null)
                     .setURL(options.embed.url ? options.embed.url : null)
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                    .setImage(options.embed.image ? options.embed.image : null);
+                    .setImage(options.embed.image ? options.embed.image : null)
+                    .setFooter({
+                    text: "©️ M3rcena Development | Powered by Mivator",
+                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+                });
                 if (options.embed.author) {
                     _embed.setAuthor({
                         name: options.embed.author.name,
                         iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
                         url: options.embed.author.url ? options.embed.author.url : undefined
-                    });
-                }
-                if (options.embed.footer) {
-                    _embed.setFooter({
-                        text: options.embed.footer.text,
-                        iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
                     });
                 }
                 if (options.embed.fields) {
@@ -5468,18 +5076,16 @@ const GuessTheNumber = async (options) => {
             .setTimestamp(options.embed.timestamp ? new Date() : null)
             .setURL(options.embed.url ? options.embed.url : null)
             .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-            .setImage(options.embed.image ? options.embed.image : null);
+            .setImage(options.embed.image ? options.embed.image : null)
+            .setFooter({
+            text: "©️ M3rcena Development | Powered by Mivator",
+            iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+        });
         if (options.embed.author) {
             embed.setAuthor({
                 name: options.embed.author.name,
                 iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
                 url: options.embed.author.url ? options.embed.author.url : undefined
-            });
-        }
-        if (options.embed.footer) {
-            embed.setFooter({
-                text: options.embed.footer.text,
-                iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
             });
         }
         if (options.embed.fields) {
@@ -5516,18 +5122,16 @@ const GuessTheNumber = async (options) => {
                     .setTimestamp(options.embed.timestamp ? new Date() : null)
                     .setURL(options.embed.url ? options.embed.url : null)
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                    .setImage(options.embed.image ? options.embed.image : null);
+                    .setImage(options.embed.image ? options.embed.image : null)
+                    .setFooter({
+                    text: "©️ M3rcena Development | Powered by Mivator",
+                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+                });
                 if (options.embed.author) {
                     _embed.setAuthor({
                         name: options.embed.author.name,
                         iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
                         url: options.embed.author.url ? options.embed.author.url : undefined
-                    });
-                }
-                if (options.embed.footer) {
-                    _embed.setFooter({
-                        text: options.embed.footer.text,
-                        iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
                     });
                 }
                 if (options.embed.fields) {
@@ -5555,18 +5159,16 @@ const GuessTheNumber = async (options) => {
                     .setTimestamp(options.embed.timestamp ? new Date() : null)
                     .setURL(options.embed.url ? options.embed.url : null)
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                    .setImage(options.embed.image ? options.embed.image : null);
+                    .setImage(options.embed.image ? options.embed.image : null)
+                    .setFooter({
+                    text: "©️ M3rcena Development | Powered by Mivator",
+                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+                });
                 if (options.embed.author) {
                     _embed.setAuthor({
                         name: options.embed.author.name,
                         iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
                         url: options.embed.author.url ? options.embed.author.url : undefined
-                    });
-                }
-                if (options.embed.footer) {
-                    _embed.setFooter({
-                        text: options.embed.footer.text,
-                        iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
                     });
                 }
                 if (options.embed.fields) {
@@ -5586,18 +5188,16 @@ const GuessTheNumber = async (options) => {
                     .setTimestamp(options.embed.timestamp ? new Date() : null)
                     .setURL(options.embed.url ? options.embed.url : null)
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                    .setImage(options.embed.image ? options.embed.image : null);
+                    .setImage(options.embed.image ? options.embed.image : null)
+                    .setFooter({
+                    text: "©️ M3rcena Development | Powered by Mivator",
+                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+                });
                 if (options.embed.author) {
                     _embed.setAuthor({
                         name: options.embed.author.name,
                         iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
                         url: options.embed.author.url ? options.embed.author.url : undefined
-                    });
-                }
-                if (options.embed.footer) {
-                    _embed.setFooter({
-                        text: options.embed.footer.text,
-                        iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
                     });
                 }
                 if (options.embed.fields) {
@@ -5634,18 +5234,16 @@ const GuessTheNumber = async (options) => {
                     .setTimestamp(options.embed.timestamp ? new Date() : null)
                     .setURL(options.embed.url ? options.embed.url : null)
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                    .setImage(options.embed.image ? options.embed.image : null);
+                    .setImage(options.embed.image ? options.embed.image : null)
+                    .setFooter({
+                    text: "©️ M3rcena Development | Powered by Mivator",
+                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+                });
                 if (options.embed.author) {
                     _embed.setAuthor({
                         name: options.embed.author.name,
                         iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
                         url: options.embed.author.url ? options.embed.author.url : undefined
-                    });
-                }
-                if (options.embed.footer) {
-                    _embed.setFooter({
-                        text: options.embed.footer.text,
-                        iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
                     });
                 }
                 if (options.embed.fields) {
@@ -5665,18 +5263,16 @@ const GuessTheNumber = async (options) => {
                     .setTimestamp(options.embed.timestamp ? new Date() : null)
                     .setURL(options.embed.url ? options.embed.url : null)
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                    .setImage(options.embed.image ? options.embed.image : null);
+                    .setImage(options.embed.image ? options.embed.image : null)
+                    .setFooter({
+                    text: "©️ M3rcena Development | Powered by Mivator",
+                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+                });
                 if (options.embed.author) {
                     _embed.setAuthor({
                         name: options.embed.author.name,
                         iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
                         url: options.embed.author.url ? options.embed.author.url : undefined
-                    });
-                }
-                if (options.embed.footer) {
-                    _embed.setFooter({
-                        text: options.embed.footer.text,
-                        iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
                     });
                 }
                 if (options.embed.fields) {
@@ -5698,8 +5294,8 @@ const GuessTheNumber = async (options) => {
     checkPackageUpdates("GuessTheNumber", options.notifyUpdate);
 };
 
-const WillYouPressTheButton = async (options) => {
-    OptionsChecking(options, "WillYouPressTheButton");
+const Hangman = async (options) => {
+    OptionsChecking(options, "Hangman");
     let interaction;
     if (options.interaction.author) {
         interaction = options.interaction;
@@ -5708,9 +5304,148 @@ const WillYouPressTheButton = async (options) => {
         interaction = options.interaction;
     }
     if (!interaction)
-        throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " No interaction provided.");
+        throw new Error(chalk.red("[@m3rcena/weky] Hangman Error:") + " No interaction provided.");
     if (!interaction.channel || !interaction.channel.isSendable())
-        throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " No channel provided in interaction.");
+        throw new Error(chalk.red("[@m3rcena/weky] Hangman Error:") + " No channel found.");
+    let client = options.client;
+    let id = "";
+    if (options.interaction.author) {
+        id = options.interaction.author.id;
+    }
+    else {
+        id = options.interaction.user.id;
+    }
+    let wrongs = 0;
+    let at = new discord_js.AttachmentBuilder(await createHangman(wrongs), {
+        name: "game.png"
+    });
+    let word = words[Math.floor(Math.random() * words.length)];
+    let used = [];
+    let embed = new discord_js.EmbedBuilder()
+        .setTitle(options.embed.title ? options.embed.title : "Hangman Game")
+        .setDescription(options.embed.description ? options.embed.description.replace(`{{word}}`, `\`\`\`${word.split("").map(v => used.includes(v) ? v.toUpperCase() : "_").join(" ")}`) :
+        `Type a character to guess the word\n\n\`\`\`${word.split("").map(v => used.includes(v) ? v.toUpperCase() : "_").join(" ")}\`\`\``)
+        .setColor(options.embed.color ? options.embed.color : "Blue")
+        .setImage("attachment://game.png")
+        .setTimestamp(options.embed.timestamp ? Date.now() : null)
+        .setFooter({
+        text: "©️ M3rcena Development | Powered by Mivator",
+        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+    });
+    if (options.embed.author) {
+        embed.setAuthor({
+            name: options.embed.author.name,
+            iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
+            url: options.embed.author.url ? options.embed.author.url : undefined
+        });
+    }
+    if (options.embed.fields) {
+        embed.setFields(options.embed.fields);
+    }
+    const msg = await interaction.reply({
+        files: [at],
+        embeds: [embed],
+    });
+    const channel = await interaction.channel;
+    const col = channel.createMessageCollector({
+        filter: (m) => m.author.id === id,
+        time: options.time ? options.time : 180000
+    });
+    const handleMsgDelete = (m, msg) => {
+        if (m.id === msg.id)
+            col.stop("msgDelete");
+    };
+    if ("token" in msg) {
+        msg.edit = (data) => msg.editReply(data);
+    }
+    else {
+        client.on("messageDelete", handleMsgDelete.bind(null, msg));
+    }
+    col.on('collect', async (msg2) => {
+        const char = msg2.content[0]?.toLowerCase();
+        if (!/[a-z]/i.test(char))
+            return msg2.reply("You have to **provide** a **letter**, **not** a **number/symbol**!").then(m => setTimeout(() => {
+                if (m.deletable)
+                    m.delete();
+            }, 5000));
+        if (used.includes(char))
+            return msg2.reply("You have **already** used this **letter**!").then(m => setTimeout(() => {
+                if (m.deletable)
+                    m.delete();
+            }, 5000));
+        used.push(char);
+        if (!word.includes(char)) {
+            wrongs++;
+        }
+        let done = word.split("").every(v => used.includes(v));
+        let description = wrongs === 6 || done ? `You ${done ? "won" : "lost"} the game, The word was **${word}**` : `Type a character to guess the word\n\n\`\`\`${word.split("").map(v => used.includes(v) ? v.toUpperCase() : "_").join(" ")}\`\`\``;
+        at = new discord_js.AttachmentBuilder(await createHangman(wrongs), {
+            name: "game.png"
+        });
+        embed = new discord_js.EmbedBuilder()
+            .setTitle(options.embed.title ? options.embed.title : "Hangman Game")
+            .setDescription(description)
+            .setColor(options.embed.color ? options.embed.color : wrongs === 6 ? "#ff0000" : done ? "Green" : "Blue")
+            .setImage("attachment://game.png")
+            .setTimestamp(options.embed.timestamp ? Date.now() : null)
+            .setFooter({
+            text: "©️ M3rcena Development | Powered by Mivator",
+            iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+        });
+        if (options.embed.author) {
+            embed.setAuthor({
+                name: options.embed.author.name,
+                iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
+                url: options.embed.author.url ? options.embed.author.url : undefined
+            });
+        }
+        if (options.embed.fields) {
+            embed.setFields(options.embed.fields);
+        }
+        await msg.edit({
+            files: [at],
+            embeds: [embed]
+        }).catch((e) => {
+            col.stop();
+            throw e;
+        });
+        if (wrongs === 6 || done) {
+            col.stop();
+        }
+    });
+    col.on('end', async (s, r) => {
+        client.off("messageDelete", handleMsgDelete.bind(null, msg));
+        if (r === "time") {
+            let embed = new discord_js.EmbedBuilder()
+                .setTitle("⛔ Game Ended")
+                .setDescription(`\`\`\`You took too much time to respond\`\`\``)
+                .setColor("Red")
+                .setTimestamp();
+            await msg.edit({
+                attachments: [],
+                files: [],
+                embeds: [embed]
+            }).catch((e) => {
+                throw e;
+            });
+        }
+    });
+    checkPackageUpdates("Hangman", options.notifyUpdate);
+};
+
+const LieSwatter = async (options) => {
+    OptionsChecking(options, "LieSwatter");
+    let interaction;
+    if (options.interaction.author) {
+        interaction = options.interaction;
+    }
+    else {
+        interaction = options.interaction;
+    }
+    if (!interaction)
+        throw new Error(chalk.red("[@m3rcena/weky] LieSwatter Error:") + " No interaction provided.");
+    if (!interaction.channel || !interaction.channel.isSendable())
+        throw new Error(chalk.red("[@m3rcena/weky] LieSwatter Error:") + " No channel found.");
     options.client;
     let id = "";
     if (options.interaction.author) {
@@ -5719,59 +5454,70 @@ const WillYouPressTheButton = async (options) => {
     else {
         id = options.interaction.user.id;
     }
-    if (!options.button)
-        options.button = {};
-    if (typeof options.embed !== 'object') {
-        throw new TypeError(chalk.red("[@m3rcena/weky] WillYouPressTheButton Error:") + " embed must be an object.");
-    }
-    if (!options.button.yes)
-        options.button.yes = 'Yes';
-    if (typeof options.button.yes !== 'string') {
-        throw new TypeError(chalk.red("[@m3rcena/weky] WillYouPressTheButton Error:") + " button.yes must be a string.");
-    }
-    if (!options.button.no)
-        options.button.no = 'No';
-    if (typeof options.button.no !== 'string') {
-        throw new TypeError(chalk.red("[@m3rcena/weky] WillYouPressTheButton Error:") + " button.no must be a string.");
-    }
-    if (!options.thinkMessage)
-        options.thinkMessage = 'I am thinking';
-    if (typeof options.thinkMessage !== 'string') {
-        throw new TypeError(chalk.red("[@m3rcena/weky] WillYouPressTheButton Error:") + " thinkMessage must be a string.");
-    }
-    if (!options.othersMessage) {
-        options.othersMessage = 'Only <@{{author}}> can use the buttons!';
-    }
-    if (typeof options.othersMessage !== 'string') {
-        throw new TypeError(chalk.red("[@m3rcena/weky] WillYouPressTheButton Error:") + " othersMessage must be a string.");
-    }
-    if (!options.embed.description) {
-        options.embed.description = '```{{statement1}}```\n**but**\n\n```{{statement2}}```';
-    }
-    if (typeof options.embed.description !== 'string') {
-        throw new TypeError(chalk.red("[@m3rcena/weky] WillYouPressTheButton Error:") + " embed.description must be a string.");
-    }
     const id1 = getRandomString(20) +
-        '-' +
+        "-" +
         getRandomString(20) +
-        '-' +
+        "-" +
         getRandomString(20) +
-        '-' +
+        "-" +
         getRandomString(20);
     const id2 = getRandomString(20) +
-        '-' +
+        "-" +
         getRandomString(20) +
-        '-' +
+        "-" +
         getRandomString(20) +
-        '-' +
+        "-" +
         getRandomString(20);
+    if (!options.winMessage)
+        options.winMessage = "GG, It was a **{{answer}}**. You got it correct in **{{time}}**.";
+    if (typeof options.winMessage !== "string") {
+        throw new Error(chalk.red("[@m3rcena/weky] LieSwatter TypeError:") + " Win message must be a string.");
+    }
+    if (!options.loseMessage)
+        options.loseMessage = "Better luck next time! It was a **{{answer}}**.";
+    if (typeof options.loseMessage !== "string") {
+        throw new Error(chalk.red("[@m3rcena/weky] LieSwatter TypeError:") + " Lose message must be a string.");
+    }
+    if (!options.othersMessage)
+        options.othersMessage = "Only <@{{author}}> can use the buttons!";
+    if (typeof options.othersMessage !== "string") {
+        throw new Error(chalk.red("[@m3rcena/weky] LieSwatter TypeError:") + " Others message must be a string.");
+    }
+    if (!options.buttons)
+        options.buttons = {
+            true: "Truth",
+            lie: "Lie"
+        };
+    if (typeof options.buttons !== "object") {
+        throw new Error(chalk.red("[@m3rcena/weky] LieSwatter TypeError:") + " Buttons must be an object.");
+    }
+    if (!options.buttons.true)
+        options.buttons.true = "Truth";
+    if (typeof options.buttons.true !== "string") {
+        throw new Error(chalk.red("[@m3rcena/weky] LieSwatter TypeError:") + " True button text must be a string.");
+    }
+    if (!options.buttons.lie)
+        options.buttons.lie = "Lie";
+    if (typeof options.buttons.lie !== "string") {
+        throw new Error(chalk.red("[@m3rcena/weky] LieSwatter TypeError:") + " Lie button text must be a string.");
+    }
+    if (!options.thinkMessage)
+        options.thinkMessage = "I am thinking...";
+    if (typeof options.thinkMessage !== "string") {
+        throw new Error(chalk.red("[@m3rcena/weky] LieSwatter TypeError:") + " Think message must be a string.");
+    }
     let embed = new discord_js.EmbedBuilder()
-        .setTitle(`${options.thinkMessage}...`)
+        .setTitle(options.embed.title)
+        .setDescription(options.thinkMessage)
         .setColor(options.embed.color)
         .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
         .setURL(options.embed.url ? options.embed.url : null)
         .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-        .setImage(options.embed.image ? options.embed.image : null);
+        .setImage(options.embed.image ? options.embed.image : null)
+        .setFooter({
+        text: "©️ M3rcena Development | Powered by Mivator",
+        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+    });
     if (options.embed.author) {
         embed.setAuthor({
             name: options.embed.author.name,
@@ -5779,46 +5525,44 @@ const WillYouPressTheButton = async (options) => {
             url: options.embed.author.url ? options.embed.author.url : undefined
         });
     }
-    if (options.embed.footer) {
-        embed.setFooter({
-            text: options.embed.footer.text,
-            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-        });
-    }
     if (options.embed.fields) {
         embed.setFields(options.embed.fields);
     }
-    const think = await interaction.reply({
-        embeds: [embed],
+    const msg = await interaction.reply({
+        embeds: [embed]
     });
-    const fetchedData = await getButtonDilemma();
-    const res = {
-        questions: [fetchedData.question, fetchedData.result],
-        percentage: {
-            1: fetchedData.yesNo.yes.persend,
-            2: fetchedData.yesNo.no.persend,
-        }
-    };
-    let btn = new discord_js.ButtonBuilder()
-        .setStyle(discord_js.ButtonStyle.Success)
-        .setLabel(options.button.yes)
-        .setCustomId(id1);
+    const result = await fetch(`https://opentdb.com/api.php?amount=1&type=boolean`).then((res) => res.json());
+    const question = result.results[0];
+    let answer;
+    let winningID;
+    if (question.correct_answer === "True") {
+        winningID = id1;
+        answer = options.buttons.true;
+    }
+    else {
+        winningID = id2;
+        answer = options.buttons.lie;
+    }
+    let btn1 = new discord_js.ButtonBuilder()
+        .setCustomId(id1)
+        .setLabel(options.buttons.true)
+        .setStyle(discord_js.ButtonStyle.Primary);
     let btn2 = new discord_js.ButtonBuilder()
-        .setStyle(discord_js.ButtonStyle.Danger)
-        .setLabel(options.button.no)
-        .setCustomId(id2);
+        .setCustomId(id2)
+        .setLabel(options.buttons.lie)
+        .setStyle(discord_js.ButtonStyle.Primary);
     embed = new discord_js.EmbedBuilder()
         .setTitle(options.embed.title)
-        .setDescription(`${options.embed.description
-        .replace('{{statement1}}', res.questions[0].charAt(0).toUpperCase() +
-        res.questions[0].slice(1))
-        .replace('{{statement2}}', res.questions[1].charAt(0).toUpperCase() +
-        res.questions[1].slice(1))}`)
+        .setDescription(htmlEntities.decode(question.question))
         .setColor(options.embed.color)
         .setTimestamp(options.embed.timestamp ? new Date() : null)
         .setURL(options.embed.url ? options.embed.url : null)
         .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-        .setImage(options.embed.image ? options.embed.image : null);
+        .setImage(options.embed.image ? options.embed.image : null)
+        .setFooter({
+        text: "©️ M3rcena Development | Powered by Mivator",
+        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+    });
     if (options.embed.author) {
         embed.setAuthor({
             name: options.embed.author.name,
@@ -5826,357 +5570,186 @@ const WillYouPressTheButton = async (options) => {
             url: options.embed.author.url ? options.embed.author.url : undefined
         });
     }
-    if (options.embed.footer) {
-        embed.setFooter({
-            text: options.embed.footer.text,
-            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-        });
-    }
     if (options.embed.fields) {
         embed.setFields(options.embed.fields);
     }
-    await think.edit({
+    await msg.edit({
         embeds: [embed],
         components: [
-            {
-                type: 1,
-                components: [btn, btn2]
-            }
+            { type: 1, components: [btn1, btn2] }
         ]
     });
-    const gameCollector = think.createMessageComponentCollector({
-        time: options.time ? options.time : 60000,
+    const gameCreatedAt = Date.now();
+    const gameCollector = msg.createMessageComponentCollector({
+        componentType: discord_js.ComponentType.Button,
+        time: 60000
     });
-    gameCollector.on('collect', async (wyptb) => {
-        if (wyptb.user.id !== id) {
-            return wyptb.reply({
+    gameCollector.on("collect", async (button) => {
+        if (button.user.id !== id) {
+            return button.reply({
                 content: options.othersMessage ?
-                    options.othersMessage.replace('{{author}}', id) :
-                    `Only <@${id}> can use the buttons!`,
+                    options.othersMessage.replace(`{{author}}`, id) :
+                    "Only <@" + id + "> can use the buttons!",
                 ephemeral: true
             });
         }
-        await wyptb.deferUpdate();
-        if (wyptb.customId === id1) {
-            btn = new discord_js.ButtonBuilder()
-                .setStyle(discord_js.ButtonStyle.Success)
-                .setLabel(`${options.button ? options.button.yes ? options.button.yes : 'Yes' : 'Yes'} (${res.percentage['1']})`)
-                .setDisabled()
-                .setCustomId(id1);
+        await button.deferUpdate();
+        if (button.customId === winningID) {
+            btn1 = new discord_js.ButtonBuilder()
+                .setCustomId(id1)
+                .setLabel(options.buttons ? options.buttons.true : "Truth")
+                .setDisabled();
             btn2 = new discord_js.ButtonBuilder()
-                .setStyle(discord_js.ButtonStyle.Danger)
-                .setLabel(`${options.button ? options.button.no ? options.button.no : 'No' : 'No'} (${res.percentage['2']})`)
-                .setDisabled()
-                .setCustomId(id2);
+                .setCustomId(id2)
+                .setLabel(options.buttons ? options.buttons.lie : "Lie")
+                .setDisabled();
             gameCollector.stop();
-            embed.setTimestamp(new Date());
-            await wyptb.editReply({
+            if (winningID === id1) {
+                btn1.setStyle(discord_js.ButtonStyle.Success);
+                btn2.setStyle(discord_js.ButtonStyle.Danger);
+            }
+            else {
+                btn1.setStyle(discord_js.ButtonStyle.Danger);
+                btn2.setStyle(discord_js.ButtonStyle.Success);
+            }
+            embed.setTimestamp(options.embed.timestamp ? new Date() : null);
+            await msg.edit({
                 embeds: [embed],
-                components: [
-                    {
-                        type: 1,
-                        components: [btn, btn2]
-                    }
-                ]
+                components: [{ type: 1, components: [btn1, btn2] }]
+            });
+            const time = convertTime(Date.now() - gameCreatedAt);
+            const winEmbed = new discord_js.EmbedBuilder()
+                .setDescription(`${options.winMessage ?
+                options.winMessage
+                    .replace(`{{answer}}`, htmlEntities.decode(answer))
+                    .replace(`{{time}}`, time) :
+                `GG, It was a **${htmlEntities.decode(answer)}**. You got it correct in **${time}**.`}`)
+                .setColor(options.embed.color)
+                .setTimestamp(options.embed.timestamp ? new Date() : null)
+                .setURL(options.embed.url ? options.embed.url : null)
+                .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
+                .setImage(options.embed.image ? options.embed.image : null)
+                .setFooter({
+                text: "©️ M3rcena Development | Powered by Mivator",
+                iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+            });
+            const username = options.interaction.author ? options.interaction.author.username : options.interaction.user.username;
+            const iconUrl = options.interaction.author ? options.interaction.author.displayAvatarURL() : options.interaction.user.displayAvatarURL();
+            if (options.embed.author) {
+                winEmbed.setAuthor({
+                    name: username,
+                    iconURL: iconUrl
+                });
+            }
+            if (!interaction.channel || !interaction.channel.isSendable())
+                return;
+            await interaction.channel.send({
+                embeds: [winEmbed]
             });
         }
-        else if (wyptb.customId === id2) {
-            btn = new discord_js.ButtonBuilder()
-                .setStyle(discord_js.ButtonStyle.Danger)
-                .setLabel(`${options.button ? options.button.yes ? options.button.yes : 'Yes' : 'Yes'} (${res.percentage['1']})`)
-                .setDisabled()
-                .setCustomId(id1);
+        else {
+            btn1 = new discord_js.ButtonBuilder()
+                .setCustomId(id1)
+                .setLabel(options.buttons ? options.buttons.true : "Truth")
+                .setDisabled();
             btn2 = new discord_js.ButtonBuilder()
-                .setStyle(discord_js.ButtonStyle.Success)
-                .setLabel(`${options.button ? options.button.no ? options.button.no : 'No' : 'No'} (${res.percentage['2']})`)
-                .setDisabled()
-                .setCustomId(id2);
+                .setCustomId(id2)
+                .setLabel(options.buttons ? options.buttons.lie : "Lie")
+                .setDisabled();
             gameCollector.stop();
-            embed.setTimestamp(new Date());
-            await wyptb.editReply({
+            if (winningID === id1) {
+                btn1.setStyle(discord_js.ButtonStyle.Success);
+                btn2.setStyle(discord_js.ButtonStyle.Danger);
+            }
+            else {
+                btn1.setStyle(discord_js.ButtonStyle.Danger);
+                btn2.setStyle(discord_js.ButtonStyle.Success);
+            }
+            embed.setTimestamp(options.embed.timestamp ? new Date() : null);
+            await msg.edit({
                 embeds: [embed],
-                components: [
-                    {
-                        type: 1,
-                        components: [btn, btn2]
-                    }
-                ]
+                components: [{ type: 1, components: [btn1, btn2] }]
+            });
+            const lostEmbed = new discord_js.EmbedBuilder()
+                .setDescription(`${options.loseMessage ?
+                options.loseMessage.replace('{{answer}}', htmlEntities.decode(answer)) :
+                `Better luck next time! It was a **${htmlEntities.decode(answer)}**.`}`)
+                .setColor(options.embed.color)
+                .setTimestamp(options.embed.timestamp ? new Date() : null)
+                .setURL(options.embed.url ? options.embed.url : null)
+                .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
+                .setImage(options.embed.image ? options.embed.image : null)
+                .setFooter({
+                text: "©️ M3rcena Development | Powered by Mivator",
+                iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+            });
+            const username = options.interaction.author ? options.interaction.author.username : options.interaction.user.username;
+            const iconUrl = options.interaction.author ? options.interaction.author.displayAvatarURL() : options.interaction.user.displayAvatarURL();
+            if (options.embed.author) {
+                lostEmbed.setAuthor({
+                    name: username,
+                    iconURL: iconUrl
+                });
+            }
+            if (!interaction.channel || !interaction.channel.isSendable())
+                return;
+            await interaction.channel.send({
+                embeds: [lostEmbed]
             });
         }
     });
-    checkPackageUpdates("WillYouPressTheButton", options.notifyUpdate);
-};
-
-const currentGames = {};
-const QuickClick = async (options) => {
-    OptionsChecking(options, 'GuessTheNumber');
-    let interaction;
-    if (options.interaction.author) {
-        interaction = options.interaction;
-    }
-    else {
-        interaction = options.interaction;
-    }
-    if (!interaction)
-        throw new Error(chalk.red("[@m3rcena/weky] QuickClick Error:") + " No interaction provided.");
-    if (!interaction.channel || !interaction.channel.isSendable())
-        throw new Error(chalk.red("[@m3rcena/weky] QuickClick Error:") + " Channel is not available in this interaction.");
-    if (!interaction.guild) {
-        throw new Error(chalk.red("[@m3rcena/weky] QuickClick Error:") + " Guild is not available in this interaction.");
-    }
-    if (!interaction.channel || !interaction.channel.isSendable()) {
-        throw new Error(chalk.red("[@m3rcena/weky] QuickClick Error:") + " Channel is not available in this interaction.");
-    }
-    options.client;
-    if (options.interaction.author) {
-        options.interaction.author.id;
-    }
-    else {
-        options.interaction.user.id;
-    }
-    if (!options.time)
-        options.time = 60000;
-    if (options.time < 10000) {
-        throw new Error(chalk.red("[@m3rcena/weky] QuickClick Error:") + " Time argument must be greater than 10 Seconds (in ms i.e. 10000).");
-    }
-    if (!options.waitMessage)
-        options.waitMessage = 'The buttons may appear anytime now!';
-    if (typeof options.waitMessage !== 'string') {
-        throw new TypeError(chalk.red("[@m3rcena/weky] QuickClick Error:") + " waitMessage must be a string");
-    }
-    if (!options.startMessage)
-        options.startMessage = 'First person to press the correct button will win. You have **{{time}}**!';
-    if (typeof options.startMessage !== 'string') {
-        throw new TypeError(chalk.red("[@m3rcena/weky] QuickClick Error:") + " startMessage must be a string");
-    }
-    if (!options.winMessage)
-        options.winMessage = 'GG, <@{{winner}}> pressed the button in **{{time}} seconds**.';
-    if (typeof options.winMessage !== 'string') {
-        throw new TypeError(chalk.red("[@m3rcena/weky] QuickClick Error:") + " winMessage must be a string");
-    }
-    if (!options.loseMessage)
-        options.loseMessage = 'No one pressed the button in time. So, I dropped the game!';
-    if (typeof options.loseMessage !== 'string') {
-        throw new TypeError(chalk.red("[@m3rcena/weky] QuickClick Error:") + " loseMessage must be a string");
-    }
-    if (!options.emoji)
-        options.emoji = '👆';
-    if (typeof options.emoji !== 'string') {
-        throw new TypeError(chalk.red("[@m3rcena/weky] QuickClick Error:") + " emoji must be a string");
-    }
-    if (!options.ongoingMessage)
-        options.ongoingMessage = 'A game is already runnning in <#{{channel}}>. You can\'t start a new one!';
-    if (typeof options.ongoingMessage !== 'string') {
-        throw new TypeError(chalk.red("[@m3rcena/weky] QuickClick Error:") + " ongoingMessage must be a string");
-    }
-    if (currentGames[interaction.guild.id]) {
-        let embed = new discord_js.EmbedBuilder()
-            .setTitle(options.embed.title)
-            .setDescription(options.ongoingMessage ? options.ongoingMessage.replace('{{channel}}', `${currentGames[`${interaction.guild.id}_channel`]}`) : `A game is already runnning in <#${currentGames[`${interaction.guild.id}_channel`]}>. You can\'t start a new one!`)
-            .setColor(options.embed.color)
-            .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
-            .setURL(options.embed.url ? options.embed.url : null)
-            .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-            .setImage(options.embed.image ? options.embed.image : null);
-        if (options.embed.author) {
-            embed.setAuthor({
-                name: options.embed.author.name,
-                iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                url: options.embed.author.url ? options.embed.author.url : undefined
-            });
-        }
-        if (options.embed.footer) {
-            embed.setFooter({
-                text: options.embed.footer.text,
-                iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-            });
-        }
-        if (options.embed.fields) {
-            embed.setFields(options.embed.fields);
-        }
-        return interaction.reply({ embeds: [embed] });
-    }
-    let embed = new discord_js.EmbedBuilder()
-        .setTitle(options.embed.title)
-        .setDescription(options.waitMessage ? options.waitMessage : 'The buttons may appear anytime now!')
-        .setColor(options.embed.color)
-        .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
-        .setURL(options.embed.url ? options.embed.url : null)
-        .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-        .setImage(options.embed.image ? options.embed.image : null);
-    if (options.embed.author) {
-        embed.setAuthor({
-            name: options.embed.author.name,
-            iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-            url: options.embed.author.url ? options.embed.author.url : undefined
-        });
-    }
-    if (options.embed.footer) {
-        embed.setFooter({
-            text: options.embed.footer.text,
-            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-        });
-    }
-    if (options.embed.fields) {
-        embed.setFields(options.embed.fields);
-    }
-    const msg = await interaction.reply({ embeds: [embed] });
-    currentGames[interaction.guild.id] = true;
-    currentGames[`${interaction.guild.id}_channel`] = interaction.channel.id;
-    setTimeout(async function () {
-        const rows = [];
-        const buttons = [];
-        const gameCreatedAt = Date.now();
-        for (let i = 0; i < 24; i++) {
-            buttons.push(new discord_js.ButtonBuilder()
-                .setDisabled()
-                .setLabel('\u200b')
-                .setStyle(discord_js.ButtonStyle.Primary)
-                .setCustomId(getRandomString(20)));
-        }
-        buttons.push(new discord_js.ButtonBuilder()
-            .setStyle(discord_js.ButtonStyle.Primary)
-            .setEmoji(options.emoji ? options.emoji : '👆')
-            .setCustomId('CORRECT'));
-        shuffleArray(buttons);
-        for (let i = 0; i < 5; i++) {
-            rows.push(new discord_js.ActionRowBuilder());
-        }
-        rows.forEach((row, i) => {
-            row.addComponents(buttons.slice(0 + i * 5, 5 + i * 5));
-        });
-        let _embed = new discord_js.EmbedBuilder()
-            .setTitle(options.embed.title)
-            .setDescription(options.startMessage ? options.startMessage.replace('{{time}}', convertTime(options.time ? options.time : 60000)) : `First person to press the correct button will win. You have **${convertTime(options.time ? options.time : 60000)}**!`)
-            .setColor(options.embed.color)
-            .setTimestamp(options.embed.timestamp ? new Date() : null)
-            .setURL(options.embed.url ? options.embed.url : null)
-            .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-            .setImage(options.embed.image ? options.embed.image : null);
-        if (options.embed.author) {
-            _embed.setAuthor({
-                name: options.embed.author.name,
-                iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                url: options.embed.author.url ? options.embed.author.url : undefined
-            });
-        }
-        if (options.embed.footer) {
-            _embed.setFooter({
-                text: options.embed.footer.text,
-                iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-            });
-        }
-        if (options.embed.fields) {
-            _embed.setFields(options.embed.fields);
-        }
-        await msg.edit({
-            embeds: [_embed],
-            components: rows,
-        });
-        const Collector = msg.createMessageComponentCollector({
-            filter: (fn) => fn.message.id === msg.id,
-            time: options.time,
-        });
-        Collector.on('collect', async (button) => {
-            if (!interaction.guild) {
-                throw new Error(chalk.red("[@m3rcena/weky] QuickClick Error:") + " Guild is not available in this interaction.");
+    gameCollector.on("end", async (collected, reason) => {
+        if (reason === "time") {
+            btn1 = new discord_js.ButtonBuilder()
+                .setCustomId(id1)
+                .setLabel(options.buttons ? options.buttons.true : "Truth")
+                .setDisabled();
+            btn2 = new discord_js.ButtonBuilder()
+                .setCustomId(id2)
+                .setLabel(options.buttons ? options.buttons.lie : "Lie")
+                .setDisabled();
+            if (winningID === id1) {
+                btn1.setStyle(discord_js.ButtonStyle.Success);
+                btn2.setStyle(discord_js.ButtonStyle.Danger);
             }
-            if (button.customId === 'CORRECT') {
-                await button.deferUpdate();
-                Collector.stop();
-                buttons.forEach((element) => {
-                    element.setDisabled();
-                });
-                rows.length = 0;
-                for (let i = 0; i < 5; i++) {
-                    rows.push(new discord_js.ActionRowBuilder());
-                }
-                rows.forEach((row, i) => {
-                    row.addComponents(buttons.slice(0 + i * 5, 5 + i * 5));
-                });
-                let __embed = new discord_js.EmbedBuilder()
-                    .setTitle(options.embed.title)
-                    .setDescription(options.winMessage ? options.winMessage
-                    .replace('{{winner}}', button.user.id)
-                    .replace('{{time}}', `${(Date.now() - gameCreatedAt) / 1000}`)
-                    : `GG, <@${button.user.id}> pressed the button in **${(Date.now() - gameCreatedAt) / 1000} seconds**.`)
-                    .setColor(options.embed.color)
-                    .setTimestamp(options.embed.timestamp ? new Date() : null)
-                    .setURL(options.embed.url ? options.embed.url : null)
-                    .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                    .setImage(options.embed.image ? options.embed.image : null);
-                if (options.embed.author) {
-                    __embed.setAuthor({
-                        name: options.embed.author.name,
-                        iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                        url: options.embed.author.url ? options.embed.author.url : undefined
-                    });
-                }
-                if (options.embed.footer) {
-                    __embed.setFooter({
-                        text: options.embed.footer.text,
-                        iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                    });
-                }
-                if (options.embed.fields) {
-                    __embed.setFields(options.embed.fields);
-                }
-                await msg.edit({
-                    embeds: [__embed],
-                    components: rows,
+            else {
+                btn1.setStyle(discord_js.ButtonStyle.Danger);
+                btn2.setStyle(discord_js.ButtonStyle.Success);
+            }
+            embed.setTimestamp(options.embed.timestamp ? new Date() : null);
+            await msg.edit({
+                embeds: [embed],
+                components: [{ type: 1, components: [btn1, btn2] }]
+            });
+            const lostEmbed = new discord_js.EmbedBuilder()
+                .setDescription(`${options.loseMessage ?
+                options.loseMessage.replace('{{answer}}', htmlEntities.decode(answer)) :
+                `**You run out of Time**\nBetter luck next time! It was a **${htmlEntities.decode(answer)}**.`}`)
+                .setColor(options.embed.color)
+                .setTimestamp(options.embed.timestamp ? new Date() : null)
+                .setURL(options.embed.url ? options.embed.url : null)
+                .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
+                .setImage(options.embed.image ? options.embed.image : null)
+                .setFooter({
+                text: "©️ M3rcena Development | Powered by Mivator",
+                iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+            });
+            const username = options.interaction.author ? options.interaction.author.username : options.interaction.user.username;
+            const iconUrl = options.interaction.author ? options.interaction.author.displayAvatarURL() : options.interaction.user.displayAvatarURL();
+            if (options.embed.author) {
+                lostEmbed.setAuthor({
+                    name: username,
+                    iconURL: iconUrl
                 });
             }
-            return delete currentGames[interaction.guild.id];
-        });
-        Collector.on('end', async (_msg, reason) => {
-            if (reason === 'time') {
-                buttons.forEach((element) => {
-                    element.setDisabled();
-                });
-                rows.length = 0;
-                for (let i = 0; i < 5; i++) {
-                    rows.push(new discord_js.ActionRowBuilder());
-                }
-                rows.forEach((row, i) => {
-                    row.addComponents(buttons.slice(0 + i * 5, 5 + i * 5));
-                });
-                let __embed = new discord_js.EmbedBuilder()
-                    .setTitle(options.embed.title)
-                    .setDescription(options.loseMessage ? options.loseMessage
-                    : 'No one pressed the button in time. So, I dropped the game!')
-                    .setColor(options.embed.color)
-                    .setTimestamp(options.embed.timestamp ? new Date() : null)
-                    .setURL(options.embed.url ? options.embed.url : null)
-                    .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                    .setImage(options.embed.image ? options.embed.image : null);
-                if (options.embed.author) {
-                    __embed.setAuthor({
-                        name: options.embed.author.name,
-                        iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                        url: options.embed.author.url ? options.embed.author.url : undefined
-                    });
-                }
-                if (options.embed.footer) {
-                    __embed.setFooter({
-                        text: options.embed.footer.text,
-                        iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                    });
-                }
-                if (options.embed.fields) {
-                    __embed.setFields(options.embed.fields);
-                }
-                await msg.edit({
-                    embeds: [__embed],
-                    components: rows,
-                });
-                if (!interaction.guild) {
-                    return;
-                }
-                return delete currentGames[interaction.guild.id];
-            }
-        });
-    }, Math.floor(Math.random() * 5000) + 1000);
-    checkPackageUpdates('QuickClick', options.notifyUpdate);
+            if (!interaction.channel || !interaction.channel.isSendable())
+                return;
+            await interaction.channel.send({
+                embeds: [lostEmbed]
+            });
+        }
+    });
+    checkPackageUpdates("LieSwatter", options.notifyUpdate);
 };
 
 const NeverHaveIEver = async (options) => {
@@ -6234,18 +5807,16 @@ const NeverHaveIEver = async (options) => {
     }
     let embed = new discord_js.EmbedBuilder()
         .setTitle(options.thinkMessage ? options.thinkMessage : "I am thinking...")
-        .setColor(options.embed.color);
+        .setColor(options.embed.color)
+        .setFooter({
+        text: "©️ M3rcena Development | Powered by Mivator",
+        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+    });
     if (options.embed.author) {
         embed.setAuthor({
             name: options.embed.author.name,
             iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
             url: options.embed.author.url ? options.embed.author.url : undefined
-        });
-    }
-    if (options.embed.footer) {
-        embed.setFooter({
-            text: options.embed.footer.text,
-            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
         });
     }
     if (options.embed.fields) {
@@ -6268,18 +5839,16 @@ const NeverHaveIEver = async (options) => {
     embed
         .setTitle(options.embed.title)
         .setDescription(statement)
-        .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null);
+        .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
+        .setFooter({
+        text: "©️ M3rcena Development | Powered by Mivator",
+        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+    });
     if (options.embed.author) {
         embed.setAuthor({
             name: options.embed.author.name,
             iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
             url: options.embed.author.url ? options.embed.author.url : undefined
-        });
-    }
-    if (options.embed.footer) {
-        embed.setFooter({
-            text: options.embed.footer.text,
-            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
         });
     }
     if (options.embed.fields) {
@@ -6372,8 +5941,9 @@ const NeverHaveIEver = async (options) => {
     checkPackageUpdates("NeverHaveIEver", options.notifyUpdate);
 };
 
-const Hangman = async (options) => {
-    OptionsChecking(options, "Hangman");
+const currentGames = {};
+const QuickClick = async (options) => {
+    OptionsChecking(options, 'GuessTheNumber');
     let interaction;
     if (options.interaction.author) {
         interaction = options.interaction;
@@ -6382,9 +5952,270 @@ const Hangman = async (options) => {
         interaction = options.interaction;
     }
     if (!interaction)
-        throw new Error(chalk.red("[@m3rcena/weky] Hangman Error:") + " No interaction provided.");
+        throw new Error(chalk.red("[@m3rcena/weky] QuickClick Error:") + " No interaction provided.");
     if (!interaction.channel || !interaction.channel.isSendable())
-        throw new Error(chalk.red("[@m3rcena/weky] Hangman Error:") + " No channel found.");
+        throw new Error(chalk.red("[@m3rcena/weky] QuickClick Error:") + " Channel is not available in this interaction.");
+    if (!interaction.guild) {
+        throw new Error(chalk.red("[@m3rcena/weky] QuickClick Error:") + " Guild is not available in this interaction.");
+    }
+    if (!interaction.channel || !interaction.channel.isSendable()) {
+        throw new Error(chalk.red("[@m3rcena/weky] QuickClick Error:") + " Channel is not available in this interaction.");
+    }
+    options.client;
+    if (options.interaction.author) {
+        options.interaction.author.id;
+    }
+    else {
+        options.interaction.user.id;
+    }
+    if (!options.time)
+        options.time = 60000;
+    if (options.time < 10000) {
+        throw new Error(chalk.red("[@m3rcena/weky] QuickClick Error:") + " Time argument must be greater than 10 Seconds (in ms i.e. 10000).");
+    }
+    if (!options.waitMessage)
+        options.waitMessage = 'The buttons may appear anytime now!';
+    if (typeof options.waitMessage !== 'string') {
+        throw new TypeError(chalk.red("[@m3rcena/weky] QuickClick Error:") + " waitMessage must be a string");
+    }
+    if (!options.startMessage)
+        options.startMessage = 'First person to press the correct button will win. You have **{{time}}**!';
+    if (typeof options.startMessage !== 'string') {
+        throw new TypeError(chalk.red("[@m3rcena/weky] QuickClick Error:") + " startMessage must be a string");
+    }
+    if (!options.winMessage)
+        options.winMessage = 'GG, <@{{winner}}> pressed the button in **{{time}} seconds**.';
+    if (typeof options.winMessage !== 'string') {
+        throw new TypeError(chalk.red("[@m3rcena/weky] QuickClick Error:") + " winMessage must be a string");
+    }
+    if (!options.loseMessage)
+        options.loseMessage = 'No one pressed the button in time. So, I dropped the game!';
+    if (typeof options.loseMessage !== 'string') {
+        throw new TypeError(chalk.red("[@m3rcena/weky] QuickClick Error:") + " loseMessage must be a string");
+    }
+    if (!options.emoji)
+        options.emoji = '👆';
+    if (typeof options.emoji !== 'string') {
+        throw new TypeError(chalk.red("[@m3rcena/weky] QuickClick Error:") + " emoji must be a string");
+    }
+    if (!options.ongoingMessage)
+        options.ongoingMessage = 'A game is already runnning in <#{{channel}}>. You can\'t start a new one!';
+    if (typeof options.ongoingMessage !== 'string') {
+        throw new TypeError(chalk.red("[@m3rcena/weky] QuickClick Error:") + " ongoingMessage must be a string");
+    }
+    if (currentGames[interaction.guild.id]) {
+        let embed = new discord_js.EmbedBuilder()
+            .setTitle(options.embed.title)
+            .setDescription(options.ongoingMessage ? options.ongoingMessage.replace('{{channel}}', `${currentGames[`${interaction.guild.id}_channel`]}`) : `A game is already runnning in <#${currentGames[`${interaction.guild.id}_channel`]}>. You can\'t start a new one!`)
+            .setColor(options.embed.color)
+            .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
+            .setURL(options.embed.url ? options.embed.url : null)
+            .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
+            .setImage(options.embed.image ? options.embed.image : null)
+            .setFooter({
+            text: "©️ M3rcena Development | Powered by Mivator",
+            iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+        });
+        if (options.embed.author) {
+            embed.setAuthor({
+                name: options.embed.author.name,
+                iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
+                url: options.embed.author.url ? options.embed.author.url : undefined
+            });
+        }
+        if (options.embed.fields) {
+            embed.setFields(options.embed.fields);
+        }
+        return interaction.reply({ embeds: [embed] });
+    }
+    let embed = new discord_js.EmbedBuilder()
+        .setTitle(options.embed.title)
+        .setDescription(options.waitMessage ? options.waitMessage : 'The buttons may appear anytime now!')
+        .setColor(options.embed.color)
+        .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
+        .setURL(options.embed.url ? options.embed.url : null)
+        .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
+        .setImage(options.embed.image ? options.embed.image : null)
+        .setFooter({
+        text: "©️ M3rcena Development | Powered by Mivator",
+        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+    });
+    if (options.embed.author) {
+        embed.setAuthor({
+            name: options.embed.author.name,
+            iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
+            url: options.embed.author.url ? options.embed.author.url : undefined
+        });
+    }
+    if (options.embed.fields) {
+        embed.setFields(options.embed.fields);
+    }
+    const msg = await interaction.reply({ embeds: [embed] });
+    currentGames[interaction.guild.id] = true;
+    currentGames[`${interaction.guild.id}_channel`] = interaction.channel.id;
+    setTimeout(async function () {
+        const rows = [];
+        const buttons = [];
+        const gameCreatedAt = Date.now();
+        for (let i = 0; i < 24; i++) {
+            buttons.push(new discord_js.ButtonBuilder()
+                .setDisabled()
+                .setLabel('\u200b')
+                .setStyle(discord_js.ButtonStyle.Primary)
+                .setCustomId(getRandomString(20)));
+        }
+        buttons.push(new discord_js.ButtonBuilder()
+            .setStyle(discord_js.ButtonStyle.Primary)
+            .setEmoji(options.emoji ? options.emoji : '👆')
+            .setCustomId('CORRECT'));
+        shuffleArray(buttons);
+        for (let i = 0; i < 5; i++) {
+            rows.push(new discord_js.ActionRowBuilder());
+        }
+        rows.forEach((row, i) => {
+            row.addComponents(buttons.slice(0 + i * 5, 5 + i * 5));
+        });
+        let _embed = new discord_js.EmbedBuilder()
+            .setTitle(options.embed.title)
+            .setDescription(options.startMessage ? options.startMessage.replace('{{time}}', convertTime(options.time ? options.time : 60000)) : `First person to press the correct button will win. You have **${convertTime(options.time ? options.time : 60000)}**!`)
+            .setColor(options.embed.color)
+            .setTimestamp(options.embed.timestamp ? new Date() : null)
+            .setURL(options.embed.url ? options.embed.url : null)
+            .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
+            .setImage(options.embed.image ? options.embed.image : null)
+            .setFooter({
+            text: "©️ M3rcena Development | Powered by Mivator",
+            iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+        });
+        if (options.embed.author) {
+            _embed.setAuthor({
+                name: options.embed.author.name,
+                iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
+                url: options.embed.author.url ? options.embed.author.url : undefined
+            });
+        }
+        if (options.embed.fields) {
+            _embed.setFields(options.embed.fields);
+        }
+        await msg.edit({
+            embeds: [_embed],
+            components: rows,
+        });
+        const Collector = msg.createMessageComponentCollector({
+            filter: (fn) => fn.message.id === msg.id,
+            time: options.time,
+        });
+        Collector.on('collect', async (button) => {
+            if (!interaction.guild) {
+                throw new Error(chalk.red("[@m3rcena/weky] QuickClick Error:") + " Guild is not available in this interaction.");
+            }
+            if (button.customId === 'CORRECT') {
+                await button.deferUpdate();
+                Collector.stop();
+                buttons.forEach((element) => {
+                    element.setDisabled();
+                });
+                rows.length = 0;
+                for (let i = 0; i < 5; i++) {
+                    rows.push(new discord_js.ActionRowBuilder());
+                }
+                rows.forEach((row, i) => {
+                    row.addComponents(buttons.slice(0 + i * 5, 5 + i * 5));
+                });
+                let __embed = new discord_js.EmbedBuilder()
+                    .setTitle(options.embed.title)
+                    .setDescription(options.winMessage ? options.winMessage
+                    .replace('{{winner}}', button.user.id)
+                    .replace('{{time}}', `${(Date.now() - gameCreatedAt) / 1000}`)
+                    : `GG, <@${button.user.id}> pressed the button in **${(Date.now() - gameCreatedAt) / 1000} seconds**.`)
+                    .setColor(options.embed.color)
+                    .setTimestamp(options.embed.timestamp ? new Date() : null)
+                    .setURL(options.embed.url ? options.embed.url : null)
+                    .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
+                    .setImage(options.embed.image ? options.embed.image : null)
+                    .setFooter({
+                    text: "©️ M3rcena Development | Powered by Mivator",
+                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+                });
+                if (options.embed.author) {
+                    __embed.setAuthor({
+                        name: options.embed.author.name,
+                        iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
+                        url: options.embed.author.url ? options.embed.author.url : undefined
+                    });
+                }
+                if (options.embed.fields) {
+                    __embed.setFields(options.embed.fields);
+                }
+                await msg.edit({
+                    embeds: [__embed],
+                    components: rows,
+                });
+            }
+            return delete currentGames[interaction.guild.id];
+        });
+        Collector.on('end', async (_msg, reason) => {
+            if (reason === 'time') {
+                buttons.forEach((element) => {
+                    element.setDisabled();
+                });
+                rows.length = 0;
+                for (let i = 0; i < 5; i++) {
+                    rows.push(new discord_js.ActionRowBuilder());
+                }
+                rows.forEach((row, i) => {
+                    row.addComponents(buttons.slice(0 + i * 5, 5 + i * 5));
+                });
+                let __embed = new discord_js.EmbedBuilder()
+                    .setTitle(options.embed.title)
+                    .setDescription(options.loseMessage ? options.loseMessage
+                    : 'No one pressed the button in time. So, I dropped the game!')
+                    .setColor(options.embed.color)
+                    .setTimestamp(options.embed.timestamp ? new Date() : null)
+                    .setURL(options.embed.url ? options.embed.url : null)
+                    .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
+                    .setImage(options.embed.image ? options.embed.image : null)
+                    .setFooter({
+                    text: "©️ M3rcena Development | Powered by Mivator",
+                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+                });
+                if (options.embed.author) {
+                    __embed.setAuthor({
+                        name: options.embed.author.name,
+                        iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
+                        url: options.embed.author.url ? options.embed.author.url : undefined
+                    });
+                }
+                if (options.embed.fields) {
+                    __embed.setFields(options.embed.fields);
+                }
+                await msg.edit({
+                    embeds: [__embed],
+                    components: rows,
+                });
+                if (!interaction.guild) {
+                    return;
+                }
+                return delete currentGames[interaction.guild.id];
+            }
+        });
+    }, Math.floor(Math.random() * 5000) + 1000);
+    checkPackageUpdates('QuickClick', options.notifyUpdate);
+};
+
+const WillYouPressTheButton = async (options) => {
+    OptionsChecking(options, "WillYouPressTheButton");
+    let interaction;
+    if (options.interaction.author) {
+        interaction = options.interaction;
+    }
+    else {
+        interaction = options.interaction;
+    }
+    if (!interaction)
+        throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " No interaction provided.");
+    if (!interaction.channel || !interaction.channel.isSendable())
+        throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " No channel provided in interaction.");
     options.client;
     let id = "";
     if (options.interaction.author) {
@@ -6393,19 +6224,63 @@ const Hangman = async (options) => {
     else {
         id = options.interaction.user.id;
     }
-    let wrongs = 0;
-    let at = new discord_js.AttachmentBuilder(await createHangman(wrongs), {
-        name: "game.png"
-    });
-    let word = words[Math.floor(Math.random() * words.length)];
-    let used = [];
+    if (!options.button)
+        options.button = {};
+    if (typeof options.embed !== 'object') {
+        throw new TypeError(chalk.red("[@m3rcena/weky] WillYouPressTheButton Error:") + " embed must be an object.");
+    }
+    if (!options.button.yes)
+        options.button.yes = 'Yes';
+    if (typeof options.button.yes !== 'string') {
+        throw new TypeError(chalk.red("[@m3rcena/weky] WillYouPressTheButton Error:") + " button.yes must be a string.");
+    }
+    if (!options.button.no)
+        options.button.no = 'No';
+    if (typeof options.button.no !== 'string') {
+        throw new TypeError(chalk.red("[@m3rcena/weky] WillYouPressTheButton Error:") + " button.no must be a string.");
+    }
+    if (!options.thinkMessage)
+        options.thinkMessage = 'I am thinking';
+    if (typeof options.thinkMessage !== 'string') {
+        throw new TypeError(chalk.red("[@m3rcena/weky] WillYouPressTheButton Error:") + " thinkMessage must be a string.");
+    }
+    if (!options.othersMessage) {
+        options.othersMessage = 'Only <@{{author}}> can use the buttons!';
+    }
+    if (typeof options.othersMessage !== 'string') {
+        throw new TypeError(chalk.red("[@m3rcena/weky] WillYouPressTheButton Error:") + " othersMessage must be a string.");
+    }
+    if (!options.embed.description) {
+        options.embed.description = '```{{statement1}}```\n**but**\n\n```{{statement2}}```';
+    }
+    if (typeof options.embed.description !== 'string') {
+        throw new TypeError(chalk.red("[@m3rcena/weky] WillYouPressTheButton Error:") + " embed.description must be a string.");
+    }
+    const id1 = getRandomString(20) +
+        '-' +
+        getRandomString(20) +
+        '-' +
+        getRandomString(20) +
+        '-' +
+        getRandomString(20);
+    const id2 = getRandomString(20) +
+        '-' +
+        getRandomString(20) +
+        '-' +
+        getRandomString(20) +
+        '-' +
+        getRandomString(20);
     let embed = new discord_js.EmbedBuilder()
-        .setTitle(options.embed.title ? options.embed.title : "Hangman Game")
-        .setDescription(options.embed.description ? options.embed.description.replace(`{{word}}`, `\`\`\`${word.split("").map(v => used.includes(v) ? v.toUpperCase() : "_").join(" ")}`) :
-        `Type a character to guess the word\n\n\`\`\`${word.split("").map(v => used.includes(v) ? v.toUpperCase() : "_").join(" ")}\`\`\``)
-        .setColor(options.embed.color ? options.embed.color : "Blue")
-        .setImage("attachment://game.png")
-        .setTimestamp(options.embed.timestamp ? Date.now() : null);
+        .setTitle(`${options.thinkMessage}...`)
+        .setColor(options.embed.color)
+        .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
+        .setURL(options.embed.url ? options.embed.url : null)
+        .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
+        .setImage(options.embed.image ? options.embed.image : null)
+        .setFooter({
+        text: "©️ M3rcena Development | Powered by Mivator",
+        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+    });
     if (options.embed.author) {
         embed.setAuthor({
             name: options.embed.author.name,
@@ -6413,95 +6288,345 @@ const Hangman = async (options) => {
             url: options.embed.author.url ? options.embed.author.url : undefined
         });
     }
-    if (options.embed.footer) {
-        embed.setFooter({
-            text: options.embed.footer.text,
-            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
+    if (options.embed.fields) {
+        embed.setFields(options.embed.fields);
+    }
+    const think = await interaction.reply({
+        embeds: [embed],
+    });
+    const fetchedData = await getButtonDilemma();
+    const res = {
+        questions: [fetchedData.question, fetchedData.result],
+        percentage: {
+            1: fetchedData.yesNo.yes.persend,
+            2: fetchedData.yesNo.no.persend,
+        }
+    };
+    let btn = new discord_js.ButtonBuilder()
+        .setStyle(discord_js.ButtonStyle.Success)
+        .setLabel(options.button.yes)
+        .setCustomId(id1);
+    let btn2 = new discord_js.ButtonBuilder()
+        .setStyle(discord_js.ButtonStyle.Danger)
+        .setLabel(options.button.no)
+        .setCustomId(id2);
+    embed = new discord_js.EmbedBuilder()
+        .setTitle(options.embed.title)
+        .setDescription(`${options.embed.description
+        .replace('{{statement1}}', res.questions[0].charAt(0).toUpperCase() +
+        res.questions[0].slice(1))
+        .replace('{{statement2}}', res.questions[1].charAt(0).toUpperCase() +
+        res.questions[1].slice(1))}`)
+        .setColor(options.embed.color)
+        .setTimestamp(options.embed.timestamp ? new Date() : null)
+        .setURL(options.embed.url ? options.embed.url : null)
+        .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
+        .setImage(options.embed.image ? options.embed.image : null)
+        .setFooter({
+        text: "©️ M3rcena Development | Powered by Mivator",
+        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+    });
+    if (options.embed.author) {
+        embed.setAuthor({
+            name: options.embed.author.name,
+            iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
+            url: options.embed.author.url ? options.embed.author.url : undefined
         });
     }
     if (options.embed.fields) {
         embed.setFields(options.embed.fields);
     }
-    const msg = await interaction.reply({
-        files: [at],
+    await think.edit({
         embeds: [embed],
-        fetchReply: true
+        components: [
+            {
+                type: 1,
+                components: [btn, btn2]
+            }
+        ]
     });
-    const channel = await interaction.channel;
-    const col = channel.createMessageCollector({
-        filter: (m) => m.author.id === id,
-        time: options.time ? options.time : 180000
+    const gameCollector = think.createMessageComponentCollector({
+        time: options.time ? options.time : 60000,
     });
-    col.on('collect', async (msg2) => {
-        const char = msg2.content[0]?.toLowerCase();
-        if (!/[a-z]/i.test(char))
-            return msg2.reply("You have to **provide** a **letter**, **not** a **number/symbol**!").then(m => setTimeout(() => {
-                if (m.deletable)
-                    m.delete();
-            }, 5000));
-        if (used.includes(char))
-            return msg2.reply("You have **already** used this **letter**!").then(m => setTimeout(() => {
-                if (m.deletable)
-                    m.delete();
-            }, 5000));
-        used.push(char);
-        if (!word.includes(char)) {
-            wrongs++;
+    gameCollector.on('collect', async (wyptb) => {
+        if (wyptb.user.id !== id) {
+            return wyptb.reply({
+                content: options.othersMessage ?
+                    options.othersMessage.replace('{{author}}', id) :
+                    `Only <@${id}> can use the buttons!`,
+                ephemeral: true
+            });
         }
-        let done = word.split("").every(v => used.includes(v));
-        let description = wrongs === 6 || done ? `You ${done ? "won" : "lost"} the game, The word was **${word}**` : `Type a character to guess the word\n\n\`\`\`${word.split("").map(v => used.includes(v) ? v.toUpperCase() : "_").join(" ")}\`\`\``;
-        at = new discord_js.AttachmentBuilder(await createHangman(wrongs), {
-            name: "game.png"
+        await wyptb.deferUpdate();
+        if (wyptb.customId === id1) {
+            btn = new discord_js.ButtonBuilder()
+                .setStyle(discord_js.ButtonStyle.Success)
+                .setLabel(`${options.button ? options.button.yes ? options.button.yes : 'Yes' : 'Yes'} (${res.percentage['1']})`)
+                .setDisabled()
+                .setCustomId(id1);
+            btn2 = new discord_js.ButtonBuilder()
+                .setStyle(discord_js.ButtonStyle.Danger)
+                .setLabel(`${options.button ? options.button.no ? options.button.no : 'No' : 'No'} (${res.percentage['2']})`)
+                .setDisabled()
+                .setCustomId(id2);
+            gameCollector.stop();
+            embed.setTimestamp(new Date());
+            await wyptb.editReply({
+                embeds: [embed],
+                components: [
+                    {
+                        type: 1,
+                        components: [btn, btn2]
+                    }
+                ]
+            });
+        }
+        else if (wyptb.customId === id2) {
+            btn = new discord_js.ButtonBuilder()
+                .setStyle(discord_js.ButtonStyle.Danger)
+                .setLabel(`${options.button ? options.button.yes ? options.button.yes : 'Yes' : 'Yes'} (${res.percentage['1']})`)
+                .setDisabled()
+                .setCustomId(id1);
+            btn2 = new discord_js.ButtonBuilder()
+                .setStyle(discord_js.ButtonStyle.Success)
+                .setLabel(`${options.button ? options.button.no ? options.button.no : 'No' : 'No'} (${res.percentage['2']})`)
+                .setDisabled()
+                .setCustomId(id2);
+            gameCollector.stop();
+            embed.setTimestamp(new Date());
+            await wyptb.editReply({
+                embeds: [embed],
+                components: [
+                    {
+                        type: 1,
+                        components: [btn, btn2]
+                    }
+                ]
+            });
+        }
+    });
+    checkPackageUpdates("WillYouPressTheButton", options.notifyUpdate);
+};
+
+const WouldYouRather = async (options) => {
+    OptionsChecking(options, "WouldYouRather");
+    let interaction;
+    if (options.interaction.author) {
+        interaction = options.interaction;
+    }
+    else {
+        interaction = options.interaction;
+    }
+    if (!interaction)
+        throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " No interaction provided.");
+    if (!interaction.channel || !interaction.channel.isSendable())
+        throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " No channel provided in interaction.");
+    options.client;
+    let id = "";
+    if (options.interaction.author) {
+        id = options.interaction.author.id;
+    }
+    else {
+        id = options.interaction.user.id;
+    }
+    const id1 = getRandomString(20) +
+        '-' +
+        getRandomString(20) +
+        '-' +
+        getRandomString(20) +
+        '-' +
+        getRandomString(20);
+    const id2 = getRandomString(20) +
+        '-' +
+        getRandomString(20) +
+        '-' +
+        getRandomString(20) +
+        '-' +
+        getRandomString(20);
+    let embed = new discord_js.EmbedBuilder()
+        .setTitle(options.embed.title)
+        .setDescription(options.thinkMessage ?
+        options.thinkMessage :
+        `I am thinking...`)
+        .setColor(options.embed.color)
+        .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
+        .setURL(options.embed.url ? options.embed.url : null)
+        .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
+        .setImage(options.embed.image ? options.embed.image : null)
+        .setFooter({
+        text: "©️ M3rcena Development | Powered by Mivator",
+        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+    });
+    if (options.embed.author) {
+        embed.setAuthor({
+            name: options.embed.author.name,
+            iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
+            url: options.embed.author.url ? options.embed.author.url : undefined
         });
-        embed = new discord_js.EmbedBuilder()
-            .setTitle(options.embed.title ? options.embed.title : "Hangman Game")
-            .setDescription(description)
-            .setColor(options.embed.color ? options.embed.color : wrongs === 6 ? "#ff0000" : done ? "Green" : "Blue")
-            .setImage("attachment://game.png")
-            .setTimestamp(options.embed.timestamp ? Date.now() : null);
-        if (options.embed.author) {
-            embed.setAuthor({
-                name: options.embed.author.name,
-                iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                url: options.embed.author.url ? options.embed.author.url : undefined
-            });
-        }
-        if (options.embed.footer) {
-            embed.setFooter({
-                text: options.embed.footer.text,
-                iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-            });
-        }
-        if (options.embed.fields) {
-            embed.setFields(options.embed.fields);
-        }
-        if (msg.editable) {
-            await msg.edit({
-                files: [at],
-                embeds: [embed]
-            });
-        }
-        if (wrongs === 6 || done) {
-            col.stop();
-        }
+    }
+    if (options.embed.fields) {
+        embed.setFields(options.embed.fields);
+    }
+    const think = await interaction.reply({
+        embeds: [embed]
     });
-    col.on('end', async (s, r) => {
-        if (r === "time") {
-            let embed = new discord_js.EmbedBuilder()
-                .setTitle("⛔ Game Ended")
-                .setDescription(`\`\`\`You took too much time to respond\`\`\``)
-                .setColor("Red")
-                .setTimestamp();
-            if (msg.editable) {
-                await msg.edit({
-                    attachments: [],
-                    files: [],
-                    embeds: [embed]
+    const number = Math.floor(Math.random() * (700 - 1 + 1)) + 1;
+    const response = await ofetch.ofetch(`https://wouldurather.io/api/question?id=${number}`);
+    const data = response;
+    const res = {
+        questions: [data.option1, data.option2],
+        percentage: {
+            1: ((parseInt(data.option1Votes) /
+                (parseInt(data.option1Votes) + parseInt(data.option2Votes))) *
+                100).toFixed(2) + '%',
+            2: ((parseInt(data.option2Votes) /
+                (parseInt(data.option1Votes) + parseInt(data.option2Votes))) *
+                100).toFixed(2) + '%',
+        },
+    };
+    let btn = new discord_js.ButtonBuilder()
+        .setStyle(discord_js.ButtonStyle.Primary)
+        .setLabel(options.buttons ? options.buttons.optionA : "Option A")
+        .setCustomId(id1);
+    let btn2 = new discord_js.ButtonBuilder()
+        .setStyle(discord_js.ButtonStyle.Primary)
+        .setLabel(options.buttons ? options.buttons.optionB : "Option B")
+        .setCustomId(id2);
+    embed = new discord_js.EmbedBuilder()
+        .setTitle(options.embed.title)
+        .setDescription(`**Option A:** ${htmlEntities.decode(res.questions[0])}\n**Option B:** ${htmlEntities.decode(res.questions[1])}`)
+        .setColor(options.embed.color)
+        .setTimestamp(options.embed.timestamp ? new Date() : null)
+        .setURL(options.embed.url ? options.embed.url : null)
+        .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
+        .setImage(options.embed.image ? options.embed.image : null)
+        .setFooter({
+        text: "©️ M3rcena Development | Powered by Mivator",
+        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+    });
+    if (options.embed.author) {
+        embed.setAuthor({
+            name: options.embed.author.name,
+            iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
+            url: options.embed.author.url ? options.embed.author.url : undefined
+        });
+    }
+    if (options.embed.fields) {
+        embed.setFields(options.embed.fields);
+    }
+    await think.edit({
+        embeds: [embed],
+        components: [
+            {
+                type: 1,
+                components: [btn, btn2]
+            }
+        ]
+    });
+    const gameCollector = think.createMessageComponentCollector({
+        componentType: discord_js.ComponentType.Button,
+        time: options.time ? options.time : undefined
+    });
+    gameCollector.on('collect', async (wyr) => {
+        if (wyr.user.id !== id) {
+            return wyr.reply({
+                content: options.othersMessage ?
+                    options.othersMessage.replace('{{author}}', id) :
+                    `This is not your game!`,
+                ephemeral: true
+            });
+        }
+        await wyr.deferUpdate();
+        if (wyr.customId === id1) {
+            btn = new discord_js.ButtonBuilder()
+                .setStyle(discord_js.ButtonStyle.Primary)
+                .setLabel(`${options.buttons ? options.buttons.optionA : "Option A"}` + ` (${res.percentage['1']})`)
+                .setCustomId(id1)
+                .setDisabled();
+            btn2 = new discord_js.ButtonBuilder()
+                .setStyle(discord_js.ButtonStyle.Secondary)
+                .setLabel(`${options.buttons ? options.buttons.optionB : "Option B"}` + ` (${res.percentage['2']})`)
+                .setCustomId(id2)
+                .setDisabled();
+            gameCollector.stop();
+            const _embed = new discord_js.EmbedBuilder()
+                .setTitle(options.embed.title)
+                .setDescription(`**Option A:** ${htmlEntities.decode(res.questions[0])} (${res.percentage['1']})\n**Option B:** ${htmlEntities.decode(res.questions[1])} (${res.percentage['2']})`)
+                .setColor(options.embed.color)
+                .setTimestamp(options.embed.timestamp ? new Date() : null)
+                .setURL(options.embed.url ? options.embed.url : null)
+                .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
+                .setImage(options.embed.image ? options.embed.image : null)
+                .setFooter({
+                text: "©️ M3rcena Development | Powered by Mivator",
+                iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+            });
+            if (options.embed.author) {
+                _embed.setAuthor({
+                    name: options.embed.author.name,
+                    iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
+                    url: options.embed.author.url ? options.embed.author.url : undefined
                 });
             }
+            if (options.embed.fields) {
+                _embed.setFields(options.embed.fields);
+            }
+            await wyr.editReply({
+                embeds: [_embed],
+                components: [
+                    {
+                        type: 1,
+                        components: [btn, btn2]
+                    }
+                ]
+            });
+        }
+        else if (wyr.customId === id2) {
+            btn = new discord_js.ButtonBuilder()
+                .setStyle(discord_js.ButtonStyle.Secondary)
+                .setLabel(`${options.buttons ? options.buttons.optionA : "Option A"}` + ` (${res.percentage['1']})`)
+                .setCustomId(id1)
+                .setDisabled();
+            btn2 = new discord_js.ButtonBuilder()
+                .setStyle(discord_js.ButtonStyle.Primary)
+                .setLabel(`${options.buttons ? options.buttons.optionB : "Option B"}` + ` (${res.percentage['2']})`)
+                .setCustomId(id2)
+                .setDisabled();
+            gameCollector.stop();
+            const _embed = new discord_js.EmbedBuilder()
+                .setTitle(options.embed.title)
+                .setDescription(`**Option A:** ${htmlEntities.decode(res.questions[0])} (${res.percentage['1']})\n**Option B:** ${htmlEntities.decode(res.questions[1])} (${res.percentage['2']})`)
+                .setColor(options.embed.color)
+                .setTimestamp(options.embed.timestamp ? new Date() : null)
+                .setURL(options.embed.url ? options.embed.url : null)
+                .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
+                .setImage(options.embed.image ? options.embed.image : null)
+                .setFooter({
+                text: "©️ M3rcena Development | Powered by Mivator",
+                iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+            });
+            if (options.embed.author) {
+                _embed.setAuthor({
+                    name: options.embed.author.name,
+                    iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
+                    url: options.embed.author.url ? options.embed.author.url : undefined
+                });
+            }
+            if (options.embed.fields) {
+                _embed.setFields(options.embed.fields);
+            }
+            await wyr.editReply({
+                embeds: [_embed],
+                components: [
+                    {
+                        type: 1,
+                        components: [btn, btn2]
+                    }
+                ]
+            });
         }
     });
-    checkPackageUpdates("Hangman", options.notifyUpdate);
+    checkPackageUpdates("WouldYouRather", options.notifyUpdate);
 };
 
 exports.Calculator = Calculator;
@@ -6514,3 +6639,4 @@ exports.NeverHaveIEver = NeverHaveIEver;
 exports.QuickClick = QuickClick;
 exports.WillYouPressTheButton = WillYouPressTheButton;
 exports.WouldYouRather = WouldYouRather;
+exports.mini2048 = mini2048;

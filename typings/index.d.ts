@@ -1,4 +1,7 @@
-import { ChatInputCommandInteraction, Client, ColorResolvable, Message, MessageInteraction } from "discord.js";
+import {
+	ChatInputCommandInteraction, Client, ColorResolvable, Message, MessageInteraction
+} from "discord.js";
+
 interface Calc {
     interaction: Message | ChatInputCommandInteraction,
     client: Client,
@@ -15,10 +18,6 @@ interface Calc {
         fields?: Fields[],
         image?: string,
         timestamp?: Date,
-        footer?: {
-            text: string,
-            icon_url?: string
-        },
         thumbnail?: string
     },
     invalidQuery?: string,
@@ -42,10 +41,6 @@ interface Chaos {
         fields?: Fields[],
         image?: string,
         timestamp?: Date,
-        footer?: {
-            text: string,
-            icon_url?: string
-        },
         thumbnail?: string
     },
     winMessage?: string,
@@ -79,10 +74,6 @@ interface FastTypeTyping {
         fields?: Fields[],
         image?: string,
         timestamp?: Date,
-        footer?: {
-            text: string,
-            icon_url?: string
-        },
         thumbnail?: string
     },
     sentence?: string,
@@ -111,10 +102,6 @@ interface LieSwatterTypes {
         fields?: Fields[],
         image?: string,
         timestamp?: Date,
-        footer?: {
-            text: string,
-            icon_url?: string
-        },
         thumbnail?: string
     },
     winMessage?: string,
@@ -145,10 +132,6 @@ interface WouldYouRatherTypes {
         fields?: Fields[],
         image?: string,
         timestamp?: Date,
-        footer?: {
-            text: string,
-            icon_url?: string
-        },
         thumbnail?: string
     },
     othersMessage?: string,
@@ -177,10 +160,6 @@ interface GuessTheNumberTypes {
         fields?: Fields[],
         image?: string,
         timestamp?: Date,
-        footer?: {
-            text: string,
-            icon_url?: string
-        },
         thumbnail?: string
     },
     publicGame?: boolean,
@@ -217,10 +196,6 @@ interface WillYouPressTheButtonTypes {
         fields?: Fields[],
         image?: string,
         timestamp?: Date,
-        footer?: {
-            text: string,
-            icon_url?: string
-        },
         thumbnail?: string
     },
     button?: {
@@ -249,10 +224,6 @@ interface QuickClickTypes {
         fields?: Fields[],
         image?: string,
         timestamp?: Date,
-        footer?: {
-            text: string,
-            icon_url?: string
-        },
         thumbnail?: string
     },
     waitMessage?: string,
@@ -281,10 +252,6 @@ interface NeverHaveIEverTypes {
         fields?: Fields[],
         image?: string,
         timestamp?: Date,
-        footer?: {
-            text: string,
-            icon_url?: string
-        },
         thumbnail?: string
     },
     thinkMessage?: string,
@@ -313,12 +280,37 @@ interface HangmanTypes {
         fields?: Fields[],
         image?: string,
         timestamp?: Date,
-        footer?: {
-            text: string,
-            icon_url?: string
-        },
         thumbnail?: string
     },
+    notifyUpdate?: boolean,
+    time?: number,
+}
+
+interface Types2048 {
+    interaction: Message | ChatInputCommandInteraction,
+    client: Client,
+    embed: {
+        color: ColorResolvable,
+        title: string,
+        url?: string,
+        author?: {
+            name: string,
+            icon_url?: string,
+            url?: string
+        },
+        description?: string,
+        fields?: Fields[],
+        image?: string,
+        timestamp?: Date,
+        thumbnail?: string
+    },
+    emojis?: {
+        up: string,
+        down: string,
+        left: string,
+        right: string
+    },
+    othersMessage?: string,
     notifyUpdate?: boolean,
     time?: number,
 }
@@ -327,4 +319,4 @@ interface Fields {
     name: string,
     value: string,
     inline?: boolean
-};
+}

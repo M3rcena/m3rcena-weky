@@ -1,8 +1,13 @@
-import type { NeverHaveIEverTypes } from "../typings";
-import { OptionsChecking } from "../functions/OptionChecking.js";
 import chalk from "chalk";
-import { ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, Client, ComponentType, EmbedBuilder, Message } from "discord.js";
+import {
+	ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, Client, ComponentType, EmbedBuilder,
+	Message
+} from "discord.js";
+
 import { checkPackageUpdates, getRandomString } from "../functions/functions.js";
+import { OptionsChecking } from "../functions/OptionChecking.js";
+
+import type { NeverHaveIEverTypes } from "../typings";
 
 const NeverHaveIEver = async (options: NeverHaveIEverTypes) => {
     // Check type
@@ -70,20 +75,17 @@ const NeverHaveIEver = async (options: NeverHaveIEverTypes) => {
 
     let embed = new EmbedBuilder()
         .setTitle(options.thinkMessage ? options.thinkMessage : "I am thinking...")
-        .setColor(options.embed.color);
+        .setColor(options.embed.color)
+        .setFooter({
+            text: "©️ M3rcena Development | Powered by Mivator",
+            iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+        });
 
     if (options.embed.author) {
         embed.setAuthor({
             name: options.embed.author.name,
             iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
             url: options.embed.author.url ? options.embed.author.url : undefined
-        });
-    };
-
-    if (options.embed.footer) {
-        embed.setFooter({
-            text: options.embed.footer.text,
-            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
         });
     };
 
@@ -118,19 +120,16 @@ const NeverHaveIEver = async (options: NeverHaveIEverTypes) => {
         .setTitle(options.embed.title)
         .setDescription(statement)
         .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
+        .setFooter({
+            text: "©️ M3rcena Development | Powered by Mivator",
+            iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+        });
 
     if (options.embed.author) {
         embed.setAuthor({
             name: options.embed.author.name,
             iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
             url: options.embed.author.url ? options.embed.author.url : undefined
-        });
-    };
-
-    if (options.embed.footer) {
-        embed.setFooter({
-            text: options.embed.footer.text,
-            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
         });
     };
 

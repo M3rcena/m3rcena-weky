@@ -1,8 +1,16 @@
-import { ButtonStyle, ChatInputCommandInteraction, Client, Message, EmbedBuilder, ButtonBuilder, ComponentType } from "discord.js";
-import type { FastTypeTyping } from "../typings";
 import chalk from "chalk";
-import { checkPackageUpdates, convertTime, getRandomSentence, getRandomString } from "../functions/functions.js";
+import {
+	ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, Client, ComponentType, EmbedBuilder,
+	Message
+} from "discord.js";
+
+import {
+	checkPackageUpdates, convertTime, getRandomSentence, getRandomString
+} from "../functions/functions.js";
 import { OptionsChecking } from "../functions/OptionChecking.js";
+
+import type { FastTypeTyping } from "../typings";
+
 const data = new Set();
 
 const FastType = async (options: FastTypeTyping) => {
@@ -73,20 +81,17 @@ const FastType = async (options: FastTypeTyping) => {
         .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
         .setURL(options.embed.url ? options.embed.url : null)
         .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-        .setImage(options.embed.image ? options.embed.image : null);
+        .setImage(options.embed.image ? options.embed.image : null)
+        .setFooter({
+            text: "©️ M3rcena Development | Powered by Mivator",
+            iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+        });
 
     if (options.embed.author) {
         embed.setAuthor({
             name: options.embed.author.name,
             iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
             url: options.embed.author.url ? options.embed.author.url : undefined
-        });
-    };
-
-    if (options.embed.footer) {
-        embed.setFooter({
-            text: options.embed.footer.text,
-            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
         });
     };
 
@@ -120,26 +125,23 @@ const FastType = async (options: FastTypeTyping) => {
                         options.winMessage
                             .replace('time', convertTime(time))
                             .replace('wpm', wpm.toFixed(2))
-                        : `You have typed the sentence correctly in **${convertTime(time)}** with **${wpm.toFixed(2)}** WPM.` 
+                        : `You have typed the sentence correctly in **${convertTime(time)}** with **${wpm.toFixed(2)}** WPM.`
                 )
                 .setColor(options.embed.color)
                 .setTimestamp(options.embed.timestamp ? new Date() : null)
                 .setURL(options.embed.url ? options.embed.url : null)
                 .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                .setImage(options.embed.image ? options.embed.image : null);
-                
+                .setImage(options.embed.image ? options.embed.image : null)
+                .setFooter({
+                    text: "©️ M3rcena Development | Powered by Mivator",
+                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+                });
+
             if (options.embed.author) {
                 _embed.setAuthor({
                     name: options.embed.author.name,
                     iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
                     url: options.embed.author.url ? options.embed.author.url : undefined
-                });
-            };
-
-            if (options.embed.footer) {
-                _embed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
                 });
             };
 
@@ -164,20 +166,17 @@ const FastType = async (options: FastTypeTyping) => {
                 .setTimestamp(options.embed.timestamp ? new Date() : null)
                 .setURL(options.embed.url ? options.embed.url : null)
                 .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                .setImage(options.embed.image ? options.embed.image : null);
+                .setImage(options.embed.image ? options.embed.image : null)
+                .setFooter({
+                    text: "©️ M3rcena Development | Powered by Mivator",
+                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+                });
 
             if (options.embed.author) {
                 _embed.setAuthor({
                     name: options.embed.author.name,
                     iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
                     url: options.embed.author.url ? options.embed.author.url : undefined
-                });
-            };
-
-            if (options.embed.footer) {
-                _embed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
                 });
             };
 
@@ -206,20 +205,17 @@ const FastType = async (options: FastTypeTyping) => {
                 .setTimestamp(options.embed.timestamp ? new Date() : null)
                 .setURL(options.embed.url ? options.embed.url : null)
                 .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                .setImage(options.embed.image ? options.embed.image : null);
+                .setImage(options.embed.image ? options.embed.image : null)
+                .setFooter({
+                    text: "©️ M3rcena Development | Powered by Mivator",
+                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+                });
 
             if (options.embed.author) {
                 _embed.setAuthor({
                     name: options.embed.author.name,
                     iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
                     url: options.embed.author.url ? options.embed.author.url : undefined
-                });
-            };
-
-            if (options.embed.footer) {
-                _embed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
                 });
             };
 
@@ -271,7 +267,7 @@ const FastType = async (options: FastTypeTyping) => {
         data.delete(id);
         return collector.stop();
     });
-    
+
     checkPackageUpdates("FastType", options.notifyUpdate);
 };
 

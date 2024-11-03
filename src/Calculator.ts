@@ -1,9 +1,16 @@
 import chalk from "chalk";
-import type { Calc } from "../typings";
-import { ActionRowBuilder, ButtonBuilder, ChatInputCommandInteraction, Client, ComponentType, EmbedBuilder, Message, ModalBuilder, TextInputBuilder, TextInputStyle } from "discord.js";
-import { createButton, getRandomString, addRow, checkPackageUpdates, createDisabledButton } from "../functions/functions.js";
+import {
+	ActionRowBuilder, ButtonBuilder, ChatInputCommandInteraction, Client, ComponentType,
+	EmbedBuilder, Message, ModalBuilder, TextInputBuilder, TextInputStyle
+} from "discord.js";
 import { evaluate } from "mathjs";
+
+import {
+	addRow, checkPackageUpdates, createButton, createDisabledButton
+} from "../functions/functions.js";
 import { OptionsChecking } from "../functions/OptionChecking.js";
+
+import type { Calc } from "../typings";
 
 const Calculator = async (options: Calc) => {
     // Check type
@@ -94,7 +101,6 @@ const Calculator = async (options: Calc) => {
         }
     }
 
-    const iconURL = options.embed.footer ? options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined : undefined;
     let embed = new EmbedBuilder()
         .setTitle(options.embed.title)
         .setDescription(stringify)
@@ -103,7 +109,11 @@ const Calculator = async (options: Calc) => {
         .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
         .addFields(options.embed.fields ? options.embed.fields : [])
         .setImage(options.embed.image ? options.embed.image : null)
-        .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null);
+        .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
+        .setFooter({
+            text: "©️ M3rcena Development | Powered by Mivator",
+            iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+        });
 
     if (options.embed.author) {
         const author = ({
@@ -113,14 +123,6 @@ const Calculator = async (options: Calc) => {
         })
         embed.setAuthor(author);
     };
-
-    if (options.embed.footer) {
-        const footer = ({
-            text: options.embed.footer.text,
-            iconURL: iconURL ? iconURL : undefined
-        })
-        embed.setFooter(footer);
-    }
 
     if (!interaction.channel || !interaction.channel.isTextBased() || !interaction.channel.isSendable()) {
         throw new Error(chalk.red("[@m3rcena/weky] Calculator Error:") + " Interaction must be a text-based channel.");
@@ -148,7 +150,11 @@ const Calculator = async (options: Calc) => {
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
                     .addFields(options.embed.fields ? options.embed.fields : [])
                     .setImage(options.embed.image ? options.embed.image : null)
-                    .setTimestamp(new Date());
+                    .setTimestamp(new Date())
+                    .setFooter({
+                        text: "©️ M3rcena Development | Powered by Mivator",
+                        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+                    });
 
                 if (options.embed.author) {
                     const author = ({
@@ -157,14 +163,6 @@ const Calculator = async (options: Calc) => {
                         url: options.embed.author.url ? options.embed.author.url : undefined
                     })
                     _embed.setAuthor(author);
-                };
-
-                if (options.embed.footer) {
-                    const footer = ({
-                        text: options.embed.footer.text,
-                        iconURL: iconURL ? iconURL : undefined
-                    })
-                    _embed.setFooter(footer);
                 };
 
                 if (msg.editable) {
@@ -187,7 +185,11 @@ const Calculator = async (options: Calc) => {
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
                     .addFields(options.embed.fields ? options.embed.fields : [])
                     .setImage(options.embed.image ? options.embed.image : null)
-                    .setTimestamp(new Date());
+                    .setTimestamp(new Date())
+                    .setFooter({
+                        text: "©️ M3rcena Development | Powered by Mivator",
+                        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+                    });
 
                 if (options.embed.author) {
                     const author = ({
@@ -196,14 +198,6 @@ const Calculator = async (options: Calc) => {
                         url: options.embed.author.url ? options.embed.author.url : undefined
                     })
                     _embed.setAuthor(author);
-                };
-
-                if (options.embed.footer) {
-                    const footer = ({
-                        text: options.embed.footer.text,
-                        iconURL: iconURL ? iconURL : undefined
-                    })
-                    _embed.setFooter(footer);
                 };
 
                 if (msg.editable) {
@@ -766,7 +760,11 @@ const Calculator = async (options: Calc) => {
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
                     .addFields(options.embed.fields ? options.embed.fields : [])
                     .setImage(options.embed.image ? options.embed.image : null)
-                    .setTimestamp(new Date());
+                    .setTimestamp(new Date())
+                    .setFooter({
+                        text: "©️ M3rcena Development | Powered by Mivator",
+                        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+                    });
 
                 if (options.embed.author) {
                     const author = ({
@@ -775,14 +773,6 @@ const Calculator = async (options: Calc) => {
                         url: options.embed.author.url ? options.embed.author.url : undefined
                     })
                     _embed.setAuthor(author);
-                };
-
-                if (options.embed.footer) {
-                    const footer = ({
-                        text: options.embed.footer.text,
-                        iconURL: iconURL ? iconURL : undefined
-                    })
-                    _embed.setFooter(footer);
                 };
 
                 if (msg.editable) {
@@ -805,7 +795,11 @@ const Calculator = async (options: Calc) => {
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
                     .addFields(options.embed.fields ? options.embed.fields : [])
                     .setImage(options.embed.image ? options.embed.image : null)
-                    .setTimestamp(new Date());
+                    .setTimestamp(new Date())
+                    .setFooter({
+                        text: "©️ M3rcena Development | Powered by Mivator",
+                        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+                    });
 
                 if (options.embed.author) {
                     const author = ({
@@ -814,14 +808,6 @@ const Calculator = async (options: Calc) => {
                         url: options.embed.author.url ? options.embed.author.url : undefined
                     })
                     _embed.setAuthor(author);
-                };
-
-                if (options.embed.footer) {
-                    const footer = ({
-                        text: options.embed.footer.text,
-                        iconURL: iconURL ? iconURL : undefined
-                    })
-                    _embed.setFooter(footer);
                 };
 
                 if (msg.editable) {

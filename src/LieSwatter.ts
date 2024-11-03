@@ -1,21 +1,25 @@
-import { ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, Client, ComponentType, EmbedBuilder, Message } from "discord.js";
-import { LieSwatterTypes } from "../typings";
 import chalk from "chalk";
-import { checkPackageUpdates, convertTime, getRandomString } from "../functions/functions.js";
+import {
+	ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, Client, ComponentType, EmbedBuilder,
+	Message
+} from "discord.js";
 import { decode } from "html-entities";
+
+import { checkPackageUpdates, convertTime, getRandomString } from "../functions/functions.js";
 import { OptionsChecking } from "../functions/OptionChecking.js";
+import { LieSwatterTypes } from "../typings";
 
 interface OpenTDBResponse {
     response_code: number;
     results: {
-      category: string;
-      type: string;
-      difficulty: string;
-      question: string;
-      correct_answer: string;
-      incorrect_answers: string[];
+        category: string;
+        type: string;
+        difficulty: string;
+        question: string;
+        correct_answer: string;
+        incorrect_answers: string[];
     }[];
-  }
+}
 
 const LieSwatter = async (options: LieSwatterTypes) => {
     // Check types
@@ -107,20 +111,17 @@ const LieSwatter = async (options: LieSwatterTypes) => {
         .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
         .setURL(options.embed.url ? options.embed.url : null)
         .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-        .setImage(options.embed.image ? options.embed.image : null);
+        .setImage(options.embed.image ? options.embed.image : null)
+        .setFooter({
+            text: "©️ M3rcena Development | Powered by Mivator",
+            iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+        });
 
     if (options.embed.author) {
         embed.setAuthor({
             name: options.embed.author.name,
             iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
             url: options.embed.author.url ? options.embed.author.url : undefined
-        });
-    };
-
-    if (options.embed.footer) {
-        embed.setFooter({
-            text: options.embed.footer.text,
-            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
         });
     };
 
@@ -164,20 +165,17 @@ const LieSwatter = async (options: LieSwatterTypes) => {
         .setTimestamp(options.embed.timestamp ? new Date() : null)
         .setURL(options.embed.url ? options.embed.url : null)
         .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-        .setImage(options.embed.image ? options.embed.image : null);
+        .setImage(options.embed.image ? options.embed.image : null)
+        .setFooter({
+            text: "©️ M3rcena Development | Powered by Mivator",
+            iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+        });
 
     if (options.embed.author) {
         embed.setAuthor({
             name: options.embed.author.name,
             iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
             url: options.embed.author.url ? options.embed.author.url : undefined
-        });
-    };
-
-    if (options.embed.footer) {
-        embed.setFooter({
-            text: options.embed.footer.text,
-            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
         });
     };
 
@@ -249,7 +247,11 @@ const LieSwatter = async (options: LieSwatterTypes) => {
                 .setTimestamp(options.embed.timestamp ? new Date() : null)
                 .setURL(options.embed.url ? options.embed.url : null)
                 .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                .setImage(options.embed.image ? options.embed.image : null);
+                .setImage(options.embed.image ? options.embed.image : null)
+                .setFooter({
+                    text: "©️ M3rcena Development | Powered by Mivator",
+                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+                });
 
             const username = (options.interaction as Message).author ? (options.interaction as Message).author.username : (options.interaction as ChatInputCommandInteraction).user.username;
             const iconUrl = (options.interaction as Message).author ? (options.interaction as Message).author.displayAvatarURL() : (options.interaction as ChatInputCommandInteraction).user.displayAvatarURL();
@@ -257,13 +259,6 @@ const LieSwatter = async (options: LieSwatterTypes) => {
                 winEmbed.setAuthor({
                     name: username,
                     iconURL: iconUrl
-                });
-            };
-
-            if (options.embed.footer) {
-                winEmbed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
                 });
             };
 
@@ -300,7 +295,7 @@ const LieSwatter = async (options: LieSwatterTypes) => {
 
             const lostEmbed = new EmbedBuilder()
                 .setDescription(
-                    `${options.loseMessage ? 
+                    `${options.loseMessage ?
                         options.loseMessage.replace('{{answer}}', decode(answer)) :
                         `Better luck next time! It was a **${decode(answer)}**.`
                     }`
@@ -309,7 +304,11 @@ const LieSwatter = async (options: LieSwatterTypes) => {
                 .setTimestamp(options.embed.timestamp ? new Date() : null)
                 .setURL(options.embed.url ? options.embed.url : null)
                 .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                .setImage(options.embed.image ? options.embed.image : null);
+                .setImage(options.embed.image ? options.embed.image : null)
+                .setFooter({
+                    text: "©️ M3rcena Development | Powered by Mivator",
+                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+                });
 
             const username = (options.interaction as Message).author ? (options.interaction as Message).author.username : (options.interaction as ChatInputCommandInteraction).user.username;
             const iconUrl = (options.interaction as Message).author ? (options.interaction as Message).author.displayAvatarURL() : (options.interaction as ChatInputCommandInteraction).user.displayAvatarURL();
@@ -317,13 +316,6 @@ const LieSwatter = async (options: LieSwatterTypes) => {
                 lostEmbed.setAuthor({
                     name: username,
                     iconURL: iconUrl
-                });
-            };
-
-            if (options.embed.footer) {
-                lostEmbed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
                 });
             };
 
@@ -371,7 +363,11 @@ const LieSwatter = async (options: LieSwatterTypes) => {
                 .setTimestamp(options.embed.timestamp ? new Date() : null)
                 .setURL(options.embed.url ? options.embed.url : null)
                 .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                .setImage(options.embed.image ? options.embed.image : null);
+                .setImage(options.embed.image ? options.embed.image : null)
+                .setFooter({
+                    text: "©️ M3rcena Development | Powered by Mivator",
+                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+                });
 
             const username = (options.interaction as Message).author ? (options.interaction as Message).author.username : (options.interaction as ChatInputCommandInteraction).user.username;
             const iconUrl = (options.interaction as Message).author ? (options.interaction as Message).author.displayAvatarURL() : (options.interaction as ChatInputCommandInteraction).user.displayAvatarURL();
@@ -379,13 +375,6 @@ const LieSwatter = async (options: LieSwatterTypes) => {
                 lostEmbed.setAuthor({
                     name: username,
                     iconURL: iconUrl
-                });
-            };
-
-            if (options.embed.footer) {
-                lostEmbed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
                 });
             };
 

@@ -1,8 +1,11 @@
-import { ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, Client, EmbedBuilder, Message } from "discord.js";
+import chalk from "chalk";
+import {
+	ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, Client, EmbedBuilder, Message
+} from "discord.js";
+
+import { checkPackageUpdates, getButtonDilemma, getRandomString } from "../functions/functions.js";
 import { OptionsChecking } from "../functions/OptionChecking.js";
 import { WillYouPressTheButtonTypes } from "../typings";
-import chalk from "chalk";
-import { checkPackageUpdates, getButtonDilemma, getRandomString } from "../functions/functions.js";
 
 const WillYouPressTheButton = async (options: WillYouPressTheButtonTypes) => {
     // Options Check
@@ -29,31 +32,31 @@ const WillYouPressTheButton = async (options: WillYouPressTheButtonTypes) => {
     };
 
     if (!options.button) options.button = {};
-	if (typeof options.embed !== 'object') {
+    if (typeof options.embed !== 'object') {
         throw new TypeError(chalk.red("[@m3rcena/weky] WillYouPressTheButton Error:") + " embed must be an object.");
-	};
+    };
 
-	if (!options.button.yes) options.button.yes = 'Yes';
-	if (typeof options.button.yes !== 'string') {
+    if (!options.button.yes) options.button.yes = 'Yes';
+    if (typeof options.button.yes !== 'string') {
         throw new TypeError(chalk.red("[@m3rcena/weky] WillYouPressTheButton Error:") + " button.yes must be a string.");
-	};
+    };
 
-	if (!options.button.no) options.button.no = 'No';
-	if (typeof options.button.no !== 'string') {
+    if (!options.button.no) options.button.no = 'No';
+    if (typeof options.button.no !== 'string') {
         throw new TypeError(chalk.red("[@m3rcena/weky] WillYouPressTheButton Error:") + " button.no must be a string.");
-	};
+    };
 
-	if (!options.thinkMessage) options.thinkMessage = 'I am thinking';
-	if (typeof options.thinkMessage !== 'string') {
+    if (!options.thinkMessage) options.thinkMessage = 'I am thinking';
+    if (typeof options.thinkMessage !== 'string') {
         throw new TypeError(chalk.red("[@m3rcena/weky] WillYouPressTheButton Error:") + " thinkMessage must be a string.");
-	};
+    };
 
-	if (!options.othersMessage) {
-		options.othersMessage = 'Only <@{{author}}> can use the buttons!';
-	};
-	if (typeof options.othersMessage !== 'string') {
+    if (!options.othersMessage) {
+        options.othersMessage = 'Only <@{{author}}> can use the buttons!';
+    };
+    if (typeof options.othersMessage !== 'string') {
         throw new TypeError(chalk.red("[@m3rcena/weky] WillYouPressTheButton Error:") + " othersMessage must be a string.");
-	};
+    };
 
     if (!options.embed.description) {
         options.embed.description = '```{{statement1}}```\n**but**\n\n```{{statement2}}```';
@@ -70,7 +73,7 @@ const WillYouPressTheButton = async (options: WillYouPressTheButtonTypes) => {
         getRandomString(20) +
         '-' +
         getRandomString(20);
-        
+
     const id2 =
         getRandomString(20) +
         '-' +
@@ -86,20 +89,17 @@ const WillYouPressTheButton = async (options: WillYouPressTheButtonTypes) => {
         .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
         .setURL(options.embed.url ? options.embed.url : null)
         .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-        .setImage(options.embed.image ? options.embed.image : null);
+        .setImage(options.embed.image ? options.embed.image : null)
+        .setFooter({
+            text: "©️ M3rcena Development | Powered by Mivator",
+            iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+        });
 
     if (options.embed.author) {
         embed.setAuthor({
             name: options.embed.author.name,
             iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
             url: options.embed.author.url ? options.embed.author.url : undefined
-        });
-    };
-
-    if (options.embed.footer) {
-        embed.setFooter({
-            text: options.embed.footer.text,
-            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
         });
     };
 
@@ -110,7 +110,7 @@ const WillYouPressTheButton = async (options: WillYouPressTheButtonTypes) => {
     const think = await interaction.reply({
         embeds: [embed],
     });
-    
+
     const fetchedData = await getButtonDilemma();
 
     const res = {
@@ -151,20 +151,17 @@ const WillYouPressTheButton = async (options: WillYouPressTheButtonTypes) => {
         .setTimestamp(options.embed.timestamp ? new Date() : null)
         .setURL(options.embed.url ? options.embed.url : null)
         .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-        .setImage(options.embed.image ? options.embed.image : null);
+        .setImage(options.embed.image ? options.embed.image : null)
+        .setFooter({
+            text: "©️ M3rcena Development | Powered by Mivator",
+            iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+        });
 
     if (options.embed.author) {
         embed.setAuthor({
             name: options.embed.author.name,
             iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
             url: options.embed.author.url ? options.embed.author.url : undefined
-        });
-    }
-
-    if (options.embed.footer) {
-        embed.setFooter({
-            text: options.embed.footer.text,
-            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
         });
     }
 

@@ -1,14 +1,23 @@
-import { ButtonBuilder, ButtonInteraction, ButtonStyle, ChatInputCommandInteraction, ComponentType, DMChannel, EmbedBuilder, Message, NewsChannel, PartialGroupDMChannel, PrivateThreadChannel, PublicThreadChannel, StageChannel, TextChannel, VoiceChannel } from "discord.js";
-import type { Chaos, Fields } from "../typings"
 import chalk from "chalk";
-import { checkPackageUpdates, convertTime, getRandomSentence, getRandomString } from "../functions/functions.js";
+import {
+	ButtonBuilder, ButtonInteraction, ButtonStyle, ChatInputCommandInteraction, ComponentType,
+	DMChannel, EmbedBuilder, Message, NewsChannel, PrivateThreadChannel, PublicThreadChannel,
+	StageChannel, TextChannel, VoiceChannel
+} from "discord.js";
+
+import {
+	checkPackageUpdates, convertTime, getRandomSentence, getRandomString
+} from "../functions/functions.js";
 import { OptionsChecking } from "../functions/OptionChecking.js";
+
+import type { Chaos, Fields } from "../typings";
+
 const data = new Set();
 
 const ChaosWords = async (options: Chaos) => {
     // Check types
     OptionsChecking(options, "ChaosWords")
-    
+
     let interaction;
 
     if ((options.interaction as Message).author) {
@@ -99,19 +108,16 @@ const ChaosWords = async (options: Chaos) => {
         .setURL(options.embed.url ? options.embed.url : null)
         .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
         .setImage(options.embed.image ? options.embed.image : null)
+        .setFooter({
+            text: "©️ M3rcena Development | Powered by Mivator",
+            iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+        });
 
     if (options.embed.author) {
         embed.setAuthor({
             name: options.embed.author.name,
             iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
             url: options.embed.author.url ? options.embed.author.url : undefined
-        });
-    };
-
-    if (options.embed.footer) {
-        embed.setFooter({
-            text: options.embed.footer.text,
-            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
         });
     };
 
@@ -165,7 +171,7 @@ const ChaosWords = async (options: Chaos) => {
     const filter = (m: Message) => m.author.id === id;
     let game;
     if (interaction instanceof Message) {
-        game = await interaction.channel.createMessageCollector({
+        game = await (interaction.channel as TextChannel).createMessageCollector({
             filter,
             time: options.time ? options.time : 60000
         })
@@ -203,19 +209,16 @@ const ChaosWords = async (options: Chaos) => {
                 .setURL(options.embed.url ? options.embed.url : null)
                 .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
                 .setImage(options.embed.image ? options.embed.image : null)
+                .setFooter({
+                    text: "©️ M3rcena Development | Powered by Mivator",
+                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+                });
 
             if (options.embed.author) {
                 _embed.setAuthor({
                     name: options.embed.author.name,
                     iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
                     url: options.embed.author.url ? options.embed.author.url : undefined
-                });
-            };
-
-            if (options.embed.footer) {
-                _embed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
                 });
             };
 
@@ -287,20 +290,17 @@ const ChaosWords = async (options: Chaos) => {
                     .setTimestamp(options.embed.timestamp ? new Date() : null)
                     .setURL(options.embed.url ? options.embed.url : null)
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                    .setImage(options.embed.image ? options.embed.image : null);
+                    .setImage(options.embed.image ? options.embed.image : null)
+                    .setFooter({
+                        text: "©️ M3rcena Development | Powered by Mivator",
+                        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+                    });
 
                 if (options.embed.author) {
                     __embed.setAuthor({
                         name: options.embed.author.name,
                         iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
                         url: options.embed.author.url ? options.embed.author.url : undefined
-                    });
-                };
-
-                if (options.embed.footer) {
-                    __embed.setFooter({
-                        text: options.embed.footer.text,
-                        iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
                     });
                 };
 
@@ -364,14 +364,11 @@ const ChaosWords = async (options: Chaos) => {
                         : `GG, **${mes.content.toLowerCase()}** was correct! You have to find **${words.length - remaining}** more word(s).`}
                     `)
                 .setColor(options.embed.color)
-                .setTimestamp(options.embed.timestamp ? new Date() : null);
-
-            if (options.embed.footer) {
-                __embed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
+                .setTimestamp(options.embed.timestamp ? new Date() : null)
+                .setFooter({
+                    text: "©️ M3rcena Development | Powered by Mivator",
+                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
                 });
-            };
 
             mes.reply({
                 embeds: [__embed],
@@ -386,20 +383,17 @@ const ChaosWords = async (options: Chaos) => {
                     .setTimestamp(options.embed.timestamp ? new Date() : null)
                     .setURL(options.embed.url ? options.embed.url : null)
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                    .setImage(options.embed.image ? options.embed.image : null);
+                    .setImage(options.embed.image ? options.embed.image : null)
+                    .setFooter({
+                        text: "©️ M3rcena Development | Powered by Mivator",
+                        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+                    });
 
                 if (options.embed.author) {
                     _embed.setAuthor({
                         name: options.embed.author.name,
                         iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
                         url: options.embed.author.url ? options.embed.author.url : undefined
-                    });
-                };
-
-                if (options.embed.footer) {
-                    _embed.setFooter({
-                        text: options.embed.footer.text,
-                        iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
                     });
                 };
 
@@ -470,14 +464,11 @@ const ChaosWords = async (options: Chaos) => {
                         `**${mes.content.toLowerCase()}** is not the correct word. You have **${options.maxTries ? options.maxTries : 10 - tries}** tries left.`}
                     `)
                 .setColor(options.embed.color)
-                .setTimestamp(options.embed.timestamp ? new Date() : null);
-
-            if (options.embed.footer) {
-                _embed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
+                .setTimestamp(options.embed.timestamp ? new Date() : null)
+                .setFooter({
+                    text: "©️ M3rcena Development | Powered by Mivator",
+                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
                 });
-            }
 
             mes.reply({
                 embeds: [_embed],
@@ -494,20 +485,17 @@ const ChaosWords = async (options: Chaos) => {
                 .setTimestamp(options.embed.timestamp ? new Date() : null)
                 .setURL(options.embed.url ? options.embed.url : null)
                 .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                .setImage(options.embed.image ? options.embed.image : null);
+                .setImage(options.embed.image ? options.embed.image : null)
+                .setFooter({
+                    text: "©️ M3rcena Development | Powered by Mivator",
+                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+                });
 
             if (options.embed.author) {
                 _embed.setAuthor({
                     name: options.embed.author.name,
                     iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
                     url: options.embed.author.url ? options.embed.author.url : undefined
-                });
-            };
-
-            if (options.embed.footer) {
-                _embed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
                 });
             };
 
@@ -626,7 +614,7 @@ const ChaosWords = async (options: Chaos) => {
             });
             embed.setFields(_fields);
         }
-        
+
         await msg.edit({
             embeds: [embed],
             components: [{ type: 1, components: [btn1] }]
@@ -639,20 +627,17 @@ const ChaosWords = async (options: Chaos) => {
             .setTimestamp(options.embed.timestamp ? new Date() : null)
             .setURL(options.embed.url ? options.embed.url : null)
             .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-            .setImage(options.embed.image ? options.embed.image : null);
+            .setImage(options.embed.image ? options.embed.image : null)
+            .setFooter({
+                text: "©️ M3rcena Development | Powered by Mivator",
+                iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+            });
 
         if (options.embed.author) {
             _embed.setAuthor({
                 name: options.embed.author.name,
                 iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
                 url: options.embed.author.url ? options.embed.author.url : undefined
-            });
-        };
-
-        if (options.embed.footer) {
-            _embed.setFooter({
-                text: options.embed.footer.text,
-                iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
             });
         };
 

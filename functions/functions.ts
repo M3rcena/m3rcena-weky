@@ -1,16 +1,16 @@
-import { ActionRowBuilder, BufferResolvable, ButtonBuilder, ButtonStyle } from "discord.js"
-import wordList from "../data/words.json" with { type: "json" };
 import chalk from "chalk";
-import stringWidth from 'string-width';
-import { exec } from 'child_process';
-
-import weky_package from "../package.json" with { type: "json" };
-import { promisify } from "util";
+import { exec } from "child_process";
+import { ActionRowBuilder, BufferResolvable, ButtonBuilder, ButtonStyle } from "discord.js";
 import { ofetch } from "ofetch";
+import stringWidth from "string-width";
+import { promisify } from "util";
 
 import { createCanvas } from "@napi-rs/canvas";
-import type { SKRSContext2D } from "@napi-rs/canvas";
 
+import wordList from "../data/words.json";
+import weky_package from "../package.json";
+
+import type { SKRSContext2D } from "@napi-rs/canvas";
 export const getRandomString = function (length: number) {
 	const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 	let result = '';

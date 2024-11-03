@@ -1,12 +1,12 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
-import wordList from "../data/words.json" with { type: "json" };
 import chalk from "chalk";
-import stringWidth from 'string-width';
-import { exec } from 'child_process';
-import weky_package from "../package.json" with { type: "json" };
-import { promisify } from "util";
+import { exec } from "child_process";
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
 import { ofetch } from "ofetch";
-import { createCanvas } from "canvas";
+import stringWidth from "string-width";
+import { promisify } from "util";
+import { createCanvas } from "@napi-rs/canvas";
+import wordList from "../data/words.json";
+import weky_package from "../package.json";
 export const getRandomString = function (length) {
     const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let result = '';
@@ -262,7 +262,7 @@ export const createHangman = async function (state = 0) {
         createLine(ctx, 200, 150, 230, 130, state < 4 ? "#a3a3a3" : "#000000");
         createLine(ctx, 200, 200, 180, 230, state < 5 ? "#a3a3a3" : "#000000");
         createLine(ctx, 200, 200, 220, 230, state < 6 ? "#a3a3a3" : "#000000");
-        res(canvas.toBuffer());
+        res(canvas.toBuffer("image/png"));
     });
 };
 function createLine(ctx, fromX, fromY, toX, toY, color = "#000000") {

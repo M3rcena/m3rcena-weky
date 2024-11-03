@@ -1,8 +1,8 @@
-import { OptionsChecking } from "../functions/OptionChecking.js";
-import { AttachmentBuilder, EmbedBuilder } from "discord.js";
 import chalk from "chalk";
+import { AttachmentBuilder, EmbedBuilder } from "discord.js";
+import words from "../data/words.json";
 import { checkPackageUpdates, createHangman } from "../functions/functions.js";
-import words from "../data/words.json" with { type: "json" };
+import { OptionsChecking } from "../functions/OptionChecking.js";
 const Hangman = async (options) => {
     OptionsChecking(options, "Hangman");
     let interaction;
@@ -38,19 +38,16 @@ const Hangman = async (options) => {
         `Type a character to guess the word\n\n\`\`\`${word.split("").map(v => used.includes(v) ? v.toUpperCase() : "_").join(" ")}\`\`\``)
         .setColor(options.embed.color ? options.embed.color : "Blue")
         .setImage("attachment://game.png")
-        .setTimestamp(options.embed.timestamp ? Date.now() : null);
+        .setTimestamp(options.embed.timestamp ? Date.now() : null)
+        .setFooter({
+        text: "©️ M3rcena Development | Powered by Mivator",
+        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+    });
     if (options.embed.author) {
         embed.setAuthor({
             name: options.embed.author.name,
             iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
             url: options.embed.author.url ? options.embed.author.url : undefined
-        });
-    }
-    ;
-    if (options.embed.footer) {
-        embed.setFooter({
-            text: options.embed.footer.text,
-            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
         });
     }
     ;
@@ -61,13 +58,22 @@ const Hangman = async (options) => {
     const msg = await interaction.reply({
         files: [at],
         embeds: [embed],
-        fetchReply: true
     });
     const channel = await interaction.channel;
     const col = channel.createMessageCollector({
         filter: (m) => m.author.id === id,
         time: options.time ? options.time : 180000
     });
+    const handleMsgDelete = (m, msg) => {
+        if (m.id === msg.id)
+            col.stop("msgDelete");
+    };
+    if ("token" in msg) {
+        msg.edit = (data) => msg.editReply(data);
+    }
+    else {
+        client.on("messageDelete", handleMsgDelete.bind(null, msg));
+    }
     col.on('collect', async (msg2) => {
         const char = msg2.content[0]?.toLowerCase();
         if (!/[a-z]/i.test(char))
@@ -95,7 +101,11 @@ const Hangman = async (options) => {
             .setDescription(description)
             .setColor(options.embed.color ? options.embed.color : wrongs === 6 ? "#ff0000" : done ? "Green" : "Blue")
             .setImage("attachment://game.png")
-            .setTimestamp(options.embed.timestamp ? Date.now() : null);
+            .setTimestamp(options.embed.timestamp ? Date.now() : null)
+            .setFooter({
+            text: "©️ M3rcena Development | Powered by Mivator",
+            iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+        });
         if (options.embed.author) {
             embed.setAuthor({
                 name: options.embed.author.name,
@@ -104,43 +114,37 @@ const Hangman = async (options) => {
             });
         }
         ;
-        if (options.embed.footer) {
-            embed.setFooter({
-                text: options.embed.footer.text,
-                iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-            });
-        }
-        ;
         if (options.embed.fields) {
             embed.setFields(options.embed.fields);
         }
         ;
-        if (msg.editable) {
-            await msg.edit({
-                files: [at],
-                embeds: [embed]
-            });
-        }
-        ;
+        await msg.edit({
+            files: [at],
+            embeds: [embed]
+        }).catch((e) => {
+            col.stop();
+            throw e;
+        });
         if (wrongs === 6 || done) {
             col.stop();
         }
         ;
     });
     col.on('end', async (s, r) => {
+        client.off("messageDelete", handleMsgDelete.bind(null, msg));
         if (r === "time") {
             let embed = new EmbedBuilder()
                 .setTitle("⛔ Game Ended")
                 .setDescription(`\`\`\`You took too much time to respond\`\`\``)
                 .setColor("Red")
                 .setTimestamp();
-            if (msg.editable) {
-                await msg.edit({
-                    attachments: [],
-                    files: [],
-                    embeds: [embed]
-                });
-            }
+            await msg.edit({
+                attachments: [],
+                files: [],
+                embeds: [embed]
+            }).catch((e) => {
+                throw e;
+            });
         }
     });
     checkPackageUpdates("Hangman", options.notifyUpdate);
