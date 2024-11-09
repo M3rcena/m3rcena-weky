@@ -8,17 +8,17 @@
     <img src="https://madewithlove.now.sh/gr?heart=true&template=for-the-badge" alt="Made with love in Greece">
     <img alt="Made with TypeScript" src="https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white">
     <br>
-    <a href="https://www.npmjs.com/package/lavalink-client">
-      <img src="https://img.shields.io/npm/v/lavalink-client.svg?maxAge=3600&style=for-the-badge&logo=npm&logoColor=red" alt="NPM version" />
+    <a href="https://www.npmjs.com/package/@m3rcena/weky">
+      <img src="https://img.shields.io/npm/v/%40m3rcena%2Fweky?maxAge=3600&style=for-the-badge&logo=npm&logoColor=red" alt="NPM version" />
     </a>
-    <a href="https://www.npmjs.com/package/lavalink-client">
-      <img src="https://img.shields.io/npm/dt/lavalink-client.svg?maxAge=3600&style=for-the-badge&logo=npm&logoColor=red" alt="NPM downloads" />
+    <a href="https://www.npmjs.com/package/@m3rcena/weky">
+      <img src="https://img.shields.io/npm/d18m/%40m3rcena%2Fweky?maxAge=3600&style=for-the-badge&logo=npm&logoColor=red" alt="NPM downloads" />
     </a>
-    <a href="https://tomato6966.github.io/lavalink-client/">
+    <a href="https://m3rcena.gitbook.io/docs">
       <img src="https://img.shields.io/badge/Documation-%230288D1.svg?style=for-the-badge&logo=gitbook&logoColor=white" alt="Get Started Now">
     </a>
     <br>
-    <a href="https://www.npmjs.com/package/lavalink-client"><img src="https://nodei.co/npm/lavalink-client.png?downloads=true&stars=true" alt="npm install lavalink-client" /></a>
+    <a href="https://www.npmjs.com/package/@m3rcena/weky"><img src="https://nodei.co/npm/@m3rcena/weky.png?downloads=true&stars=true" alt="npm install lavalink-client" /></a>
 </p>
 <br><br>
 
