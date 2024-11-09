@@ -51,7 +51,7 @@ const mini2048 = async (options: Types2048) => {
                 .setTitle("Failed to start the game.")
                 .setDescription(`\`\`\`${gameData.error}\`\`\``)
                 .setColor("Red")
-                .setTimestamp(new Date());
+                .setTimestamp(options.embed.timestamp ? new Date() : null);
             return await msg.edit({ content: ``, embeds: [embed] });
         };
     } else if (gameData.error && gameData.error === "Id already exists") {
@@ -59,7 +59,7 @@ const mini2048 = async (options: Types2048) => {
             .setTitle("Failed to start the game.")
             .setDescription(`You already have a game running!`)
             .setColor("Red")
-            .setTimestamp(new Date());
+            .setTimestamp(options.embed.timestamp ? new Date() : null);
 
         const stop = new ButtonBuilder()
             .setStyle(ButtonStyle.Danger)
@@ -98,7 +98,7 @@ const mini2048 = async (options: Types2048) => {
                     .setTitle("Game Stopped!")
                     .setDescription(`You have stopped the game.`)
                     .setColor("Red")
-                    .setTimestamp(new Date());
+                    .setTimestamp(options.embed.timestamp ? new Date() : null);
 
                 return await msg.edit({ content: ``, embeds: [embed], components: [] }).catch(() => { });
             };
@@ -206,7 +206,7 @@ const mini2048 = async (options: Types2048) => {
                 .setTitle("Failed to make a move.")
                 .setDescription(`\`\`\`${data.error}\`\`\``)
                 .setColor("Red")
-                .setTimestamp(new Date());
+                .setTimestamp(options.embed.timestamp ? new Date() : null);
             return await btn.reply({ content: ``, embeds: [embed] });
         };
 

@@ -169,7 +169,7 @@ const Hangman = async (options: HangmanTypes) => {
                 .setTitle("⛔ Game Ended")
                 .setDescription(`\`\`\`You took too much time to respond\`\`\``)
                 .setColor("Red")
-                .setTimestamp();
+                .setTimestamp(options.embed.timestamp ? new Date() : null);
 
             await msg.edit({
                 attachments: [],
