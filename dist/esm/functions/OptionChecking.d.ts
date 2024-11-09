@@ -1,0 +1,2 @@
+import type { Calc, Chaos, FastTypeTyping, GuessTheNumberTypes, HangmanTypes, LieSwatterTypes, NeverHaveIEverTypes, QuickClickTypes, WillYouPressTheButtonTypes, WouldYouRatherTypes, Types2048 } from "../Types/index.js";
+export declare function OptionsChecking(options: Calc | Chaos | FastTypeTyping | GuessTheNumberTypes | LieSwatterTypes | WouldYouRatherTypes | WillYouPressTheButtonTypes | HangmanTypes | NeverHaveIEverTypes | QuickClickTypes | Types2048, GameName: string): void;

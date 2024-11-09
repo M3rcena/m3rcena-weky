@@ -6,6 +6,7 @@ export function OptionsChecking(options, GameName) {
         throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " No options provided.");
     if (typeof options !== "object")
         throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} TypeError:`) + " Options must be an object.");
+    // Check if the interaction object is provided
     if (!options.interaction)
         throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " No interaction provided.");
     if (typeof options.interaction !== "object") {
@@ -20,6 +21,7 @@ export function OptionsChecking(options, GameName) {
     ;
     if (!options.embed)
         throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " No embed options provided.");
+    // Check if embed object is provided
     if (typeof options.embed !== "object") {
         throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed options must be an object.");
     }

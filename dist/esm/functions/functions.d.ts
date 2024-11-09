@@ -1,0 +1,13 @@
+import { ActionRowBuilder, BufferResolvable, ButtonBuilder } from "discord.js";
+export declare const getRandomString: (length: number) => string;
+export declare const createButton: (label: string, disabled: boolean) => ButtonBuilder;
+export declare const createDisabledButton: (label: string) => ButtonBuilder;
+export declare const addRow: (btns: ButtonBuilder[]) => ActionRowBuilder<ButtonBuilder>;
+export declare const getRandomSentence: (length: number) => any[];
+export declare const convertTime: (time: number) => string;
+export declare const checkPackageUpdates: (name: string, notifyUpdate?: boolean) => Promise<void>;
+export declare const boxConsole: (messages: string[]) => void;
+export declare const replaceHexCharacters: (text: string) => string;
+export declare const getButtonDilemma: () => Promise<any>;
+export declare const shuffleArray: (array: any[]) => any[];
+export declare const createHangman: (state?: number) => Promise<BufferResolvable>;
