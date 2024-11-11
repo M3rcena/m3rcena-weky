@@ -82,7 +82,7 @@ const ChaosWords = async (options) => {
         .setDescription(options.embed.description ?
         options.embed.description.replace('{{time}}', (0, functions_1.convertTime)(options.time ? options.time : 60000)) :
         `You have **${(0, functions_1.convertTime)(options.time ? options.time : 60000)}** to find the correct words in the chaos above.`)
-        .setColor(options.embed.color)
+        .setColor(options.embed.color ?? "Blurple")
         .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
         .setURL(options.embed.url ? options.embed.url : null)
         .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -182,7 +182,7 @@ const ChaosWords = async (options) => {
                 .setDescription(options.embed.description ?
                 options.embed.description.replace('{{time}}', (0, functions_1.convertTime)(options.time ? options.time : 60000)) :
                 `You have **${(0, functions_1.convertTime)(options.time ? options.time : 60000)}** to find the correct words in the chaos above.`)
-                .setColor(options.embed.color)
+                .setColor(options.embed.color ?? "Blurple")
                 .setTimestamp(options.embed.timestamp ? new Date() : null)
                 .setURL(options.embed.url ? options.embed.url : null)
                 .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -267,7 +267,7 @@ const ChaosWords = async (options) => {
                 let __embed = new discord_js_1.EmbedBuilder()
                     .setTitle(options.embed.title)
                     .setDescription(options.winMessage ? options.winMessage.replace('{{time}}', time) : `You found all the words in **${time}**`)
-                    .setColor(options.embed.color)
+                    .setColor(options.embed.color ?? "Blurple")
                     .setTimestamp(options.embed.timestamp ? new Date() : null)
                     .setURL(options.embed.url ? options.embed.url : null)
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -349,7 +349,7 @@ const ChaosWords = async (options) => {
                     .replace('{{remaining}}', `${words.length - remaining}`)
                 : `GG, **${mes.content.toLowerCase()}** was correct! You have to find **${words.length - remaining}** more word(s).`}
                     `)
-                .setColor(options.embed.color)
+                .setColor(options.embed.color ?? "Blurple")
                 .setTimestamp(options.embed.timestamp ? new Date() : null)
                 .setFooter({
                 text: "©️ M3rcena Development | Powered by Mivator",
@@ -365,7 +365,7 @@ const ChaosWords = async (options) => {
                 const _embed = new discord_js_1.EmbedBuilder()
                     .setTitle(options.embed.title)
                     .setDescription(options.loseMessage ? options.loseMessage : `You failed to find all the words in time.`)
-                    .setColor(options.embed.color)
+                    .setColor(options.embed.color ?? "Blurple")
                     .setTimestamp(options.embed.timestamp ? new Date() : null)
                     .setURL(options.embed.url ? options.embed.url : null)
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -453,7 +453,7 @@ const ChaosWords = async (options) => {
                 options.wrongWord.replace(`{{remaining_tries}}`, `${options.maxTries ? options.maxTries : 10 - tries}`) :
                 `**${mes.content.toLowerCase()}** is not the correct word. You have **${options.maxTries ? options.maxTries : 10 - tries}** tries left.`}
                     `)
-                .setColor(options.embed.color)
+                .setColor(options.embed.color ?? "Blurple")
                 .setTimestamp(options.embed.timestamp ? new Date() : null)
                 .setFooter({
                 text: "©️ M3rcena Development | Powered by Mivator",
@@ -469,7 +469,7 @@ const ChaosWords = async (options) => {
             const _embed = new discord_js_1.EmbedBuilder()
                 .setTitle(options.embed.title)
                 .setDescription(options.loseMessage ? options.loseMessage : `You failed to find all the words in time.`)
-                .setColor(options.embed.color)
+                .setColor(options.embed.color ?? "Blurple")
                 .setTimestamp(options.embed.timestamp ? new Date() : null)
                 .setURL(options.embed.url ? options.embed.url : null)
                 .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -610,7 +610,7 @@ const ChaosWords = async (options) => {
         const _embed = new discord_js_1.EmbedBuilder()
             .setTitle(options.embed.title)
             .setDescription(options.loseMessage ? options.loseMessage : `The game has been stopped by <@${id}>`)
-            .setColor(options.embed.color)
+            .setColor(options.embed.color ?? "Blurple")
             .setTimestamp(options.embed.timestamp ? new Date() : null)
             .setURL(options.embed.url ? options.embed.url : null)
             .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)

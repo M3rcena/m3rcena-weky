@@ -53,7 +53,7 @@ const FastType = async (options) => {
         .setDescription(`${options.embed.description ?
         options.embed.description.replace('{{time}}', convertTime(options.time ? options.time : 60000)) :
         `You have **${convertTime(options.time ? options.time : 60000)}** to type the sentence below.`}`)
-        .setColor(options.embed.color)
+        .setColor(options.embed.color ?? "Blurple")
         .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
         .setURL(options.embed.url ? options.embed.url : null)
         .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -106,7 +106,7 @@ const FastType = async (options) => {
                     .replace('time', convertTime(time))
                     .replace('wpm', wpm.toFixed(2))
                 : `You have typed the sentence correctly in **${convertTime(time)}** with **${wpm.toFixed(2)}** WPM.`)
-                .setColor(options.embed.color)
+                .setColor(options.embed.color ?? "Blurple")
                 .setTimestamp(options.embed.timestamp ? new Date() : null)
                 .setURL(options.embed.url ? options.embed.url : null)
                 .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -149,7 +149,7 @@ const FastType = async (options) => {
         else {
             const _embed = new EmbedBuilder()
                 .setDescription(options.loseMessage ? options.loseMessage : "Better Luck Next Time!")
-                .setColor(options.embed.color)
+                .setColor(options.embed.color ?? "Blurple")
                 .setTimestamp(options.embed.timestamp ? new Date() : null)
                 .setURL(options.embed.url ? options.embed.url : null)
                 .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -194,7 +194,7 @@ const FastType = async (options) => {
         if (reason === 'time') {
             const _embed = new EmbedBuilder()
                 .setDescription(options.loseMessage ? options.loseMessage : "Better Luck Next Time!")
-                .setColor(options.embed.color)
+                .setColor(options.embed.color ?? "Blurple")
                 .setTimestamp(options.embed.timestamp ? new Date() : null)
                 .setURL(options.embed.url ? options.embed.url : null)
                 .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)

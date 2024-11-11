@@ -86,7 +86,7 @@ const WillYouPressTheButton = async (options: WillYouPressTheButtonTypes) => {
 
     let embed = new EmbedBuilder()
         .setTitle(`${options.thinkMessage}...`)
-        .setColor(options.embed.color)
+        .setColor(options.embed.color ?? "Blurple")
         .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
         .setURL(options.embed.url ? options.embed.url : null)
         .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -155,7 +155,7 @@ const WillYouPressTheButton = async (options: WillYouPressTheButtonTypes) => {
                 )
             }`,
         )
-        .setColor(options.embed.color)
+        .setColor(options.embed.color ?? "Blurple")
         .setTimestamp(options.embed.timestamp ? new Date() : null)
         .setURL(options.embed.url ? options.embed.url : null)
         .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)

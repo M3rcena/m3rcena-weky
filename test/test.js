@@ -148,6 +148,17 @@ client.on("messageCreate", async (message) => {
             }
         });
     };
+
+    if (message.content === 'w!shuffle') {
+        client.wekyManager.createShuffleGuess({
+            interaction: message,
+            client: client,
+            embed: {
+                color: "Blurple",
+                title: "Shuffle Guess | M3rcena Development",
+            }
+        });
+    };
 });
 
 client.login('Your bot token');

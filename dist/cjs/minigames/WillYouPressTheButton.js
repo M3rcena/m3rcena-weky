@@ -84,7 +84,7 @@ const WillYouPressTheButton = async (options) => {
         (0, functions_1.getRandomString)(20);
     let embed = new discord_js_1.EmbedBuilder()
         .setTitle(`${options.thinkMessage}...`)
-        .setColor(options.embed.color)
+        .setColor(options.embed.color ?? "Blurple")
         .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
         .setURL(options.embed.url ? options.embed.url : null)
         .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -137,7 +137,7 @@ const WillYouPressTheButton = async (options) => {
         res.questions[0].slice(1))
         .replace('{{statement2}}', res.questions[1].charAt(0).toUpperCase() +
         res.questions[1].slice(1))}`)
-        .setColor(options.embed.color)
+        .setColor(options.embed.color ?? "Blurple")
         .setTimestamp(options.embed.timestamp ? new Date() : null)
         .setURL(options.embed.url ? options.embed.url : null)
         .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)

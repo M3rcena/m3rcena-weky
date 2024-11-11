@@ -66,7 +66,7 @@ const NeverHaveIEver = async (options) => {
     ;
     let embed = new EmbedBuilder()
         .setTitle(options.thinkMessage ? options.thinkMessage : "I am thinking...")
-        .setColor(options.embed.color)
+        .setColor(options.embed.color ?? "Blurple")
         .setFooter({
         text: "©️ M3rcena Development | Powered by Mivator",
         iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"

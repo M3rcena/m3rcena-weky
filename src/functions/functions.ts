@@ -1,4 +1,6 @@
+import axios, { AxiosRequestConfig } from "axios";
 import chalk from "chalk";
+import { load } from "cheerio";
 import { exec } from "child_process";
 import { randomBytes } from "crypto";
 import { ActionRowBuilder, BufferResolvable, ButtonBuilder, ButtonStyle } from "discord.js";
@@ -13,17 +15,17 @@ import wordList from "../data/words.json";
 
 import type { SKRSContext2D } from "@napi-rs/canvas";
 export const getRandomString = function (length: number) {
-    const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    const randomBytesArray = new Uint8Array(length);
-    randomBytes(length).forEach((byte, index) => {
-        randomBytesArray[index] = byte % randomChars.length;
-    });
+	const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+	const randomBytesArray = new Uint8Array(length);
+	randomBytes(length).forEach((byte, index) => {
+		randomBytesArray[index] = byte % randomChars.length;
+	});
 
-    let result = '';
-    for (let i = 0; i < length; i++) {
-        result += randomChars.charAt(randomBytesArray[i]);
-    }
-    return result;
+	let result = '';
+	for (let i = 0; i < length; i++) {
+		result += randomChars.charAt(randomBytesArray[i]);
+	}
+	return result;
 };
 
 export const createButton = function (label: string, disabled: boolean) {
@@ -329,4 +331,35 @@ function createLine(ctx: SKRSContext2D, fromX: number, fromY: number, toX: numbe
 	ctx.stroke();
 
 	ctx.closePath();
+};
+
+export const fetchhtml = async function (url: string) {
+	const options: AxiosRequestConfig<any> = {
+		headers: {
+			'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36',
+			referer: 'https://www.google.com/',
+		},
+	};
+
+	const html = await axios.get(url, options);
+	return load(html.data);
+};
+
+export const shuffleString = function (string: string) {
+	const str = string.split('');
+	const length = str.length;
+	for (let i = length - 1; i > 0; i--) {
+		const j = Math.floor(Math.random() * (i + 1));
+		const tmp = str[i];
+		str[i] = str[j];
+		str[j] = tmp;
+	};
+	return str.join('');
+};
+
+export const randomHexColor = function () {
+	return (
+		'#' +
+		('000000' + Math.floor(Math.random() * 16777215).toString(16)).slice(-6)
+	);
 };

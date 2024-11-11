@@ -77,7 +77,7 @@ const FastType = async (options: FastTypeTyping) => {
                 `You have **${convertTime(options.time ? options.time : 60000)}** to type the sentence below.`
             }`
         )
-        .setColor(options.embed.color)
+        .setColor(options.embed.color ?? "Blurple")
         .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
         .setURL(options.embed.url ? options.embed.url : null)
         .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -134,7 +134,7 @@ const FastType = async (options: FastTypeTyping) => {
                             .replace('wpm', wpm.toFixed(2))
                         : `You have typed the sentence correctly in **${convertTime(time)}** with **${wpm.toFixed(2)}** WPM.`
                 )
-                .setColor(options.embed.color)
+                .setColor(options.embed.color ?? "Blurple")
                 .setTimestamp(options.embed.timestamp ? new Date() : null)
                 .setURL(options.embed.url ? options.embed.url : null)
                 .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -176,7 +176,7 @@ const FastType = async (options: FastTypeTyping) => {
         } else {
             const _embed = new EmbedBuilder()
                 .setDescription(options.loseMessage ? options.loseMessage : "Better Luck Next Time!")
-                .setColor(options.embed.color)
+                .setColor(options.embed.color ?? "Blurple")
                 .setTimestamp(options.embed.timestamp ? new Date() : null)
                 .setURL(options.embed.url ? options.embed.url : null)
                 .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -222,7 +222,7 @@ const FastType = async (options: FastTypeTyping) => {
         if (reason === 'time') {
             const _embed = new EmbedBuilder()
                 .setDescription(options.loseMessage ? options.loseMessage : "Better Luck Next Time!")
-                .setColor(options.embed.color)
+                .setColor(options.embed.color ?? "Blurple")
                 .setTimestamp(options.embed.timestamp ? new Date() : null)
                 .setURL(options.embed.url ? options.embed.url : null)
                 .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)

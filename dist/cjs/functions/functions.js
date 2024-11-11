@@ -1,8 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createHangman = exports.shuffleArray = exports.getButtonDilemma = exports.replaceHexCharacters = exports.boxConsole = exports.checkPackageUpdates = exports.convertTime = exports.getRandomSentence = exports.addRow = exports.createDisabledButton = exports.createButton = exports.getRandomString = void 0;
+exports.randomHexColor = exports.shuffleString = exports.fetchhtml = exports.createHangman = exports.shuffleArray = exports.getButtonDilemma = exports.replaceHexCharacters = exports.boxConsole = exports.checkPackageUpdates = exports.convertTime = exports.getRandomSentence = exports.addRow = exports.createDisabledButton = exports.createButton = exports.getRandomString = void 0;
 const tslib_1 = require("tslib");
+const axios_1 = tslib_1.__importDefault(require("axios"));
 const chalk_1 = tslib_1.__importDefault(require("chalk"));
+const cheerio_1 = require("cheerio");
 const child_process_1 = require("child_process");
 const crypto_1 = require("crypto");
 const discord_js_1 = require("discord.js");
@@ -303,3 +305,32 @@ function createLine(ctx, fromX, fromY, toX, toY, color = "#000000") {
     ctx.closePath();
 }
 ;
+const fetchhtml = async function (url) {
+    const options = {
+        headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36',
+            referer: 'https://www.google.com/',
+        },
+    };
+    const html = await axios_1.default.get(url, options);
+    return (0, cheerio_1.load)(html.data);
+};
+exports.fetchhtml = fetchhtml;
+const shuffleString = function (string) {
+    const str = string.split('');
+    const length = str.length;
+    for (let i = length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const tmp = str[i];
+        str[i] = str[j];
+        str[j] = tmp;
+    }
+    ;
+    return str.join('');
+};
+exports.shuffleString = shuffleString;
+const randomHexColor = function () {
+    return ('#' +
+        ('000000' + Math.floor(Math.random() * 16777215).toString(16)).slice(-6));
+};
+exports.randomHexColor = randomHexColor;

@@ -11,3 +11,6 @@ export declare const replaceHexCharacters: (text: string) => string;
 export declare const getButtonDilemma: () => Promise<any>;
 export declare const shuffleArray: (array: any[]) => any[];
 export declare const createHangman: (state?: number) => Promise<BufferResolvable>;
+export declare const fetchhtml: (url: string) => Promise<import("cheerio").CheerioAPI>;
+export declare const shuffleString: (string: string) => string;
+export declare const randomHexColor: () => string;

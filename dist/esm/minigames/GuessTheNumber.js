@@ -140,7 +140,7 @@ const GuessTheNumber = async (options) => {
             .setDescription(`${options.embed.description ?
             options.embed.description.replace(/{{time}}/g, convertTime(options.time ? options.time : 60000)) :
             "You have **{{time}}** to guess the number.".replace(/{{time}}/g, convertTime(options.time ? options.time : 60000))}`)
-            .setColor(options.embed.color)
+            .setColor(options.embed.color ?? "Blurple")
             .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
             .setURL(options.embed.url ? options.embed.url : null)
             .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -203,7 +203,7 @@ const GuessTheNumber = async (options) => {
                     .replace(/{{time}}/g, time)
                     .replace(/{{totalparticipants}}/g, `${participants.length}`)
                     .replace(/{{participants}}/g, participants.map((p) => '<@' + p + '>').join(', '))}`)
-                    .setColor(options.embed.color)
+                    .setColor(options.embed.color ?? "Blurple")
                     .setTimestamp(options.embed.timestamp ? new Date() : null)
                     .setURL(options.embed.url ? options.embed.url : null)
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -258,7 +258,7 @@ const GuessTheNumber = async (options) => {
                         .replace(/{{author}}/g, _msg.author.toString())
                         .replace(/{{number}}/g, `${parsedNumber}`) :
                     `The number is bigger than **${parsedNumber}**!`)
-                    .setColor(options.embed.color)
+                    .setColor(options.embed.color ?? "Blurple")
                     .setTimestamp(options.embed.timestamp ? new Date() : null)
                     .setURL(options.embed.url ? options.embed.url : null)
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -295,7 +295,7 @@ const GuessTheNumber = async (options) => {
                         .replace(/{{author}}/g, _msg.author.toString())
                         .replace(/{{number}}/g, `${parsedNumber}`) :
                     `The number is smaller than **${parsedNumber}**!`)
-                    .setColor(options.embed.color)
+                    .setColor(options.embed.color ?? "Blurple")
                     .setTimestamp(options.embed.timestamp ? new Date() : null)
                     .setURL(options.embed.url ? options.embed.url : null)
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -351,7 +351,7 @@ const GuessTheNumber = async (options) => {
                     .setDescription(options.loseMessage ?
                     options.loseMessage.replace(/{{number/g, `${number}`) :
                     `The number was **${number}**!`)
-                    .setColor(options.embed.color)
+                    .setColor(options.embed.color ?? "Blurple")
                     .setTimestamp(options.embed.timestamp ? new Date() : null)
                     .setURL(options.embed.url ? options.embed.url : null)
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -388,7 +388,7 @@ const GuessTheNumber = async (options) => {
                     .setDescription(options.loseMessage ?
                     options.loseMessage.replace(/{{number}}/g, `${number}`) :
                     `The number was **${number}**!`)
-                    .setColor(options.embed.color)
+                    .setColor(options.embed.color ?? "Blurple")
                     .setTimestamp(options.embed.timestamp ? new Date() : null)
                     .setURL(options.embed.url ? options.embed.url : null)
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -435,7 +435,7 @@ const GuessTheNumber = async (options) => {
             .setDescription(options.embed.description ?
             options.embed.description.replace(/{{time}}/g, convertTime(options.time ? options.time : 60000)) :
             "You have **{{time}}** to guess the number.".replace(/{{time}}/g, convertTime(options.time ? options.time : 60000)))
-            .setColor(options.embed.color)
+            .setColor(options.embed.color ?? "Blurple")
             .setTimestamp(options.embed.timestamp ? new Date() : null)
             .setURL(options.embed.url ? options.embed.url : null)
             .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -487,7 +487,7 @@ const GuessTheNumber = async (options) => {
                     .setDescription(winMessagePrivateGame
                     .replace(/{{time}}/g, time)
                     .replace(/{{number}}/g, `${number}`))
-                    .setColor(options.embed.color)
+                    .setColor(options.embed.color ?? "Blurple")
                     .setTimestamp(options.embed.timestamp ? new Date() : null)
                     .setURL(options.embed.url ? options.embed.url : null)
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -532,7 +532,7 @@ const GuessTheNumber = async (options) => {
                         .replace(/{{author}}/g, _msg.author.toString())
                         .replace(/{{number}}/g, `${parsedNumber}`) :
                     `The number is bigger than **${parsedNumber}**!`)
-                    .setColor(options.embed.color)
+                    .setColor(options.embed.color ?? "Blurple")
                     .setTimestamp(options.embed.timestamp ? new Date() : null)
                     .setURL(options.embed.url ? options.embed.url : null)
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -569,7 +569,7 @@ const GuessTheNumber = async (options) => {
                         .replace(/{{author}}/g, _msg.author.toString())
                         .replace(/{{number}}/g, `${parsedNumber}`) :
                     `The number is smaller than **${parsedNumber}**!`)
-                    .setColor(options.embed.color)
+                    .setColor(options.embed.color ?? "Blurple")
                     .setTimestamp(options.embed.timestamp ? new Date() : null)
                     .setURL(options.embed.url ? options.embed.url : null)
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -623,7 +623,7 @@ const GuessTheNumber = async (options) => {
                     .setDescription(options.loseMessage ?
                     options.loseMessage.replace(/{{number}}/g, `${number}`) :
                     `The number was **${number}**!`)
-                    .setColor(options.embed.color)
+                    .setColor(options.embed.color ?? "Blurple")
                     .setTimestamp(options.embed.timestamp ? new Date() : null)
                     .setURL(options.embed.url ? options.embed.url : null)
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -659,7 +659,7 @@ const GuessTheNumber = async (options) => {
                     .setDescription(options.loseMessage ?
                     options.loseMessage.replace(/{{number}}/g, `${number}`) :
                     `The number was **${number}**!`)
-                    .setColor(options.embed.color)
+                    .setColor(options.embed.color ?? "Blurple")
                     .setTimestamp(options.embed.timestamp ? new Date() : null)
                     .setURL(options.embed.url ? options.embed.url : null)
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)

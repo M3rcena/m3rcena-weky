@@ -60,7 +60,7 @@ const WouldYouRather = async (options: WouldYouRatherTypes) => {
             options.thinkMessage :
             `I am thinking...`
         )
-        .setColor(options.embed.color)
+        .setColor(options.embed.color ?? "Blurple")
         .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
         .setURL(options.embed.url ? options.embed.url : null)
         .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -132,7 +132,7 @@ const WouldYouRather = async (options: WouldYouRatherTypes) => {
         .setDescription(
             `**Option A:** ${decode(res.questions[0])}\n**Option B:** ${decode(res.questions[1])}`
         )
-        .setColor(options.embed.color)
+        .setColor(options.embed.color ?? "Blurple")
         .setTimestamp(options.embed.timestamp ? new Date() : null)
         .setURL(options.embed.url ? options.embed.url : null)
         .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -209,7 +209,7 @@ const WouldYouRather = async (options: WouldYouRatherTypes) => {
                 .setDescription(
                     `**Option A:** ${decode(res.questions[0])} (${res.percentage['1']})\n**Option B:** ${decode(res.questions[1])} (${res.percentage['2']})`
                 )
-                .setColor(options.embed.color)
+                .setColor(options.embed.color ?? "Blurple")
                 .setTimestamp(options.embed.timestamp ? new Date() : null)
                 .setURL(options.embed.url ? options.embed.url : null)
                 .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -267,7 +267,7 @@ const WouldYouRather = async (options: WouldYouRatherTypes) => {
                 .setDescription(
                     `**Option A:** ${decode(res.questions[0])} (${res.percentage['1']})\n**Option B:** ${decode(res.questions[1])} (${res.percentage['2']})`
                 )
-                .setColor(options.embed.color)
+                .setColor(options.embed.color ?? "Blurple")
                 .setTimestamp(options.embed.timestamp ? new Date() : null)
                 .setURL(options.embed.url ? options.embed.url : null)
                 .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)

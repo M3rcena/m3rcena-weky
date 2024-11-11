@@ -14,7 +14,7 @@
     <a href="https://www.npmjs.com/package/@m3rcena/weky">
       <img src="https://img.shields.io/npm/d18m/%40m3rcena%2Fweky?maxAge=3600&style=for-the-badge&logo=npm&logoColor=red" alt="NPM downloads" />
     </a>
-    <a href="https://m3rcena.gitbook.io/docs">
+    <a href="https://m3rcena.gitbook.io/m3rcena-weky">
       <img src="https://img.shields.io/badge/Documation-%230288D1.svg?style=for-the-badge&logo=gitbook&logoColor=white" alt="Get Started Now">
     </a>
     <br>

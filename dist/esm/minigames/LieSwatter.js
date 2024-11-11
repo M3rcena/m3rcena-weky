@@ -88,7 +88,7 @@ const LieSwatter = async (options) => {
     let embed = new EmbedBuilder()
         .setTitle(options.embed.title)
         .setDescription(options.thinkMessage)
-        .setColor(options.embed.color)
+        .setColor(options.embed.color ?? "Blurple")
         .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
         .setURL(options.embed.url ? options.embed.url : null)
         .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -142,7 +142,7 @@ const LieSwatter = async (options) => {
     embed = new EmbedBuilder()
         .setTitle(options.embed.title)
         .setDescription(decode(question.question))
-        .setColor(options.embed.color)
+        .setColor(options.embed.color ?? "Blurple")
         .setTimestamp(options.embed.timestamp ? new Date() : null)
         .setURL(options.embed.url ? options.embed.url : null)
         .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -221,7 +221,7 @@ const LieSwatter = async (options) => {
                     .replace(`{{answer}}`, decode(answer))
                     .replace(`{{time}}`, time) :
                 `GG, It was a **${decode(answer)}**. You got it correct in **${time}**.`}`)
-                .setColor(options.embed.color)
+                .setColor(options.embed.color ?? "Blurple")
                 .setTimestamp(options.embed.timestamp ? new Date() : null)
                 .setURL(options.embed.url ? options.embed.url : null)
                 .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -279,7 +279,7 @@ const LieSwatter = async (options) => {
                 .setDescription(`${options.loseMessage ?
                 options.loseMessage.replace('{{answer}}', decode(answer)) :
                 `Better luck next time! It was a **${decode(answer)}**.`}`)
-                .setColor(options.embed.color)
+                .setColor(options.embed.color ?? "Blurple")
                 .setTimestamp(options.embed.timestamp ? new Date() : null)
                 .setURL(options.embed.url ? options.embed.url : null)
                 .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -338,7 +338,7 @@ const LieSwatter = async (options) => {
                 .setDescription(`${options.loseMessage ?
                 options.loseMessage.replace('{{answer}}', decode(answer)) :
                 `**You run out of Time**\nBetter luck next time! It was a **${decode(answer)}**.`}`)
-                .setColor(options.embed.color)
+                .setColor(options.embed.color ?? "Blurple")
                 .setTimestamp(options.embed.timestamp ? new Date() : null)
                 .setURL(options.embed.url ? options.embed.url : null)
                 .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)

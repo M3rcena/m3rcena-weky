@@ -163,7 +163,7 @@ const GuessTheNumber = async (options: GuessTheNumberTypes) => {
                         convertTime(options.time ? options.time : 60000)
                     )}`
             )
-            .setColor(options.embed.color)
+            .setColor(options.embed.color ?? "Blurple")
             .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
             .setURL(options.embed.url ? options.embed.url : null)
             .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -238,7 +238,7 @@ const GuessTheNumber = async (options: GuessTheNumberTypes) => {
                                 participants.map((p) => '<@' + p + '>').join(', '),
                             )
                         }`)
-                    .setColor(options.embed.color)
+                    .setColor(options.embed.color ?? "Blurple")
                     .setTimestamp(options.embed.timestamp ? new Date() : null)
                     .setURL(options.embed.url ? options.embed.url : null)
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -305,7 +305,7 @@ const GuessTheNumber = async (options: GuessTheNumberTypes) => {
                             ) :
                         `The number is bigger than **${parsedNumber}**!`
                     )
-                    .setColor(options.embed.color)
+                    .setColor(options.embed.color ?? "Blurple")
                     .setTimestamp(options.embed.timestamp ? new Date() : null)
                     .setURL(options.embed.url ? options.embed.url : null)
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -352,7 +352,7 @@ const GuessTheNumber = async (options: GuessTheNumberTypes) => {
                             ) :
                         `The number is smaller than **${parsedNumber}**!`
                     )
-                    .setColor(options.embed.color)
+                    .setColor(options.embed.color ?? "Blurple")
                     .setTimestamp(options.embed.timestamp ? new Date() : null)
                     .setURL(options.embed.url ? options.embed.url : null)
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -417,7 +417,7 @@ const GuessTheNumber = async (options: GuessTheNumberTypes) => {
                             `${number}`) :
                         `The number was **${number}**!`
                     )
-                    .setColor(options.embed.color)
+                    .setColor(options.embed.color ?? "Blurple")
                     .setTimestamp(options.embed.timestamp ? new Date() : null)
                     .setURL(options.embed.url ? options.embed.url : null)
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -463,7 +463,7 @@ const GuessTheNumber = async (options: GuessTheNumberTypes) => {
                             ) :
                             `The number was **${number}**!`
                     )
-                    .setColor(options.embed.color)
+                    .setColor(options.embed.color ?? "Blurple")
                     .setTimestamp(options.embed.timestamp ? new Date() : null)
                     .setURL(options.embed.url ? options.embed.url : null)
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -521,7 +521,7 @@ const GuessTheNumber = async (options: GuessTheNumberTypes) => {
                         convertTime(options.time ? options.time : 60000)
                     )
             )
-            .setColor(options.embed.color)
+            .setColor(options.embed.color ?? "Blurple")
             .setTimestamp(options.embed.timestamp ? new Date() : null)
             .setURL(options.embed.url ? options.embed.url : null)
             .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -582,7 +582,7 @@ const GuessTheNumber = async (options: GuessTheNumberTypes) => {
                         .replace(/{{time}}/g, time)
                         .replace(/{{number}}/g, `${number}`)
                     )
-                    .setColor(options.embed.color)
+                    .setColor(options.embed.color ?? "Blurple")
                     .setTimestamp(options.embed.timestamp ? new Date() : null)
                     .setURL(options.embed.url ? options.embed.url : null)
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -637,7 +637,7 @@ const GuessTheNumber = async (options: GuessTheNumberTypes) => {
                             ) :
                         `The number is bigger than **${parsedNumber}**!`
                     )
-                    .setColor(options.embed.color)
+                    .setColor(options.embed.color ?? "Blurple")
                     .setTimestamp(options.embed.timestamp ? new Date() : null)
                     .setURL(options.embed.url ? options.embed.url : null)
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -683,7 +683,7 @@ const GuessTheNumber = async (options: GuessTheNumberTypes) => {
                             ) :
                         `The number is smaller than **${parsedNumber}**!`
                     )
-                    .setColor(options.embed.color)
+                    .setColor(options.embed.color ?? "Blurple")
                     .setTimestamp(options.embed.timestamp ? new Date() : null)
                     .setURL(options.embed.url ? options.embed.url : null)
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -749,7 +749,7 @@ const GuessTheNumber = async (options: GuessTheNumberTypes) => {
                         ) :
                         `The number was **${number}**!`
                     )
-                    .setColor(options.embed.color)
+                    .setColor(options.embed.color ?? "Blurple")
                     .setTimestamp(options.embed.timestamp ? new Date() : null)
                     .setURL(options.embed.url ? options.embed.url : null)
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
@@ -794,7 +794,7 @@ const GuessTheNumber = async (options: GuessTheNumberTypes) => {
                             ) :
                             `The number was **${number}**!`
                     )
-                    .setColor(options.embed.color)
+                    .setColor(options.embed.color ?? "Blurple")
                     .setTimestamp(options.embed.timestamp ? new Date() : null)
                     .setURL(options.embed.url ? options.embed.url : null)
                     .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)

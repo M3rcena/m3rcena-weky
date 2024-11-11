@@ -6,7 +6,7 @@ export interface Calc {
     interaction: Message | ChatInputCommandInteraction,
     client: Client,
     embed: {
-        color: ColorResolvable,
+        color?: ColorResolvable,
         title: string,
         url?: string,
         author?: {
@@ -33,7 +33,7 @@ export interface Chaos {
     interaction: Message | ChatInputCommandInteraction,
     client: Client,
     embed: {
-        color: ColorResolvable,
+        color?: ColorResolvable,
         title: string,
         url?: string,
         author?: {
@@ -70,7 +70,7 @@ export interface FastTypeTyping {
     interaction: Message | ChatInputCommandInteraction,
     client: Client,
     embed: {
-        color: ColorResolvable,
+        color?: ColorResolvable,
         title: string,
         url?: string,
         author?: {
@@ -102,7 +102,7 @@ export interface LieSwatterTypes {
     interaction: Message | ChatInputCommandInteraction,
     client: Client,
     embed: {
-        color: ColorResolvable,
+        color?: ColorResolvable,
         title: string,
         url?: string,
         author?: {
@@ -136,7 +136,7 @@ export interface WouldYouRatherTypes {
     interaction: Message | ChatInputCommandInteraction,
     client: Client,
     embed: {
-        color: ColorResolvable,
+        color?: ColorResolvable,
         title: string,
         url?: string,
         author?: {
@@ -168,7 +168,7 @@ export interface GuessTheNumberTypes {
     interaction: Message | ChatInputCommandInteraction,
     client: Client,
     embed: {
-        color: ColorResolvable,
+        color?: ColorResolvable,
         title: string,
         url?: string,
         author?: {
@@ -208,7 +208,7 @@ export interface WillYouPressTheButtonTypes {
     interaction: Message | ChatInputCommandInteraction,
     client: Client,
     embed: {
-        color: ColorResolvable,
+        color?: ColorResolvable,
         title: string,
         url?: string,
         author?: {
@@ -240,7 +240,7 @@ export interface QuickClickTypes {
     interaction: Message | ChatInputCommandInteraction,
     client: Client,
     embed: {
-        color: ColorResolvable,
+        color?: ColorResolvable,
         title: string,
         url?: string,
         author?: {
@@ -272,7 +272,7 @@ export interface NeverHaveIEverTypes {
     interaction: Message | ChatInputCommandInteraction,
     client: Client,
     embed: {
-        color: ColorResolvable,
+        color?: ColorResolvable,
         title: string,
         url?: string,
         author?: {
@@ -304,7 +304,7 @@ export interface HangmanTypes {
     interaction: Message | ChatInputCommandInteraction,
     client: Client,
     embed: {
-        color: ColorResolvable,
+        color?: ColorResolvable,
         title: string,
         url?: string,
         author?: {
@@ -330,7 +330,7 @@ export interface Types2048 {
     interaction: Message | ChatInputCommandInteraction,
     client: Client,
     embed: {
-        color: ColorResolvable,
+        color?: ColorResolvable,
         title: string,
         url?: string,
         author?: {
@@ -357,6 +357,42 @@ export interface Types2048 {
     othersMessage?: string,
     notifyUpdate?: boolean,
     time?: number,
+}
+
+export interface ShuffleGuessTypes {
+    interaction: Message | ChatInputCommandInteraction,
+    client: Client,
+    embed: {
+        color?: ColorResolvable,
+        title: string,
+        url?: string,
+        author?: {
+            name: string,
+            icon_url?: string,
+            url?: string
+        },
+        footer?: {
+            text: string,
+            icon_url?: string
+        },
+        description?: string,
+        fields?: Fields[],
+        image?: string,
+        timestamp?: Date,
+        thumbnail?: string
+    },
+    buttons?: {
+        cancel?: string,
+        reshuffle?: string
+    },
+    winMessage?: string,
+    loseMessage?: string,
+    othersMessage?: string,
+    startMessage?: string,
+    incorrectMessage?: string,
+    word?: string,
+    time?: number,
+    notifyUpdate?: boolean,
 }
 
 export interface Fields {
