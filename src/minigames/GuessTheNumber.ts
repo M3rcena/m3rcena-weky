@@ -126,13 +126,6 @@ const GuessTheNumber = async (options: GuessTheNumberTypes) => {
                 });
             };
 
-            if (options.embed.footer) {
-                embed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                });
-            };
-
             if (options.embed.author) {
                 embed.setAuthor({
                     name: options.embed.author.name,
