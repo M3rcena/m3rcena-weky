@@ -10,6 +10,7 @@ import LieSwatter from "./minigames/LieSwatter.js";
 import NeverHaveIEver from "./minigames/NeverHaveIEver.js";
 import QuickClick from "./minigames/QuickClick.js";
 import ShuffleGuess from "./minigames/ShuffleGuess.js";
+import Snake from "./minigames/Snake.js";
 import WillYouPressTheButton from "./minigames/WillYouPressTheButton.js";
 import WouldYouRather from "./minigames/WouldYouRather.js";
 export class WekyManager {
@@ -258,6 +259,30 @@ export class WekyManager {
      */
     async createShuffleGuess(options) {
         return await ShuffleGuess(options);
+    }
+    /**
+     *
+     * Creates a new instance of the Snake game.
+     *
+     * @param options The options for the Snake game.
+     * @returns
+     *
+     * @example
+     * ```js
+     * import { WekyManager } from "weky";
+     * import DiscordJS from "discord.js";
+     *
+     * const client = new DiscordJS.Client();
+     *
+     * const weky = new WekyManager(client);
+     *
+     * weky.createSnake(); // You can also pass options.
+     * ```
+     *
+     * @copyright All rights reserved. M3rcena Development
+     */
+    async createSnake(options) {
+        return await Snake(options);
     }
     /**
      *

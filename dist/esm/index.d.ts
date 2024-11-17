@@ -1,5 +1,5 @@
 import DiscordJS from "discord.js";
-import type { Types2048, Calc, Chaos, FastTypeTyping, GuessTheNumberTypes, HangmanTypes, LieSwatterTypes, NeverHaveIEverTypes, QuickClickTypes, WillYouPressTheButtonTypes, WouldYouRatherTypes, ShuffleGuessTypes } from "./Types/index.js";
+import type { Types2048, Calc, Chaos, FastTypeTyping, GuessTheNumberTypes, HangmanTypes, LieSwatterTypes, NeverHaveIEverTypes, QuickClickTypes, WillYouPressTheButtonTypes, WouldYouRatherTypes, ShuffleGuessTypes, SnakeTypes } from "./Types/index.js";
 export declare class WekyManager {
     private client;
     constructor(client: DiscordJS.Client);
@@ -223,6 +223,28 @@ export declare class WekyManager {
      * @copyright All rights reserved. M3rcena Development
      */
     createShuffleGuess(options: ShuffleGuessTypes): Promise<void>;
+    /**
+     *
+     * Creates a new instance of the Snake game.
+     *
+     * @param options The options for the Snake game.
+     * @returns
+     *
+     * @example
+     * ```js
+     * import { WekyManager } from "weky";
+     * import DiscordJS from "discord.js";
+     *
+     * const client = new DiscordJS.Client();
+     *
+     * const weky = new WekyManager(client);
+     *
+     * weky.createSnake(); // You can also pass options.
+     * ```
+     *
+     * @copyright All rights reserved. M3rcena Development
+     */
+    createSnake(options: SnakeTypes): Promise<void>;
     /**
      *
      * Creates a new instance of the Will You Press The Button game.

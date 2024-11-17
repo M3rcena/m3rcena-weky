@@ -159,6 +159,17 @@ client.on("messageCreate", async (message) => {
             }
         });
     };
+
+    if (message.content === 'w!snake') {
+        client.wekyManager.createSnake({
+            interaction: message,
+            client: client,
+            embed: {
+                color: "Blurple",
+                title: "Snake | M3rcena Development",
+            }
+        });
+    };
 });
 
 client.login('Your bot token');

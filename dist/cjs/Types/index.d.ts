@@ -380,6 +380,46 @@ export interface ShuffleGuessTypes {
     time?: number;
     notifyUpdate?: boolean;
 }
+export interface SnakeTypes {
+    interaction: Message | ChatInputCommandInteraction;
+    client: Client;
+    embed: {
+        color?: ColorResolvable;
+        title?: string;
+        url?: string;
+        author?: {
+            name?: string;
+            icon_url?: string;
+            url?: string;
+        };
+        footer?: {
+            text?: string;
+            icon_url?: string;
+        };
+        description?: string;
+        fields?: Fields[];
+        image?: string;
+        timestamp?: Date;
+        thumbnail?: string;
+    };
+    emojis?: {
+        up: string;
+        down: string;
+        left: string;
+        right: string;
+        stop: string;
+        board: string;
+        food: string;
+    };
+    snake?: {
+        head: string;
+        body: string;
+        tail: string;
+        skull: string;
+    };
+    time?: number;
+    notifyUpdate?: boolean;
+}
 export interface Fields {
     name: string;
     value: string;

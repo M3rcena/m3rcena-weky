@@ -11,10 +11,11 @@ import LieSwatter from "./minigames/LieSwatter";
 import NeverHaveIEver from "./minigames/NeverHaveIEver";
 import QuickClick from "./minigames/QuickClick";
 import ShuffleGuess from "./minigames/ShuffleGuess";
+import Snake from "./minigames/Snake";
 import WillYouPressTheButton from "./minigames/WillYouPressTheButton";
 import WouldYouRather from "./minigames/WouldYouRather";
 
-import type { Types2048, Calc, Chaos, FastTypeTyping, GuessTheNumberTypes, HangmanTypes, LieSwatterTypes, NeverHaveIEverTypes, QuickClickTypes, WillYouPressTheButtonTypes, WouldYouRatherTypes, ShuffleGuessTypes } from "./Types/index";
+import type { Types2048, Calc, Chaos, FastTypeTyping, GuessTheNumberTypes, HangmanTypes, LieSwatterTypes, NeverHaveIEverTypes, QuickClickTypes, WillYouPressTheButtonTypes, WouldYouRatherTypes, ShuffleGuessTypes, SnakeTypes } from "./Types/index";
 export class WekyManager {
     private client: DiscordJS.Client;
 
@@ -271,6 +272,31 @@ export class WekyManager {
      */
     async createShuffleGuess(options: ShuffleGuessTypes) {
         return await ShuffleGuess(options);
+    }
+
+    /**
+     * 
+     * Creates a new instance of the Snake game.
+     * 
+     * @param options The options for the Snake game.
+     * @returns 
+     * 
+     * @example
+     * ```js
+     * import { WekyManager } from "weky";
+     * import DiscordJS from "discord.js";
+     * 
+     * const client = new DiscordJS.Client();
+     * 
+     * const weky = new WekyManager(client);
+     * 
+     * weky.createSnake(); // You can also pass options.
+     * ```
+     *
+     * @copyright All rights reserved. M3rcena Development
+     */
+    async createSnake(options: SnakeTypes) {
+        return await Snake(options);
     }
 
     /**
