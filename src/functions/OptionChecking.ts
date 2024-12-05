@@ -4,10 +4,10 @@ import { Client } from "discord.js";
 import type {
 	Calc, Chaos, FastTypeTyping, GuessTheNumberTypes, HangmanTypes, LieSwatterTypes,
 	NeverHaveIEverTypes, QuickClickTypes, WillYouPressTheButtonTypes, WouldYouRatherTypes, 
-    Types2048, ShuffleGuessTypes, SnakeTypes
+    Types2048, ShuffleGuessTypes, SnakeTypes, FightTypes
 } from "../Types/";
 
-export function OptionsChecking(options: Calc | Chaos | FastTypeTyping | GuessTheNumberTypes | LieSwatterTypes | WouldYouRatherTypes | WillYouPressTheButtonTypes | HangmanTypes | NeverHaveIEverTypes | QuickClickTypes | Types2048 | ShuffleGuessTypes | SnakeTypes, GameName: string) {
+export function OptionsChecking(options: Calc | Chaos | FastTypeTyping | GuessTheNumberTypes | LieSwatterTypes | WouldYouRatherTypes | WillYouPressTheButtonTypes | HangmanTypes | NeverHaveIEverTypes | QuickClickTypes | Types2048 | ShuffleGuessTypes | SnakeTypes | FightTypes, GameName: string) {
     const URLPattern = new RegExp("^https:\\/\\/([a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,}(:[0-9]+)?(\\/.*)?$");
     if (!options) throw new Error(chalk.red(`[@m3rcena/weky] ${GameName} Error:`) + " No options provided.");
 

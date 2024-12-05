@@ -1,4 +1,4 @@
-import type { ChatInputCommandInteraction, Client, ColorResolvable, Message } from "discord.js";
+import type { ChatInputCommandInteraction, Client, ColorResolvable, Message, User } from "discord.js";
 export interface Calc {
     interaction: Message | ChatInputCommandInteraction;
     client: Client;
@@ -417,6 +417,53 @@ export interface SnakeTypes {
         tail: string;
         skull: string;
     };
+    time?: number;
+    notifyUpdate?: boolean;
+}
+export interface FightTypes {
+    interaction: Message | ChatInputCommandInteraction;
+    client: Client;
+    opponent: User;
+    embed: {
+        color?: ColorResolvable;
+        title?: string;
+        url?: string;
+        author?: {
+            name?: string;
+            icon_url?: string;
+            url?: string;
+        };
+        footer?: {
+            text?: string;
+            icon_url?: string;
+        };
+        description?: string;
+        fields?: Fields[];
+        image?: string;
+        timestamp?: Date;
+        thumbnail?: string;
+    };
+    buttons?: {
+        hit?: string;
+        heal?: string;
+        cancel?: string;
+        accept?: string;
+        deny?: string;
+    };
+    acceptMessage?: string;
+    winMessage?: string;
+    endMessage?: string;
+    cancelMessage?: string;
+    fightMessage?: string;
+    othersMessage?: string;
+    opponentsTurnMessage?: string;
+    highHealthMessage?: string;
+    lowHealthMessage?: string;
+    returnWinner?: boolean;
+    dmgMin?: number;
+    dmgMax?: number;
+    healMin?: number;
+    healMax?: number;
     time?: number;
     notifyUpdate?: boolean;
 }

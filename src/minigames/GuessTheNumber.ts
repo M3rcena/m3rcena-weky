@@ -88,10 +88,6 @@ const GuessTheNumber = async (options: GuessTheNumberTypes) => {
     const ids =
         getRandomString(20) +
         '-' +
-        getRandomString(20) +
-        '-' +
-        getRandomString(20) +
-        '-' +
         getRandomString(20);
 
     let number: number;

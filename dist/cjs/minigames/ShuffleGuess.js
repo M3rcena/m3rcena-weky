@@ -63,16 +63,8 @@ const ShuffleGuess = async (options) => {
     data.add(id);
     const id1 = (0, functions_1.getRandomString)(20) +
         '-' +
-        (0, functions_1.getRandomString)(20) +
-        '-' +
-        (0, functions_1.getRandomString)(20) +
-        '-' +
         (0, functions_1.getRandomString)(20);
     const id2 = (0, functions_1.getRandomString)(20) +
-        '-' +
-        (0, functions_1.getRandomString)(20) +
-        '-' +
-        (0, functions_1.getRandomString)(20) +
         '-' +
         (0, functions_1.getRandomString)(20);
     const word = (0, functions_1.shuffleString)(options.word.toString());

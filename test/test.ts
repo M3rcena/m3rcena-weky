@@ -58,6 +58,21 @@ client.on("messageCreate", async (message) => {
         })
     };
 
+    if (message.content.startsWith("w!fight")) {
+        const opponent = message.mentions.users.first();
+        if (!opponent) return;
+        client.wekyManager.createFight({
+            interaction: message,
+            client: client,
+            opponent: opponent,
+            embed: {
+                color: "Blurple",
+                title: "Fight | M3rcena Development",
+                timestamp: new Date(),
+            }
+        })
+    };
+
     if (message.content === "w!lie-swatter") {
         client.wekyManager.createLieSwatter({
             interaction: message,

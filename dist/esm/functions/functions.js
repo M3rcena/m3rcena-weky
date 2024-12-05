@@ -16,7 +16,7 @@ export const getRandomString = function (length) {
     randomBytes(length).forEach((byte, index) => {
         randomBytesArray[index] = byte % randomChars.length;
     });
-    let result = '';
+    let result = 'weky_';
     for (let i = 0; i < length; i++) {
         result += randomChars.charAt(randomBytesArray[i]);
     }

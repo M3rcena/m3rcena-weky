@@ -11,7 +11,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@m3rcena/weky": "^10.2.0",
+    "@m3rcena/weky": "^10.3.0",
     "discord.js": "^14.16.3"
   }
 }

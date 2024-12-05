@@ -5,6 +5,7 @@ import mini2048 from "./minigames/2048";
 import Calculator from "./minigames/Calculator";
 import ChaosWords from "./minigames/ChaosWords";
 import FastType from "./minigames/FastType";
+import Fight from "./minigames/Fight";
 import GuessTheNumber from "./minigames/GuessTheNumber";
 import Hangman from "./minigames/Hangman";
 import LieSwatter from "./minigames/LieSwatter";
@@ -15,7 +16,7 @@ import Snake from "./minigames/Snake";
 import WillYouPressTheButton from "./minigames/WillYouPressTheButton";
 import WouldYouRather from "./minigames/WouldYouRather";
 
-import type { Types2048, Calc, Chaos, FastTypeTyping, GuessTheNumberTypes, HangmanTypes, LieSwatterTypes, NeverHaveIEverTypes, QuickClickTypes, WillYouPressTheButtonTypes, WouldYouRatherTypes, ShuffleGuessTypes, SnakeTypes } from "./Types/index";
+import type { Types2048, Calc, Chaos, FastTypeTyping, FightTypes, GuessTheNumberTypes, HangmanTypes, LieSwatterTypes, NeverHaveIEverTypes, QuickClickTypes, WillYouPressTheButtonTypes, WouldYouRatherTypes, ShuffleGuessTypes, SnakeTypes } from "./Types/index";
 export class WekyManager {
     private client: DiscordJS.Client;
 
@@ -122,6 +123,31 @@ export class WekyManager {
      */
     async createFastType(options: FastTypeTyping) {
         return await FastType(options);
+    }
+
+    /**
+     * 
+     * Creates a new instance of the Fight game.
+     * 
+     * @param options The options for the Fight game.
+     * @returns 
+     * 
+     * @example
+     * ```js
+     * import { WekyManager } from "weky";
+     * import DiscordJS from "discord.js";
+     * 
+     * const client = new DiscordJS.Client();
+     * 
+     * const weky = new WekyManager(client);
+     * 
+     * weky.createFight(); // You can also pass options.
+     * ```
+     * 
+     * @copyright All rights reserved. M3rcena Development
+     */
+    async createFight(options: FightTypes) {
+        return await Fight(options);
     }
 
     /**

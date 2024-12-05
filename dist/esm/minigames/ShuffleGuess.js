@@ -60,16 +60,8 @@ const ShuffleGuess = async (options) => {
     data.add(id);
     const id1 = getRandomString(20) +
         '-' +
-        getRandomString(20) +
-        '-' +
-        getRandomString(20) +
-        '-' +
         getRandomString(20);
     const id2 = getRandomString(20) +
-        '-' +
-        getRandomString(20) +
-        '-' +
-        getRandomString(20) +
         '-' +
         getRandomString(20);
     const word = shuffleString(options.word.toString());

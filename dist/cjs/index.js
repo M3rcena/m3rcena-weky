@@ -8,6 +8,7 @@ const _2048_1 = tslib_1.__importDefault(require("./minigames/2048.js"));
 const Calculator_1 = tslib_1.__importDefault(require("./minigames/Calculator.js"));
 const ChaosWords_1 = tslib_1.__importDefault(require("./minigames/ChaosWords.js"));
 const FastType_1 = tslib_1.__importDefault(require("./minigames/FastType.js"));
+const Fight_1 = tslib_1.__importDefault(require("./minigames/Fight.js"));
 const GuessTheNumber_1 = tslib_1.__importDefault(require("./minigames/GuessTheNumber.js"));
 const Hangman_1 = tslib_1.__importDefault(require("./minigames/Hangman.js"));
 const LieSwatter_1 = tslib_1.__importDefault(require("./minigames/LieSwatter.js"));
@@ -119,6 +120,30 @@ class WekyManager {
      */
     async createFastType(options) {
         return await (0, FastType_1.default)(options);
+    }
+    /**
+     *
+     * Creates a new instance of the Fight game.
+     *
+     * @param options The options for the Fight game.
+     * @returns
+     *
+     * @example
+     * ```js
+     * import { WekyManager } from "weky";
+     * import DiscordJS from "discord.js";
+     *
+     * const client = new DiscordJS.Client();
+     *
+     * const weky = new WekyManager(client);
+     *
+     * weky.createFight(); // You can also pass options.
+     * ```
+     *
+     * @copyright All rights reserved. M3rcena Development
+     */
+    async createFight(options) {
+        return await (0, Fight_1.default)(options);
     }
     /**
      *

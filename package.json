@@ -1,12 +1,12 @@
 {
   "name": "@m3rcena/weky",
-  "version": "10.2.0",
+  "version": "10.3.0",
   "description": "A fun npm package to play games within Discord with buttons!",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
   "scripts": {
-    "test": "npx tsx --tsconfig ./tsconfig.json ./test/test.ts",
+    "test": "npx tsx --tsconfig ./tsconfig.json ./test/index.ts",
     "test-cjs": "nodemon test/test.js",
     "release:prep": "npx copyfiles --flat ./package.json ./dist",
     "build:all": "npm run build:cjs && npm run build:esm && npm run build:types",
@@ -35,7 +35,7 @@
     "alex-724 <sahandsame31@gmail.com>"
   ],
   "dependencies": {
-    "@napi-rs/canvas": "^0.1.58",
+    "@napi-rs/canvas": "^0.1.65",
     "axios": "^1.7.2",
     "chalk": "^4.1.2",
     "cheerio": "^1.0.0-rc.12",
@@ -49,10 +49,10 @@
   },
   "devDependencies": {
     "@types/node-fetch": "^2.6.11",
-    "typescript": "^5.5.3",
+    "copyfiles": "^2.4.1",
     "nodemon": "^3.1.4",
     "tsc-alias": "^1.8.10",
-    "copyfiles": "^2.4.1"
+    "typescript": "^5.5.3"
   },
   "directories": {
     "test": "test"

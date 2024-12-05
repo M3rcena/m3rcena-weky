@@ -39,17 +39,9 @@ const WouldYouRather = async (options: WouldYouRatherTypes) => {
     const id1 =
         getRandomString(20) +
         '-' +
-        getRandomString(20) +
-        '-' +
-        getRandomString(20) +
-        '-' +
         getRandomString(20);
 
     const id2 =
-        getRandomString(20) +
-        '-' +
-        getRandomString(20) +
-        '-' +
         getRandomString(20) +
         '-' +
         getRandomString(20);

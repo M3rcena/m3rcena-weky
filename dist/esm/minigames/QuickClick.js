@@ -159,7 +159,7 @@ const QuickClick = async (options) => {
         buttons.push(new ButtonBuilder()
             .setStyle(ButtonStyle.Primary)
             .setEmoji(options.emoji ? options.emoji : '👆')
-            .setCustomId('CORRECT'));
+            .setCustomId('weky_correct'));
         shuffleArray(buttons);
         for (let i = 0; i < 5; i++) {
             rows.push(new ActionRowBuilder());
@@ -212,7 +212,7 @@ const QuickClick = async (options) => {
                 throw new Error(chalk.red("[@m3rcena/weky] QuickClick Error:") + " Guild is not available in this interaction.");
             }
             ;
-            if (button.customId === 'CORRECT') {
+            if (button.customId === 'weky_correct') {
                 await button.deferUpdate();
                 Collector.stop();
                 buttons.forEach((element) => {

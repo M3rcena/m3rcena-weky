@@ -34,10 +34,6 @@ const ChaosWords = async (options) => {
     data.add(id);
     const ids = (0, functions_1.getRandomString)(20) +
         '-' +
-        (0, functions_1.getRandomString)(20) +
-        '-' +
-        (0, functions_1.getRandomString)(20) +
-        '-' +
         (0, functions_1.getRandomString)(20);
     let tries = 0;
     const array = [];

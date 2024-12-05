@@ -1,5 +1,5 @@
 import DiscordJS from "discord.js";
-import type { Types2048, Calc, Chaos, FastTypeTyping, GuessTheNumberTypes, HangmanTypes, LieSwatterTypes, NeverHaveIEverTypes, QuickClickTypes, WillYouPressTheButtonTypes, WouldYouRatherTypes, ShuffleGuessTypes, SnakeTypes } from "./Types/index.js";
+import type { Types2048, Calc, Chaos, FastTypeTyping, FightTypes, GuessTheNumberTypes, HangmanTypes, LieSwatterTypes, NeverHaveIEverTypes, QuickClickTypes, WillYouPressTheButtonTypes, WouldYouRatherTypes, ShuffleGuessTypes, SnakeTypes } from "./Types/index.js";
 export declare class WekyManager {
     private client;
     constructor(client: DiscordJS.Client);
@@ -91,6 +91,28 @@ export declare class WekyManager {
      * @copyright All rights reserved. M3rcena Development
      */
     createFastType(options: FastTypeTyping): Promise<void>;
+    /**
+     *
+     * Creates a new instance of the Fight game.
+     *
+     * @param options The options for the Fight game.
+     * @returns
+     *
+     * @example
+     * ```js
+     * import { WekyManager } from "weky";
+     * import DiscordJS from "discord.js";
+     *
+     * const client = new DiscordJS.Client();
+     *
+     * const weky = new WekyManager(client);
+     *
+     * weky.createFight(); // You can also pass options.
+     * ```
+     *
+     * @copyright All rights reserved. M3rcena Development
+     */
+    createFight(options: FightTypes): Promise<void>;
     /**
      *
      * Creates a new instance of the Guess The Number game.

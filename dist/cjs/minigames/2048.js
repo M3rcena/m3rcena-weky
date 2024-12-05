@@ -57,7 +57,7 @@ const mini2048 = async (options) => {
         const stop = new discord_js_1.ButtonBuilder()
             .setStyle(discord_js_1.ButtonStyle.Danger)
             .setLabel("Quit Game")
-            .setCustomId("quit")
+            .setCustomId("weky_quit")
             .setEmoji("🛑");
         const msg = await interaction.reply({ content: ``, embeds: [embed], ephemeral: true });
         const collector = msg.createMessageComponentCollector({
@@ -129,23 +129,23 @@ const mini2048 = async (options) => {
     const up = new discord_js_1.ButtonBuilder()
         .setStyle(discord_js_1.ButtonStyle.Secondary)
         .setLabel(options.emojis ? options.emojis.up || "⬆️" : "⬆️")
-        .setCustomId("up");
+        .setCustomId("weky_up");
     const down = new discord_js_1.ButtonBuilder()
         .setStyle(discord_js_1.ButtonStyle.Secondary)
         .setLabel(options.emojis ? options.emojis.down || "⬇️" : "⬇️")
-        .setCustomId("down");
+        .setCustomId("weky_down");
     const left = new discord_js_1.ButtonBuilder()
         .setStyle(discord_js_1.ButtonStyle.Secondary)
         .setLabel(options.emojis ? options.emojis.left || "⬅️" : "⬅️")
-        .setCustomId("left");
+        .setCustomId("weky_left");
     const right = new discord_js_1.ButtonBuilder()
         .setStyle(discord_js_1.ButtonStyle.Secondary)
         .setLabel(options.emojis ? options.emojis.right || "➡️" : "➡️")
-        .setCustomId("right");
+        .setCustomId("weky_right");
     const stop = new discord_js_1.ButtonBuilder()
         .setStyle(discord_js_1.ButtonStyle.Danger)
         .setLabel("Quit Game")
-        .setCustomId("quit")
+        .setCustomId("weky_quit")
         .setEmoji("🛑");
     const row = new discord_js_1.ActionRowBuilder().addComponents(left, up, down, right);
     const row2 = new discord_js_1.ActionRowBuilder().addComponents(stop);
@@ -166,11 +166,11 @@ const mini2048 = async (options) => {
             return btn.reply({ content: "This is not your game!", ephemeral: true });
         }
         ;
-        if (btn.customId === "quit") {
+        if (btn.customId === "weky_quit") {
             return collector.stop("quit");
         }
         ;
-        const data = await fetch(`https://weky.miv4.com/api/2048/${btn.user.id}/${btn.customId}`, {
+        const data = await fetch(`https://weky.miv4.com/api/2048/${btn.user.id}/${btn.customId.split("_")[1]}`, {
             method: "GET"
         }).then(res => res.json());
         if (data.error) {

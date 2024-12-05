@@ -31,16 +31,8 @@ const LieSwatter = async (options) => {
     ;
     const id1 = (0, functions_1.getRandomString)(20) +
         "-" +
-        (0, functions_1.getRandomString)(20) +
-        "-" +
-        (0, functions_1.getRandomString)(20) +
-        "-" +
         (0, functions_1.getRandomString)(20);
     const id2 = (0, functions_1.getRandomString)(20) +
-        "-" +
-        (0, functions_1.getRandomString)(20) +
-        "-" +
-        (0, functions_1.getRandomString)(20) +
         "-" +
         (0, functions_1.getRandomString)(20);
     if (!options.winMessage)

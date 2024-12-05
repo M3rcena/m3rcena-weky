@@ -31,10 +31,6 @@ const FastType = async (options) => {
     data.add(id);
     const ids = getRandomString(20) +
         "-" +
-        getRandomString(20) +
-        "-" +
-        getRandomString(20) +
-        "-" +
         getRandomString(20);
     if (!options.sentence) {
         options.sentence = getRandomSentence(Math.floor(Math.random() * 20) + 3)
@@ -236,6 +232,7 @@ const FastType = async (options) => {
     });
     const gameCollector = msg.createMessageComponentCollector({
         componentType: ComponentType.Button,
+        filter: (button) => button.customId === ids
     });
     gameCollector.on("collect", async (button) => {
         if (button.user.id !== id) {

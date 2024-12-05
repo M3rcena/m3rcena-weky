@@ -64,7 +64,7 @@ const mini2048 = async (options: Types2048) => {
         const stop = new ButtonBuilder()
             .setStyle(ButtonStyle.Danger)
             .setLabel("Quit Game")
-            .setCustomId("quit")
+            .setCustomId("weky_quit")
             .setEmoji("🛑");
 
         const msg = await interaction.reply({ content: ``, embeds: [embed], ephemeral: true });
@@ -148,27 +148,27 @@ const mini2048 = async (options: Types2048) => {
     const up = new ButtonBuilder()
         .setStyle(ButtonStyle.Secondary)
         .setLabel(options.emojis ? options.emojis.up || "⬆️" : "⬆️")
-        .setCustomId("up");
+        .setCustomId("weky_up");
 
     const down = new ButtonBuilder()
         .setStyle(ButtonStyle.Secondary)
         .setLabel(options.emojis ? options.emojis.down || "⬇️" : "⬇️")
-        .setCustomId("down");
+        .setCustomId("weky_down");
 
     const left = new ButtonBuilder()
         .setStyle(ButtonStyle.Secondary)
         .setLabel(options.emojis ? options.emojis.left || "⬅️" : "⬅️")
-        .setCustomId("left");
+        .setCustomId("weky_left");
 
     const right = new ButtonBuilder()
         .setStyle(ButtonStyle.Secondary)
         .setLabel(options.emojis ? options.emojis.right || "➡️" : "➡️")
-        .setCustomId("right");
+        .setCustomId("weky_right");
 
     const stop = new ButtonBuilder()
         .setStyle(ButtonStyle.Danger)
         .setLabel("Quit Game")
-        .setCustomId("quit")
+        .setCustomId("weky_quit")
         .setEmoji("🛑");
 
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(left, up, down, right);
@@ -193,11 +193,11 @@ const mini2048 = async (options: Types2048) => {
             return btn.reply({ content: "This is not your game!", ephemeral: true });
         };
 
-        if (btn.customId === "quit") {
+        if (btn.customId === "weky_quit") {
             return collector.stop("quit");
         };
 
-        const data: any = await fetch(`https://weky.miv4.com/api/2048/${btn.user.id}/${btn.customId}`, {
+        const data: any = await fetch(`https://weky.miv4.com/api/2048/${btn.user.id}/${btn.customId.split("_")[1]}`, {
             method: "GET"
         }).then(res => res.json());
 

@@ -70,16 +70,8 @@ const WillYouPressTheButton = async (options) => {
     ;
     const id1 = (0, functions_1.getRandomString)(20) +
         '-' +
-        (0, functions_1.getRandomString)(20) +
-        '-' +
-        (0, functions_1.getRandomString)(20) +
-        '-' +
         (0, functions_1.getRandomString)(20);
     const id2 = (0, functions_1.getRandomString)(20) +
-        '-' +
-        (0, functions_1.getRandomString)(20) +
-        '-' +
-        (0, functions_1.getRandomString)(20) +
         '-' +
         (0, functions_1.getRandomString)(20);
     let embed = new discord_js_1.EmbedBuilder()

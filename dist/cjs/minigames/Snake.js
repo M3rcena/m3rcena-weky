@@ -166,32 +166,32 @@ const Snake = async (options) => {
     const up = new discord_js_1.ButtonBuilder()
         .setEmoji(emojis.up)
         .setStyle(discord_js_1.ButtonStyle.Primary)
-        .setCustomId("snake_up");
+        .setCustomId("weky-snake_up");
     const down = new discord_js_1.ButtonBuilder()
         .setEmoji(emojis.down)
         .setStyle(discord_js_1.ButtonStyle.Primary)
-        .setCustomId("snake_down");
+        .setCustomId("weky-snake_down");
     const left = new discord_js_1.ButtonBuilder()
         .setEmoji(emojis.left)
         .setStyle(discord_js_1.ButtonStyle.Primary)
-        .setCustomId("snake_left");
+        .setCustomId("weky-snake_left");
     const right = new discord_js_1.ButtonBuilder()
         .setEmoji(emojis.right)
         .setStyle(discord_js_1.ButtonStyle.Primary)
-        .setCustomId("snake_right");
+        .setCustomId("weky-snake_right");
     const stop = new discord_js_1.ButtonBuilder()
         .setEmoji(emojis.stop)
         .setStyle(discord_js_1.ButtonStyle.Danger)
-        .setCustomId("snake_stop");
+        .setCustomId("weky-snake_stop");
     const dis1 = new discord_js_1.ButtonBuilder()
         .setLabel(`\u200b`)
         .setStyle(discord_js_1.ButtonStyle.Secondary)
-        .setCustomId("dis1")
+        .setCustomId("weky-snake_dis1")
         .setDisabled(true);
     const dis2 = new discord_js_1.ButtonBuilder()
         .setLabel(`\u200b`)
         .setStyle(discord_js_1.ButtonStyle.Secondary)
-        .setCustomId("dis2")
+        .setCustomId("weky-snake_dis2")
         .setDisabled(true);
     const row1 = new discord_js_1.ActionRowBuilder().addComponents(dis1, up, dis2, stop);
     const row2 = new discord_js_1.ActionRowBuilder().addComponents(left, down, right);

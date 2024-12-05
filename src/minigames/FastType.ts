@@ -1,7 +1,7 @@
 import chalk from "chalk";
 import {
-	ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, Client, ComponentType, EmbedBuilder,
-	Message
+	ButtonBuilder, ButtonInteraction, ButtonStyle, ChatInputCommandInteraction, Client,
+	ComponentType, EmbedBuilder, Message
 } from "discord.js";
 
 import {
@@ -43,10 +43,6 @@ const FastType = async (options: FastTypeTyping) => {
     data.add(id);
 
     const ids =
-        getRandomString(20) +
-        "-" +
-        getRandomString(20) +
-        "-" +
         getRandomString(20) +
         "-" +
         getRandomString(20);
@@ -265,6 +261,7 @@ const FastType = async (options: FastTypeTyping) => {
 
     const gameCollector = msg.createMessageComponentCollector({
         componentType: ComponentType.Button,
+        filter: (button: ButtonInteraction) => button.customId === ids
     });
 
     gameCollector.on("collect", async (button) => {

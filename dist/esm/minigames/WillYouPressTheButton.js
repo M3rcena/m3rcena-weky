@@ -67,16 +67,8 @@ const WillYouPressTheButton = async (options) => {
     ;
     const id1 = getRandomString(20) +
         '-' +
-        getRandomString(20) +
-        '-' +
-        getRandomString(20) +
-        '-' +
         getRandomString(20);
     const id2 = getRandomString(20) +
-        '-' +
-        getRandomString(20) +
-        '-' +
-        getRandomString(20) +
         '-' +
         getRandomString(20);
     let embed = new EmbedBuilder()

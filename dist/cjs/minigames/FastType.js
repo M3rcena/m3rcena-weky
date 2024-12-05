@@ -34,10 +34,6 @@ const FastType = async (options) => {
     data.add(id);
     const ids = (0, functions_1.getRandomString)(20) +
         "-" +
-        (0, functions_1.getRandomString)(20) +
-        "-" +
-        (0, functions_1.getRandomString)(20) +
-        "-" +
         (0, functions_1.getRandomString)(20);
     if (!options.sentence) {
         options.sentence = (0, functions_1.getRandomSentence)(Math.floor(Math.random() * 20) + 3)
@@ -239,6 +235,7 @@ const FastType = async (options) => {
     });
     const gameCollector = msg.createMessageComponentCollector({
         componentType: discord_js_1.ComponentType.Button,
+        filter: (button) => button.customId === ids
     });
     gameCollector.on("collect", async (button) => {
         if (button.user.id !== id) {
