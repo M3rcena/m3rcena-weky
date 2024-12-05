@@ -3,8 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const tslib_1 = require("tslib");
 const chalk_1 = tslib_1.__importDefault(require("chalk"));
 const discord_js_1 = require("discord.js");
-const functions_1 = require("src/functions/functions");
-const OptionChecking_1 = require("src/functions/OptionChecking");
+const functions_1 = require("../functions/functions.js");
+const OptionChecking_1 = require("../functions/OptionChecking.js");
 const data = new Set();
 const Fight = async (options) => {
     (0, OptionChecking_1.OptionsChecking)(options, "Fight");

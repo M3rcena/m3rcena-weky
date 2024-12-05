@@ -1,7 +1,8 @@
 import chalk from "chalk";
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from "discord.js";
-import { checkPackageUpdates, getRandomString } from "src/functions/functions";
-import { OptionsChecking } from "src/functions/OptionChecking";
+
+import { checkPackageUpdates, getRandomString } from "../functions/functions";
+import { OptionsChecking } from "../functions/OptionChecking";
 
 import type { ButtonInteraction, ChatInputCommandInteraction, Client, Message } from "discord.js";
 import type { FightTypes } from "../Types";

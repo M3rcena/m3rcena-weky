@@ -1,7 +1,7 @@
 import chalk from "chalk";
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from "discord.js";
-import { checkPackageUpdates, getRandomString } from "src/functions/functions";
-import { OptionsChecking } from "src/functions/OptionChecking";
+import { checkPackageUpdates, getRandomString } from "../functions/functions.js";
+import { OptionsChecking } from "../functions/OptionChecking.js";
 const data = new Set();
 const Fight = async (options) => {
     OptionsChecking(options, "Fight");
