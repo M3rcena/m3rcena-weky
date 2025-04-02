@@ -1,12 +1,12 @@
 import chalk from "chalk";
 import {
-	ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, EmbedBuilder
+    ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, EmbedBuilder
 } from "discord.js";
 
 import {
-	checkPackageUpdates, convertTime, createEmbed, getRandomSentence, getRandomString, shuffleString
-} from "../functions/functions";
-import { OptionsChecking } from "../functions/OptionChecking";
+    checkPackageUpdates, convertTime, createEmbed, getRandomSentence, getRandomString, shuffleString
+} from "../functions/functions.js";
+import { OptionsChecking } from "../functions/OptionChecking.js";
 
 import type { ButtonInteraction, ChatInputCommandInteraction, Client, Message } from "discord.js";
 import type { ShuffleGuessTypes } from "../Types";

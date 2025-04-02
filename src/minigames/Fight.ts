@@ -1,13 +1,13 @@
 import chalk from "chalk";
 import {
-	ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle,
-	ChatInputCommandInteraction, Client, Embed, EmbedBuilder, Message, User
+    ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle,
+    ChatInputCommandInteraction, Client, Embed, EmbedBuilder, Message, User
 } from "discord.js";
 
 import { Canvas, loadImage } from "@napi-rs/canvas";
 
-import { checkPackageUpdates, createEmbed, getRandomString } from "../functions/functions";
-import { OptionsChecking } from "../functions/OptionChecking";
+import { checkPackageUpdates, createEmbed, getRandomString } from "../functions/functions.js";
+import { OptionsChecking } from "../functions/OptionChecking.js";
 
 import type { FightTypes } from "../Types";
 const data = new Set();

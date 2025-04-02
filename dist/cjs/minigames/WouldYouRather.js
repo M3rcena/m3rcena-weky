@@ -5,11 +5,11 @@ const chalk_1 = tslib_1.__importDefault(require("chalk"));
 const discord_js_1 = require("discord.js");
 const html_entities_1 = require("html-entities");
 const ofetch_1 = require("ofetch");
-const functions_1 = require("../functions/functions.js");
-const OptionChecking_1 = require("../functions/OptionChecking.js");
+const functions_js_1 = require("../functions/functions.js");
+const OptionChecking_js_1 = require("../functions/OptionChecking.js");
 const WouldYouRather = async (options) => {
     // Options Check
-    (0, OptionChecking_1.OptionsChecking)(options, "WouldYouRather");
+    (0, OptionChecking_js_1.OptionsChecking)(options, "WouldYouRather");
     let interaction;
     if (options.interaction.author) {
         interaction = options.interaction;
@@ -30,15 +30,15 @@ const WouldYouRather = async (options) => {
         id = options.interaction.user.id;
     }
     ;
-    const id1 = (0, functions_1.getRandomString)(20) +
+    const id1 = (0, functions_js_1.getRandomString)(20) +
         '-' +
-        (0, functions_1.getRandomString)(20);
-    const id2 = (0, functions_1.getRandomString)(20) +
+        (0, functions_js_1.getRandomString)(20);
+    const id2 = (0, functions_js_1.getRandomString)(20) +
         '-' +
-        (0, functions_1.getRandomString)(20);
+        (0, functions_js_1.getRandomString)(20);
     options.embed.title = options.embed.title ?? "Would You Rather?";
     options.embed.description = options.thinkMessage ? options.thinkMessage : "I am thinking";
-    let embed = (0, functions_1.createEmbed)(options.embed);
+    let embed = (0, functions_js_1.createEmbed)(options.embed);
     const think = await interaction.reply({
         embeds: [embed]
     });
@@ -65,7 +65,7 @@ const WouldYouRather = async (options) => {
         .setLabel(options.buttons ? options.buttons.optionB : "Option B")
         .setCustomId(id2);
     options.embed.description = `**Option A:** ${(0, html_entities_1.decode)(res.questions[0])}\n**Option B:** ${(0, html_entities_1.decode)(res.questions[1])}`;
-    embed = (0, functions_1.createEmbed)(options.embed);
+    embed = (0, functions_js_1.createEmbed)(options.embed);
     await think.edit({
         embeds: [embed],
         components: [new discord_js_1.ActionRowBuilder().addComponents(btn, btn2)]
@@ -98,7 +98,7 @@ const WouldYouRather = async (options) => {
                 .setDisabled();
             gameCollector.stop();
             options.embed.description = `**Option A:** ${(0, html_entities_1.decode)(res.questions[0])} (${res.percentage['1']})\n**Option B:** ${(0, html_entities_1.decode)(res.questions[1])} (${res.percentage['2']})`;
-            const _embed = (0, functions_1.createEmbed)(options.embed);
+            const _embed = (0, functions_js_1.createEmbed)(options.embed);
             await wyr.editReply({
                 embeds: [_embed],
                 components: [new discord_js_1.ActionRowBuilder().addComponents(btn, btn2)]
@@ -117,13 +117,13 @@ const WouldYouRather = async (options) => {
                 .setDisabled();
             gameCollector.stop();
             options.embed.description = `**Option A:** ${(0, html_entities_1.decode)(res.questions[0])} (${res.percentage['1']})\n**Option B:** ${(0, html_entities_1.decode)(res.questions[1])} (${res.percentage['2']})`;
-            const _embed = (0, functions_1.createEmbed)(options.embed);
+            const _embed = (0, functions_js_1.createEmbed)(options.embed);
             await wyr.editReply({
                 embeds: [_embed],
                 components: [new discord_js_1.ActionRowBuilder().addComponents(btn, btn2)]
             });
         }
     });
-    (0, functions_1.checkPackageUpdates)("WouldYouRather", options.notifyUpdate);
+    (0, functions_js_1.checkPackageUpdates)("WouldYouRather", options.notifyUpdate);
 };
 exports.default = WouldYouRather;

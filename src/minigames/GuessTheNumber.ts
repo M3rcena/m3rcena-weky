@@ -1,13 +1,13 @@
 import chalk from "chalk";
 import {
-	ActionRowBuilder, ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, Client,
-	ComponentType, Message
+    ActionRowBuilder, ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, Client,
+    ComponentType, Message
 } from "discord.js";
 
 import {
-	checkPackageUpdates, convertTime, createEmbed, getRandomString
-} from "../functions/functions";
-import { OptionsChecking } from "../functions/OptionChecking";
+    checkPackageUpdates, convertTime, createEmbed, getRandomString
+} from "../functions/functions.js";
+import { OptionsChecking } from "../functions/OptionChecking.js";
 
 import type { GuessTheNumberTypes } from "../Types/";
 const db = new Map();

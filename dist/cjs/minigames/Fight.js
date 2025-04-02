@@ -4,12 +4,12 @@ const tslib_1 = require("tslib");
 const chalk_1 = tslib_1.__importDefault(require("chalk"));
 const discord_js_1 = require("discord.js");
 const canvas_1 = require("@napi-rs/canvas");
-const functions_1 = require("../functions/functions.js");
-const OptionChecking_1 = require("../functions/OptionChecking.js");
+const functions_js_1 = require("../functions/functions.js");
+const OptionChecking_js_1 = require("../functions/OptionChecking.js");
 const data = new Set();
 const Fight = async (options) => {
     return console.log("UNDER DEVELOPMENT");
-    (0, OptionChecking_1.OptionsChecking)(options, "Fight");
+    (0, OptionChecking_js_1.OptionsChecking)(options, "Fight");
     let interaction;
     if (options.interaction.author) {
         interaction = options.interaction;
@@ -166,7 +166,7 @@ const Fight = async (options) => {
         embeds: [embed],
         files: [requestCard],
     });
-    (0, functions_1.checkPackageUpdates)("Fight", options.notifyUpdate);
+    (0, functions_js_1.checkPackageUpdates)("Fight", options.notifyUpdate);
 };
 async function getRequestCard(challenger, opponent) {
     // Create canvas with 800x250 dimensions

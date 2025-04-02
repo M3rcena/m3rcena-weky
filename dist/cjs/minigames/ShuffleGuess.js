@@ -3,12 +3,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const tslib_1 = require("tslib");
 const chalk_1 = tslib_1.__importDefault(require("chalk"));
 const discord_js_1 = require("discord.js");
-const functions_1 = require("../functions/functions.js");
-const OptionChecking_1 = require("../functions/OptionChecking.js");
+const functions_js_1 = require("../functions/functions.js");
+const OptionChecking_js_1 = require("../functions/OptionChecking.js");
 const data = new Set();
 const ShuffleGuess = async (options) => {
     // Options Check
-    (0, OptionChecking_1.OptionsChecking)(options, "ShuffleGuess");
+    (0, OptionChecking_js_1.OptionsChecking)(options, "ShuffleGuess");
     if (!options.interaction.inGuild())
         return;
     let interaction;
@@ -32,7 +32,7 @@ const ShuffleGuess = async (options) => {
     }
     ;
     if (!options.word) {
-        options.word = (0, functions_1.getRandomSentence)(1)[0];
+        options.word = (0, functions_js_1.getRandomSentence)(1)[0];
     }
     ;
     if (options.time < 10000) {
@@ -61,13 +61,13 @@ const ShuffleGuess = async (options) => {
     if (data.has(id))
         return;
     data.add(id);
-    const id1 = (0, functions_1.getRandomString)(20) +
+    const id1 = (0, functions_js_1.getRandomString)(20) +
         '-' +
-        (0, functions_1.getRandomString)(20);
-    const id2 = (0, functions_1.getRandomString)(20) +
+        (0, functions_js_1.getRandomString)(20);
+    const id2 = (0, functions_js_1.getRandomString)(20) +
         '-' +
-        (0, functions_1.getRandomString)(20);
-    const word = (0, functions_1.shuffleString)(options.word.toString());
+        (0, functions_js_1.getRandomString)(20);
+    const word = (0, functions_js_1.shuffleString)(options.word.toString());
     let disbut = new discord_js_1.ButtonBuilder()
         .setLabel(options.buttons.reshuffle ? options.buttons.reshuffle : 'Reshuffle')
         .setStyle(discord_js_1.ButtonStyle.Success)
@@ -80,9 +80,9 @@ const ShuffleGuess = async (options) => {
     options.embed.description = options.startMessage ?
         options.startMessage
             .replace('{{word}}', word)
-            .replace('{{time}}', (0, functions_1.convertTime)(options.time ?? 60000)) :
-        `The word is \`${word}\` and you have ${(0, functions_1.convertTime)(options.time ?? 60000)} to guess it!`;
-    let emd = (0, functions_1.createEmbed)(options.embed);
+            .replace('{{time}}', (0, functions_js_1.convertTime)(options.time ?? 60000)) :
+        `The word is \`${word}\` and you have ${(0, functions_js_1.convertTime)(options.time ?? 60000)} to guess it!`;
+    let emd = (0, functions_js_1.createEmbed)(options.embed);
     const embed = await options.interaction.reply({
         embeds: [emd],
         components: [new discord_js_1.ActionRowBuilder().addComponents(disbut, cancel)],
@@ -108,13 +108,13 @@ const ShuffleGuess = async (options) => {
                 .setStyle(discord_js_1.ButtonStyle.Danger)
                 .setCustomId(id2)
                 .setDisabled();
-            const time = (0, functions_1.convertTime)(Date.now() - gameCreatedAt);
+            const time = (0, functions_js_1.convertTime)(Date.now() - gameCreatedAt);
             options.embed.description = options.winMessage ?
                 options.winMessage
                     .replace('{{word}}', options.word.toString())
                     .replace('{{time}}', time) :
                 `You have guessed the word \`${options.word.toString()}\` in ${time}!`;
-            let _embed = (0, functions_1.createEmbed)(options.embed);
+            let _embed = (0, functions_js_1.createEmbed)(options.embed);
             msg.reply({ embeds: [_embed] });
             return embed.edit({
                 embeds: [emd],
@@ -125,7 +125,7 @@ const ShuffleGuess = async (options) => {
             options.embed.description = options.incorrectMessage ?
                 options.incorrectMessage :
                 `No ${msg.author.toString()}! The word isn\'t \`${msg.content.toLowerCase()}\``;
-            let _embed = (0, functions_1.createEmbed)(options.embed);
+            let _embed = (0, functions_js_1.createEmbed)(options.embed);
             msg.reply({ embeds: [_embed] }).then((m) => setTimeout(() => {
                 if (m.deletable) {
                     m.delete();
@@ -155,10 +155,10 @@ const ShuffleGuess = async (options) => {
         if (btn.customId === id1) {
             options.embed.description = options.startMessage ?
                 options.startMessage
-                    .replace('{{word}}', (0, functions_1.shuffleString)(options.word.toString()))
-                    .replace('{{time}}', (0, functions_1.convertTime)(options.time ?? 60000)) :
-                `The word is \`${(0, functions_1.shuffleString)(options.word.toString())}\` and you have ${(0, functions_1.convertTime)(options.time ?? 60000)} to guess it!`;
-            let _embed = (0, functions_1.createEmbed)(options.embed);
+                    .replace('{{word}}', (0, functions_js_1.shuffleString)(options.word.toString()))
+                    .replace('{{time}}', (0, functions_js_1.convertTime)(options.time ?? 60000)) :
+                `The word is \`${(0, functions_js_1.shuffleString)(options.word.toString())}\` and you have ${(0, functions_js_1.convertTime)(options.time ?? 60000)} to guess it!`;
+            let _embed = (0, functions_js_1.createEmbed)(options.embed);
             return embed.edit({
                 embeds: [_embed],
                 components: [new discord_js_1.ActionRowBuilder().addComponents(disbut, cancel)],
@@ -180,7 +180,7 @@ const ShuffleGuess = async (options) => {
             options.embed.description = options.loseMessage ?
                 options.loseMessage.replace('{{answer}}', options.word.toString()) :
                 `The word was \`${options.word.toString()}\``;
-            let _embed = (0, functions_1.createEmbed)(options.embed);
+            let _embed = (0, functions_js_1.createEmbed)(options.embed);
             return embed.edit({
                 embeds: [_embed],
                 components: [new discord_js_1.ActionRowBuilder().addComponents(disbut, cancel)],
@@ -203,7 +203,7 @@ const ShuffleGuess = async (options) => {
             options.embed.description = options.loseMessage ?
                 options.loseMessage.replace('{{answer}}', options.word.toString()) :
                 `The word was \`${options.word.toString()}\``;
-            let _embed = (0, functions_1.createEmbed)(options.embed);
+            let _embed = (0, functions_js_1.createEmbed)(options.embed);
             await interaction.reply({ embeds: [_embed] });
             data.delete(id);
             return embed.edit({

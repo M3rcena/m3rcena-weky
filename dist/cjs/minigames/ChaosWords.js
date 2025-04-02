@@ -3,12 +3,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const tslib_1 = require("tslib");
 const chalk_1 = tslib_1.__importDefault(require("chalk"));
 const discord_js_1 = require("discord.js");
-const functions_1 = require("../functions/functions.js");
-const OptionChecking_1 = require("../functions/OptionChecking.js");
+const functions_js_1 = require("../functions/functions.js");
+const OptionChecking_js_1 = require("../functions/OptionChecking.js");
 const data = new Set();
 const ChaosWords = async (options) => {
     // Check types
-    (0, OptionChecking_1.OptionsChecking)(options, "ChaosWords");
+    (0, OptionChecking_js_1.OptionsChecking)(options, "ChaosWords");
     let interaction;
     if (options.interaction.author) {
         interaction = options.interaction;
@@ -32,14 +32,14 @@ const ChaosWords = async (options) => {
     if (data.has(id))
         return;
     data.add(id);
-    const ids = (0, functions_1.getRandomString)(20) +
+    const ids = (0, functions_js_1.getRandomString)(20) +
         '-' +
-        (0, functions_1.getRandomString)(20);
+        (0, functions_js_1.getRandomString)(20);
     let tries = 0;
     const array = [];
     let remaining = 0;
     const guessed = [];
-    let words = options.words ? options.words : (0, functions_1.getRandomSentence)(Math.floor(Math.random() * 6) + 2);
+    let words = options.words ? options.words : (0, functions_js_1.getRandomSentence)(Math.floor(Math.random() * 6) + 2);
     let charGenerated = options.charGenerated ? options.charGenerated : options.words ? options.words.join('').length - 1 : 0;
     if (words.join('').length > charGenerated) {
         charGenerated = words.join('').length - 1;
@@ -73,10 +73,10 @@ const ChaosWords = async (options) => {
             }
         ];
     }
-    let embed = (0, functions_1.createEmbed)(options.embed)
+    let embed = (0, functions_js_1.createEmbed)(options.embed)
         .setDescription(options.embed.description ?
-        options.embed.description.replace('{{time}}', (0, functions_1.convertTime)(options.time ? options.time : 60000)) :
-        `You have **${(0, functions_1.convertTime)(options.time ? options.time : 60000)}** to find the correct words in the chaos above.`);
+        options.embed.description.replace('{{time}}', (0, functions_js_1.convertTime)(options.time ? options.time : 60000)) :
+        `You have **${(0, functions_js_1.convertTime)(options.time ? options.time : 60000)}** to find the correct words in the chaos above.`);
     if (!options.embed.fields) {
         fields = [
             {
@@ -144,10 +144,10 @@ const ChaosWords = async (options) => {
             remaining++;
             array.splice(array.indexOf(mes.content.toLowerCase()), 1);
             guessed.push(mes.content.toLowerCase());
-            let _embed = (0, functions_1.createEmbed)(options.embed)
+            let _embed = (0, functions_js_1.createEmbed)(options.embed)
                 .setDescription(options.embed.description ?
-                options.embed.description.replace('{{time}}', (0, functions_1.convertTime)(options.time ? options.time : 60000)) :
-                `You have **${(0, functions_1.convertTime)(options.time ? options.time : 60000)}** to find the correct words in the chaos above.`);
+                options.embed.description.replace('{{time}}', (0, functions_js_1.convertTime)(options.time ? options.time : 60000)) :
+                `You have **${(0, functions_js_1.convertTime)(options.time ? options.time : 60000)}** to find the correct words in the chaos above.`);
             if (!options.embed.fields) {
                 fields = [
                     {
@@ -199,8 +199,8 @@ const ChaosWords = async (options) => {
                     embeds: [embed],
                     components: [new discord_js_1.ActionRowBuilder().addComponents(btn1)]
                 });
-                const time = (0, functions_1.convertTime)(Date.now() - gameCreatedAt);
-                let __embed = (0, functions_1.createEmbed)(options.embed)
+                const time = (0, functions_js_1.convertTime)(Date.now() - gameCreatedAt);
+                let __embed = (0, functions_js_1.createEmbed)(options.embed)
                     .setDescription(options.winMessage ? options.winMessage.replace('{{time}}', time) : `You found all the words in **${time}**`);
                 if (!options.embed.fields) {
                     fields = [
@@ -249,7 +249,7 @@ const ChaosWords = async (options) => {
                 data.delete(id);
                 return game.stop();
             }
-            const __embed = (0, functions_1.createEmbed)(options.embed, true)
+            const __embed = (0, functions_js_1.createEmbed)(options.embed, true)
                 .setDescription(`
                     ${options.correctWord ?
                 options.correctWord
@@ -264,7 +264,7 @@ const ChaosWords = async (options) => {
         else {
             tries++;
             if (tries === (options.maxTries ? options.maxTries : 10)) {
-                const _embed = (0, functions_1.createEmbed)(options.embed)
+                const _embed = (0, functions_js_1.createEmbed)(options.embed)
                     .setDescription(options.loseMessage ? options.loseMessage : `You failed to find all the words in time.`);
                 if (!options.embed.fields) {
                     fields = [
@@ -321,7 +321,7 @@ const ChaosWords = async (options) => {
                 return game.stop();
             }
             ;
-            const _embed = (0, functions_1.createEmbed)(options.embed, true)
+            const _embed = (0, functions_js_1.createEmbed)(options.embed, true)
                 .setDescription(`
                     ${options.wrongWord ?
                 options.wrongWord.replace(`{{remaining_tries}}`, `${options.maxTries ? options.maxTries : 10 - tries}`) :
@@ -334,7 +334,7 @@ const ChaosWords = async (options) => {
     });
     game.on('end', (mes, reason) => {
         if (reason === 'time') {
-            const _embed = (0, functions_1.createEmbed)(options.embed)
+            const _embed = (0, functions_js_1.createEmbed)(options.embed)
                 .setDescription(options.loseMessage ? options.loseMessage : `You failed to find all the words in time.`);
             if (!options.embed.fields) {
                 fields = [
@@ -447,7 +447,7 @@ const ChaosWords = async (options) => {
             embeds: [embed],
             components: [new discord_js_1.ActionRowBuilder().addComponents(btn1)]
         });
-        const _embed = (0, functions_1.createEmbed)(options.embed, true)
+        const _embed = (0, functions_js_1.createEmbed)(options.embed, true)
             .setDescription(options.loseMessage ? options.loseMessage : `The game has been stopped by <@${id}>`);
         if (!interaction.channel || !interaction.channel.isSendable())
             return;
@@ -458,6 +458,6 @@ const ChaosWords = async (options) => {
         gameCollector.stop();
         return game.stop();
     });
-    (0, functions_1.checkPackageUpdates)("ChaosWords", options.notifyUpdate);
+    (0, functions_js_1.checkPackageUpdates)("ChaosWords", options.notifyUpdate);
 };
 exports.default = ChaosWords;

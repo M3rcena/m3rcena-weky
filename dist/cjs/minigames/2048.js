@@ -3,12 +3,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const tslib_1 = require("tslib");
 const chalk_1 = tslib_1.__importDefault(require("chalk"));
 const discord_js_1 = require("discord.js");
-const functions_1 = require("src/functions/functions");
-const OptionChecking_1 = require("../functions/OptionChecking.js");
+const functions_js_1 = require("src/functions/functions.js");
+const OptionChecking_js_1 = require("../functions/OptionChecking.js");
 // Main game function that handles the 2048 game logic
 const mini2048 = async (options) => {
     // Validate the provided options
-    (0, OptionChecking_1.OptionsChecking)(options, "2048");
+    (0, OptionChecking_js_1.OptionsChecking)(options, "2048");
     let interaction = options.interaction;
     if (!interaction)
         throw new Error(chalk_1.default.red("[@m3rcena/weky] 2048 Error:") + " No interaction provided.");
@@ -104,7 +104,7 @@ const mini2048 = async (options) => {
     // Set up the game embed with score and ID
     options.embed.description = options.embed.description?.replace(`{{score}}`, `${gameData.data.score}`).replace(`{{id}}`, `${gameData.data.id}`) || `ID: \`${gameData.data.id}\`\nScore: \`${gameData.data.score}\``;
     options.embed.image = "attachment://2048.png";
-    let embed = (0, functions_1.createEmbed)(options.embed);
+    let embed = (0, functions_js_1.createEmbed)(options.embed);
     // Create game control buttons (up, down, left, right, quit)
     const up = new discord_js_1.ButtonBuilder()
         .setStyle(discord_js_1.ButtonStyle.Secondary)
@@ -178,7 +178,7 @@ const mini2048 = async (options) => {
         });
         // Set up the game embed with score and ID
         options.embed.description = options.embed.description?.replace(`{{score}}`, `${data.data.score}`).replace(`{{id}}`, `${data.data.id}`) || `ID: \`${data.data.id}\`\nScore: \`${data.data.score}\``;
-        const embed = (0, functions_1.createEmbed)(options.embed);
+        const embed = (0, functions_js_1.createEmbed)(options.embed);
         // Update the message with the game board and controls
         await btn.update({
             content: ``,

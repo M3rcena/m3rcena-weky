@@ -6,8 +6,8 @@ import {
 
 import {
     checkPackageUpdates, convertTime, createEmbed, getRandomString, shuffleArray
-} from "../functions/functions";
-import { OptionsChecking } from "../functions/OptionChecking";
+} from "../functions/functions.js";
+import { OptionsChecking } from "../functions/OptionChecking.js";
 
 import type { QuickClickTypes } from "../Types/";
 interface GameType {

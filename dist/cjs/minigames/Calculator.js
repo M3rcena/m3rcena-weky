@@ -4,11 +4,11 @@ const tslib_1 = require("tslib");
 const chalk_1 = tslib_1.__importDefault(require("chalk"));
 const discord_js_1 = require("discord.js");
 const mathjs_1 = require("mathjs");
-const functions_1 = require("../functions/functions.js");
-const OptionChecking_1 = require("../functions/OptionChecking.js");
+const functions_js_1 = require("../functions/functions.js");
+const OptionChecking_js_1 = require("../functions/OptionChecking.js");
 const Calculator = async (options) => {
     // Validate calculator options
-    (0, OptionChecking_1.OptionsChecking)(options, "Calculator");
+    (0, OptionChecking_js_1.OptionsChecking)(options, "Calculator");
     let interaction = options.interaction;
     if (!interaction)
         throw new Error(chalk_1.default.red("[@m3rcena/weky] Calculator Error:") + " No interaction provided.");
@@ -60,9 +60,9 @@ const Calculator = async (options) => {
         const rows = [];
         let currentRow = [];
         textArray.forEach((text, index) => {
-            currentRow.push(isDisabled ? (0, functions_1.createDisabledButton)(text) : (0, functions_1.createButton)(text, false));
+            currentRow.push(isDisabled ? (0, functions_js_1.createDisabledButton)(text) : (0, functions_js_1.createButton)(text, false));
             if (currentRow.length === 5 || index === textArray.length - 1) {
-                rows.push((0, functions_1.addRow)([...currentRow]));
+                rows.push((0, functions_js_1.addRow)([...currentRow]));
                 currentRow = [];
             }
         });
@@ -107,7 +107,7 @@ const Calculator = async (options) => {
     const row2 = createButtonRows(text2, true);
     // Set up calculator display
     options.embed.description = stringify;
-    let embed = (0, functions_1.createEmbed)(options.embed);
+    let embed = (0, functions_js_1.createEmbed)(options.embed);
     if (!interaction.channel || !interaction.channel.isTextBased() || !interaction.channel.isSendable()) {
         throw new Error(chalk_1.default.red("[@m3rcena/weky] Calculator Error:") + " Interaction must be a text-based channel.");
     }
@@ -125,7 +125,7 @@ const Calculator = async (options) => {
             });
             async function edit() {
                 options.embed.description = stringify;
-                let _embed = (0, functions_1.createEmbed)(options.embed);
+                let _embed = (0, functions_js_1.createEmbed)(options.embed);
                 if (msg.editable) {
                     await msg.edit({
                         embeds: [_embed],
@@ -140,7 +140,7 @@ const Calculator = async (options) => {
             }
             ;
             async function lock(disabled) {
-                let _embed = (0, functions_1.createEmbed)(options.embed);
+                let _embed = (0, functions_js_1.createEmbed)(options.embed);
                 if (msg.editable) {
                     await msg.edit({
                         embeds: [_embed],
@@ -164,10 +164,10 @@ const Calculator = async (options) => {
                 for (let i = 0; i < text.length; i++) {
                     if (customButton[cur].length === 5)
                         cur++;
-                    customButton[cur].push((0, functions_1.createButton)(text[i], false));
+                    customButton[cur].push((0, functions_js_1.createButton)(text[i], false));
                     if (i === text.length - 1) {
                         for (const btn of customButton) {
-                            customRow.push((0, functions_1.addRow)(btn));
+                            customRow.push((0, functions_js_1.addRow)(btn));
                         }
                         ;
                         if (msg.editable) {
@@ -190,10 +190,10 @@ const Calculator = async (options) => {
                 for (let z = 0; z < text2.length; z++) {
                     if (customButtons[cur].length === 5)
                         cur++;
-                    customButtons[cur].push((0, functions_1.createButton)(text2[z], false));
+                    customButtons[cur].push((0, functions_js_1.createButton)(text2[z], false));
                     if (z === text2.length - 1) {
                         for (const btns of customButtons)
-                            customRow2.push((0, functions_1.addRow)(btns));
+                            customRow2.push((0, functions_js_1.addRow)(btns));
                         await msg2.edit({
                             components: customRow2
                         });
@@ -210,10 +210,10 @@ const Calculator = async (options) => {
                 for (let i = 0; i < text.length; i++) {
                     if (customButton[cur].length === 5)
                         cur++;
-                    customButton[cur].push((0, functions_1.createDisabledButton)(text[i]));
+                    customButton[cur].push((0, functions_js_1.createDisabledButton)(text[i]));
                     if (i === text.length - 1) {
                         for (const btn of customButton) {
-                            customRow.push((0, functions_1.addRow)(btn));
+                            customRow.push((0, functions_js_1.addRow)(btn));
                         }
                         ;
                         if (msg.editable) {
@@ -236,10 +236,10 @@ const Calculator = async (options) => {
                 for (let z = 0; z < text2.length; z++) {
                     if (customButtons[cur].length === 5)
                         cur++;
-                    customButtons[cur].push((0, functions_1.createDisabledButton)(text2[z]));
+                    customButtons[cur].push((0, functions_js_1.createDisabledButton)(text2[z]));
                     if (z === text2.length - 1) {
                         for (const btns of customButtons)
-                            customRow2.push((0, functions_1.addRow)(btns));
+                            customRow2.push((0, functions_js_1.addRow)(btns));
                         await msg2.edit({
                             components: customRow2
                         });
@@ -412,7 +412,7 @@ const Calculator = async (options) => {
                 components: row2,
             });
             async function edit() {
-                let _embed = (0, functions_1.createEmbed)(options.embed);
+                let _embed = (0, functions_js_1.createEmbed)(options.embed);
                 if (msg.editable) {
                     await msg.edit({
                         embeds: [_embed],
@@ -426,7 +426,7 @@ const Calculator = async (options) => {
             }
             ;
             async function lock(disabled) {
-                let _embed = (0, functions_1.createEmbed)(options.embed);
+                let _embed = (0, functions_js_1.createEmbed)(options.embed);
                 if (msg.editable) {
                     await msg.edit({
                         embeds: [_embed],
@@ -450,10 +450,10 @@ const Calculator = async (options) => {
                 for (let i = 0; i < text.length; i++) {
                     if (customButton[cur].length === 5)
                         cur++;
-                    customButton[cur].push((0, functions_1.createButton)(text[i], false));
+                    customButton[cur].push((0, functions_js_1.createButton)(text[i], false));
                     if (i === text.length - 1) {
                         for (const btn of customButton) {
-                            customRow.push((0, functions_1.addRow)(btn));
+                            customRow.push((0, functions_js_1.addRow)(btn));
                         }
                         ;
                         if (msg.editable) {
@@ -476,10 +476,10 @@ const Calculator = async (options) => {
                 for (let z = 0; z < text2.length; z++) {
                     if (customButtons[cur].length === 5)
                         cur++;
-                    customButtons[cur].push((0, functions_1.createButton)(text2[z], false));
+                    customButtons[cur].push((0, functions_js_1.createButton)(text2[z], false));
                     if (z === text2.length - 1) {
                         for (const btns of customButtons)
-                            customRow2.push((0, functions_1.addRow)(btns));
+                            customRow2.push((0, functions_js_1.addRow)(btns));
                         await msg2.edit({
                             components: customRow2
                         });
@@ -496,10 +496,10 @@ const Calculator = async (options) => {
                 for (let i = 0; i < text.length; i++) {
                     if (customButton[cur].length === 5)
                         cur++;
-                    customButton[cur].push((0, functions_1.createDisabledButton)(text[i]));
+                    customButton[cur].push((0, functions_js_1.createDisabledButton)(text[i]));
                     if (i === text.length - 1) {
                         for (const btn of customButton) {
-                            customRow.push((0, functions_1.addRow)(btn));
+                            customRow.push((0, functions_js_1.addRow)(btn));
                         }
                         ;
                         if (msg.editable) {
@@ -522,10 +522,10 @@ const Calculator = async (options) => {
                 for (let z = 0; z < text2.length; z++) {
                     if (customButtons[cur].length === 5)
                         cur++;
-                    customButtons[cur].push((0, functions_1.createDisabledButton)(text2[z]));
+                    customButtons[cur].push((0, functions_js_1.createDisabledButton)(text2[z]));
                     if (z === text2.length - 1) {
                         for (const btns of customButtons)
-                            customRow2.push((0, functions_1.addRow)(btns));
+                            customRow2.push((0, functions_js_1.addRow)(btns));
                         await msg2.edit({
                             components: customRow2
                         });
@@ -691,6 +691,6 @@ const Calculator = async (options) => {
         });
     }
     // Check for package updates
-    (0, functions_1.checkPackageUpdates)("Calculator", options.notifyUpdate);
+    (0, functions_js_1.checkPackageUpdates)("Calculator", options.notifyUpdate);
 };
 exports.default = Calculator;

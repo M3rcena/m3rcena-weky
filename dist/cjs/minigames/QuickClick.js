@@ -3,11 +3,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const tslib_1 = require("tslib");
 const chalk_1 = tslib_1.__importDefault(require("chalk"));
 const discord_js_1 = require("discord.js");
-const functions_1 = require("../functions/functions.js");
-const OptionChecking_1 = require("../functions/OptionChecking.js");
+const functions_js_1 = require("../functions/functions.js");
+const OptionChecking_js_1 = require("../functions/OptionChecking.js");
 const currentGames = {};
 const QuickClick = async (options) => {
-    (0, OptionChecking_1.OptionsChecking)(options, 'GuessTheNumber');
+    (0, OptionChecking_js_1.OptionsChecking)(options, 'GuessTheNumber');
     let interaction;
     if (options.interaction.author) {
         interaction = options.interaction;
@@ -80,12 +80,12 @@ const QuickClick = async (options) => {
     ;
     if (currentGames[interaction.guild.id]) {
         options.embed.description = options.ongoingMessage ? options.ongoingMessage.replace('{{channel}}', `${currentGames[`${interaction.guild.id}_channel`]}`) : `A game is already runnning in <#${currentGames[`${interaction.guild.id}_channel`]}>. You can\'t start a new one!`;
-        let embed = (0, functions_1.createEmbed)(options.embed);
+        let embed = (0, functions_js_1.createEmbed)(options.embed);
         return interaction.reply({ embeds: [embed] });
     }
     ;
     options.embed.description = options.waitMessage ? options.waitMessage : 'The buttons may appear anytime now!';
-    let embed = (0, functions_1.createEmbed)(options.embed);
+    let embed = (0, functions_js_1.createEmbed)(options.embed);
     const msg = await interaction.reply({ embeds: [embed] });
     currentGames[interaction.guild.id] = true;
     currentGames[`${interaction.guild.id}_channel`] = interaction.channel.id;
@@ -98,14 +98,14 @@ const QuickClick = async (options) => {
                 .setDisabled()
                 .setLabel('\u200b')
                 .setStyle(discord_js_1.ButtonStyle.Primary)
-                .setCustomId((0, functions_1.getRandomString)(20)));
+                .setCustomId((0, functions_js_1.getRandomString)(20)));
         }
         ;
         buttons.push(new discord_js_1.ButtonBuilder()
             .setStyle(discord_js_1.ButtonStyle.Primary)
             .setEmoji(options.emoji ? options.emoji : '👆')
             .setCustomId('weky_correct'));
-        (0, functions_1.shuffleArray)(buttons);
+        (0, functions_js_1.shuffleArray)(buttons);
         for (let i = 0; i < 5; i++) {
             rows.push(new discord_js_1.ActionRowBuilder());
         }
@@ -113,8 +113,8 @@ const QuickClick = async (options) => {
         rows.forEach((row, i) => {
             row.addComponents(buttons.slice(0 + i * 5, 5 + i * 5));
         });
-        options.embed.description = options.startMessage ? options.startMessage.replace('{{time}}', (0, functions_1.convertTime)(options.time ? options.time : 60000)) : `First person to press the correct button will win. You have **${(0, functions_1.convertTime)(options.time ? options.time : 60000)}**!`;
-        let _embed = (0, functions_1.createEmbed)(options.embed);
+        options.embed.description = options.startMessage ? options.startMessage.replace('{{time}}', (0, functions_js_1.convertTime)(options.time ? options.time : 60000)) : `First person to press the correct button will win. You have **${(0, functions_js_1.convertTime)(options.time ? options.time : 60000)}**!`;
+        let _embed = (0, functions_js_1.createEmbed)(options.embed);
         await msg.edit({
             embeds: [_embed],
             components: rows,
@@ -145,7 +145,7 @@ const QuickClick = async (options) => {
                     .replace('{{winner}}', button.user.id)
                     .replace('{{time}}', `${(Date.now() - gameCreatedAt) / 1000}`)
                     : `GG, <@${button.user.id}> pressed the button in **${(Date.now() - gameCreatedAt) / 1000} seconds**.`;
-                let __embed = (0, functions_1.createEmbed)(options.embed);
+                let __embed = (0, functions_js_1.createEmbed)(options.embed);
                 await msg.edit({
                     embeds: [__embed],
                     components: rows,
@@ -166,7 +166,7 @@ const QuickClick = async (options) => {
                     row.addComponents(buttons.slice(0 + i * 5, 5 + i * 5));
                 });
                 options.embed.description = options.loseMessage ? options.loseMessage : 'No one pressed the button in time. So, I dropped the game!';
-                let __embed = (0, functions_1.createEmbed)(options.embed);
+                let __embed = (0, functions_js_1.createEmbed)(options.embed);
                 await msg.edit({
                     embeds: [__embed],
                     components: rows,
@@ -178,6 +178,6 @@ const QuickClick = async (options) => {
             }
         });
     }, Math.floor(Math.random() * 5000) + 1000);
-    (0, functions_1.checkPackageUpdates)('QuickClick', options.notifyUpdate);
+    (0, functions_js_1.checkPackageUpdates)('QuickClick', options.notifyUpdate);
 };
 exports.default = QuickClick;

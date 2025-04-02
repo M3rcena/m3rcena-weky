@@ -1,14 +1,14 @@
 import chalk from "chalk";
 import {
-	ActionRowBuilder, ButtonBuilder, ChatInputCommandInteraction, Client, ComponentType,
-	EmbedBuilder, Message, ModalBuilder, ModalSubmitInteraction, TextInputBuilder, TextInputStyle
+    ActionRowBuilder, ButtonBuilder, ChatInputCommandInteraction, Client, ComponentType,
+    EmbedBuilder, Message, ModalBuilder, ModalSubmitInteraction, TextInputBuilder, TextInputStyle
 } from "discord.js";
 import { evaluate } from "mathjs";
 
 import {
-	addRow, checkPackageUpdates, createButton, createDisabledButton, createEmbed
-} from "../functions/functions";
-import { OptionsChecking } from "../functions/OptionChecking";
+    addRow, checkPackageUpdates, createButton, createDisabledButton, createEmbed
+} from "../functions/functions.js";
+import { OptionsChecking } from "../functions/OptionChecking.js";
 
 import type { Calc } from "../Types/";
 

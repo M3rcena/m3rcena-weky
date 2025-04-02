@@ -7,8 +7,8 @@ import { decode } from "html-entities";
 
 import {
     checkPackageUpdates, convertTime, createEmbed, getRandomString
-} from "../functions/functions";
-import { OptionsChecking } from "../functions/OptionChecking";
+} from "../functions/functions.js";
+import { OptionsChecking } from "../functions/OptionChecking.js";
 
 import type { LieSwatterTypes } from "../Types/";
 interface OpenTDBResponse {

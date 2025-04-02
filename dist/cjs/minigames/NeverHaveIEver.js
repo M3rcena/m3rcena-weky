@@ -3,11 +3,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const tslib_1 = require("tslib");
 const chalk_1 = tslib_1.__importDefault(require("chalk"));
 const discord_js_1 = require("discord.js");
-const functions_1 = require("../functions/functions.js");
-const OptionChecking_1 = require("../functions/OptionChecking.js");
+const functions_js_1 = require("../functions/functions.js");
+const OptionChecking_js_1 = require("../functions/OptionChecking.js");
 const NeverHaveIEver = async (options) => {
     // Check type
-    (0, OptionChecking_1.OptionsChecking)(options, "NeverHaveIEver");
+    (0, OptionChecking_js_1.OptionsChecking)(options, "NeverHaveIEver");
     // Check if the interaction object is provided
     let interaction = options.interaction;
     if (!interaction)
@@ -45,12 +45,12 @@ const NeverHaveIEver = async (options) => {
         throw new Error(chalk_1.default.red("[@m3rcena/weky] NeverHaveIEver Error:") + " button must be a string.");
     }
     ;
-    const id1 = (0, functions_1.getRandomString)(20) +
+    const id1 = (0, functions_js_1.getRandomString)(20) +
         "-" +
-        (0, functions_1.getRandomString)(20);
-    const id2 = (0, functions_1.getRandomString)(20) +
+        (0, functions_js_1.getRandomString)(20);
+    const id2 = (0, functions_js_1.getRandomString)(20) +
         "-" +
-        (0, functions_1.getRandomString)(20);
+        (0, functions_js_1.getRandomString)(20);
     let id = "";
     if (options.interaction.author) {
         id = options.interaction.author.id;
@@ -60,7 +60,7 @@ const NeverHaveIEver = async (options) => {
     }
     ;
     options.embed.description = options.thinkMessage ? options.thinkMessage : "I am thinking...";
-    let embed = (0, functions_1.createEmbed)(options.embed);
+    let embed = (0, functions_js_1.createEmbed)(options.embed);
     const think = await interaction.reply({
         embeds: [embed]
     });
@@ -90,7 +90,7 @@ const NeverHaveIEver = async (options) => {
         .setLabel(options.buttons.optionB ? options.buttons.optionB : "No")
         .setCustomId(id2);
     options.embed.description = statement;
-    embed = (0, functions_1.createEmbed)(options.embed);
+    embed = (0, functions_js_1.createEmbed)(options.embed);
     await think.edit({
         embeds: [embed],
         components: [new discord_js_1.ActionRowBuilder().addComponents(btn, btn2)]
@@ -166,6 +166,6 @@ const NeverHaveIEver = async (options) => {
         }
         ;
     });
-    (0, functions_1.checkPackageUpdates)("NeverHaveIEver", options.notifyUpdate);
+    (0, functions_js_1.checkPackageUpdates)("NeverHaveIEver", options.notifyUpdate);
 };
 exports.default = NeverHaveIEver;

@@ -4,11 +4,11 @@ const tslib_1 = require("tslib");
 const chalk_1 = tslib_1.__importDefault(require("chalk"));
 const discord_js_1 = require("discord.js");
 const html_entities_1 = require("html-entities");
-const functions_1 = require("../functions/functions.js");
-const OptionChecking_1 = require("../functions/OptionChecking.js");
+const functions_js_1 = require("../functions/functions.js");
+const OptionChecking_js_1 = require("../functions/OptionChecking.js");
 const LieSwatter = async (options) => {
     // Check types
-    (0, OptionChecking_1.OptionsChecking)(options, "LieSwatter");
+    (0, OptionChecking_js_1.OptionsChecking)(options, "LieSwatter");
     let interaction;
     if (options.interaction.author) {
         interaction = options.interaction;
@@ -29,12 +29,12 @@ const LieSwatter = async (options) => {
         id = options.interaction.user.id;
     }
     ;
-    const id1 = (0, functions_1.getRandomString)(20) +
+    const id1 = (0, functions_js_1.getRandomString)(20) +
         "-" +
-        (0, functions_1.getRandomString)(20);
-    const id2 = (0, functions_1.getRandomString)(20) +
+        (0, functions_js_1.getRandomString)(20);
+    const id2 = (0, functions_js_1.getRandomString)(20) +
         "-" +
-        (0, functions_1.getRandomString)(20);
+        (0, functions_js_1.getRandomString)(20);
     if (!options.winMessage)
         options.winMessage = "GG, It was a **{{answer}}**. You got it correct in **{{time}}**.";
     if (typeof options.winMessage !== "string") {
@@ -81,7 +81,7 @@ const LieSwatter = async (options) => {
     }
     ;
     options.embed.description = options.thinkMessage;
-    let embed = (0, functions_1.createEmbed)(options.embed);
+    let embed = (0, functions_js_1.createEmbed)(options.embed);
     const msg = await interaction.reply({
         embeds: [embed]
     });
@@ -107,7 +107,7 @@ const LieSwatter = async (options) => {
         .setLabel(options.buttons.lie)
         .setStyle(discord_js_1.ButtonStyle.Primary);
     options.embed.description = (0, html_entities_1.decode)(question.question);
-    embed = (0, functions_1.createEmbed)(options.embed);
+    embed = (0, functions_js_1.createEmbed)(options.embed);
     await msg.edit({
         embeds: [embed],
         components: [
@@ -152,11 +152,11 @@ const LieSwatter = async (options) => {
                 embeds: [embed],
                 components: [new discord_js_1.ActionRowBuilder().addComponents(btn1, btn2)]
             });
-            const time = (0, functions_1.convertTime)(Date.now() - gameCreatedAt);
+            const time = (0, functions_js_1.convertTime)(Date.now() - gameCreatedAt);
             options.embed.description = options.winMessage ? options.winMessage
                 .replace(`{{answer}}`, (0, html_entities_1.decode)(answer))
                 .replace(`{{time}}`, time) : `GG, It was a **${(0, html_entities_1.decode)(answer)}**. You got it correct in **${time}**.`;
-            const winEmbed = (0, functions_1.createEmbed)(options.embed);
+            const winEmbed = (0, functions_js_1.createEmbed)(options.embed);
             if (!interaction.channel || !interaction.channel.isSendable())
                 return;
             await interaction.channel.send({
@@ -187,7 +187,7 @@ const LieSwatter = async (options) => {
                 components: [new discord_js_1.ActionRowBuilder().addComponents(btn1, btn2)]
             });
             options.embed.description = options.loseMessage ? options.loseMessage.replace('{{answer}}', (0, html_entities_1.decode)(answer)) : `Better luck next time! It was a **${(0, html_entities_1.decode)(answer)}**.`;
-            const lostEmbed = (0, functions_1.createEmbed)(options.embed);
+            const lostEmbed = (0, functions_js_1.createEmbed)(options.embed);
             if (!interaction.channel || !interaction.channel.isSendable())
                 return;
             await interaction.channel.send({
@@ -219,7 +219,7 @@ const LieSwatter = async (options) => {
                 components: [new discord_js_1.ActionRowBuilder().addComponents(btn1, btn2)]
             });
             options.embed.description = options.loseMessage ? options.loseMessage.replace('{{answer}}', (0, html_entities_1.decode)(answer)) : `**You run out of Time**\nBetter luck next time! It was a **${(0, html_entities_1.decode)(answer)}**.`;
-            const lostEmbed = (0, functions_1.createEmbed)(options.embed);
+            const lostEmbed = (0, functions_js_1.createEmbed)(options.embed);
             if (!interaction.channel || !interaction.channel.isSendable())
                 return;
             await interaction.channel.send({
@@ -227,6 +227,6 @@ const LieSwatter = async (options) => {
             });
         }
     });
-    (0, functions_1.checkPackageUpdates)("LieSwatter", options.notifyUpdate);
+    (0, functions_js_1.checkPackageUpdates)("LieSwatter", options.notifyUpdate);
 };
 exports.default = LieSwatter;

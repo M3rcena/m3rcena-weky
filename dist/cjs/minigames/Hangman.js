@@ -4,10 +4,10 @@ const tslib_1 = require("tslib");
 const chalk_1 = tslib_1.__importDefault(require("chalk"));
 const discord_js_1 = require("discord.js");
 const words_json_1 = tslib_1.__importDefault(require("../data/words.json"));
-const functions_1 = require("../functions/functions.js");
-const OptionChecking_1 = require("../functions/OptionChecking.js");
+const functions_js_1 = require("../functions/functions.js");
+const OptionChecking_js_1 = require("../functions/OptionChecking.js");
 const Hangman = async (options) => {
-    (0, OptionChecking_1.OptionsChecking)(options, "Hangman");
+    (0, OptionChecking_js_1.OptionsChecking)(options, "Hangman");
     let interaction;
     if (options.interaction.author) {
         interaction = options.interaction;
@@ -30,14 +30,14 @@ const Hangman = async (options) => {
     }
     ;
     let wrongs = 0;
-    let at = new discord_js_1.AttachmentBuilder(await (0, functions_1.createHangman)(wrongs), {
+    let at = new discord_js_1.AttachmentBuilder(await (0, functions_js_1.createHangman)(wrongs), {
         name: "game.png"
     });
     let word = words_json_1.default[Math.floor(Math.random() * words_json_1.default.length)];
     let used = [];
     options.embed.title = options.embed.title ? options.embed.title : "Hangman Game";
     options.embed.description = options.embed.description ? options.embed.description.replace(`{{word}}`, `\`\`\`${word.split("").map(v => used.includes(v) ? v.toUpperCase() : "_").join(" ")}`) : `Type a character to guess the word\n\n\`\`\`${word.split("").map(v => used.includes(v) ? v.toUpperCase() : "_").join(" ")}\`\`\``;
-    let embed = (0, functions_1.createEmbed)(options.embed);
+    let embed = (0, functions_js_1.createEmbed)(options.embed);
     const msg = await interaction.reply({
         files: [at],
         embeds: [embed],
@@ -78,13 +78,13 @@ const Hangman = async (options) => {
         ;
         let done = word.split("").every(v => used.includes(v));
         let description = wrongs === 6 || done ? `You ${done ? "won" : "lost"} the game, The word was **${word}**` : `Type a character to guess the word\n\n\`\`\`${word.split("").map(v => used.includes(v) ? v.toUpperCase() : "_").join(" ")}\`\`\``;
-        at = new discord_js_1.AttachmentBuilder(await (0, functions_1.createHangman)(wrongs), {
+        at = new discord_js_1.AttachmentBuilder(await (0, functions_js_1.createHangman)(wrongs), {
             name: "game.png"
         });
         options.embed.description = description;
         options.embed.color = options.embed.color ? options.embed.color : wrongs === 6 ? "#ff0000" : done ? "Green" : "Blue";
         options.embed.image = "attachment://game.png";
-        embed = (0, functions_1.createEmbed)(options.embed);
+        embed = (0, functions_js_1.createEmbed)(options.embed);
         await msg.edit({
             files: [at],
             embeds: [embed]
@@ -115,6 +115,6 @@ const Hangman = async (options) => {
             });
         }
     });
-    (0, functions_1.checkPackageUpdates)("Hangman", options.notifyUpdate);
+    (0, functions_js_1.checkPackageUpdates)("Hangman", options.notifyUpdate);
 };
 exports.default = Hangman;

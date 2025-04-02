@@ -6,8 +6,8 @@ import {
 import { decode } from "html-entities";
 import { ofetch } from "ofetch";
 
-import { checkPackageUpdates, createEmbed, getRandomString } from "../functions/functions";
-import { OptionsChecking } from "../functions/OptionChecking";
+import { checkPackageUpdates, createEmbed, getRandomString } from "../functions/functions.js";
+import { OptionsChecking } from "../functions/OptionChecking.js";
 
 import type { WouldYouRatherTypes } from "../Types/";
 

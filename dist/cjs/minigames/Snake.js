@@ -3,10 +3,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const tslib_1 = require("tslib");
 const chalk_1 = tslib_1.__importDefault(require("chalk"));
 const discord_js_1 = require("discord.js");
-const functions_1 = require("../functions/functions.js");
-const OptionChecking_1 = require("../functions/OptionChecking.js");
+const functions_js_1 = require("../functions/functions.js");
+const OptionChecking_js_1 = require("../functions/OptionChecking.js");
 const Snake = async (options) => {
-    (0, OptionChecking_1.OptionsChecking)(options, "snake");
+    (0, OptionChecking_js_1.OptionsChecking)(options, "snake");
     let interaction;
     if (options.interaction.author) {
         interaction = options.interaction;
@@ -138,7 +138,7 @@ const Snake = async (options) => {
     updateFoodLoc();
     options.embed.title = options.embed.title ?? "Snake Game";
     options.embed.description = baseDescription.replace('{{score}}', score.toString()).replace('{{board}}', getBoardContent(false)) ?? `**Score:** ${score}\n\n${getBoardContent(false)}`;
-    let embed = (0, functions_1.createEmbed)(options.embed);
+    let embed = (0, functions_js_1.createEmbed)(options.embed);
     const up = new discord_js_1.ButtonBuilder()
         .setEmoji(emojis.up)
         .setStyle(discord_js_1.ButtonStyle.Primary)
@@ -228,14 +228,14 @@ const Snake = async (options) => {
             }
             const newBoardContent = getBoardContent(false);
             options.embed.description = baseDescription ? baseDescription.replace("{{score}}", `${score}`).replace("{{board}}", `${newBoardContent}`) : `**Score:** ${score}\n\n${newBoardContent}`;
-            let embd = (0, functions_1.createEmbed)(options.embed);
+            let embd = (0, functions_js_1.createEmbed)(options.embed);
             return msg.edit({ embeds: [embd] });
         }
     });
     collector.on("end", async (_, reason) => {
         if (reason === 'time' || reason === 'user') {
             options.embed.description = baseDescription.replace('{{board}}', getBoardContent(true)) ?? `**Game Over!**\n\n**Score:** ${score}\n\n${getBoardContent(true)}`;
-            let embed = (0, functions_1.createEmbed)(options.embed);
+            let embed = (0, functions_js_1.createEmbed)(options.embed);
             up.setDisabled(true);
             down.setDisabled(true);
             left.setDisabled(true);
@@ -251,6 +251,6 @@ const Snake = async (options) => {
             });
         }
     });
-    (0, functions_1.checkPackageUpdates)("Snake", options.notifyUpdate);
+    (0, functions_js_1.checkPackageUpdates)("Snake", options.notifyUpdate);
 };
 exports.default = Snake;

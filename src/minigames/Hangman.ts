@@ -2,8 +2,8 @@ import chalk from "chalk";
 import { AttachmentBuilder, EmbedBuilder } from "discord.js";
 
 import words from "../data/words.json";
-import { checkPackageUpdates, createEmbed, createHangman } from "../functions/functions";
-import { OptionsChecking } from "../functions/OptionChecking";
+import { checkPackageUpdates, createEmbed, createHangman } from "../functions/functions.js";
+import { OptionsChecking } from "../functions/OptionChecking.js";
 
 import type { ChatInputCommandInteraction, Client, Message } from "discord.js";
 import type { HangmanTypes } from "../Types/";

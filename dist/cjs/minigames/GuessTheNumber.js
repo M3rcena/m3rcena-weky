@@ -3,13 +3,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const tslib_1 = require("tslib");
 const chalk_1 = tslib_1.__importDefault(require("chalk"));
 const discord_js_1 = require("discord.js");
-const functions_1 = require("../functions/functions.js");
-const OptionChecking_1 = require("../functions/OptionChecking.js");
+const functions_js_1 = require("../functions/functions.js");
+const OptionChecking_js_1 = require("../functions/OptionChecking.js");
 const db = new Map();
 const data = new Set();
 const currentGames = new Object();
 const GuessTheNumber = async (options) => {
-    (0, OptionChecking_1.OptionsChecking)(options, 'GuessTheNumber');
+    (0, OptionChecking_js_1.OptionsChecking)(options, 'GuessTheNumber');
     let interaction;
     if (options.interaction.author) {
         interaction = options.interaction;
@@ -79,9 +79,9 @@ const GuessTheNumber = async (options) => {
     if (typeof winMessagePrivateGame !== 'string') {
         throw new TypeError('Weky Error: winMessage must be a string.');
     }
-    const ids = (0, functions_1.getRandomString)(20) +
+    const ids = (0, functions_js_1.getRandomString)(20) +
         '-' +
-        (0, functions_1.getRandomString)(20);
+        (0, functions_js_1.getRandomString)(20);
     let number;
     if (!options.number) {
         number = Math.floor(Math.random() * 1000);
@@ -98,7 +98,7 @@ const GuessTheNumber = async (options) => {
         if (isPublic && currentGames[interaction.guild.id]) {
             options.embed.description = options.ongoingMessage.replace(/{{channel}}/g, currentGames[`${interaction.guild.id}_channel`]);
             return await interaction.reply({
-                embeds: [(0, functions_1.createEmbed)(options.embed)]
+                embeds: [(0, functions_js_1.createEmbed)(options.embed)]
             });
         }
         if (!isPublic && data.has(id))
@@ -106,9 +106,9 @@ const GuessTheNumber = async (options) => {
         if (!isPublic)
             data.add(id);
         options.embed.description = options.embed.description ?
-            options.embed.description.replace(/{{time}}/g, (0, functions_1.convertTime)(options.time ? options.time : 60000)) :
-            "You have **{{time}}** to guess the number.".replace(/{{time}}/g, (0, functions_1.convertTime)(options.time ? options.time : 60000));
-        const embed = (0, functions_1.createEmbed)(options.embed);
+            options.embed.description.replace(/{{time}}/g, (0, functions_js_1.convertTime)(options.time ? options.time : 60000)) :
+            "You have **{{time}}** to guess the number.".replace(/{{time}}/g, (0, functions_js_1.convertTime)(options.time ? options.time : 60000));
+        const embed = (0, functions_js_1.createEmbed)(options.embed);
         const btn1 = new discord_js_1.ButtonBuilder()
             .setStyle(discord_js_1.ButtonStyle.Danger)
             .setLabel(options.button ? options.button : "Cancel")
@@ -136,7 +136,7 @@ const GuessTheNumber = async (options) => {
             }
             const parsedNumber = parseInt(_msg.content, 10);
             if (parsedNumber === number) {
-                const time = (0, functions_1.convertTime)(Date.now() - gameCreatedAt);
+                const time = (0, functions_js_1.convertTime)(Date.now() - gameCreatedAt);
                 options.embed.description = isPublic ?
                     winMessagePublicGame
                         .replace(/{{number}}/g, number.toString())
@@ -147,7 +147,7 @@ const GuessTheNumber = async (options) => {
                     winMessagePrivateGame
                         .replace(/{{time}}/g, time)
                         .replace(/{{number}}/g, `${number}`);
-                let _embed = (0, functions_1.createEmbed)(options.embed);
+                let _embed = (0, functions_js_1.createEmbed)(options.embed);
                 btn1.setDisabled(true);
                 embed.setTimestamp(options.embed.timestamp ? new Date() : null);
                 const row = new discord_js_1.ActionRowBuilder().addComponents(btn1);
@@ -176,7 +176,7 @@ const GuessTheNumber = async (options) => {
                         .replace(/{{author}}/g, _msg.author.toString())
                         .replace(/{{number}}/g, `${parsedNumber}`) :
                     `The number is ${comparison} than **${parsedNumber}**!`;
-                return _msg.reply({ embeds: [(0, functions_1.createEmbed)(options.embed)] });
+                return _msg.reply({ embeds: [(0, functions_js_1.createEmbed)(options.embed)] });
             };
             if (parsedNumber < number)
                 compareResponse('bigger');
@@ -205,7 +205,7 @@ const GuessTheNumber = async (options) => {
                 options.embed.description = options.loseMessage ?
                     options.loseMessage.replace(/{{number/g, `${number}`) :
                     `The number was **${number}**!`;
-                let _embed = (0, functions_1.createEmbed)(options.embed);
+                let _embed = (0, functions_js_1.createEmbed)(options.embed);
                 msg.edit({ embeds: [_embed] });
             }
         });
@@ -214,7 +214,7 @@ const GuessTheNumber = async (options) => {
                 options.embed.description = options.loseMessage ?
                     options.loseMessage.replace(/{{number}}/g, `${number}`) :
                     `The number was **${number}**!`;
-                let _embed = (0, functions_1.createEmbed)(options.embed);
+                let _embed = (0, functions_js_1.createEmbed)(options.embed);
                 btn1.setDisabled(true);
                 embed.setTimestamp(options.embed.timestamp ? new Date() : null);
                 const row = new discord_js_1.ActionRowBuilder().addComponents(btn1);
@@ -231,6 +231,6 @@ const GuessTheNumber = async (options) => {
         });
     };
     await handleGame(options.publicGame ?? false);
-    (0, functions_1.checkPackageUpdates)("GuessTheNumber", options.notifyUpdate);
+    (0, functions_js_1.checkPackageUpdates)("GuessTheNumber", options.notifyUpdate);
 };
 exports.default = GuessTheNumber;

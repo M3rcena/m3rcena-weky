@@ -6,8 +6,8 @@ import {
 
 import {
     checkPackageUpdates, createEmbed, getButtonDilemma, getRandomString
-} from "../functions/functions";
-import { OptionsChecking } from "../functions/OptionChecking";
+} from "../functions/functions.js";
+import { OptionsChecking } from "../functions/OptionChecking.js";
 
 import type { WillYouPressTheButtonTypes } from "../Types/";
 

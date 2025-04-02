@@ -3,11 +3,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const tslib_1 = require("tslib");
 const chalk_1 = tslib_1.__importDefault(require("chalk"));
 const discord_js_1 = require("discord.js");
-const functions_1 = require("../functions/functions.js");
-const OptionChecking_1 = require("../functions/OptionChecking.js");
+const functions_js_1 = require("../functions/functions.js");
+const OptionChecking_js_1 = require("../functions/OptionChecking.js");
 const WillYouPressTheButton = async (options) => {
     // Options Check
-    (0, OptionChecking_1.OptionsChecking)(options, "WillYouPressTheButton");
+    (0, OptionChecking_js_1.OptionsChecking)(options, "WillYouPressTheButton");
     let interaction;
     if (options.interaction.author) {
         interaction = options.interaction;
@@ -68,20 +68,20 @@ const WillYouPressTheButton = async (options) => {
         throw new TypeError(chalk_1.default.red("[@m3rcena/weky] WillYouPressTheButton Error:") + " embed.description must be a string.");
     }
     ;
-    const id1 = (0, functions_1.getRandomString)(20) +
+    const id1 = (0, functions_js_1.getRandomString)(20) +
         '-' +
-        (0, functions_1.getRandomString)(20);
-    const id2 = (0, functions_1.getRandomString)(20) +
+        (0, functions_js_1.getRandomString)(20);
+    const id2 = (0, functions_js_1.getRandomString)(20) +
         '-' +
-        (0, functions_1.getRandomString)(20);
+        (0, functions_js_1.getRandomString)(20);
     let oldDescription = options.embed.description ?? "```{{statement1}}```\n**but**\n\n```{{statement2}}```";
     options.embed.title = options.embed.title ?? "Will You Press The Button?";
     options.embed.description = options.thinkMessage ? options.thinkMessage : "I am thinking";
-    let embed = (0, functions_1.createEmbed)(options.embed);
+    let embed = (0, functions_js_1.createEmbed)(options.embed);
     const think = await interaction.reply({
         embeds: [embed],
     });
-    const fetchedData = await (0, functions_1.getButtonDilemma)();
+    const fetchedData = await (0, functions_js_1.getButtonDilemma)();
     const res = {
         questions: [fetchedData.question, fetchedData.result],
         percentage: {
@@ -98,7 +98,7 @@ const WillYouPressTheButton = async (options) => {
         .setLabel(options.button.no)
         .setCustomId(id2);
     options.embed.description = oldDescription.replace('{{statement1}}', res.questions[0].charAt(0).toUpperCase() + res.questions[0].slice(1)).replace('{{statement2}}', res.questions[1].charAt(0).toUpperCase() + res.questions[1].slice(1));
-    embed = (0, functions_1.createEmbed)(options.embed);
+    embed = (0, functions_js_1.createEmbed)(options.embed);
     await think.edit({
         embeds: [embed],
         components: [new discord_js_1.ActionRowBuilder().addComponents(btn, btn2)]
@@ -154,6 +154,6 @@ const WillYouPressTheButton = async (options) => {
             });
         }
     });
-    (0, functions_1.checkPackageUpdates)("WillYouPressTheButton", options.notifyUpdate);
+    (0, functions_js_1.checkPackageUpdates)("WillYouPressTheButton", options.notifyUpdate);
 };
 exports.default = WillYouPressTheButton;
