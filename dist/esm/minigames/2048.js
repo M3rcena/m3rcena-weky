@@ -1,6 +1,6 @@
 import chalk from "chalk";
 import { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, ComponentType, EmbedBuilder } from "discord.js";
-import { createEmbed } from "src/functions/functions.js";
+import { createEmbed } from "../functions/functions.js";
 import { OptionsChecking } from "../functions/OptionChecking.js";
 // Main game function that handles the 2048 game logic
 const mini2048 = async (options) => {

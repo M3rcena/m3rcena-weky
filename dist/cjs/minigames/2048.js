@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const tslib_1 = require("tslib");
 const chalk_1 = tslib_1.__importDefault(require("chalk"));
 const discord_js_1 = require("discord.js");
-const functions_js_1 = require("src/functions/functions.js");
+const functions_js_1 = require("../functions/functions.js");
 const OptionChecking_js_1 = require("../functions/OptionChecking.js");
 // Main game function that handles the 2048 game logic
 const mini2048 = async (options) => {
