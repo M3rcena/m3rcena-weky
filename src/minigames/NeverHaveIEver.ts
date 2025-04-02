@@ -1,10 +1,10 @@
 import chalk from "chalk";
 import {
-	ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, Client, ComponentType, EmbedBuilder,
-	Message
+    ActionRowBuilder, ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, Client,
+    ComponentType, EmbedBuilder, Message
 } from "discord.js";
 
-import { checkPackageUpdates, getRandomString } from "../functions/functions";
+import { checkPackageUpdates, createEmbed, getRandomString } from "../functions/functions";
 import { OptionsChecking } from "../functions/OptionChecking";
 
 import type { NeverHaveIEverTypes } from "../Types/";
@@ -65,32 +65,8 @@ const NeverHaveIEver = async (options: NeverHaveIEverTypes) => {
     };
 
 
-    let embed = new EmbedBuilder()
-        .setTitle(options.thinkMessage ? options.thinkMessage : "I am thinking...")
-        .setColor(options.embed.color ?? "Blurple")
-        .setFooter({
-            text: "©️ M3rcena Development | Powered by Mivator",
-            iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-        });
-
-    if (options.embed.footer) {
-        embed.setFooter({
-            text: options.embed.footer.text,
-            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-        });
-    };
-
-    if (options.embed.author) {
-        embed.setAuthor({
-            name: options.embed.author.name,
-            iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-            url: options.embed.author.url ? options.embed.author.url : undefined
-        });
-    };
-
-    if (options.embed.fields) {
-        embed.setFields(options.embed.fields);
-    };
+    options.embed.description = options.thinkMessage ? options.thinkMessage : "I am thinking..."
+    let embed = createEmbed(options.embed);
 
     const think = await interaction.reply({
         embeds: [embed]
@@ -100,8 +76,24 @@ const NeverHaveIEver = async (options: NeverHaveIEverTypes) => {
         statement: string;
     }
 
-    let { statement } = await fetch("https://api.boozee.app/v2/statements/next?language=en&category=harmless")
+    let { statement } = await fetch("https://api.nhie.io/v2/statements/next?language=en&category=harmless")
         .then((res) => res.json() as Promise<ApiResponse>);
+
+    if (!statement) {
+        let owner = await client.users.fetch("682983233851228161");
+
+        if (owner) {
+            await owner.send({
+                content: "NHIE API is down, please fix it as soon as possible!"
+            }).catch(() => { });
+        };
+
+        return await think.edit({
+            content: "Failed to fetch statement from API",
+            embeds: [],
+            components: []
+        });
+    }
 
     statement = statement.trim();
 
@@ -115,40 +107,12 @@ const NeverHaveIEver = async (options: NeverHaveIEverTypes) => {
         .setLabel(options.buttons.optionB ? options.buttons.optionB : "No")
         .setCustomId(id2);
 
-    embed
-        .setTitle(options.embed.title)
-        .setDescription(statement)
-        .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
-        .setFooter({
-            text: "©️ M3rcena Development | Powered by Mivator",
-            iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-        });
-
-    if (options.embed.footer) {
-        embed.setFooter({
-            text: options.embed.footer.text,
-            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-        });
-    };
-
-    if (options.embed.author) {
-        embed.setAuthor({
-            name: options.embed.author.name,
-            iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-            url: options.embed.author.url ? options.embed.author.url : undefined
-        });
-    };
-
-    if (options.embed.fields) {
-        embed.setFields(options.embed.fields);
-    };
+    options.embed.description = statement;
+    embed = createEmbed(options.embed);
 
     await think.edit({
         embeds: [embed],
-        components: [{
-            type: 1,
-            components: [btn, btn2]
-        }]
+        components: [new ActionRowBuilder<ButtonBuilder>().addComponents(btn, btn2)]
     });
 
     const gameCollector = think.createMessageComponentCollector({
@@ -187,10 +151,7 @@ const NeverHaveIEver = async (options: NeverHaveIEverTypes) => {
             gameCollector.stop();
             await think.edit({
                 embeds: [embed],
-                components: [{
-                    type: 1,
-                    components: [btn, btn2]
-                }]
+                components: [new ActionRowBuilder<ButtonBuilder>().addComponents(btn, btn2)]
             });
         } else if (nhie.customId === id2) {
             btn = new ButtonBuilder()
@@ -208,10 +169,7 @@ const NeverHaveIEver = async (options: NeverHaveIEverTypes) => {
             gameCollector.stop();
             await think.edit({
                 embeds: [embed],
-                components: [{
-                    type: 1,
-                    components: [btn, btn2]
-                }]
+                components: [new ActionRowBuilder<ButtonBuilder>().addComponents(btn, btn2)]
             });
         };
     });
@@ -234,10 +192,7 @@ const NeverHaveIEver = async (options: NeverHaveIEverTypes) => {
 
             await think.edit({
                 embeds: [embed],
-                components: [{
-                    type: 1,
-                    components: [btn, btn2]
-                }]
+                components: [new ActionRowBuilder<ButtonBuilder>().addComponents(btn, btn2)]
             });
         };
     })

@@ -7,7 +7,6 @@ const words_json_1 = tslib_1.__importDefault(require("../data/words.json"));
 const functions_1 = require("../functions/functions.js");
 const OptionChecking_1 = require("../functions/OptionChecking.js");
 const Hangman = async (options) => {
-    // Check Types
     (0, OptionChecking_1.OptionsChecking)(options, "Hangman");
     let interaction;
     if (options.interaction.author) {
@@ -36,36 +35,9 @@ const Hangman = async (options) => {
     });
     let word = words_json_1.default[Math.floor(Math.random() * words_json_1.default.length)];
     let used = [];
-    let embed = new discord_js_1.EmbedBuilder()
-        .setTitle(options.embed.title ? options.embed.title : "Hangman Game")
-        .setDescription(options.embed.description ? options.embed.description.replace(`{{word}}`, `\`\`\`${word.split("").map(v => used.includes(v) ? v.toUpperCase() : "_").join(" ")}`) :
-        `Type a character to guess the word\n\n\`\`\`${word.split("").map(v => used.includes(v) ? v.toUpperCase() : "_").join(" ")}\`\`\``)
-        .setColor(options.embed.color ? options.embed.color : "Blue")
-        .setImage("attachment://game.png")
-        .setTimestamp(options.embed.timestamp ? Date.now() : null)
-        .setFooter({
-        text: "©️ M3rcena Development | Powered by Mivator",
-        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-    });
-    if (options.embed.footer) {
-        embed.setFooter({
-            text: options.embed.footer.text,
-            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-        });
-    }
-    ;
-    if (options.embed.author) {
-        embed.setAuthor({
-            name: options.embed.author.name,
-            iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-            url: options.embed.author.url ? options.embed.author.url : undefined
-        });
-    }
-    ;
-    if (options.embed.fields) {
-        embed.setFields(options.embed.fields);
-    }
-    ;
+    options.embed.title = options.embed.title ? options.embed.title : "Hangman Game";
+    options.embed.description = options.embed.description ? options.embed.description.replace(`{{word}}`, `\`\`\`${word.split("").map(v => used.includes(v) ? v.toUpperCase() : "_").join(" ")}`) : `Type a character to guess the word\n\n\`\`\`${word.split("").map(v => used.includes(v) ? v.toUpperCase() : "_").join(" ")}\`\`\``;
+    let embed = (0, functions_1.createEmbed)(options.embed);
     const msg = await interaction.reply({
         files: [at],
         embeds: [embed],
@@ -109,35 +81,10 @@ const Hangman = async (options) => {
         at = new discord_js_1.AttachmentBuilder(await (0, functions_1.createHangman)(wrongs), {
             name: "game.png"
         });
-        embed = new discord_js_1.EmbedBuilder()
-            .setTitle(options.embed.title ? options.embed.title : "Hangman Game")
-            .setDescription(description)
-            .setColor(options.embed.color ? options.embed.color : wrongs === 6 ? "#ff0000" : done ? "Green" : "Blue")
-            .setImage("attachment://game.png")
-            .setTimestamp(options.embed.timestamp ? Date.now() : null)
-            .setFooter({
-            text: "©️ M3rcena Development | Powered by Mivator",
-            iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-        });
-        if (options.embed.footer) {
-            embed.setFooter({
-                text: options.embed.footer.text,
-                iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-            });
-        }
-        ;
-        if (options.embed.author) {
-            embed.setAuthor({
-                name: options.embed.author.name,
-                iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                url: options.embed.author.url ? options.embed.author.url : undefined
-            });
-        }
-        ;
-        if (options.embed.fields) {
-            embed.setFields(options.embed.fields);
-        }
-        ;
+        options.embed.description = description;
+        options.embed.color = options.embed.color ? options.embed.color : wrongs === 6 ? "#ff0000" : done ? "Green" : "Blue";
+        options.embed.image = "attachment://game.png";
+        embed = (0, functions_1.createEmbed)(options.embed);
         await msg.edit({
             files: [at],
             embeds: [embed]

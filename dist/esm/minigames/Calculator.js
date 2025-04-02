@@ -1,23 +1,17 @@
 import chalk from "chalk";
 import { ActionRowBuilder, ComponentType, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } from "discord.js";
 import { evaluate } from "mathjs";
-import { addRow, checkPackageUpdates, createButton, createDisabledButton } from "../functions/functions.js";
+import { addRow, checkPackageUpdates, createButton, createDisabledButton, createEmbed } from "../functions/functions.js";
 import { OptionsChecking } from "../functions/OptionChecking.js";
 const Calculator = async (options) => {
-    // Check type
+    // Validate calculator options
     OptionsChecking(options, "Calculator");
-    // Check if the interaction object is provided
     let interaction = options.interaction;
     if (!interaction)
         throw new Error(chalk.red("[@m3rcena/weky] Calculator Error:") + " No interaction provided.");
     let client = options.client;
-    // Main calculator Program
     let str = ' ';
     let stringify = '```\n' + str + '\n```';
-    const row = [];
-    const row2 = [];
-    const button = new Array([], [], [], [], []);
-    const buttons = new Array([], []);
     const text = [
         'DC',
         'RND',
@@ -57,63 +51,66 @@ const Calculator = async (options) => {
         '.',
         '='
     ];
-    let current = 0;
     let disabled = true;
     let lastInput;
-    for (let i = 0; i < text.length; i++) {
-        if (button[current].length === 5)
-            current++;
-        button[current].push(createDisabledButton(text[i]));
-        if (i === text.length - 1) {
-            for (const btn of button)
-                row.push(addRow(btn));
-        }
-    }
-    ;
-    current = 0;
-    for (let z = 0; z < text2.length; z++) {
-        if (buttons[current].length === 5)
-            current++;
-        buttons[current].push(createDisabledButton(text2[z]));
-        if (z === text2.length - 1) {
-            for (const btns of buttons)
-                row2.push(addRow(btns));
-        }
-    }
-    let embed = new EmbedBuilder()
-        .setTitle(options.embed.title)
-        .setDescription(stringify)
-        .setColor(options.embed.color ?? "Blurple")
-        .setURL(options.embed.url ? options.embed.url : null)
-        .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-        .addFields(options.embed.fields ? options.embed.fields : [])
-        .setImage(options.embed.image ? options.embed.image : null)
-        .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
-        .setFooter({
-        text: "©️ M3rcena Development | Powered by Mivator",
-        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-    });
-    if (options.embed.footer) {
-        embed.setFooter({
-            text: options.embed.footer.text,
-            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
+    const createButtonRows = (textArray, isDisabled) => {
+        const rows = [];
+        let currentRow = [];
+        textArray.forEach((text, index) => {
+            currentRow.push(isDisabled ? createDisabledButton(text) : createButton(text, false));
+            if (currentRow.length === 5 || index === textArray.length - 1) {
+                rows.push(addRow([...currentRow]));
+                currentRow = [];
+            }
         });
-    }
-    ;
-    if (options.embed.author) {
-        const author = ({
-            name: options.embed.author.name,
-            iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-            url: options.embed.author.url ? options.embed.author.url : undefined
+        return rows;
+    };
+    // Handle modal inputs for special operations (log, sin, etc.)
+    const handleModalInput = async (interact, modalId, operation) => {
+        const modal = new ModalBuilder()
+            .setTitle(modalId)
+            .setCustomId(`md${modalId}`);
+        const input = new TextInputBuilder()
+            .setCustomId(`number${modalId}`)
+            .setLabel(`Enter the number for ${operation}`)
+            .setStyle(TextInputStyle.Short)
+            .setRequired(true);
+        modal.addComponents(new ActionRowBuilder().addComponents(input));
+        await interact.showModal(modal);
+        return new Promise((resolve) => {
+            const modalHandler = async (modal) => {
+                if (!modal.isModalSubmit() || modal.customId !== `md${modalId}`)
+                    return;
+                client.off('interactionCreate', modalHandler);
+                await modal.deferUpdate();
+                resolve(modal.fields.getTextInputValue(`number${modalId}`));
+            };
+            client.on('interactionCreate', modalHandler);
+            setTimeout(() => client.off('interactionCreate', modalHandler), 300000);
         });
-        embed.setAuthor(author);
-    }
-    ;
+    };
+    // Process calculations using mathjs
+    const handleCalculation = (input) => {
+        try {
+            const result = evaluate(input);
+            return { result, error: null };
+        }
+        catch (e) {
+            return { result: null, error: options.invalidQuery || 'Invalid calculation' };
+        }
+    };
+    // Create initial button layouts
+    const row = createButtonRows(text, true);
+    const row2 = createButtonRows(text2, true);
+    // Set up calculator display
+    options.embed.description = stringify;
+    let embed = createEmbed(options.embed);
     if (!interaction.channel || !interaction.channel.isTextBased() || !interaction.channel.isSendable()) {
         throw new Error(chalk.red("[@m3rcena/weky] Calculator Error:") + " Interaction must be a text-based channel.");
     }
     const channel = interaction.channel;
     if (interaction.author) {
+        // Message-based calculator setup
         let msgInteraction = interaction;
         await msgInteraction.reply({
             embeds: [embed],
@@ -124,35 +121,8 @@ const Calculator = async (options) => {
                 components: row2,
             });
             async function edit() {
-                let _embed = new EmbedBuilder()
-                    .setTitle(options.embed.title)
-                    .setDescription(stringify)
-                    .setColor(options.embed.color ?? "Blurple")
-                    .setURL(options.embed.url ? options.embed.url : null)
-                    .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                    .addFields(options.embed.fields ? options.embed.fields : [])
-                    .setImage(options.embed.image ? options.embed.image : null)
-                    .setTimestamp(options.embed.timestamp ? new Date() : null)
-                    .setFooter({
-                    text: "©️ M3rcena Development | Powered by Mivator",
-                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-                });
-                if (options.embed.footer) {
-                    _embed.setFooter({
-                        text: options.embed.footer.text,
-                        iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                    });
-                }
-                ;
-                if (options.embed.author) {
-                    const author = ({
-                        name: options.embed.author.name,
-                        iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                        url: options.embed.author.url ? options.embed.author.url : undefined
-                    });
-                    _embed.setAuthor(author);
-                }
-                ;
+                options.embed.description = stringify;
+                let _embed = createEmbed(options.embed);
                 if (msg.editable) {
                     await msg.edit({
                         embeds: [_embed],
@@ -167,35 +137,7 @@ const Calculator = async (options) => {
             }
             ;
             async function lock(disabled) {
-                let _embed = new EmbedBuilder()
-                    .setTitle(options.embed.title)
-                    .setDescription(stringify)
-                    .setColor(options.embed.color ?? "Blurple")
-                    .setURL(options.embed.url ? options.embed.url : null)
-                    .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                    .addFields(options.embed.fields ? options.embed.fields : [])
-                    .setImage(options.embed.image ? options.embed.image : null)
-                    .setTimestamp(options.embed.timestamp ? new Date() : null)
-                    .setFooter({
-                    text: "©️ M3rcena Development | Powered by Mivator",
-                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-                });
-                if (options.embed.footer) {
-                    _embed.setFooter({
-                        text: options.embed.footer.text,
-                        iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                    });
-                }
-                ;
-                if (options.embed.author) {
-                    const author = ({
-                        name: options.embed.author.name,
-                        iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                        url: options.embed.author.url ? options.embed.author.url : undefined
-                    });
-                    _embed.setAuthor(author);
-                }
-                ;
+                let _embed = createEmbed(options.embed);
                 if (msg.editable) {
                     await msg.edit({
                         embeds: [_embed],
@@ -235,6 +177,7 @@ const Calculator = async (options) => {
                                 content: `An error occured while trying to enable the buttons.`
                             });
                         }
+                        ;
                     }
                 }
                 ;
@@ -330,399 +273,121 @@ const Calculator = async (options) => {
                     && interact.customId !== 'cal1/x'
                     && interact.customId !== 'calx!')
                     await interact.deferUpdate();
-                if (interact.customId === 'calAC') {
-                    lastInput = null;
-                    str = ' ';
-                    stringify = '```\n' + str + '\n```';
-                    edit();
-                }
-                else if (interact.customId === 'calx') {
-                    lastInput = interact.customId;
-                    str += ' * ';
-                    stringify = '```\n' + str + '\n```';
-                    edit();
-                }
-                else if (interact.customId === 'cal÷') {
-                    lastInput = interact.customId;
-                    str += ' / ';
-                    stringify = '```\n' + str + '\n```';
-                    edit();
-                }
-                else if (interact.customId === 'cal⌫') {
-                    if (str === ' ' || str === '' || str === null || str === undefined) {
+                switch (interact.customId) {
+                    case 'calAC':
                         lastInput = null;
-                        return;
-                    }
-                    else {
+                        str = ' ';
+                        stringify = '```\n' + str + '\n```';
+                        edit();
+                        break;
+                    case 'calx':
+                        lastInput = interact.customId;
+                        str += ' * ';
+                        stringify = '```\n' + str + '\n```';
+                        edit();
+                        break;
+                    case 'cal÷':
+                        lastInput = interact.customId;
+                        str += ' / ';
+                        stringify = '```\n' + str + '\n```';
+                        edit();
+                        break;
+                    case 'cal⌫':
+                        if (str === ' ' || str === '' || str === null || str === undefined) {
+                            lastInput = null;
+                            return;
+                        }
                         lastInput = interact.customId;
                         if (str.slice(0, -1) === ' ' || str.slice(0, -1) === '' || str.slice(0, -1) === null || str.slice(0, -1) === undefined) {
                             lastInput = null;
                         }
-                        if (str.slice(-1) === ' ') {
-                            str = str.slice(0, -3);
+                        str = str.slice(-1) === ' ' ? str.slice(0, -3) : str.slice(0, -1);
+                        stringify = '```\n' + str + '\n```';
+                        edit();
+                        break;
+                    case 'calLG':
+                    case 'calSQRT':
+                    case 'calRND':
+                    case 'calSIN':
+                    case 'calCOS':
+                    case 'calTAN':
+                    case 'calLN':
+                    case 'cal1/x':
+                    case 'calx!': {
+                        const operationMap = {
+                            calLG: ['Log', 'logarithm 10', 'log10'],
+                            calSQRT: ['Sqrt', 'square root', 'sqrt'],
+                            calRND: ['Rnd', 'round', 'round'],
+                            calSIN: ['Sin', 'sine', 'sin'],
+                            calCOS: ['Cos', 'cosine', 'cos'],
+                            calTAN: ['Tan', 'tangent', 'tan'],
+                            calLN: ['Ln', 'natural logarithm', 'log'],
+                            'cal1/x': ['Reciprocal', 'reciprocal', '1/'],
+                            'calx!': ['Factorial', 'factorial', '!']
+                        };
+                        const [modalTitle, operation, func] = operationMap[interact.customId];
+                        const number = await handleModalInput(interact, modalTitle, operation);
+                        if (number) {
+                            str += func === '!' ? number + func : `${func}(${number})`;
+                            stringify = '```\n' + str + '\n```';
+                            lastInput = interact.customId;
+                            edit();
+                        }
+                        break;
+                    }
+                    case 'calπ':
+                        lastInput = interact.customId;
+                        str += 'pi';
+                        stringify = '```\n' + str + '\n```';
+                        edit();
+                        break;
+                    case 'cale':
+                        lastInput = interact.customId;
+                        str += 'e';
+                        stringify = '```\n' + str + '\n```';
+                        edit();
+                        break;
+                    case 'calans':
+                        lastInput = interact.customId;
+                        str += `${answer}`;
+                        stringify = '```\n' + str + '\n```';
+                        edit();
+                        break;
+                    case 'cal=':
+                        lastInput = null;
+                        if (str === ' ' || str === '' || str === null || str === undefined) {
+                            return;
+                        }
+                        const { result, error } = handleCalculation(str);
+                        if (result !== null) {
+                            answer = result;
+                            str += ' = ' + result;
                         }
                         else {
-                            str = str.slice(0, -1);
+                            str = error;
+                            answer = '0';
                         }
                         stringify = '```\n' + str + '\n```';
                         edit();
-                    }
+                        str = ' ';
+                        stringify = '```\n' + str + '\n```';
+                        break;
+                    case 'calDC':
+                        calc.stop();
+                        break;
+                    default:
+                        lastInput = interact.customId;
+                        str += interact.customId.replace('cal', '');
+                        stringify = '```\n' + str + '\n```';
+                        edit();
+                        break;
                 }
-                else if (interact.customId === 'calLG') {
-                    const modal = new ModalBuilder()
-                        .setTitle('Logarithm 10 (log10)')
-                        .setCustomId('mdLog');
-                    const input = new TextInputBuilder()
-                        .setCustomId('numberLog')
-                        .setLabel('Enter the number to log10')
-                        .setStyle(TextInputStyle.Short)
-                        .setRequired(true);
-                    const actionRow = new ActionRowBuilder().addComponents(input);
-                    modal.addComponents(actionRow);
-                    await interact.showModal(modal);
-                    client.on('interactionCreate', async (modal) => {
-                        if (!modal.isModalSubmit())
-                            return;
-                        if (modal.customId === 'mdLog') {
-                            modal.deferUpdate();
-                            const number = modal.fields.getTextInputValue('numberLog');
-                            try {
-                                str += 'log10(' + number + ')';
-                                stringify = '```\n' + str + '\n```';
-                                lastInput = interact.customId;
-                                edit();
-                            }
-                            catch (e) {
-                                str = 'Invalid Number';
-                                stringify = '```\n' + str + '\n```';
-                                edit();
-                            }
-                        }
-                    });
-                }
-                else if (interact.customId === 'calSQRT') {
-                    const modal = new ModalBuilder()
-                        .setTitle('Square Root')
-                        .setCustomId('mdSqrt');
-                    const input = new TextInputBuilder()
-                        .setCustomId('numberSqrt')
-                        .setLabel('Enter the number to square root')
-                        .setStyle(TextInputStyle.Short)
-                        .setRequired(true);
-                    const actionRow = new ActionRowBuilder().addComponents(input);
-                    modal.addComponents(actionRow);
-                    await interact.showModal(modal);
-                    client.on('interactionCreate', async (modal) => {
-                        if (!modal.isModalSubmit())
-                            return;
-                        if (modal.customId === 'mdSqrt') {
-                            modal.deferUpdate();
-                            const number = modal.fields.getTextInputValue('numberSqrt');
-                            try {
-                                str += 'sqrt(' + number + ')';
-                                stringify = '```\n' + str + '\n```';
-                                lastInput = interact.customId;
-                                edit();
-                            }
-                            catch (e) {
-                                str = 'Invalid Number';
-                                stringify = '```\n' + str + '\n```';
-                                edit();
-                            }
-                        }
-                    });
-                }
-                else if (interact.customId === 'calRND') {
-                    const modal = new ModalBuilder()
-                        .setTitle('Round Number')
-                        .setCustomId('mdRnd');
-                    const input = new TextInputBuilder()
-                        .setCustomId('numberRnd')
-                        .setLabel('Enter the number to round')
-                        .setStyle(TextInputStyle.Short)
-                        .setRequired(true);
-                    const actionRow = new ActionRowBuilder().addComponents(input);
-                    modal.addComponents(actionRow);
-                    await interact.showModal(modal);
-                    client.on('interactionCreate', async (modal) => {
-                        if (!modal.isModalSubmit())
-                            return;
-                        if (modal.customId === 'mdRnd') {
-                            modal.deferUpdate();
-                            const number = modal.fields.getTextInputValue('numberRnd');
-                            try {
-                                str += 'round(' + number + ')';
-                                stringify = '```\n' + str + '\n```';
-                                lastInput = interact.customId;
-                                edit();
-                            }
-                            catch (e) {
-                                str = 'Invalid Number';
-                                stringify = '```\n' + str + '\n```';
-                                edit();
-                            }
-                        }
-                    });
-                }
-                else if (interact.customId === 'calSIN') {
-                    const modal = new ModalBuilder()
-                        .setTitle('Sine')
-                        .setCustomId('mdSin');
-                    const input = new TextInputBuilder()
-                        .setCustomId('numberSin')
-                        .setLabel('Enter the number to find the sine')
-                        .setStyle(TextInputStyle.Short)
-                        .setRequired(true);
-                    const actionRow = new ActionRowBuilder().addComponents(input);
-                    modal.addComponents(actionRow);
-                    await interact.showModal(modal);
-                    client.on('interactionCreate', async (modal) => {
-                        if (!modal.isModalSubmit())
-                            return;
-                        if (modal.customId === 'mdSin') {
-                            modal.deferUpdate();
-                            const number = modal.fields.getTextInputValue('numberSin');
-                            try {
-                                str += 'sin(' + number + ')';
-                                stringify = '```\n' + str + '\n```';
-                                lastInput = interact.customId;
-                                edit();
-                            }
-                            catch (e) {
-                                str = 'Invalid Number';
-                                stringify = '```\n' + str + '\n```';
-                                edit();
-                            }
-                        }
-                    });
-                }
-                else if (interact.customId === 'calCOS') {
-                    const modal = new ModalBuilder()
-                        .setTitle('Cosine')
-                        .setCustomId('mdCos');
-                    const input = new TextInputBuilder()
-                        .setCustomId('numberCos')
-                        .setLabel('Enter the number to find the cosine')
-                        .setStyle(TextInputStyle.Short)
-                        .setRequired(true);
-                    const actionRow = new ActionRowBuilder().addComponents(input);
-                    modal.addComponents(actionRow);
-                    await interact.showModal(modal);
-                    client.on('interactionCreate', async (modal) => {
-                        if (!modal.isModalSubmit())
-                            return;
-                        if (modal.customId === 'mdCos') {
-                            modal.deferUpdate();
-                            const number = modal.fields.getTextInputValue('numberCos');
-                            try {
-                                str += 'cos(' + number + ')';
-                                stringify = '```\n' + str + '\n```';
-                                lastInput = interact.customId;
-                                edit();
-                            }
-                            catch (e) {
-                                str = 'Invalid Number';
-                                stringify = '```\n' + str + '\n```';
-                                edit();
-                            }
-                        }
-                    });
-                }
-                else if (interact.customId === 'calTAN') {
-                    const modal = new ModalBuilder()
-                        .setTitle('Tangent')
-                        .setCustomId('mdTan');
-                    const input = new TextInputBuilder()
-                        .setCustomId('numberTan')
-                        .setLabel('Enter the number to find the tangent')
-                        .setStyle(TextInputStyle.Short)
-                        .setRequired(true);
-                    const actionRow = new ActionRowBuilder().addComponents(input);
-                    modal.addComponents(actionRow);
-                    await interact.showModal(modal);
-                    client.on('interactionCreate', async (modal) => {
-                        if (!modal.isModalSubmit())
-                            return;
-                        if (modal.customId === 'mdTan') {
-                            modal.deferUpdate();
-                            const number = modal.fields.getTextInputValue('numberTan');
-                            try {
-                                str += 'tan(' + number + ')';
-                                stringify = '```\n' + str + '\n```';
-                                lastInput = interact.customId;
-                                edit();
-                            }
-                            catch (e) {
-                                str = 'Invalid Number';
-                                stringify = '```\n' + str + '\n```';
-                                edit();
-                            }
-                        }
-                    });
-                }
-                else if (interact.customId === 'calLN') {
-                    const modal = new ModalBuilder()
-                        .setTitle('Natural Logarithm (log)')
-                        .setCustomId('mdLn');
-                    const input = new TextInputBuilder()
-                        .setCustomId('numberLn')
-                        .setLabel('Enter the number for natural logarithm')
-                        .setStyle(TextInputStyle.Short)
-                        .setRequired(true);
-                    const actionRow = new ActionRowBuilder().addComponents(input);
-                    modal.addComponents(actionRow);
-                    await interact.showModal(modal);
-                    client.on('interactionCreate', async (modal) => {
-                        if (!modal.isModalSubmit())
-                            return;
-                        if (modal.customId === 'mdLn') {
-                            modal.deferUpdate();
-                            const number = modal.fields.getTextInputValue('numberLn');
-                            try {
-                                str += 'log(' + number + ')';
-                                stringify = '```\n' + str + '\n```';
-                                lastInput = interact.customId;
-                                edit();
-                            }
-                            catch (e) {
-                                str = 'Invalid Number';
-                                stringify = '```\n' + str + '\n```';
-                                edit();
-                            }
-                        }
-                    });
-                }
-                else if (interact.customId === 'cal1/x') {
-                    const modal = new ModalBuilder()
-                        .setTitle('Reciprocal')
-                        .setCustomId('mdReciprocal');
-                    const input = new TextInputBuilder()
-                        .setCustomId('numberReciprocal')
-                        .setLabel('Enter the number to find the reciprocal')
-                        .setStyle(TextInputStyle.Short)
-                        .setRequired(true);
-                    const actionRow = new ActionRowBuilder().addComponents(input);
-                    modal.addComponents(actionRow);
-                    await interact.showModal(modal);
-                    client.on('interactionCreate', async (modal) => {
-                        if (!modal.isModalSubmit())
-                            return;
-                        if (modal.customId === 'mdReciprocal') {
-                            modal.deferUpdate();
-                            const number = modal.fields.getTextInputValue('numberReciprocal');
-                            try {
-                                str += '1/(' + number + ')';
-                                stringify = '```\n' + str + '\n```';
-                                lastInput = interact.customId;
-                                edit();
-                            }
-                            catch (e) {
-                                str = 'Invalid Number';
-                                stringify = '```\n' + str + '\n```';
-                                edit();
-                            }
-                        }
-                    });
-                }
-                else if (interact.customId === 'calx!') {
-                    const modal = new ModalBuilder()
-                        .setTitle('Factorial')
-                        .setCustomId('mdFactorial');
-                    const input = new TextInputBuilder()
-                        .setCustomId('numberFactorial')
-                        .setLabel('Enter the number to find the factorial')
-                        .setStyle(TextInputStyle.Short)
-                        .setRequired(true);
-                    const actionRow = new ActionRowBuilder().addComponents(input);
-                    modal.addComponents(actionRow);
-                    await interact.showModal(modal);
-                    client.on('interactionCreate', async (modal) => {
-                        if (!modal.isModalSubmit())
-                            return;
-                        if (modal.customId === 'mdFactorial') {
-                            modal.deferUpdate();
-                            const number = modal.fields.getTextInputValue('numberFactorial');
-                            try {
-                                str += number + '!';
-                                stringify = '```\n' + str + '\n```';
-                                lastInput = interact.customId;
-                                edit();
-                            }
-                            catch (e) {
-                                str = 'Invalid Number';
-                                stringify = '```\n' + str + '\n```';
-                                edit();
-                            }
-                        }
-                    });
-                }
-                else if (interact.customId === 'calπ') {
-                    lastInput = interact.customId;
-                    str += 'pi';
-                    stringify = '```\n' + str + '\n```';
-                    edit();
-                }
-                else if (interact.customId === 'cale') {
-                    lastInput = interact.customId;
-                    str += 'e';
-                    stringify = '```\n' + str + '\n```';
-                    edit();
-                }
-                else if (interact.customId === 'calans') {
-                    lastInput = interact.customId;
-                    str += `${answer}`;
-                    stringify = '```\n' + str + '\n```';
-                    edit();
-                }
-                else if (interact.customId === 'cal=') {
-                    lastInput = null;
-                    if (str === ' ' || str === '' || str === null || str === undefined) {
-                        return;
-                    }
-                    else {
-                        try {
-                            answer = evaluate(str);
-                            str += ' = ' + evaluate(str);
-                            stringify = '```\n' + str + '\n```';
-                            edit();
-                            str = ' ';
-                            stringify = '```\n' + str + '\n```';
-                        }
-                        catch (e) {
-                            if (options.invalidQuery === undefined) {
-                                return;
-                            }
-                            else {
-                                str = options.invalidQuery;
-                                answer = '0';
-                                stringify = '```\n' + str + '\n```';
-                                edit();
-                                str = ' ';
-                                stringify = '```\n' + str + '\n```';
-                            }
-                        }
-                    }
-                }
-                else if (interact.customId === 'calDC') {
-                    calc.stop();
-                }
-                else {
-                    lastInput = interact.customId;
-                    str += interact.customId.replace('cal', '');
-                    stringify = '```\n' + str + '\n```';
-                    edit();
-                }
-                ;
                 if (disabled === true && lastInput !== null && lastInput !== undefined) {
                     enableButtons();
                 }
                 else if ((disabled === false && lastInput === null || lastInput === undefined) && interact.customId !== "calDC") {
                     disableButtons();
                 }
-                else if (disabled === false && lastInput !== null || lastInput !== undefined) {
-                    return;
-                }
-                ;
             });
             calc.on('end', async () => {
                 str = 'Calculator has been stopped';
@@ -733,6 +398,7 @@ const Calculator = async (options) => {
         });
     }
     else {
+        // Slash command calculator setup
         let cmdInteraction = interaction;
         await cmdInteraction.editReply({
             embeds: [embed],
@@ -743,35 +409,7 @@ const Calculator = async (options) => {
                 components: row2,
             });
             async function edit() {
-                let _embed = new EmbedBuilder()
-                    .setTitle(options.embed.title)
-                    .setDescription(stringify)
-                    .setColor(options.embed.color ?? "Blurple")
-                    .setURL(options.embed.url ? options.embed.url : null)
-                    .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                    .addFields(options.embed.fields ? options.embed.fields : [])
-                    .setImage(options.embed.image ? options.embed.image : null)
-                    .setTimestamp(options.embed.timestamp ? new Date() : null)
-                    .setFooter({
-                    text: "©️ M3rcena Development | Powered by Mivator",
-                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-                });
-                if (options.embed.footer) {
-                    _embed.setFooter({
-                        text: options.embed.footer.text,
-                        iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                    });
-                }
-                ;
-                if (options.embed.author) {
-                    const author = ({
-                        name: options.embed.author.name,
-                        iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                        url: options.embed.author.url ? options.embed.author.url : undefined
-                    });
-                    _embed.setAuthor(author);
-                }
-                ;
+                let _embed = createEmbed(options.embed);
                 if (msg.editable) {
                     await msg.edit({
                         embeds: [_embed],
@@ -785,35 +423,7 @@ const Calculator = async (options) => {
             }
             ;
             async function lock(disabled) {
-                let _embed = new EmbedBuilder()
-                    .setTitle(options.embed.title)
-                    .setDescription(stringify)
-                    .setColor(options.embed.color ?? "Blurple")
-                    .setURL(options.embed.url ? options.embed.url : null)
-                    .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                    .addFields(options.embed.fields ? options.embed.fields : [])
-                    .setImage(options.embed.image ? options.embed.image : null)
-                    .setTimestamp(options.embed.timestamp ? new Date() : null)
-                    .setFooter({
-                    text: "©️ M3rcena Development | Powered by Mivator",
-                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-                });
-                if (options.embed.footer) {
-                    _embed.setFooter({
-                        text: options.embed.footer.text,
-                        iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                    });
-                }
-                ;
-                if (options.embed.author) {
-                    const author = ({
-                        name: options.embed.author.name,
-                        iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                        url: options.embed.author.url ? options.embed.author.url : undefined
-                    });
-                    _embed.setAuthor(author);
-                }
-                ;
+                let _embed = createEmbed(options.embed);
                 if (msg.editable) {
                     await msg.edit({
                         embeds: [_embed],
@@ -949,399 +559,125 @@ const Calculator = async (options) => {
                     && interact.customId !== 'cal1/x'
                     && interact.customId !== 'calx!')
                     await interact.deferUpdate();
-                if (interact.customId === 'calAC') {
-                    lastInput = null;
-                    str = ' ';
-                    stringify = '```\n' + str + '\n```';
-                    edit();
-                }
-                else if (interact.customId === 'calx') {
-                    lastInput = interact.customId;
-                    str += ' * ';
-                    stringify = '```\n' + str + '\n```';
-                    edit();
-                }
-                else if (interact.customId === 'cal÷') {
-                    lastInput = interact.customId;
-                    str += ' / ';
-                    stringify = '```\n' + str + '\n```';
-                    edit();
-                }
-                else if (interact.customId === 'cal⌫') {
-                    if (str === ' ' || str === '' || str === null || str === undefined) {
+                switch (interact.customId) {
+                    case 'calAC':
                         lastInput = null;
-                        return;
-                    }
-                    else {
+                        str = ' ';
+                        stringify = '```\n' + str + '\n```';
+                        edit();
+                        break;
+                    case 'calx':
+                        lastInput = interact.customId;
+                        str += ' * ';
+                        stringify = '```\n' + str + '\n```';
+                        edit();
+                        break;
+                    case 'cal÷':
+                        lastInput = interact.customId;
+                        str += ' / ';
+                        stringify = '```\n' + str + '\n```';
+                        edit();
+                        break;
+                    case 'cal⌫':
+                        if (str === ' ' || str === '' || str === null || str === undefined) {
+                            lastInput = null;
+                            return;
+                        }
                         lastInput = interact.customId;
                         if (str.slice(0, -1) === ' ' || str.slice(0, -1) === '' || str.slice(0, -1) === null || str.slice(0, -1) === undefined) {
                             lastInput = null;
                         }
-                        if (str.slice(-1) === ' ') {
-                            str = str.slice(0, -3);
-                        }
-                        else {
-                            str = str.slice(0, -1);
-                        }
+                        str = str.slice(-1) === ' ' ? str.slice(0, -3) : str.slice(0, -1);
                         stringify = '```\n' + str + '\n```';
                         edit();
+                        break;
+                    case 'calLG':
+                    case 'calSQRT':
+                    case 'calRND':
+                    case 'calSIN':
+                    case 'calCOS':
+                    case 'calTAN':
+                    case 'calLN':
+                    case 'cal1/x':
+                    case 'calx!': {
+                        const operationMap = {
+                            calLG: ['Log', 'logarithm 10', 'log10'],
+                            calSQRT: ['Sqrt', 'square root', 'sqrt'],
+                            calRND: ['Rnd', 'round', 'round'],
+                            calSIN: ['Sin', 'sine', 'sin'],
+                            calCOS: ['Cos', 'cosine', 'cos'],
+                            calTAN: ['Tan', 'tangent', 'tan'],
+                            calLN: ['Ln', 'natural logarithm', 'log'],
+                            'cal1/x': ['Reciprocal', 'reciprocal', '1/'],
+                            'calx!': ['Factorial', 'factorial', '!']
+                        };
+                        const [modalTitle, operation, func] = operationMap[interact.customId];
+                        const number = await handleModalInput(interact, modalTitle, operation);
+                        if (number) {
+                            str += func === '!' ? number + func : `${func}(${number})`;
+                            stringify = '```\n' + str + '\n```';
+                            lastInput = interact.customId;
+                            edit();
+                        }
+                        break;
                     }
-                }
-                else if (interact.customId === 'calLG') {
-                    const modal = new ModalBuilder()
-                        .setTitle('Logarithm 10 (log10)')
-                        .setCustomId('mdLog');
-                    const input = new TextInputBuilder()
-                        .setCustomId('numberLog')
-                        .setLabel('Enter the number to log10')
-                        .setStyle(TextInputStyle.Short)
-                        .setRequired(true);
-                    const actionRow = new ActionRowBuilder().addComponents(input);
-                    modal.addComponents(actionRow);
-                    await interact.showModal(modal);
-                    client.on('interactionCreate', async (modal) => {
-                        if (!modal.isModalSubmit())
+                    case 'calπ':
+                        lastInput = interact.customId;
+                        str += 'pi';
+                        stringify = '```\n' + str + '\n```';
+                        edit();
+                        break;
+                    case 'cale':
+                        lastInput = interact.customId;
+                        str += 'e';
+                        stringify = '```\n' + str + '\n```';
+                        edit();
+                        break;
+                    case 'calans':
+                        lastInput = interact.customId;
+                        str += `${answer}`;
+                        stringify = '```\n' + str + '\n```';
+                        edit();
+                        break;
+                    case 'cal=':
+                        lastInput = null;
+                        if (str === ' ' || str === '' || str === null || str === undefined) {
                             return;
-                        if (modal.customId === 'mdLog') {
-                            modal.deferUpdate();
-                            const number = modal.fields.getTextInputValue('numberLog');
-                            try {
-                                str += 'log10(' + number + ')';
-                                stringify = '```\n' + str + '\n```';
-                                lastInput = interact.customId;
-                                edit();
-                            }
-                            catch (e) {
-                                str = 'Invalid Number';
-                                stringify = '```\n' + str + '\n```';
-                                edit();
-                            }
                         }
-                    });
-                }
-                else if (interact.customId === 'calSQRT') {
-                    const modal = new ModalBuilder()
-                        .setTitle('Square Root')
-                        .setCustomId('mdSqrt');
-                    const input = new TextInputBuilder()
-                        .setCustomId('numberSqrt')
-                        .setLabel('Enter the number to square root')
-                        .setStyle(TextInputStyle.Short)
-                        .setRequired(true);
-                    const actionRow = new ActionRowBuilder().addComponents(input);
-                    modal.addComponents(actionRow);
-                    await interact.showModal(modal);
-                    client.on('interactionCreate', async (modal) => {
-                        if (!modal.isModalSubmit())
-                            return;
-                        if (modal.customId === 'mdSqrt') {
-                            modal.deferUpdate();
-                            const number = modal.fields.getTextInputValue('numberSqrt');
-                            try {
-                                str += 'sqrt(' + number + ')';
-                                stringify = '```\n' + str + '\n```';
-                                lastInput = interact.customId;
-                                edit();
-                            }
-                            catch (e) {
-                                str = 'Invalid Number';
-                                stringify = '```\n' + str + '\n```';
-                                edit();
-                            }
-                        }
-                    });
-                }
-                else if (interact.customId === 'calRND') {
-                    const modal = new ModalBuilder()
-                        .setTitle('Round Number')
-                        .setCustomId('mdRnd');
-                    const input = new TextInputBuilder()
-                        .setCustomId('numberRnd')
-                        .setLabel('Enter the number to round')
-                        .setStyle(TextInputStyle.Short)
-                        .setRequired(true);
-                    const actionRow = new ActionRowBuilder().addComponents(input);
-                    modal.addComponents(actionRow);
-                    await interact.showModal(modal);
-                    client.on('interactionCreate', async (modal) => {
-                        if (!modal.isModalSubmit())
-                            return;
-                        if (modal.customId === 'mdRnd') {
-                            modal.deferUpdate();
-                            const number = modal.fields.getTextInputValue('numberRnd');
-                            try {
-                                str += 'round(' + number + ')';
-                                stringify = '```\n' + str + '\n```';
-                                lastInput = interact.customId;
-                                edit();
-                            }
-                            catch (e) {
-                                str = 'Invalid Number';
-                                stringify = '```\n' + str + '\n```';
-                                edit();
-                            }
-                        }
-                    });
-                }
-                else if (interact.customId === 'calSIN') {
-                    const modal = new ModalBuilder()
-                        .setTitle('Sine')
-                        .setCustomId('mdSin');
-                    const input = new TextInputBuilder()
-                        .setCustomId('numberSin')
-                        .setLabel('Enter the number to find the sine')
-                        .setStyle(TextInputStyle.Short)
-                        .setRequired(true);
-                    const actionRow = new ActionRowBuilder().addComponents(input);
-                    modal.addComponents(actionRow);
-                    await interact.showModal(modal);
-                    client.on('interactionCreate', async (modal) => {
-                        if (!modal.isModalSubmit())
-                            return;
-                        if (modal.customId === 'mdSin') {
-                            modal.deferUpdate();
-                            const number = modal.fields.getTextInputValue('numberSin');
-                            try {
-                                str += 'sin(' + number + ')';
-                                stringify = '```\n' + str + '\n```';
-                                lastInput = interact.customId;
-                                edit();
-                            }
-                            catch (e) {
-                                str = 'Invalid Number';
-                                stringify = '```\n' + str + '\n```';
-                                edit();
-                            }
-                        }
-                    });
-                }
-                else if (interact.customId === 'calCOS') {
-                    const modal = new ModalBuilder()
-                        .setTitle('Cosine')
-                        .setCustomId('mdCos');
-                    const input = new TextInputBuilder()
-                        .setCustomId('numberCos')
-                        .setLabel('Enter the number to find the cosine')
-                        .setStyle(TextInputStyle.Short)
-                        .setRequired(true);
-                    const actionRow = new ActionRowBuilder().addComponents(input);
-                    modal.addComponents(actionRow);
-                    await interact.showModal(modal);
-                    client.on('interactionCreate', async (modal) => {
-                        if (!modal.isModalSubmit())
-                            return;
-                        if (modal.customId === 'mdCos') {
-                            modal.deferUpdate();
-                            const number = modal.fields.getTextInputValue('numberCos');
-                            try {
-                                str += 'cos(' + number + ')';
-                                stringify = '```\n' + str + '\n```';
-                                lastInput = interact.customId;
-                                edit();
-                            }
-                            catch (e) {
-                                str = 'Invalid Number';
-                                stringify = '```\n' + str + '\n```';
-                                edit();
-                            }
-                        }
-                    });
-                }
-                else if (interact.customId === 'calTAN') {
-                    const modal = new ModalBuilder()
-                        .setTitle('Tangent')
-                        .setCustomId('mdTan');
-                    const input = new TextInputBuilder()
-                        .setCustomId('numberTan')
-                        .setLabel('Enter the number to find the tangent')
-                        .setStyle(TextInputStyle.Short)
-                        .setRequired(true);
-                    const actionRow = new ActionRowBuilder().addComponents(input);
-                    modal.addComponents(actionRow);
-                    await interact.showModal(modal);
-                    client.on('interactionCreate', async (modal) => {
-                        if (!modal.isModalSubmit())
-                            return;
-                        if (modal.customId === 'mdTan') {
-                            modal.deferUpdate();
-                            const number = modal.fields.getTextInputValue('numberTan');
-                            try {
-                                str += 'tan(' + number + ')';
-                                stringify = '```\n' + str + '\n```';
-                                lastInput = interact.customId;
-                                edit();
-                            }
-                            catch (e) {
-                                str = 'Invalid Number';
-                                stringify = '```\n' + str + '\n```';
-                                edit();
-                            }
-                        }
-                    });
-                }
-                else if (interact.customId === 'calLN') {
-                    const modal = new ModalBuilder()
-                        .setTitle('Natural Logarithm (log)')
-                        .setCustomId('mdLn');
-                    const input = new TextInputBuilder()
-                        .setCustomId('numberLn')
-                        .setLabel('Enter the number for natural logarithm')
-                        .setStyle(TextInputStyle.Short)
-                        .setRequired(true);
-                    const actionRow = new ActionRowBuilder().addComponents(input);
-                    modal.addComponents(actionRow);
-                    await interact.showModal(modal);
-                    client.on('interactionCreate', async (modal) => {
-                        if (!modal.isModalSubmit())
-                            return;
-                        if (modal.customId === 'mdLn') {
-                            modal.deferUpdate();
-                            const number = modal.fields.getTextInputValue('numberLn');
-                            try {
-                                str += 'log(' + number + ')';
-                                stringify = '```\n' + str + '\n```';
-                                lastInput = interact.customId;
-                                edit();
-                            }
-                            catch (e) {
-                                str = 'Invalid Number';
-                                stringify = '```\n' + str + '\n```';
-                                edit();
-                            }
-                        }
-                    });
-                }
-                else if (interact.customId === 'cal1/x') {
-                    const modal = new ModalBuilder()
-                        .setTitle('Reciprocal')
-                        .setCustomId('mdReciprocal');
-                    const input = new TextInputBuilder()
-                        .setCustomId('numberReciprocal')
-                        .setLabel('Enter the number to find the reciprocal')
-                        .setStyle(TextInputStyle.Short)
-                        .setRequired(true);
-                    const actionRow = new ActionRowBuilder().addComponents(input);
-                    modal.addComponents(actionRow);
-                    await interact.showModal(modal);
-                    client.on('interactionCreate', async (modal) => {
-                        if (!modal.isModalSubmit())
-                            return;
-                        if (modal.customId === 'mdReciprocal') {
-                            modal.deferUpdate();
-                            const number = modal.fields.getTextInputValue('numberReciprocal');
-                            try {
-                                str += '1/(' + number + ')';
-                                stringify = '```\n' + str + '\n```';
-                                lastInput = interact.customId;
-                                edit();
-                            }
-                            catch (e) {
-                                str = 'Invalid Number';
-                                stringify = '```\n' + str + '\n```';
-                                edit();
-                            }
-                        }
-                    });
-                }
-                else if (interact.customId === 'calx!') {
-                    const modal = new ModalBuilder()
-                        .setTitle('Factorial')
-                        .setCustomId('mdFactorial');
-                    const input = new TextInputBuilder()
-                        .setCustomId('numberFactorial')
-                        .setLabel('Enter the number to find the factorial')
-                        .setStyle(TextInputStyle.Short)
-                        .setRequired(true);
-                    const actionRow = new ActionRowBuilder().addComponents(input);
-                    modal.addComponents(actionRow);
-                    await interact.showModal(modal);
-                    client.on('interactionCreate', async (modal) => {
-                        if (!modal.isModalSubmit())
-                            return;
-                        if (modal.customId === 'mdFactorial') {
-                            modal.deferUpdate();
-                            const number = modal.fields.getTextInputValue('numberFactorial');
-                            try {
-                                str += number + '!';
-                                stringify = '```\n' + str + '\n```';
-                                lastInput = interact.customId;
-                                edit();
-                            }
-                            catch (e) {
-                                str = 'Invalid Number';
-                                stringify = '```\n' + str + '\n```';
-                                edit();
-                            }
-                        }
-                    });
-                }
-                else if (interact.customId === 'calπ') {
-                    lastInput = interact.customId;
-                    str += 'pi';
-                    stringify = '```\n' + str + '\n```';
-                    edit();
-                }
-                else if (interact.customId === 'cale') {
-                    lastInput = interact.customId;
-                    str += 'e';
-                    stringify = '```\n' + str + '\n```';
-                    edit();
-                }
-                else if (interact.customId === 'calans') {
-                    lastInput = interact.customId;
-                    str += `${answer}`;
-                    stringify = '```\n' + str + '\n```';
-                    edit();
-                }
-                else if (interact.customId === 'cal=') {
-                    lastInput = null;
-                    if (str === ' ' || str === '' || str === null || str === undefined) {
-                        return;
-                    }
-                    else {
-                        try {
-                            answer = evaluate(str);
-                            str += ' = ' + evaluate(str);
+                        const { result, error } = handleCalculation(str);
+                        if (result !== null) {
+                            answer = result;
+                            str += ' = ' + result;
                             stringify = '```\n' + str + '\n```';
                             edit();
                             str = ' ';
                             stringify = '```\n' + str + '\n```';
                         }
-                        catch (e) {
-                            if (options.invalidQuery === undefined) {
-                                return;
-                            }
-                            else {
-                                str = options.invalidQuery;
-                                answer = '0';
-                                stringify = '```\n' + str + '\n```';
-                                edit();
-                                str = ' ';
-                                stringify = '```\n' + str + '\n```';
-                            }
+                        else {
+                            str = error;
+                            answer = '0';
                         }
-                    }
+                        stringify = '```\n' + str + '\n```';
+                        edit();
+                        str = ' ';
+                        stringify = '```\n' + str + '\n```';
+                        break;
+                    case 'calDC':
+                        calc.stop();
+                        break;
+                    default:
+                        lastInput = interact.customId;
+                        str += interact.customId.replace('cal', '');
+                        stringify = '```\n' + str + '\n```';
+                        edit();
+                        break;
                 }
-                else if (interact.customId === 'calDC') {
-                    calc.stop();
-                }
-                else {
-                    lastInput = interact.customId;
-                    str += interact.customId.replace('cal', '');
-                    stringify = '```\n' + str + '\n```';
-                    edit();
-                }
-                ;
                 if (disabled === true && lastInput !== null && lastInput !== undefined) {
                     enableButtons();
                 }
                 else if ((disabled === false && lastInput === null || lastInput === undefined) && interact.customId !== "calDC") {
                     disableButtons();
                 }
-                else if (disabled === false && lastInput !== null || lastInput !== undefined) {
-                    return;
-                }
-                ;
             });
             calc.on('end', async () => {
                 str = 'Calculator has been stopped';
@@ -1351,6 +687,7 @@ const Calculator = async (options) => {
             });
         });
     }
+    // Check for package updates
     checkPackageUpdates("Calculator", options.notifyUpdate);
 };
 export default Calculator;

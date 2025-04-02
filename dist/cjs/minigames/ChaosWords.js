@@ -73,39 +73,10 @@ const ChaosWords = async (options) => {
             }
         ];
     }
-    let embed = new discord_js_1.EmbedBuilder()
-        .setTitle(options.embed.title)
+    let embed = (0, functions_1.createEmbed)(options.embed)
         .setDescription(options.embed.description ?
         options.embed.description.replace('{{time}}', (0, functions_1.convertTime)(options.time ? options.time : 60000)) :
-        `You have **${(0, functions_1.convertTime)(options.time ? options.time : 60000)}** to find the correct words in the chaos above.`)
-        .setColor(options.embed.color ?? "Blurple")
-        .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
-        .setURL(options.embed.url ? options.embed.url : null)
-        .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-        .setImage(options.embed.image ? options.embed.image : null)
-        .setFooter({
-        text: "©️ M3rcena Development | Powered by Mivator",
-        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-    });
-    if (options.embed.footer) {
-        embed.setFooter({
-            text: options.embed.footer.text,
-            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-        });
-    }
-    ;
-    if (options.embed.author) {
-        embed.setAuthor({
-            name: options.embed.author.name,
-            iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-            url: options.embed.author.url ? options.embed.author.url : undefined
-        });
-    }
-    ;
-    if (options.embed.fields) {
-        embed.setFields(options.embed.fields);
-    }
-    ;
+        `You have **${(0, functions_1.convertTime)(options.time ? options.time : 60000)}** to find the correct words in the chaos above.`);
     if (!options.embed.fields) {
         fields = [
             {
@@ -142,7 +113,7 @@ const ChaosWords = async (options) => {
         .setCustomId(ids);
     const msg = await interaction.reply({
         embeds: [embed],
-        components: [{ type: 1, components: [btn1] }]
+        components: [new discord_js_1.ActionRowBuilder().addComponents(btn1)]
     });
     const gameCreatedAt = Date.now();
     const filter = (m) => m.author.id === id;
@@ -173,39 +144,11 @@ const ChaosWords = async (options) => {
             remaining++;
             array.splice(array.indexOf(mes.content.toLowerCase()), 1);
             guessed.push(mes.content.toLowerCase());
-            let _embed = new discord_js_1.EmbedBuilder()
-                .setTitle(options.embed.title)
+            let _embed = (0, functions_1.createEmbed)(options.embed)
                 .setDescription(options.embed.description ?
                 options.embed.description.replace('{{time}}', (0, functions_1.convertTime)(options.time ? options.time : 60000)) :
-                `You have **${(0, functions_1.convertTime)(options.time ? options.time : 60000)}** to find the correct words in the chaos above.`)
-                .setColor(options.embed.color ?? "Blurple")
-                .setTimestamp(options.embed.timestamp ? new Date() : null)
-                .setURL(options.embed.url ? options.embed.url : null)
-                .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                .setImage(options.embed.image ? options.embed.image : null)
-                .setFooter({
-                text: "©️ M3rcena Development | Powered by Mivator",
-                iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-            });
-            if (options.embed.footer) {
-                _embed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                });
-            }
-            ;
-            if (options.embed.author) {
-                _embed.setAuthor({
-                    name: options.embed.author.name,
-                    iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                    url: options.embed.author.url ? options.embed.author.url : undefined
-                });
-            }
-            ;
-            if (options.embed.fields) {
-                _embed.setFields(options.embed.fields);
-            }
-            else {
+                `You have **${(0, functions_1.convertTime)(options.time ? options.time : 60000)}** to find the correct words in the chaos above.`);
+            if (!options.embed.fields) {
                 fields = [
                     {
                         name: 'Sentence:',
@@ -242,7 +185,7 @@ const ChaosWords = async (options) => {
                 .setCustomId(ids);
             await msg.edit({
                 embeds: [_embed],
-                components: [{ type: 1, components: [btn1] }]
+                components: [new discord_js_1.ActionRowBuilder().addComponents(btn1)]
             });
             if (remaining === words.length) {
                 if (!interaction.channel || !interaction.channel.isSendable())
@@ -254,43 +197,12 @@ const ChaosWords = async (options) => {
                     .setCustomId(ids);
                 await msg.edit({
                     embeds: [embed],
-                    components: [{
-                            type: 1,
-                            components: [btn1]
-                        }]
+                    components: [new discord_js_1.ActionRowBuilder().addComponents(btn1)]
                 });
                 const time = (0, functions_1.convertTime)(Date.now() - gameCreatedAt);
-                let __embed = new discord_js_1.EmbedBuilder()
-                    .setTitle(options.embed.title)
-                    .setDescription(options.winMessage ? options.winMessage.replace('{{time}}', time) : `You found all the words in **${time}**`)
-                    .setColor(options.embed.color ?? "Blurple")
-                    .setTimestamp(options.embed.timestamp ? new Date() : null)
-                    .setURL(options.embed.url ? options.embed.url : null)
-                    .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                    .setImage(options.embed.image ? options.embed.image : null)
-                    .setFooter({
-                    text: "©️ M3rcena Development | Powered by Mivator",
-                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-                });
-                if (options.embed.footer) {
-                    __embed.setFooter({
-                        text: options.embed.footer.text,
-                        iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                    });
-                }
-                ;
-                if (options.embed.author) {
-                    __embed.setAuthor({
-                        name: options.embed.author.name,
-                        iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                        url: options.embed.author.url ? options.embed.author.url : undefined
-                    });
-                }
-                ;
-                if (options.embed.fields) {
-                    __embed.setFields(options.embed.fields);
-                }
-                else {
+                let __embed = (0, functions_1.createEmbed)(options.embed)
+                    .setDescription(options.winMessage ? options.winMessage.replace('{{time}}', time) : `You found all the words in **${time}**`);
+                if (!options.embed.fields) {
                     fields = [
                         {
                             name: 'Sentence:',
@@ -337,20 +249,14 @@ const ChaosWords = async (options) => {
                 data.delete(id);
                 return game.stop();
             }
-            const __embed = new discord_js_1.EmbedBuilder()
+            const __embed = (0, functions_1.createEmbed)(options.embed, true)
                 .setDescription(`
                     ${options.correctWord ?
                 options.correctWord
                     .replace('{{word}}', mes.content.toLowerCase())
                     .replace('{{remaining}}', `${words.length - remaining}`)
                 : `GG, **${mes.content.toLowerCase()}** was correct! You have to find **${words.length - remaining}** more word(s).`}
-                    `)
-                .setColor(options.embed.color ?? "Blurple")
-                .setTimestamp(options.embed.timestamp ? new Date() : null)
-                .setFooter({
-                text: "©️ M3rcena Development | Powered by Mivator",
-                iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-            });
+                    `);
             mes.reply({
                 embeds: [__embed],
             });
@@ -358,37 +264,9 @@ const ChaosWords = async (options) => {
         else {
             tries++;
             if (tries === (options.maxTries ? options.maxTries : 10)) {
-                const _embed = new discord_js_1.EmbedBuilder()
-                    .setTitle(options.embed.title)
-                    .setDescription(options.loseMessage ? options.loseMessage : `You failed to find all the words in time.`)
-                    .setColor(options.embed.color ?? "Blurple")
-                    .setTimestamp(options.embed.timestamp ? new Date() : null)
-                    .setURL(options.embed.url ? options.embed.url : null)
-                    .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                    .setImage(options.embed.image ? options.embed.image : null)
-                    .setFooter({
-                    text: "©️ M3rcena Development | Powered by Mivator",
-                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-                });
-                if (options.embed.footer) {
-                    _embed.setFooter({
-                        text: options.embed.footer.text,
-                        iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                    });
-                }
-                ;
-                if (options.embed.author) {
-                    _embed.setAuthor({
-                        name: options.embed.author.name,
-                        iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                        url: options.embed.author.url ? options.embed.author.url : undefined
-                    });
-                }
-                ;
-                if (options.embed.fields) {
-                    _embed.setFields(options.embed.fields);
-                }
-                else {
+                const _embed = (0, functions_1.createEmbed)(options.embed)
+                    .setDescription(options.loseMessage ? options.loseMessage : `You failed to find all the words in time.`);
+                if (!options.embed.fields) {
                     fields = [
                         {
                             name: 'Sentence:',
@@ -432,7 +310,7 @@ const ChaosWords = async (options) => {
                     .setCustomId(ids);
                 await msg.edit({
                     embeds: [_embed],
-                    components: [{ type: 1, components: [btn1] }]
+                    components: [new discord_js_1.ActionRowBuilder().addComponents(btn1)]
                 });
                 if (!interaction.channel || !interaction.channel.isSendable())
                     return;
@@ -443,18 +321,12 @@ const ChaosWords = async (options) => {
                 return game.stop();
             }
             ;
-            const _embed = new discord_js_1.EmbedBuilder()
+            const _embed = (0, functions_1.createEmbed)(options.embed, true)
                 .setDescription(`
                     ${options.wrongWord ?
                 options.wrongWord.replace(`{{remaining_tries}}`, `${options.maxTries ? options.maxTries : 10 - tries}`) :
                 `**${mes.content.toLowerCase()}** is not the correct word. You have **${options.maxTries ? options.maxTries : 10 - tries}** tries left.`}
-                    `)
-                .setColor(options.embed.color ?? "Blurple")
-                .setTimestamp(options.embed.timestamp ? new Date() : null)
-                .setFooter({
-                text: "©️ M3rcena Development | Powered by Mivator",
-                iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-            });
+                    `);
             mes.reply({
                 embeds: [_embed],
             });
@@ -462,37 +334,9 @@ const ChaosWords = async (options) => {
     });
     game.on('end', (mes, reason) => {
         if (reason === 'time') {
-            const _embed = new discord_js_1.EmbedBuilder()
-                .setTitle(options.embed.title)
-                .setDescription(options.loseMessage ? options.loseMessage : `You failed to find all the words in time.`)
-                .setColor(options.embed.color ?? "Blurple")
-                .setTimestamp(options.embed.timestamp ? new Date() : null)
-                .setURL(options.embed.url ? options.embed.url : null)
-                .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                .setImage(options.embed.image ? options.embed.image : null)
-                .setFooter({
-                text: "©️ M3rcena Development | Powered by Mivator",
-                iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-            });
-            if (options.embed.footer) {
-                _embed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                });
-            }
-            ;
-            if (options.embed.author) {
-                _embed.setAuthor({
-                    name: options.embed.author.name,
-                    iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                    url: options.embed.author.url ? options.embed.author.url : undefined
-                });
-            }
-            ;
-            if (options.embed.fields) {
-                _embed.setFields(options.embed.fields);
-            }
-            else {
+            const _embed = (0, functions_1.createEmbed)(options.embed)
+                .setDescription(options.loseMessage ? options.loseMessage : `You failed to find all the words in time.`);
+            if (!options.embed.fields) {
                 fields = [
                     {
                         name: 'Sentence:',
@@ -546,7 +390,7 @@ const ChaosWords = async (options) => {
                 .setCustomId(ids);
             msg.edit({
                 embeds: [embed],
-                components: [{ type: 1, components: [btn1] }]
+                components: [new discord_js_1.ActionRowBuilder().addComponents(btn1)]
             });
             if (!interaction.channel || !interaction.channel.isSendable())
                 return;
@@ -601,35 +445,10 @@ const ChaosWords = async (options) => {
         }
         await msg.edit({
             embeds: [embed],
-            components: [{ type: 1, components: [btn1] }]
+            components: [new discord_js_1.ActionRowBuilder().addComponents(btn1)]
         });
-        const _embed = new discord_js_1.EmbedBuilder()
-            .setTitle(options.embed.title)
-            .setDescription(options.loseMessage ? options.loseMessage : `The game has been stopped by <@${id}>`)
-            .setColor(options.embed.color ?? "Blurple")
-            .setTimestamp(options.embed.timestamp ? new Date() : null)
-            .setURL(options.embed.url ? options.embed.url : null)
-            .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-            .setImage(options.embed.image ? options.embed.image : null)
-            .setFooter({
-            text: "©️ M3rcena Development | Powered by Mivator",
-            iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-        });
-        if (options.embed.footer) {
-            _embed.setFooter({
-                text: options.embed.footer.text,
-                iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-            });
-        }
-        ;
-        if (options.embed.author) {
-            _embed.setAuthor({
-                name: options.embed.author.name,
-                iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                url: options.embed.author.url ? options.embed.author.url : undefined
-            });
-        }
-        ;
+        const _embed = (0, functions_1.createEmbed)(options.embed, true)
+            .setDescription(options.loseMessage ? options.loseMessage : `The game has been stopped by <@${id}>`);
         if (!interaction.channel || !interaction.channel.isSendable())
             return;
         await interaction.channel.send({

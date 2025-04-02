@@ -4,124 +4,107 @@ exports.OptionsChecking = OptionsChecking;
 const tslib_1 = require("tslib");
 const chalk_1 = tslib_1.__importDefault(require("chalk"));
 const discord_js_1 = require("discord.js");
+const URL_PATTERN = /^https:\/\/([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(:[0-9]+)?(\/.*)?$/;
+const createError = (gameName, message) => new Error(`${chalk_1.default.red(`[@m3rcena/weky] ${gameName} Error:`)} ${message}`);
+const createTypeError = (gameName, message) => new TypeError(`${chalk_1.default.red(`[@m3rcena/weky] ${gameName} Error:`)} ${message}`);
+const validateUrl = (url, gameName, context) => {
+    if (typeof url !== "string") {
+        throw createTypeError(gameName, `${context} must be a string.`);
+    }
+    if (!URL_PATTERN.test(url)) {
+        throw createError(gameName, `${context} must be a valid URL.`);
+    }
+};
+const validateString = (value, gameName, fieldName, maxLength) => {
+    if (typeof value !== "string") {
+        throw createTypeError(gameName, `${fieldName} must be a string.`);
+    }
+    if (maxLength && value.length > maxLength) {
+        throw createError(gameName, `${fieldName} length must be less than ${maxLength} characters.`);
+    }
+};
+const validateEmbedFields = (fields, gameName) => {
+    if (!Array.isArray(fields)) {
+        throw createTypeError(gameName, "Embed fields must be an array.");
+    }
+    fields.forEach(field => {
+        if (typeof field !== "object") {
+            throw createTypeError(gameName, "Embed field must be an object.");
+        }
+        if (!field.name) {
+            throw createError(gameName, "No embed field name provided.");
+        }
+        validateString(field.name, gameName, "Field name", 256);
+        if (!field.value) {
+            throw createError(gameName, "No embed field value provided.");
+        }
+        validateString(field.value, gameName, "Field value", 1024);
+        if (field.inline !== undefined && typeof field.inline !== "boolean") {
+            throw createTypeError(gameName, "Embed field inline must be a boolean.");
+        }
+    });
+};
+const validateEmbedAuthor = (author, gameName) => {
+    if (typeof author !== "object") {
+        throw createTypeError(gameName, "Embed author must be an object.");
+    }
+    if (!author.name) {
+        throw createError(gameName, "No embed author name provided.");
+    }
+    if (author.icon_url) {
+        validateUrl(author.icon_url, gameName, "Embed author icon URL");
+    }
+    if (author.url) {
+        validateUrl(author.url, gameName, "Embed author URL");
+    }
+};
 function OptionsChecking(options, GameName) {
-    const URLPattern = new RegExp("^https:\\/\\/([a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,}(:[0-9]+)?(\\/.*)?$");
-    if (!options)
-        throw new Error(chalk_1.default.red(`[@m3rcena/weky] ${GameName} Error:`) + " No options provided.");
-    if (typeof options !== "object")
-        throw new Error(chalk_1.default.red(`[@m3rcena/weky] ${GameName} TypeError:`) + " Options must be an object.");
-    // Check if the interaction object is provided
-    if (!options.interaction)
-        throw new Error(chalk_1.default.red(`[@m3rcena/weky] ${GameName} Error:`) + " No interaction provided.");
-    if (typeof options.interaction !== "object") {
-        throw new TypeError(chalk_1.default.red(`[@m3rcena/weky] ${GameName} TypeError:`) + " Interaction must be an object.");
+    if (!options) {
+        throw createError(GameName, "No options provided.");
     }
-    ;
-    if (!options.client)
-        throw new Error(chalk_1.default.red(`[@m3rcena/weky] ${GameName} Error:`) + " No client provided.");
-    if (!options.client instanceof discord_js_1.Client) {
-        throw new Error(chalk_1.default.red(`[@m3rcena/weky] ${GameName} TypeError:`) + " Client must be a Discord Client.");
+    if (typeof options !== "object") {
+        throw createTypeError(GameName, "Options must be an object.");
     }
-    ;
-    if (!options.embed)
-        throw new Error(chalk_1.default.red(`[@m3rcena/weky] ${GameName} Error:`) + " No embed options provided.");
-    // Check if embed object is provided
+    // Basic validations
+    if (!options.interaction) {
+        throw createError(GameName, "No interaction provided.");
+    }
+    if (!options.client) {
+        throw createError(GameName, "No client provided.");
+    }
+    if (!(options.client instanceof discord_js_1.Client)) {
+        throw createError(GameName, "Client must be a Discord Client.");
+    }
+    // Embed validations
+    if (!options.embed) {
+        throw createError(GameName, "No embed options provided.");
+    }
     if (typeof options.embed !== "object") {
-        throw new TypeError(chalk_1.default.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed options must be an object.");
+        throw createTypeError(GameName, "Embed options must be an object.");
     }
-    ;
-    if (!options.embed.color)
-        throw new Error(chalk_1.default.red(`[@m3rcena/weky] ${GameName} Error:`) + " No embed color provided.");
-    if (!options.embed.title)
-        throw new Error(chalk_1.default.red(`[@m3rcena/weky] ${GameName} Error:`) + " No embed title provided.");
-    if (options.embed.title) {
-        if (typeof options.embed.title !== "string")
-            throw new TypeError(chalk_1.default.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed title must be a string.");
-        if (options.embed.title.length > 256)
-            throw new Error(chalk_1.default.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed title length must be less than 256 characters.");
+    if (!options.embed.color) {
+        throw createError(GameName, "No embed color provided.");
     }
+    if (!options.embed.title) {
+        throw createError(GameName, "No embed title provided.");
+    }
+    validateString(options.embed.title, GameName, "Embed title", 256);
     if (options.embed.url) {
-        if (typeof options.embed.url !== "string")
-            throw new TypeError(chalk_1.default.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed URL must be a string.");
-        if (!URLPattern.test(options.embed.url))
-            throw new Error(chalk_1.default.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed URL must be a valid URL.");
+        validateUrl(options.embed.url, GameName, "Embed URL");
     }
-    ;
     if (options.embed.author) {
-        if (typeof options.embed.author !== "object") {
-            throw new TypeError(chalk_1.default.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed author must be an object.");
-        }
-        ;
-        if (!options.embed.author.name)
-            throw new Error(chalk_1.default.red(`[@m3rcena/weky] ${GameName} Error:`) + " No embed author name provided.");
-        if (options.embed.author.icon_url) {
-            if (typeof options.embed.author.icon_url !== "string")
-                throw new TypeError(chalk_1.default.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed author icon URL must be a string.");
-            else if (!URLPattern.test(options.embed.author.icon_url))
-                throw new Error(chalk_1.default.red(`[@m3rcena/weky] ${GameName} Error:`) + " Invalid embed author icon URL.");
-        }
-        ;
-        if (options.embed.author.url) {
-            if (typeof options.embed.author.url !== "string")
-                throw new TypeError(chalk_1.default.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed author URL must be a string.");
-            else if (!URLPattern.test(options.embed.author.url))
-                throw new Error(chalk_1.default.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed author URL must be a valid URL.");
-        }
-        ;
+        validateEmbedAuthor(options.embed.author, GameName);
     }
-    ;
     if (options.embed.description) {
-        if (typeof options.embed.description !== "string") {
-            throw new TypeError(chalk_1.default.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed description must be a string.");
-        }
-        else if (options.embed.description.length > 4096) {
-            throw new Error(chalk_1.default.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed description length must less than 4096 characters.");
-        }
+        validateString(options.embed.description, GameName, "Embed description", 4096);
     }
-    ;
     if (options.embed.fields) {
-        if (!Array.isArray(options.embed.fields)) {
-            throw new TypeError(chalk_1.default.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed fields must be an array.");
-        }
-        ;
-        for (const field of options.embed.fields) {
-            if (typeof field !== "object") {
-                throw new TypeError(chalk_1.default.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed field must be an object.");
-            }
-            ;
-            if (!field.name)
-                throw new Error(chalk_1.default.red(`[@m3rcena/weky] ${GameName} Error:`) + " No embed field name provided.");
-            if (field.name) {
-                if (typeof field.name !== "string")
-                    throw new TypeError(chalk_1.default.red(`[@m3rcena/weky] ${GameName} Error:`) + " Field name must be a string.");
-                if (field.name.length > 256)
-                    throw new Error(chalk_1.default.red(`[@m3rcena/weky] ${GameName} Error:`) + " Field name must be 256 characters fewer in length.");
-            }
-            if (!field.value)
-                throw new Error(chalk_1.default.red(`[@m3rcena/weky] ${GameName} Error:`) + " No embed field value provided.");
-            if (field.value) {
-                if (typeof field.value !== "string")
-                    throw new TypeError(chalk_1.default.red(`[@m3rcena/weky] ${GameName} Error:`) + " Field value must be a string.");
-                if (field.value.length > 256)
-                    throw new Error(chalk_1.default.red(`[@m3rcena/weky] ${GameName} Error:`) + " Field value must be 1024 characters fewer in length.");
-            }
-            if (field.inline && typeof field.inline !== "boolean") {
-                throw new TypeError(chalk_1.default.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed field inline must be a boolean.");
-            }
-            ;
-        }
-        ;
+        validateEmbedFields(options.embed.fields, GameName);
     }
-    ;
     if (options.embed.image) {
-        if (typeof options.embed.image !== "string")
-            throw new TypeError(chalk_1.default.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed image must be a string.");
-        else if (!URLPattern.test(options.embed.image))
-            throw new Error(chalk_1.default.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed image must be a valid URL.");
+        validateUrl(options.embed.image, GameName, "Embed image");
     }
-    ;
     if (options.embed.timestamp && !(options.embed.timestamp instanceof Date)) {
-        throw new TypeError(chalk_1.default.red(`[@m3rcena/weky] ${GameName} Error:`) + " Embed timestamp must be a date.");
+        throw createTypeError(GameName, "Embed timestamp must be a date.");
     }
-    ;
 }

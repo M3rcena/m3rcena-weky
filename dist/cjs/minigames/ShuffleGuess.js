@@ -76,49 +76,16 @@ const ShuffleGuess = async (options) => {
         .setLabel(options.buttons.cancel ?? 'Cancel')
         .setStyle(discord_js_1.ButtonStyle.Danger)
         .setCustomId(id2);
-    let emd = new discord_js_1.EmbedBuilder()
-        .setTitle(options.embed.title ?? "Shuffle Guess")
-        .setColor(options.embed.color ?? "Blurple")
-        .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
-        .setURL(options.embed.url ? options.embed.url : null)
-        .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-        .setImage(options.embed.image ? options.embed.image : null)
-        .setFooter({
-        text: "©️ M3rcena Development | Powered by Mivator",
-        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-    })
-        .setDescription(options.startMessage ?
+    options.embed.title = options.embed.title ?? "Shuffle Guess";
+    options.embed.description = options.startMessage ?
         options.startMessage
             .replace('{{word}}', word)
             .replace('{{time}}', (0, functions_1.convertTime)(options.time ?? 60000)) :
-        `The word is \`${word}\` and you have ${(0, functions_1.convertTime)(options.time ?? 60000)} to guess it!`);
-    if (options.embed.footer) {
-        emd.setFooter({
-            text: options.embed.footer.text,
-            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-        });
-    }
-    ;
-    if (options.embed.author) {
-        emd.setAuthor({
-            name: options.embed.author.name,
-            iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-            url: options.embed.author.url ? options.embed.author.url : undefined
-        });
-    }
-    ;
-    if (options.embed.fields) {
-        emd.setFields(options.embed.fields);
-    }
-    ;
+        `The word is \`${word}\` and you have ${(0, functions_1.convertTime)(options.time ?? 60000)} to guess it!`;
+    let emd = (0, functions_1.createEmbed)(options.embed);
     const embed = await options.interaction.reply({
         embeds: [emd],
-        components: [
-            {
-                type: 1,
-                components: [disbut, cancel],
-            },
-        ],
+        components: [new discord_js_1.ActionRowBuilder().addComponents(disbut, cancel)],
     });
     const gameCreatedAt = Date.now();
     const gameCollector = options.interaction.channel.createMessageCollector({
@@ -126,6 +93,8 @@ const ShuffleGuess = async (options) => {
         time: options.time ?? 60000,
     });
     gameCollector.on('collect', async (msg) => {
+        if (msg.system)
+            return;
         if (msg.content.toLowerCase() === options.word.toString()) {
             gameCollector.stop();
             data.delete(id);
@@ -140,86 +109,23 @@ const ShuffleGuess = async (options) => {
                 .setCustomId(id2)
                 .setDisabled();
             const time = (0, functions_1.convertTime)(Date.now() - gameCreatedAt);
-            let _embed = new discord_js_1.EmbedBuilder()
-                .setTitle(options.embed.title ?? "Shuffle Guess")
-                .setColor(options.embed.color ?? "Blurple")
-                .setTimestamp(options.embed.timestamp ? new Date() : null)
-                .setURL(options.embed.url ? options.embed.url : null)
-                .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                .setImage(options.embed.image ? options.embed.image : null)
-                .setFooter({
-                text: "©️ M3rcena Development | Powered by Mivator",
-                iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-            })
-                .setDescription(options.winMessage ?
+            options.embed.description = options.winMessage ?
                 options.winMessage
                     .replace('{{word}}', options.word.toString())
                     .replace('{{time}}', time) :
-                `You have guessed the word \`${options.word.toString()}\` in ${time}!`);
-            if (options.embed.footer) {
-                _embed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                });
-            }
-            ;
-            if (options.embed.author) {
-                _embed.setAuthor({
-                    name: options.embed.author.name,
-                    iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                    url: options.embed.author.url ? options.embed.author.url : undefined
-                });
-            }
-            ;
-            if (options.embed.fields) {
-                _embed.setFields(options.embed.fields);
-            }
-            ;
+                `You have guessed the word \`${options.word.toString()}\` in ${time}!`;
+            let _embed = (0, functions_1.createEmbed)(options.embed);
             msg.reply({ embeds: [_embed] });
             return embed.edit({
                 embeds: [emd],
-                components: [
-                    {
-                        type: 1,
-                        components: [disbut, cancel],
-                    },
-                ],
+                components: [new discord_js_1.ActionRowBuilder().addComponents(disbut, cancel)],
             });
         }
         else {
-            const _embed = new discord_js_1.EmbedBuilder()
-                .setTitle(options.embed.title ?? "Shuffle Guess")
-                .setColor(options.embed.color ?? "Blurple")
-                .setTimestamp(options.embed.timestamp ? new Date() : null)
-                .setURL(options.embed.url ? options.embed.url : null)
-                .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                .setImage(options.embed.image ? options.embed.image : null)
-                .setFooter({
-                text: "©️ M3rcena Development | Powered by Mivator",
-                iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-            })
-                .setDescription(options.incorrectMessage ?
+            options.embed.description = options.incorrectMessage ?
                 options.incorrectMessage :
-                `No ${msg.author.toString()}! The word isn\'t \`${msg.content.toLowerCase()}\``);
-            if (options.embed.footer) {
-                _embed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                });
-            }
-            ;
-            if (options.embed.author) {
-                _embed.setAuthor({
-                    name: options.embed.author.name,
-                    iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                    url: options.embed.author.url ? options.embed.author.url : undefined
-                });
-            }
-            ;
-            if (options.embed.fields) {
-                _embed.setFields(options.embed.fields);
-            }
-            ;
+                `No ${msg.author.toString()}! The word isn\'t \`${msg.content.toLowerCase()}\``;
+            let _embed = (0, functions_1.createEmbed)(options.embed);
             msg.reply({ embeds: [_embed] }).then((m) => setTimeout(() => {
                 if (m.deletable) {
                     m.delete();
@@ -247,49 +153,15 @@ const ShuffleGuess = async (options) => {
         ;
         await btn.deferUpdate();
         if (btn.customId === id1) {
-            let _embed = new discord_js_1.EmbedBuilder()
-                .setTitle(options.embed.title ?? "Shuffle Guess")
-                .setColor(options.embed.color ?? "Blurple")
-                .setTimestamp(options.embed.timestamp ? new Date() : null)
-                .setURL(options.embed.url ? options.embed.url : null)
-                .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                .setImage(options.embed.image ? options.embed.image : null)
-                .setFooter({
-                text: "©️ M3rcena Development | Powered by Mivator",
-                iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-            })
-                .setDescription(options.startMessage ?
+            options.embed.description = options.startMessage ?
                 options.startMessage
                     .replace('{{word}}', (0, functions_1.shuffleString)(options.word.toString()))
                     .replace('{{time}}', (0, functions_1.convertTime)(options.time ?? 60000)) :
-                `The word is \`${word}\` and you have ${(0, functions_1.convertTime)(options.time ?? 60000)} to guess it!`);
-            if (options.embed.footer) {
-                _embed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                });
-            }
-            ;
-            if (options.embed.author) {
-                _embed.setAuthor({
-                    name: options.embed.author.name,
-                    iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                    url: options.embed.author.url ? options.embed.author.url : undefined
-                });
-            }
-            ;
-            if (options.embed.fields) {
-                _embed.setFields(options.embed.fields);
-            }
-            ;
+                `The word is \`${(0, functions_1.shuffleString)(options.word.toString())}\` and you have ${(0, functions_1.convertTime)(options.time ?? 60000)} to guess it!`;
+            let _embed = (0, functions_1.createEmbed)(options.embed);
             return embed.edit({
                 embeds: [_embed],
-                components: [
-                    {
-                        type: 1,
-                        components: [disbut, cancel],
-                    },
-                ],
+                components: [new discord_js_1.ActionRowBuilder().addComponents(disbut, cancel)],
             });
         }
         else if (btn.customId === id2) {
@@ -305,47 +177,13 @@ const ShuffleGuess = async (options) => {
                 .setStyle(discord_js_1.ButtonStyle.Danger)
                 .setCustomId(id2)
                 .setDisabled();
-            let _embed = new discord_js_1.EmbedBuilder()
-                .setTitle(options.embed.title ?? "Shuffle Guess")
-                .setColor(options.embed.color ?? "Blurple")
-                .setTimestamp(options.embed.timestamp ? new Date() : null)
-                .setURL(options.embed.url ? options.embed.url : null)
-                .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                .setImage(options.embed.image ? options.embed.image : null)
-                .setFooter({
-                text: "©️ M3rcena Development | Powered by Mivator",
-                iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-            })
-                .setDescription(options.loseMessage ?
+            options.embed.description = options.loseMessage ?
                 options.loseMessage.replace('{{answer}}', options.word.toString()) :
-                `The word was \`${options.word.toString()}\``);
-            if (options.embed.footer) {
-                _embed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                });
-            }
-            ;
-            if (options.embed.author) {
-                _embed.setAuthor({
-                    name: options.embed.author.name,
-                    iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                    url: options.embed.author.url ? options.embed.author.url : undefined
-                });
-            }
-            ;
-            if (options.embed.fields) {
-                _embed.setFields(options.embed.fields);
-            }
-            ;
+                `The word was \`${options.word.toString()}\``;
+            let _embed = (0, functions_1.createEmbed)(options.embed);
             return embed.edit({
                 embeds: [_embed],
-                components: [
-                    {
-                        type: 1,
-                        components: [disbut, cancel],
-                    },
-                ],
+                components: [new discord_js_1.ActionRowBuilder().addComponents(disbut, cancel)],
             });
         }
         ;
@@ -362,49 +200,15 @@ const ShuffleGuess = async (options) => {
                 .setStyle(discord_js_1.ButtonStyle.Danger)
                 .setCustomId(id2)
                 .setDisabled();
-            let _embed = new discord_js_1.EmbedBuilder()
-                .setTitle(options.embed.title ?? "Shuffle Guess")
-                .setColor(options.embed.color ?? "Blurple")
-                .setTimestamp(options.embed.timestamp ? new Date() : null)
-                .setURL(options.embed.url ? options.embed.url : null)
-                .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                .setImage(options.embed.image ? options.embed.image : null)
-                .setFooter({
-                text: "©️ M3rcena Development | Powered by Mivator",
-                iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-            })
-                .setDescription(options.loseMessage ?
+            options.embed.description = options.loseMessage ?
                 options.loseMessage.replace('{{answer}}', options.word.toString()) :
-                `The word was \`${options.word.toString()}\``);
-            if (options.embed.footer) {
-                _embed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                });
-            }
-            ;
-            if (options.embed.author) {
-                _embed.setAuthor({
-                    name: options.embed.author.name,
-                    iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                    url: options.embed.author.url ? options.embed.author.url : undefined
-                });
-            }
-            ;
-            if (options.embed.fields) {
-                _embed.setFields(options.embed.fields);
-            }
-            ;
+                `The word was \`${options.word.toString()}\``;
+            let _embed = (0, functions_1.createEmbed)(options.embed);
             await interaction.reply({ embeds: [_embed] });
             data.delete(id);
             return embed.edit({
                 embeds: [emd],
-                components: [
-                    {
-                        type: 1,
-                        components: [disbut, cancel],
-                    },
-                ],
+                components: [new discord_js_1.ActionRowBuilder().addComponents(disbut, cancel)],
             });
         }
         ;

@@ -18,13 +18,15 @@
       <img src="https://img.shields.io/badge/Documation-%230288D1.svg?style=for-the-badge&logo=gitbook&logoColor=white" alt="Get Started Now">
     </a>
     <br>
-    <a href="https://www.npmjs.com/package/@m3rcena/weky"><img src="https://nodei.co/npm/@m3rcena/weky.png?downloads=true&stars=true" alt="npm install lavalink-client" /></a>
+    <a href="https://www.npmjs.com/package/@m3rcena/weky">
+        <img src="https://weky.miv4.com/api/npm/@m3rcena/weky" alt="npm install @m3rcena/weky" width="400px" height="200px"/>
+    </a>
 </p>
 <br><br>
 
 # Install
 
-Latest stable Version: **`v10.3.1`**
+Latest stable Version: **`v10.4.0`**
 
 <details><summary>👉 via NPM</summary>
 
@@ -146,7 +148,7 @@ client.login("Your bot token");
 - Feel free to check [issues page](https://github.com/M3rcena/m3rcena-weky/issues)
 
 # Support ❔
-<iframe src="https://discord.com/widget?id=1224358764463783987&theme=dark" width="350" height="350" allowtransparency="true" frameborder="0" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"></iframe>
+<a href="https://discord.gg/Wp54QUTgBV"><img src="https://weky.miv4.com/api/discord/server/1224358764463783987/image" /></a>
 
 # Developers 👨‍💻
 <a href="https://discord.com/users/682983233851228161/"><img src="https://discord.c99.nl/widget/theme-3/682983233851228161.png" /></a>

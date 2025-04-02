@@ -127,6 +127,8 @@ export class WekyManager {
 
     /**
      * 
+     * UNDER DEVELOPMENT! DO NOT USE!
+     * 
      * Creates a new instance of the Fight game.
      * 
      * @param options The options for the Fight game.

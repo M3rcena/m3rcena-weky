@@ -3,7 +3,7 @@ import chalk from "chalk";
 import { load } from "cheerio";
 import { exec } from "child_process";
 import { randomBytes } from "crypto";
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from "discord.js";
 import { ofetch } from "ofetch";
 import stringWidth from "string-width";
 import { promisify } from "util";
@@ -300,10 +300,11 @@ export const fetchhtml = async function (url) {
     return load(html.data);
 };
 export const shuffleString = function (string) {
+    const seed = Date.now();
     const str = string.split('');
     const length = str.length;
     for (let i = length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
+        const j = Math.floor((Math.random() * seed) % (i + 1));
         const tmp = str[i];
         str[i] = str[j];
         str[j] = tmp;
@@ -314,4 +315,29 @@ export const shuffleString = function (string) {
 export const randomHexColor = function () {
     return ('#' +
         ('000000' + Math.floor(Math.random() * 16777215).toString(16)).slice(-6));
+};
+const defaultFooter = {
+    text: "©️ M3rcena Development | Powered by Mivator",
+    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
+};
+export const createEmbed = (embedOptions, noFields = false) => {
+    const embed = new EmbedBuilder()
+        .setTitle(embedOptions.title)
+        .setDescription(embedOptions.description ?? null)
+        .setColor(embedOptions.color ?? "Blurple")
+        .setURL(embedOptions.url || null)
+        .setThumbnail(embedOptions.thumbnail || null)
+        .addFields(noFields ? [] : embedOptions.fields || [])
+        .setImage(embedOptions.image || null)
+        .setTimestamp(embedOptions.timestamp ? new Date() : null)
+        .setFooter(embedOptions.footer || defaultFooter);
+    if (embedOptions.author) {
+        embed.setAuthor({
+            name: embedOptions.author.name,
+            iconURL: embedOptions.author.icon_url,
+            url: embedOptions.author.url
+        });
+    }
+    ;
+    return embed;
 };

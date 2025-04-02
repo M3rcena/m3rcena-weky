@@ -1,11 +1,11 @@
 import chalk from "chalk";
 import {
-	ButtonBuilder, ButtonInteraction, ButtonStyle, ChatInputCommandInteraction, Client,
-	ComponentType, EmbedBuilder, Message
+    ActionRowBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle, ChatInputCommandInteraction,
+    Client, ComponentType, EmbedBuilder, Message
 } from "discord.js";
 
 import {
-	checkPackageUpdates, convertTime, getRandomSentence, getRandomString
+    checkPackageUpdates, convertTime, createEmbed, getRandomSentence, getRandomString
 } from "../functions/functions";
 import { OptionsChecking } from "../functions/OptionChecking";
 
@@ -14,10 +14,8 @@ import type { FastTypeTyping } from "../Types/";
 const data = new Set();
 
 const FastType = async (options: FastTypeTyping) => {
-    // Check type
     OptionsChecking(options, "FastType")
 
-    // Check if the interaction object is provided
     let interaction;
 
     if ((options.interaction as Message).author) {
@@ -28,7 +26,7 @@ const FastType = async (options: FastTypeTyping) => {
 
     if (!interaction) throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " No interaction provided.");
 
-    if (!interaction.channel || !interaction.channel.isSendable()) throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " Interaction channel is not provided.");
+    if (!interaction.channel || !interaction.channel.isSendable() || !interaction.channel.isTextBased()) throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " Interaction channel is not provided.");
 
     let client: Client = options.client;
 
@@ -37,7 +35,7 @@ const FastType = async (options: FastTypeTyping) => {
         id = (options.interaction as Message).author.id;
     } else {
         id = (options.interaction as ChatInputCommandInteraction).user.id;
-    }
+    };
 
     if (data.has(id)) return;
     data.add(id);
@@ -62,56 +60,25 @@ const FastType = async (options: FastTypeTyping) => {
         .setLabel(options.buttonText ? options.buttonText : "Cancel")
         .setCustomId(ids);
 
-    const embed = new EmbedBuilder()
-        .setTitle(options.embed.title)
-        .setDescription(
-            `${options.embed.description ?
-                options.embed.description.replace(
-                    '{{time}}',
-                    convertTime(options.time ? options.time : 60000),
-                ) :
-                `You have **${convertTime(options.time ? options.time : 60000)}** to type the sentence below.`
-            }`
-        )
-        .setColor(options.embed.color ?? "Blurple")
-        .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
-        .setURL(options.embed.url ? options.embed.url : null)
-        .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-        .setImage(options.embed.image ? options.embed.image : null)
-        .setFooter({
-            text: "©️ M3rcena Development | Powered by Mivator",
-            iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-        });
+    options.embed.description = options.embed.description ?
+        options.embed.description.replace(
+            '{{time}}',
+            convertTime(options.time ? options.time : 60000),
+        ) :
+        `You have **${convertTime(options.time ? options.time : 60000)}** to type the sentence below.`
 
-    if (options.embed.footer) {
-        embed.setFooter({
-            text: options.embed.footer.text,
-            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-        });
+    if (!options.embed.fields) {
+        options.embed.fields = [{ name: 'Sentence:', value: `${sentence}` }];
     };
 
-    if (options.embed.author) {
-        embed.setAuthor({
-            name: options.embed.author.name,
-            iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-            url: options.embed.author.url ? options.embed.author.url : undefined
-        });
-    };
+    const embed = createEmbed(options.embed);
 
-    if (options.embed.fields) {
-        embed.setFields(options.embed.fields);
-    } else {
-        embed.addFields({ name: 'Sentence:', value: `${sentence}` });
-    };
-
-    const msg = await interaction.reply({
+    const msg = await (interaction as Message || interaction as ChatInputCommandInteraction).reply({
         embeds: [embed],
-        components: [{ type: 1, components: [btn1] }],
+        components: [new ActionRowBuilder<ButtonBuilder>().addComponents(btn1)],
     });
 
-    if (!interaction.channel || !interaction.channel.isTextBased()) {
-        throw new Error(chalk.red("[@m3rcena/weky] FastTyoe Error: ") + "Interaction channel is not a text channel.");
-    }
+
     const collector = await interaction.channel.createMessageCollector({
         filter: (m: Message) => !m.author.bot && m.author.id === id,
         time: options.time ? options.time : 60000
@@ -122,146 +89,80 @@ const FastType = async (options: FastTypeTyping) => {
             const time = Date.now() - gameCreatedAt;
             const minute = (time / 1000 / 60) % 60;
             const wpm = mes.content.toLowerCase().trim().length / 5 / minute;
-            const _embed = new EmbedBuilder()
-                .setDescription(
-                    options.winMessage ?
-                        options.winMessage
-                            .replace('time', convertTime(time))
-                            .replace('wpm', wpm.toFixed(2))
-                        : `You have typed the sentence correctly in **${convertTime(time)}** with **${wpm.toFixed(2)}** WPM.`
-                )
-                .setColor(options.embed.color ?? "Blurple")
-                .setTimestamp(options.embed.timestamp ? new Date() : null)
-                .setURL(options.embed.url ? options.embed.url : null)
-                .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                .setImage(options.embed.image ? options.embed.image : null)
-                .setFooter({
-                    text: "©️ M3rcena Development | Powered by Mivator",
-                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-                });
+            options.embed.description = options.winMessage ? options.winMessage.replace('{{time}}', convertTime(time)).replace('{{wpm}}', wpm.toFixed(2)) : `You have typed the sentence correctly in **${convertTime(time)}** with **${wpm.toFixed(2)}** WPM.`;
+            options.embed.fields = [];
+            const _embed = createEmbed(options.embed);
 
-            if (options.embed.footer) {
-                _embed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                });
-            };
-
-            if (options.embed.author) {
-                _embed.setAuthor({
-                    name: options.embed.author.name,
-                    iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                    url: options.embed.author.url ? options.embed.author.url : undefined
-                });
-            };
-
-            if (!interaction.channel || !interaction.channel.isSendable()) return;
-            embed.setTimestamp(options.embed.timestamp ? new Date() : null);
             await interaction.channel.send({ embeds: [_embed] });
             btn1 = new ButtonBuilder()
                 .setStyle(ButtonStyle.Danger)
                 .setLabel(options.buttonText ? options.buttonText : "Cancel")
                 .setDisabled()
                 .setCustomId(ids);
+
+            embed.setTimestamp(options.embed.timestamp ? new Date() : null);
+
             await msg.edit({
                 embeds: [embed],
-                components: [{ type: 1, components: [btn1] }],
+                components: [new ActionRowBuilder<ButtonBuilder>().addComponents(btn1)],
             });
+
             collector.stop(mes.author.username);
             data.delete(id);
         } else {
-            const _embed = new EmbedBuilder()
-                .setDescription(options.loseMessage ? options.loseMessage : "Better Luck Next Time!")
-                .setColor(options.embed.color ?? "Blurple")
-                .setTimestamp(options.embed.timestamp ? new Date() : null)
-                .setURL(options.embed.url ? options.embed.url : null)
-                .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                .setImage(options.embed.image ? options.embed.image : null)
-                .setFooter({
-                    text: "©️ M3rcena Development | Powered by Mivator",
-                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-                });
+            options.embed.fields = [];
+            options.embed.description = options.loseMessage ? options.loseMessage : "Better Luck Next Time!";
+            const _embed = createEmbed(options.embed);
 
-            if (options.embed.footer) {
-                _embed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                });
-            };
-
-            if (options.embed.author) {
-                _embed.setAuthor({
-                    name: options.embed.author.name,
-                    iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                    url: options.embed.author.url ? options.embed.author.url : undefined
-                });
-            };
-
-            if (!interaction.channel || !interaction.channel.isSendable()) return;
-            embed.setTimestamp(options.embed.timestamp ? new Date() : null);
             await interaction.channel.send({ embeds: [_embed] });
+
             collector.stop(mes.author.username);
             data.delete(id);
+
             btn1 = new ButtonBuilder()
                 .setStyle(ButtonStyle.Danger)
                 .setLabel(options.buttonText ? options.buttonText : "Cancel")
                 .setDisabled()
                 .setCustomId(ids);
+
+            embed.setTimestamp(options.embed.timestamp ? new Date() : null);
+
             await msg.edit({
                 embeds: [embed],
-                components: [{ type: 1, components: [btn1] }],
+                components: [new ActionRowBuilder<ButtonBuilder>().addComponents(btn1)],
             });
         }
     });
 
     collector.on('end', async (_collected, reason) => {
         if (reason === 'time') {
-            const _embed = new EmbedBuilder()
-                .setDescription(options.loseMessage ? options.loseMessage : "Better Luck Next Time!")
-                .setColor(options.embed.color ?? "Blurple")
-                .setTimestamp(options.embed.timestamp ? new Date() : null)
-                .setURL(options.embed.url ? options.embed.url : null)
-                .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                .setImage(options.embed.image ? options.embed.image : null)
-                .setFooter({
-                    text: "©️ M3rcena Development | Powered by Mivator",
-                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-                });
+            options.embed.fields = [];
+            options.embed.description = options.loseMessage ? options.loseMessage : "Better Luck Next Time!";
+            const _embed = createEmbed(options.embed);
 
-            if (options.embed.footer) {
-                _embed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                });
-            };
-
-            if (options.embed.author) {
-                _embed.setAuthor({
-                    name: options.embed.author.name,
-                    iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                    url: options.embed.author.url ? options.embed.author.url : undefined
-                });
-            };
-
-            if (!interaction.channel || !interaction.channel.isSendable()) return;
-            embed.setTimestamp(options.embed.timestamp ? new Date() : null);
             await interaction.channel.send({ embeds: [_embed] });
+
             btn1 = new ButtonBuilder()
                 .setStyle(ButtonStyle.Danger)
                 .setLabel(options.buttonText ? options.buttonText : "Cancel")
                 .setDisabled()
                 .setCustomId(ids);
+
+            embed.setTimestamp(options.embed.timestamp ? new Date() : null);
+
             await msg.edit({
                 embeds: [embed],
-                components: [{ type: 1, components: [btn1] }],
+                components: [new ActionRowBuilder<ButtonBuilder>().addComponents(btn1)],
             });
+
             data.delete(id);
         }
     });
 
     const gameCollector = msg.createMessageComponentCollector({
         componentType: ComponentType.Button,
-        filter: (button: ButtonInteraction) => button.customId === ids
+        filter: (button: ButtonInteraction) => button.customId === ids,
+        time: options.time ? options.time : 60000
     });
 
     gameCollector.on("collect", async (button) => {
@@ -279,19 +180,32 @@ const FastType = async (options: FastTypeTyping) => {
             .setCustomId(ids);
 
         embed.setTimestamp(options.embed.timestamp ? new Date() : null);
-        await msg.edit({
-            embeds: [embed],
-            components: [{ type: 1, components: [btn1] }],
-        });
 
-        button.reply({
+        await button.update({
             content: options.cancelMessage ? options.cancelMessage : "Game has been cancelled.",
-            ephemeral: true
+            embeds: [embed],
+            components: [new ActionRowBuilder<ButtonBuilder>().addComponents(btn1)],
         });
         gameCollector.stop();
         data.delete(id);
         return collector.stop();
     });
+
+    gameCollector.on("end", async (data, reason) => {
+        if (reason === "time") {
+            btn1 = new ButtonBuilder()
+                .setStyle(ButtonStyle.Danger)
+                .setLabel(options.buttonText ? options.buttonText : "Cancel")
+                .setDisabled()
+                .setCustomId(ids);
+
+            embed.setTimestamp(options.embed.timestamp ? new Date() : null);
+            await msg.edit({
+                embeds: [embed],
+                components: [new ActionRowBuilder<ButtonBuilder>().addComponents(btn1)],
+            });
+        }
+    })
 
     checkPackageUpdates("FastType", options.notifyUpdate);
 };

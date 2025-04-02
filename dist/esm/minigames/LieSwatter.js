@@ -1,7 +1,7 @@
 import chalk from "chalk";
-import { ButtonBuilder, ButtonStyle, ComponentType, EmbedBuilder } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } from "discord.js";
 import { decode } from "html-entities";
-import { checkPackageUpdates, convertTime, getRandomString } from "../functions/functions.js";
+import { checkPackageUpdates, convertTime, createEmbed, getRandomString } from "../functions/functions.js";
 import { OptionsChecking } from "../functions/OptionChecking.js";
 const LieSwatter = async (options) => {
     // Check types
@@ -77,36 +77,8 @@ const LieSwatter = async (options) => {
         throw new Error(chalk.red("[@m3rcena/weky] LieSwatter TypeError:") + " Think message must be a string.");
     }
     ;
-    let embed = new EmbedBuilder()
-        .setTitle(options.embed.title)
-        .setDescription(options.thinkMessage)
-        .setColor(options.embed.color ?? "Blurple")
-        .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
-        .setURL(options.embed.url ? options.embed.url : null)
-        .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-        .setImage(options.embed.image ? options.embed.image : null)
-        .setFooter({
-        text: "©️ M3rcena Development | Powered by Mivator",
-        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-    });
-    if (options.embed.footer) {
-        embed.setFooter({
-            text: options.embed.footer.text,
-            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-        });
-    }
-    ;
-    if (options.embed.author) {
-        embed.setAuthor({
-            name: options.embed.author.name,
-            iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-            url: options.embed.author.url ? options.embed.author.url : undefined
-        });
-    }
-    ;
-    if (options.embed.fields) {
-        embed.setFields(options.embed.fields);
-    }
+    options.embed.description = options.thinkMessage;
+    let embed = createEmbed(options.embed);
     const msg = await interaction.reply({
         embeds: [embed]
     });
@@ -131,41 +103,12 @@ const LieSwatter = async (options) => {
         .setCustomId(id2)
         .setLabel(options.buttons.lie)
         .setStyle(ButtonStyle.Primary);
-    embed = new EmbedBuilder()
-        .setTitle(options.embed.title)
-        .setDescription(decode(question.question))
-        .setColor(options.embed.color ?? "Blurple")
-        .setTimestamp(options.embed.timestamp ? new Date() : null)
-        .setURL(options.embed.url ? options.embed.url : null)
-        .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-        .setImage(options.embed.image ? options.embed.image : null)
-        .setFooter({
-        text: "©️ M3rcena Development | Powered by Mivator",
-        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-    });
-    if (options.embed.footer) {
-        embed.setFooter({
-            text: options.embed.footer.text,
-            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-        });
-    }
-    ;
-    if (options.embed.author) {
-        embed.setAuthor({
-            name: options.embed.author.name,
-            iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-            url: options.embed.author.url ? options.embed.author.url : undefined
-        });
-    }
-    ;
-    if (options.embed.fields) {
-        embed.setFields(options.embed.fields);
-    }
-    ;
+    options.embed.description = decode(question.question);
+    embed = createEmbed(options.embed);
     await msg.edit({
         embeds: [embed],
         components: [
-            { type: 1, components: [btn1, btn2] }
+            new ActionRowBuilder().addComponents(btn1, btn2)
         ]
     });
     const gameCreatedAt = Date.now();
@@ -204,40 +147,13 @@ const LieSwatter = async (options) => {
             embed.setTimestamp(options.embed.timestamp ? new Date() : null);
             await msg.edit({
                 embeds: [embed],
-                components: [{ type: 1, components: [btn1, btn2] }]
+                components: [new ActionRowBuilder().addComponents(btn1, btn2)]
             });
             const time = convertTime(Date.now() - gameCreatedAt);
-            const winEmbed = new EmbedBuilder()
-                .setDescription(`${options.winMessage ?
-                options.winMessage
-                    .replace(`{{answer}}`, decode(answer))
-                    .replace(`{{time}}`, time) :
-                `GG, It was a **${decode(answer)}**. You got it correct in **${time}**.`}`)
-                .setColor(options.embed.color ?? "Blurple")
-                .setTimestamp(options.embed.timestamp ? new Date() : null)
-                .setURL(options.embed.url ? options.embed.url : null)
-                .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                .setImage(options.embed.image ? options.embed.image : null)
-                .setFooter({
-                text: "©️ M3rcena Development | Powered by Mivator",
-                iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-            });
-            const username = options.interaction.author ? options.interaction.author.username : options.interaction.user.username;
-            const iconUrl = options.interaction.author ? options.interaction.author.displayAvatarURL() : options.interaction.user.displayAvatarURL();
-            if (options.embed.footer) {
-                winEmbed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                });
-            }
-            ;
-            if (options.embed.author) {
-                winEmbed.setAuthor({
-                    name: username,
-                    iconURL: iconUrl
-                });
-            }
-            ;
+            options.embed.description = options.winMessage ? options.winMessage
+                .replace(`{{answer}}`, decode(answer))
+                .replace(`{{time}}`, time) : `GG, It was a **${decode(answer)}**. You got it correct in **${time}**.`;
+            const winEmbed = createEmbed(options.embed);
             if (!interaction.channel || !interaction.channel.isSendable())
                 return;
             await interaction.channel.send({
@@ -265,37 +181,10 @@ const LieSwatter = async (options) => {
             embed.setTimestamp(options.embed.timestamp ? new Date() : null);
             await msg.edit({
                 embeds: [embed],
-                components: [{ type: 1, components: [btn1, btn2] }]
+                components: [new ActionRowBuilder().addComponents(btn1, btn2)]
             });
-            const lostEmbed = new EmbedBuilder()
-                .setDescription(`${options.loseMessage ?
-                options.loseMessage.replace('{{answer}}', decode(answer)) :
-                `Better luck next time! It was a **${decode(answer)}**.`}`)
-                .setColor(options.embed.color ?? "Blurple")
-                .setTimestamp(options.embed.timestamp ? new Date() : null)
-                .setURL(options.embed.url ? options.embed.url : null)
-                .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                .setImage(options.embed.image ? options.embed.image : null)
-                .setFooter({
-                text: "©️ M3rcena Development | Powered by Mivator",
-                iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-            });
-            const username = options.interaction.author ? options.interaction.author.username : options.interaction.user.username;
-            const iconUrl = options.interaction.author ? options.interaction.author.displayAvatarURL() : options.interaction.user.displayAvatarURL();
-            if (options.embed.footer) {
-                lostEmbed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                });
-            }
-            ;
-            if (options.embed.author) {
-                lostEmbed.setAuthor({
-                    name: username,
-                    iconURL: iconUrl
-                });
-            }
-            ;
+            options.embed.description = options.loseMessage ? options.loseMessage.replace('{{answer}}', decode(answer)) : `Better luck next time! It was a **${decode(answer)}**.`;
+            const lostEmbed = createEmbed(options.embed);
             if (!interaction.channel || !interaction.channel.isSendable())
                 return;
             await interaction.channel.send({
@@ -324,37 +213,10 @@ const LieSwatter = async (options) => {
             embed.setTimestamp(options.embed.timestamp ? new Date() : null);
             await msg.edit({
                 embeds: [embed],
-                components: [{ type: 1, components: [btn1, btn2] }]
+                components: [new ActionRowBuilder().addComponents(btn1, btn2)]
             });
-            const lostEmbed = new EmbedBuilder()
-                .setDescription(`${options.loseMessage ?
-                options.loseMessage.replace('{{answer}}', decode(answer)) :
-                `**You run out of Time**\nBetter luck next time! It was a **${decode(answer)}**.`}`)
-                .setColor(options.embed.color ?? "Blurple")
-                .setTimestamp(options.embed.timestamp ? new Date() : null)
-                .setURL(options.embed.url ? options.embed.url : null)
-                .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                .setImage(options.embed.image ? options.embed.image : null)
-                .setFooter({
-                text: "©️ M3rcena Development | Powered by Mivator",
-                iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-            });
-            const username = options.interaction.author ? options.interaction.author.username : options.interaction.user.username;
-            const iconUrl = options.interaction.author ? options.interaction.author.displayAvatarURL() : options.interaction.user.displayAvatarURL();
-            if (options.embed.footer) {
-                lostEmbed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                });
-            }
-            ;
-            if (options.embed.author) {
-                lostEmbed.setAuthor({
-                    name: username,
-                    iconURL: iconUrl
-                });
-            }
-            ;
+            options.embed.description = options.loseMessage ? options.loseMessage.replace('{{answer}}', decode(answer)) : `**You run out of Time**\nBetter luck next time! It was a **${decode(answer)}**.`;
+            const lostEmbed = createEmbed(options.embed);
             if (!interaction.channel || !interaction.channel.isSendable())
                 return;
             await interaction.channel.send({

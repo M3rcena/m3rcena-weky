@@ -36,38 +36,9 @@ const WouldYouRather = async (options) => {
     const id2 = (0, functions_1.getRandomString)(20) +
         '-' +
         (0, functions_1.getRandomString)(20);
-    let embed = new discord_js_1.EmbedBuilder()
-        .setTitle(options.embed.title)
-        .setDescription(options.thinkMessage ?
-        options.thinkMessage :
-        `I am thinking...`)
-        .setColor(options.embed.color ?? "Blurple")
-        .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
-        .setURL(options.embed.url ? options.embed.url : null)
-        .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-        .setImage(options.embed.image ? options.embed.image : null)
-        .setFooter({
-        text: "©️ M3rcena Development | Powered by Mivator",
-        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-    });
-    if (options.embed.footer) {
-        embed.setFooter({
-            text: options.embed.footer.text,
-            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-        });
-    }
-    ;
-    if (options.embed.author) {
-        embed.setAuthor({
-            name: options.embed.author.name,
-            iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-            url: options.embed.author.url ? options.embed.author.url : undefined
-        });
-    }
-    ;
-    if (options.embed.fields) {
-        embed.setFields(options.embed.fields);
-    }
+    options.embed.title = options.embed.title ?? "Would You Rather?";
+    options.embed.description = options.thinkMessage ? options.thinkMessage : "I am thinking";
+    let embed = (0, functions_1.createEmbed)(options.embed);
     const think = await interaction.reply({
         embeds: [embed]
     });
@@ -93,45 +64,11 @@ const WouldYouRather = async (options) => {
         .setStyle(discord_js_1.ButtonStyle.Primary)
         .setLabel(options.buttons ? options.buttons.optionB : "Option B")
         .setCustomId(id2);
-    embed = new discord_js_1.EmbedBuilder()
-        .setTitle(options.embed.title)
-        .setDescription(`**Option A:** ${(0, html_entities_1.decode)(res.questions[0])}\n**Option B:** ${(0, html_entities_1.decode)(res.questions[1])}`)
-        .setColor(options.embed.color ?? "Blurple")
-        .setTimestamp(options.embed.timestamp ? new Date() : null)
-        .setURL(options.embed.url ? options.embed.url : null)
-        .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-        .setImage(options.embed.image ? options.embed.image : null)
-        .setFooter({
-        text: "©️ M3rcena Development | Powered by Mivator",
-        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-    });
-    if (options.embed.footer) {
-        embed.setFooter({
-            text: options.embed.footer.text,
-            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-        });
-    }
-    ;
-    if (options.embed.author) {
-        embed.setAuthor({
-            name: options.embed.author.name,
-            iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-            url: options.embed.author.url ? options.embed.author.url : undefined
-        });
-    }
-    ;
-    if (options.embed.fields) {
-        embed.setFields(options.embed.fields);
-    }
-    ;
+    options.embed.description = `**Option A:** ${(0, html_entities_1.decode)(res.questions[0])}\n**Option B:** ${(0, html_entities_1.decode)(res.questions[1])}`;
+    embed = (0, functions_1.createEmbed)(options.embed);
     await think.edit({
         embeds: [embed],
-        components: [
-            {
-                type: 1,
-                components: [btn, btn2]
-            }
-        ]
+        components: [new discord_js_1.ActionRowBuilder().addComponents(btn, btn2)]
     });
     const gameCollector = think.createMessageComponentCollector({
         componentType: discord_js_1.ComponentType.Button,
@@ -160,43 +97,11 @@ const WouldYouRather = async (options) => {
                 .setCustomId(id2)
                 .setDisabled();
             gameCollector.stop();
-            const _embed = new discord_js_1.EmbedBuilder()
-                .setTitle(options.embed.title)
-                .setDescription(`**Option A:** ${(0, html_entities_1.decode)(res.questions[0])} (${res.percentage['1']})\n**Option B:** ${(0, html_entities_1.decode)(res.questions[1])} (${res.percentage['2']})`)
-                .setColor(options.embed.color ?? "Blurple")
-                .setTimestamp(options.embed.timestamp ? new Date() : null)
-                .setURL(options.embed.url ? options.embed.url : null)
-                .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                .setImage(options.embed.image ? options.embed.image : null)
-                .setFooter({
-                text: "©️ M3rcena Development | Powered by Mivator",
-                iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-            });
-            if (options.embed.footer) {
-                _embed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                });
-            }
-            ;
-            if (options.embed.author) {
-                _embed.setAuthor({
-                    name: options.embed.author.name,
-                    iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                    url: options.embed.author.url ? options.embed.author.url : undefined
-                });
-            }
-            if (options.embed.fields) {
-                _embed.setFields(options.embed.fields);
-            }
+            options.embed.description = `**Option A:** ${(0, html_entities_1.decode)(res.questions[0])} (${res.percentage['1']})\n**Option B:** ${(0, html_entities_1.decode)(res.questions[1])} (${res.percentage['2']})`;
+            const _embed = (0, functions_1.createEmbed)(options.embed);
             await wyr.editReply({
                 embeds: [_embed],
-                components: [
-                    {
-                        type: 1,
-                        components: [btn, btn2]
-                    }
-                ]
+                components: [new discord_js_1.ActionRowBuilder().addComponents(btn, btn2)]
             });
         }
         else if (wyr.customId === id2) {
@@ -211,43 +116,11 @@ const WouldYouRather = async (options) => {
                 .setCustomId(id2)
                 .setDisabled();
             gameCollector.stop();
-            const _embed = new discord_js_1.EmbedBuilder()
-                .setTitle(options.embed.title)
-                .setDescription(`**Option A:** ${(0, html_entities_1.decode)(res.questions[0])} (${res.percentage['1']})\n**Option B:** ${(0, html_entities_1.decode)(res.questions[1])} (${res.percentage['2']})`)
-                .setColor(options.embed.color ?? "Blurple")
-                .setTimestamp(options.embed.timestamp ? new Date() : null)
-                .setURL(options.embed.url ? options.embed.url : null)
-                .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                .setImage(options.embed.image ? options.embed.image : null)
-                .setFooter({
-                text: "©️ M3rcena Development | Powered by Mivator",
-                iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-            });
-            if (options.embed.footer) {
-                _embed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                });
-            }
-            ;
-            if (options.embed.author) {
-                _embed.setAuthor({
-                    name: options.embed.author.name,
-                    iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                    url: options.embed.author.url ? options.embed.author.url : undefined
-                });
-            }
-            if (options.embed.fields) {
-                _embed.setFields(options.embed.fields);
-            }
+            options.embed.description = `**Option A:** ${(0, html_entities_1.decode)(res.questions[0])} (${res.percentage['1']})\n**Option B:** ${(0, html_entities_1.decode)(res.questions[1])} (${res.percentage['2']})`;
+            const _embed = (0, functions_1.createEmbed)(options.embed);
             await wyr.editReply({
                 embeds: [_embed],
-                components: [
-                    {
-                        type: 1,
-                        components: [btn, btn2]
-                    }
-                ]
+                components: [new discord_js_1.ActionRowBuilder().addComponents(btn, btn2)]
             });
         }
     });

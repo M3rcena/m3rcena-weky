@@ -93,6 +93,8 @@ export declare class WekyManager {
     createFastType(options: FastTypeTyping): Promise<void>;
     /**
      *
+     * UNDER DEVELOPMENT! DO NOT USE!
+     *
      * Creates a new instance of the Fight game.
      *
      * @param options The options for the Fight game.
@@ -112,7 +114,7 @@ export declare class WekyManager {
      *
      * @copyright All rights reserved. M3rcena Development
      */
-    createFight(options: FightTypes): Promise<void>;
+    createFight(options: FightTypes): Promise<void | DiscordJS.OmitPartialGroupDMChannel<DiscordJS.Message<boolean>>>;
     /**
      *
      * Creates a new instance of the Guess The Number game.
@@ -134,7 +136,7 @@ export declare class WekyManager {
      *
      * @copyright All rights reserved. M3rcena Development
      */
-    createGuessTheNumber(options: GuessTheNumberTypes): Promise<any>;
+    createGuessTheNumber(options: GuessTheNumberTypes): Promise<void>;
     /**
      *
      * Creates a new instance of the Hangman game.
@@ -200,7 +202,7 @@ export declare class WekyManager {
      *
      * @copyright All rights reserved. M3rcena Development
      */
-    createNeverHaveIEver(options: NeverHaveIEverTypes): Promise<void>;
+    createNeverHaveIEver(options: NeverHaveIEverTypes): Promise<DiscordJS.Message<boolean>>;
     /**
      *
      * Creates a new instance of the Quick Click game.

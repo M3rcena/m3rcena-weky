@@ -59,37 +59,27 @@ const NeverHaveIEver = async (options) => {
         id = options.interaction.user.id;
     }
     ;
-    let embed = new discord_js_1.EmbedBuilder()
-        .setTitle(options.thinkMessage ? options.thinkMessage : "I am thinking...")
-        .setColor(options.embed.color ?? "Blurple")
-        .setFooter({
-        text: "©️ M3rcena Development | Powered by Mivator",
-        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-    });
-    if (options.embed.footer) {
-        embed.setFooter({
-            text: options.embed.footer.text,
-            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-        });
-    }
-    ;
-    if (options.embed.author) {
-        embed.setAuthor({
-            name: options.embed.author.name,
-            iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-            url: options.embed.author.url ? options.embed.author.url : undefined
-        });
-    }
-    ;
-    if (options.embed.fields) {
-        embed.setFields(options.embed.fields);
-    }
-    ;
+    options.embed.description = options.thinkMessage ? options.thinkMessage : "I am thinking...";
+    let embed = (0, functions_1.createEmbed)(options.embed);
     const think = await interaction.reply({
         embeds: [embed]
     });
-    let { statement } = await fetch("https://api.boozee.app/v2/statements/next?language=en&category=harmless")
+    let { statement } = await fetch("https://api.nhie.io/v2/statements/next?language=en&category=harmless")
         .then((res) => res.json());
+    if (!statement) {
+        let owner = await client.users.fetch("682983233851228161");
+        if (owner) {
+            await owner.send({
+                content: "NHIE API is down, please fix it as soon as possible!"
+            }).catch(() => { });
+        }
+        ;
+        return await think.edit({
+            content: "Failed to fetch statement from API",
+            embeds: [],
+            components: []
+        });
+    }
     statement = statement.trim();
     let btn = new discord_js_1.ButtonBuilder()
         .setStyle(discord_js_1.ButtonStyle.Primary)
@@ -99,39 +89,11 @@ const NeverHaveIEver = async (options) => {
         .setStyle(discord_js_1.ButtonStyle.Primary)
         .setLabel(options.buttons.optionB ? options.buttons.optionB : "No")
         .setCustomId(id2);
-    embed
-        .setTitle(options.embed.title)
-        .setDescription(statement)
-        .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
-        .setFooter({
-        text: "©️ M3rcena Development | Powered by Mivator",
-        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-    });
-    if (options.embed.footer) {
-        embed.setFooter({
-            text: options.embed.footer.text,
-            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-        });
-    }
-    ;
-    if (options.embed.author) {
-        embed.setAuthor({
-            name: options.embed.author.name,
-            iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-            url: options.embed.author.url ? options.embed.author.url : undefined
-        });
-    }
-    ;
-    if (options.embed.fields) {
-        embed.setFields(options.embed.fields);
-    }
-    ;
+    options.embed.description = statement;
+    embed = (0, functions_1.createEmbed)(options.embed);
     await think.edit({
         embeds: [embed],
-        components: [{
-                type: 1,
-                components: [btn, btn2]
-            }]
+        components: [new discord_js_1.ActionRowBuilder().addComponents(btn, btn2)]
     });
     const gameCollector = think.createMessageComponentCollector({
         componentType: discord_js_1.ComponentType.Button,
@@ -162,10 +124,7 @@ const NeverHaveIEver = async (options) => {
             gameCollector.stop();
             await think.edit({
                 embeds: [embed],
-                components: [{
-                        type: 1,
-                        components: [btn, btn2]
-                    }]
+                components: [new discord_js_1.ActionRowBuilder().addComponents(btn, btn2)]
             });
         }
         else if (nhie.customId === id2) {
@@ -182,10 +141,7 @@ const NeverHaveIEver = async (options) => {
             gameCollector.stop();
             await think.edit({
                 embeds: [embed],
-                components: [{
-                        type: 1,
-                        components: [btn, btn2]
-                    }]
+                components: [new discord_js_1.ActionRowBuilder().addComponents(btn, btn2)]
             });
         }
         ;
@@ -205,10 +161,7 @@ const NeverHaveIEver = async (options) => {
             embed.setDescription(statement + "\n\n**The game has ended!**");
             await think.edit({
                 embeds: [embed],
-                components: [{
-                        type: 1,
-                        components: [btn, btn2]
-                    }]
+                components: [new discord_js_1.ActionRowBuilder().addComponents(btn, btn2)]
             });
         }
         ;

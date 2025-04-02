@@ -1,12 +1,12 @@
 import chalk from "chalk";
 import {
-	ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, Client, ComponentType, EmbedBuilder,
-	Message
+    ActionRowBuilder, ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, Client,
+    ComponentType, EmbedBuilder, Message
 } from "discord.js";
 import { decode } from "html-entities";
 import { ofetch } from "ofetch";
 
-import { checkPackageUpdates, getRandomString } from "../functions/functions";
+import { checkPackageUpdates, createEmbed, getRandomString } from "../functions/functions";
 import { OptionsChecking } from "../functions/OptionChecking";
 
 import type { WouldYouRatherTypes } from "../Types/";
@@ -46,40 +46,9 @@ const WouldYouRather = async (options: WouldYouRatherTypes) => {
         '-' +
         getRandomString(20);
 
-    let embed = new EmbedBuilder()
-        .setTitle(options.embed.title)
-        .setDescription(options.thinkMessage ?
-            options.thinkMessage :
-            `I am thinking...`
-        )
-        .setColor(options.embed.color ?? "Blurple")
-        .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
-        .setURL(options.embed.url ? options.embed.url : null)
-        .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-        .setImage(options.embed.image ? options.embed.image : null)
-        .setFooter({
-            text: "©️ M3rcena Development | Powered by Mivator",
-            iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-        });
-
-    if (options.embed.footer) {
-        embed.setFooter({
-            text: options.embed.footer.text,
-            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-        });
-    };
-
-    if (options.embed.author) {
-        embed.setAuthor({
-            name: options.embed.author.name,
-            iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-            url: options.embed.author.url ? options.embed.author.url : undefined
-        });
-    };
-
-    if (options.embed.fields) {
-        embed.setFields(options.embed.fields);
-    }
+    options.embed.title = options.embed.title ?? "Would You Rather?";
+    options.embed.description = options.thinkMessage ? options.thinkMessage : "I am thinking";
+    let embed = createEmbed(options.embed);
 
     const think = await interaction.reply({
         embeds: [embed]
@@ -119,48 +88,12 @@ const WouldYouRather = async (options: WouldYouRatherTypes) => {
         .setLabel(options.buttons ? options.buttons.optionB : "Option B")
         .setCustomId(id2);
 
-    embed = new EmbedBuilder()
-        .setTitle(options.embed.title)
-        .setDescription(
-            `**Option A:** ${decode(res.questions[0])}\n**Option B:** ${decode(res.questions[1])}`
-        )
-        .setColor(options.embed.color ?? "Blurple")
-        .setTimestamp(options.embed.timestamp ? new Date() : null)
-        .setURL(options.embed.url ? options.embed.url : null)
-        .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-        .setImage(options.embed.image ? options.embed.image : null)
-        .setFooter({
-            text: "©️ M3rcena Development | Powered by Mivator",
-            iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-        });
-
-    if (options.embed.footer) {
-        embed.setFooter({
-            text: options.embed.footer.text,
-            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-        });
-    };
-
-    if (options.embed.author) {
-        embed.setAuthor({
-            name: options.embed.author.name,
-            iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-            url: options.embed.author.url ? options.embed.author.url : undefined
-        });
-    };
-
-    if (options.embed.fields) {
-        embed.setFields(options.embed.fields);
-    };
+    options.embed.description = `**Option A:** ${decode(res.questions[0])}\n**Option B:** ${decode(res.questions[1])}`;
+    embed = createEmbed(options.embed);
 
     await think.edit({
         embeds: [embed],
-        components: [
-            {
-                type: 1,
-                components: [btn, btn2]
-            }
-        ]
+        components: [new ActionRowBuilder<ButtonBuilder>().addComponents(btn, btn2)]
     });
 
     const gameCollector = think.createMessageComponentCollector({
@@ -196,48 +129,12 @@ const WouldYouRather = async (options: WouldYouRatherTypes) => {
                 .setDisabled();
             gameCollector.stop();
 
-            const _embed = new EmbedBuilder()
-                .setTitle(options.embed.title)
-                .setDescription(
-                    `**Option A:** ${decode(res.questions[0])} (${res.percentage['1']})\n**Option B:** ${decode(res.questions[1])} (${res.percentage['2']})`
-                )
-                .setColor(options.embed.color ?? "Blurple")
-                .setTimestamp(options.embed.timestamp ? new Date() : null)
-                .setURL(options.embed.url ? options.embed.url : null)
-                .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                .setImage(options.embed.image ? options.embed.image : null)
-                .setFooter({
-                    text: "©️ M3rcena Development | Powered by Mivator",
-                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-                });
-
-            if (options.embed.footer) {
-                _embed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                });
-            };
-
-            if (options.embed.author) {
-                _embed.setAuthor({
-                    name: options.embed.author.name,
-                    iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                    url: options.embed.author.url ? options.embed.author.url : undefined
-                });
-            }
-
-            if (options.embed.fields) {
-                _embed.setFields(options.embed.fields);
-            }
+            options.embed.description = `**Option A:** ${decode(res.questions[0])} (${res.percentage['1']})\n**Option B:** ${decode(res.questions[1])} (${res.percentage['2']})`;
+            const _embed = createEmbed(options.embed);
 
             await wyr.editReply({
                 embeds: [_embed],
-                components: [
-                    {
-                        type: 1,
-                        components: [btn, btn2]
-                    }
-                ]
+                components: [new ActionRowBuilder<ButtonBuilder>().addComponents(btn, btn2)]
             });
         } else if (wyr.customId === id2) {
             btn = new ButtonBuilder()
@@ -254,48 +151,12 @@ const WouldYouRather = async (options: WouldYouRatherTypes) => {
 
             gameCollector.stop();
 
-            const _embed = new EmbedBuilder()
-                .setTitle(options.embed.title)
-                .setDescription(
-                    `**Option A:** ${decode(res.questions[0])} (${res.percentage['1']})\n**Option B:** ${decode(res.questions[1])} (${res.percentage['2']})`
-                )
-                .setColor(options.embed.color ?? "Blurple")
-                .setTimestamp(options.embed.timestamp ? new Date() : null)
-                .setURL(options.embed.url ? options.embed.url : null)
-                .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                .setImage(options.embed.image ? options.embed.image : null)
-                .setFooter({
-                    text: "©️ M3rcena Development | Powered by Mivator",
-                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-                });
-
-            if (options.embed.footer) {
-                _embed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                });
-            };
-
-            if (options.embed.author) {
-                _embed.setAuthor({
-                    name: options.embed.author.name,
-                    iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                    url: options.embed.author.url ? options.embed.author.url : undefined
-                });
-            }
-
-            if (options.embed.fields) {
-                _embed.setFields(options.embed.fields);
-            }
+            options.embed.description = `**Option A:** ${decode(res.questions[0])} (${res.percentage['1']})\n**Option B:** ${decode(res.questions[1])} (${res.percentage['2']})`;
+            const _embed = createEmbed(options.embed);
 
             await wyr.editReply({
                 embeds: [_embed],
-                components: [
-                    {
-                        type: 1,
-                        components: [btn, btn2]
-                    }
-                ]
+                components: [new ActionRowBuilder<ButtonBuilder>().addComponents(btn, btn2)]
             });
         }
     })

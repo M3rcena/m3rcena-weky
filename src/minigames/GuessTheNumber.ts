@@ -1,10 +1,12 @@
 import chalk from "chalk";
 import {
-	ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, Client, ComponentType, EmbedBuilder,
-	Message
+	ActionRowBuilder, ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, Client,
+	ComponentType, Message
 } from "discord.js";
 
-import { checkPackageUpdates, convertTime, getRandomString } from "../functions/functions";
+import {
+	checkPackageUpdates, convertTime, createEmbed, getRandomString
+} from "../functions/functions";
 import { OptionsChecking } from "../functions/OptionChecking";
 
 import type { GuessTheNumberTypes } from "../Types/";
@@ -99,101 +101,44 @@ const GuessTheNumber = async (options: GuessTheNumberTypes) => {
     if (typeof number !== "number") {
         throw new Error(chalk.red("[@m3rcena/weky] GuessTheNumber Error:") + " number must be a number.");
     }
-    if (options.publicGame) {
+
+    const handleGame = async (isPublic: boolean) => {
         const participants: string[] = [];
-        if (currentGames[interaction.guild.id]) {
-            let embed = new EmbedBuilder()
-                .setDescription(
-                    options.ongoingMessage.replace(
-                        /{{channel}}/g,
-                        currentGames[`${interaction.guild.id}_channel`]
-                    ),
-                )
-                .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
-                .setFooter({
-                    text: "©️ M3rcena Development | Powered by Mivator",
-                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-                });
 
-            if (options.embed.footer) {
-                embed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                });
-            };
-
-            if (options.embed.author) {
-                embed.setAuthor({
-                    name: options.embed.author.name,
-                    iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                    url: options.embed.author.url ? options.embed.author.url : undefined
-                });
-            };
-
-            if (options.embed.fields) {
-                embed.setFields(options.embed.fields);
-            };
-
+        if (isPublic && currentGames[interaction.guild.id]) {
+            options.embed.description = options.ongoingMessage.replace(
+                /{{channel}}/g,
+                currentGames[`${interaction.guild.id}_channel`]
+            );
             return await interaction.reply({
-                embeds: [embed]
+                embeds: [createEmbed(options.embed)]
             });
-        };
+        }
 
-        let embed = new EmbedBuilder()
-            .setTitle(options.embed.title)
-            .setDescription(
-                `${options.embed.description ?
-                    options.embed.description.replace(
-                        /{{time}}/g,
-                        convertTime(options.time ? options.time : 60000)
-                    ) :
-                    "You have **{{time}}** to guess the number.".replace(
-                        /{{time}}/g,
-                        convertTime(options.time ? options.time : 60000)
-                    )}`
-            )
-            .setColor(options.embed.color ?? "Blurple")
-            .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
-            .setURL(options.embed.url ? options.embed.url : null)
-            .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-            .setImage(options.embed.image ? options.embed.image : null)
-            .setFooter({
-                text: "©️ M3rcena Development | Powered by Mivator",
-                iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-            });
+        if (!isPublic && data.has(id)) return;
+        if (!isPublic) data.add(id);
 
-        if (options.embed.footer) {
-            embed.setFooter({
-                text: options.embed.footer.text,
-                iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-            });
-        };
+        options.embed.description = options.embed.description ?
+            options.embed.description.replace(/{{time}}/g, convertTime(options.time ? options.time : 60000)) :
+            "You have **{{time}}** to guess the number.".replace(/{{time}}/g, convertTime(options.time ? options.time : 60000));
 
-        if (options.embed.author) {
-            embed.setAuthor({
-                name: options.embed.author.name,
-                iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                url: options.embed.author.url ? options.embed.author.url : undefined
-            });
-        };
-
-        if (options.embed.fields) {
-            embed.setFields(options.embed.fields);
-        };
-
-        let btn1 = new ButtonBuilder()
+        const embed = createEmbed(options.embed);
+        const btn1 = new ButtonBuilder()
             .setStyle(ButtonStyle.Danger)
             .setLabel(options.button ? options.button : "Cancel")
             .setCustomId(ids);
 
-        const msg = await interaction.reply({
+        const row = new ActionRowBuilder<ButtonBuilder>().addComponents(btn1);
+
+        const msg = await (interaction as Message || interaction as ChatInputCommandInteraction).reply({
             embeds: [embed],
-            components: [{ type: 1, components: [btn1] }]
+            components: [row]
         });
 
         const gameCreatedAt = Date.now();
+
         const collector = interaction.channel?.createMessageCollector({
-            filter: (m) => !m.author.bot,
+            filter: (m) => isPublic ? !m.author.bot : m.author.id === id,
             time: options.time ? options.time : 60000
         });
 
@@ -201,12 +146,13 @@ const GuessTheNumber = async (options: GuessTheNumberTypes) => {
             componentType: ComponentType.Button,
         });
 
-        currentGames[interaction.guild.id] = true;
-        currentGames[`${interaction.guild.id}_channel`] = interaction.channel.id;
+        if (isPublic) {
+            currentGames[interaction.guild.id] = true;
+            currentGames[`${interaction.guild.id}_channel`] = interaction.channel.id;
+        }
 
-        const guildId = interaction.guild.id;
         collector.on('collect', async (_msg) => {
-            if (!participants.includes(_msg.author.id)) {
+            if (isPublic && !participants.includes(_msg.author.id)) {
                 participants.push(_msg.author.id);
             }
 
@@ -214,57 +160,32 @@ const GuessTheNumber = async (options: GuessTheNumberTypes) => {
 
             if (parsedNumber === number) {
                 const time = convertTime(Date.now() - gameCreatedAt);
-                let _embed = new EmbedBuilder()
-                    .setTitle(options.embed.title)
-                    .setDescription(`
-                        ${winMessagePublicGame
-                            .replace(/{{number}}/g, number.toString())
-                            .replace(/{{winner}}/g, _msg.author.id)
-                            .replace(/{{time}}/g, time)
-                            .replace(/{{totalparticipants}}/g, `${participants.length}`)
-                            .replace(
-                                /{{participants}}/g,
-                                participants.map((p) => '<@' + p + '>').join(', '),
-                            )
-                        }`)
-                    .setColor(options.embed.color ?? "Blurple")
-                    .setTimestamp(options.embed.timestamp ? new Date() : null)
-                    .setURL(options.embed.url ? options.embed.url : null)
-                    .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                    .setImage(options.embed.image ? options.embed.image : null)
-                    .setFooter({
-                        text: "©️ M3rcena Development | Powered by Mivator",
-                        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-                    });
+                options.embed.description = isPublic ?
+                    winMessagePublicGame
+                        .replace(/{{number}}/g, number.toString())
+                        .replace(/{{winner}}/g, _msg.author.id)
+                        .replace(/{{time}}/g, time)
+                        .replace(/{{totalparticipants}}/g, `${participants.length}`)
+                        .replace(/{{participants}}/g, participants.map((p) => '<@' + p + '>').join(', ')) :
+                    winMessagePrivateGame
+                        .replace(/{{time}}/g, time)
+                        .replace(/{{number}}/g, `${number}`);
 
-                if (options.embed.footer) {
-                    _embed.setFooter({
-                        text: options.embed.footer.text,
-                        iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                    });
-                };
-
-                if (options.embed.author) {
-                    _embed.setAuthor({
-                        name: options.embed.author.name,
-                        iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                        url: options.embed.author.url ? options.embed.author.url : undefined
-                    });
-                }
-
-                if (options.embed.fields) {
-                    _embed.setFields(options.embed.fields);
-                }
+                let _embed = createEmbed(options.embed);
 
                 btn1.setDisabled(true);
                 embed.setTimestamp(options.embed.timestamp ? new Date() : null);
+
+                const row = new ActionRowBuilder<ButtonBuilder>().addComponents(btn1);
                 await msg.edit({
                     embeds: [embed],
-                    components: [{ type: 1, components: [btn1] }]
+                    components: [row]
                 });
                 _msg.reply({ embeds: [_embed] });
+
                 gameCollector.stop();
                 collector.stop();
+
                 if (options.returnWinner) {
                     if (!options.gameID) {
                         throw new Error(chalk.red("[@m3rcena/weky] GuessTheNumber Error:") + " gameID must be provided.");
@@ -273,105 +194,24 @@ const GuessTheNumber = async (options: GuessTheNumberTypes) => {
                         throw new Error(chalk.red("[@m3rcena/weky] GuessTheNumber Error:") + " gameID must be a string.");
                     };
                     db.set(
-                        `GuessTheNumber_${guildId}_${options.gameID}`,
+                        `GuessTheNumber_${interaction.guild.id}_${options.gameID}`,
                         _msg.author.id
                     );
                 }
             }
 
-            if (parseInt(_msg.content) < number) {
-                let _embed = new EmbedBuilder()
-                    .setTitle(options.embed.title)
-                    .setDescription(options.bigNumber ?
-                        options.bigNumber
-                            .replace(
-                                /{{author}}/g,
-                                _msg.author.toString()
-                            )
-                            .replace(
-                                /{{number}}/g,
-                                `${parsedNumber}`
-                            ) :
-                        `The number is bigger than **${parsedNumber}**!`
-                    )
-                    .setColor(options.embed.color ?? "Blurple")
-                    .setTimestamp(options.embed.timestamp ? new Date() : null)
-                    .setURL(options.embed.url ? options.embed.url : null)
-                    .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                    .setImage(options.embed.image ? options.embed.image : null)
-                    .setFooter({
-                        text: "©️ M3rcena Development | Powered by Mivator",
-                        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-                    });
+            const compareResponse = (comparison: 'bigger' | 'smaller') => {
+                options.embed.description = options[comparison === 'bigger' ? 'bigNumber' : 'smallNumber'] ?
+                    options[comparison === 'bigger' ? 'bigNumber' : 'smallNumber']
+                        .replace(/{{author}}/g, _msg.author.toString())
+                        .replace(/{{number}}/g, `${parsedNumber}`) :
+                    `The number is ${comparison} than **${parsedNumber}**!`;
 
-                if (options.embed.footer) {
-                    _embed.setFooter({
-                        text: options.embed.footer.text,
-                        iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                    });
-                };
-
-                if (options.embed.author) {
-                    _embed.setAuthor({
-                        name: options.embed.author.name,
-                        iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                        url: options.embed.author.url ? options.embed.author.url : undefined
-                    });
-                }
-
-                if (options.embed.fields) {
-                    _embed.setFields(options.embed.fields);
-                }
-
-                _msg.reply({ embeds: [_embed] });
+                return _msg.reply({ embeds: [createEmbed(options.embed)] });
             };
 
-            if (parseInt(_msg.content) > number) {
-                let _embed = new EmbedBuilder()
-                    .setTitle(options.embed.title)
-                    .setDescription(options.smallNumber ?
-                        options.smallNumber
-                            .replace(
-                                /{{author}}/g,
-                                _msg.author.toString()
-                            )
-                            .replace(
-                                /{{number}}/g,
-                                `${parsedNumber}`
-                            ) :
-                        `The number is smaller than **${parsedNumber}**!`
-                    )
-                    .setColor(options.embed.color ?? "Blurple")
-                    .setTimestamp(options.embed.timestamp ? new Date() : null)
-                    .setURL(options.embed.url ? options.embed.url : null)
-                    .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                    .setImage(options.embed.image ? options.embed.image : null)
-                    .setFooter({
-                        text: "©️ M3rcena Development | Powered by Mivator",
-                        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-                    });
-
-                if (options.embed.footer) {
-                    _embed.setFooter({
-                        text: options.embed.footer.text,
-                        iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                    });
-                };
-
-                if (options.embed.author) {
-                    _embed.setAuthor({
-                        name: options.embed.author.name,
-                        iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                        url: options.embed.author.url ? options.embed.author.url : undefined
-                    });
-                };
-
-                if (options.embed.fields) {
-                    _embed.setFields(options.embed.fields);
-                };
-
-                _msg.reply({ embeds: [_embed] });
-            };
+            if (parsedNumber < number) compareResponse('bigger');
+            if (parsedNumber > number) compareResponse('smaller');
         });
 
         gameCollector.on('collect', async (button) => {
@@ -398,434 +238,46 @@ const GuessTheNumber = async (options: GuessTheNumberTypes) => {
                     embeds: [embed],
                     components: [{ type: 1, components: [btn1] }]
                 });
-                const _embed = new EmbedBuilder()
-                    .setTitle(options.embed.title)
-                    .setDescription(options.loseMessage ?
-                        options.loseMessage.replace(
-                            /{{number/g,
-                            `${number}`) :
-                        `The number was **${number}**!`
-                    )
-                    .setColor(options.embed.color ?? "Blurple")
-                    .setTimestamp(options.embed.timestamp ? new Date() : null)
-                    .setURL(options.embed.url ? options.embed.url : null)
-                    .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                    .setImage(options.embed.image ? options.embed.image : null)
-                    .setFooter({
-                        text: "©️ M3rcena Development | Powered by Mivator",
-                        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-                    });
 
-                if (options.embed.footer) {
-                    _embed.setFooter({
-                        text: options.embed.footer.text,
-                        iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                    });
-                };
-
-                if (options.embed.author) {
-                    _embed.setAuthor({
-                        name: options.embed.author.name,
-                        iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                        url: options.embed.author.url ? options.embed.author.url : undefined
-                    });
-                }
-
-                if (options.embed.fields) {
-                    _embed.setFields(options.embed.fields);
-                }
+                options.embed.description = options.loseMessage ?
+                    options.loseMessage.replace(
+                        /{{number/g,
+                        `${number}`) :
+                    `The number was **${number}**!`
+                let _embed = createEmbed(options.embed);
 
                 msg.edit({ embeds: [_embed] });
             }
         });
 
         collector.on('end', async (_collected, reason) => {
-            delete currentGames[guildId];
             if (reason === 'time') {
-                const _embed = new EmbedBuilder()
-                    .setTitle(options.embed.title)
-                    .setDescription(
-                        options.loseMessage ?
-                            options.loseMessage.replace(
-                                /{{number}}/g,
-                                `${number}`
-                            ) :
-                            `The number was **${number}**!`
-                    )
-                    .setColor(options.embed.color ?? "Blurple")
-                    .setTimestamp(options.embed.timestamp ? new Date() : null)
-                    .setURL(options.embed.url ? options.embed.url : null)
-                    .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                    .setImage(options.embed.image ? options.embed.image : null)
-                    .setFooter({
-                        text: "©️ M3rcena Development | Powered by Mivator",
-                        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-                    });
-
-                if (options.embed.footer) {
-                    _embed.setFooter({
-                        text: options.embed.footer.text,
-                        iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                    });
-                };
-
-                if (options.embed.author) {
-                    _embed.setAuthor({
-                        name: options.embed.author.name,
-                        iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                        url: options.embed.author.url ? options.embed.author.url : undefined
-                    });
-                }
-
-                if (options.embed.fields) {
-                    _embed.setFields(options.embed.fields);
-                }
-
-                btn1.setDisabled(true);
-                embed.setTimestamp(options.embed.timestamp ? new Date() : null);
-
-                await msg.edit({
-                    embeds: [embed],
-                    components: [{ type: 1, components: [btn1] }]
-                });
-
-                if (!interaction.channel || !interaction.channel.isSendable()) return;
-                return interaction.channel.send({ embeds: [_embed] });
-            }
-        });
-    } else {
-        if (data.has(id)) return;
-        data.add(id);
-
-        const embed = new EmbedBuilder()
-            .setTitle(options.embed.title)
-            .setDescription(
-                options.embed.description ?
-                    options.embed.description.replace(
-                        /{{time}}/g,
-                        convertTime(options.time ? options.time : 60000)
+                options.embed.description = options.loseMessage ?
+                    options.loseMessage.replace(
+                        /{{number}}/g,
+                        `${number}`
                     ) :
-                    "You have **{{time}}** to guess the number.".replace(
-                        /{{time}}/g,
-                        convertTime(options.time ? options.time : 60000)
-                    )
-            )
-            .setColor(options.embed.color ?? "Blurple")
-            .setTimestamp(options.embed.timestamp ? new Date() : null)
-            .setURL(options.embed.url ? options.embed.url : null)
-            .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-            .setImage(options.embed.image ? options.embed.image : null)
-            .setFooter({
-                text: "©️ M3rcena Development | Powered by Mivator",
-                iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-            });
-
-        if (options.embed.footer) {
-            embed.setFooter({
-                text: options.embed.footer.text,
-                iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-            });
-        }
-
-        if (options.embed.author) {
-            embed.setAuthor({
-                name: options.embed.author.name,
-                iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                url: options.embed.author.url ? options.embed.author.url : undefined
-            });
-        }
-
-        if (options.embed.fields) {
-            embed.setFields(options.embed.fields);
-        }
-
-        let btn1 = new ButtonBuilder()
-            .setStyle(ButtonStyle.Danger)
-            .setLabel(options.button ? options.button : "Cancel")
-            .setCustomId(ids);
-
-        const msg = await interaction.reply({
-            embeds: [embed],
-            components: [{ type: 1, components: [btn1] }]
-        });
-
-        const gameCreatedAt = Date.now();
-
-        const collector = await interaction.channel.createMessageCollector({
-            filter: (m) => m.author.id === id,
-            time: options.time ? options.time : 60000
-        });
-
-        const gameCollector = msg.createMessageComponentCollector({
-            componentType: ComponentType.Button,
-        });
-
-        collector.on('collect', async (_msg) => {
-            if (_msg.author.id !== id) return;
-            const parsedNumber = parseInt(_msg.content, 10);
-            if (parsedNumber === number) {
-                const time = convertTime(Date.now() - gameCreatedAt);
-                const _embed = new EmbedBuilder()
-                    .setTitle(options.embed.title)
-                    .setDescription(winMessagePrivateGame
-                        .replace(/{{time}}/g, time)
-                        .replace(/{{number}}/g, `${number}`)
-                    )
-                    .setColor(options.embed.color ?? "Blurple")
-                    .setTimestamp(options.embed.timestamp ? new Date() : null)
-                    .setURL(options.embed.url ? options.embed.url : null)
-                    .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                    .setImage(options.embed.image ? options.embed.image : null)
-                    .setFooter({
-                        text: "©️ M3rcena Development | Powered by Mivator",
-                        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-                    });
-
-                if (options.embed.footer) {
-                    _embed.setFooter({
-                        text: options.embed.footer.text,
-                        iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                    });
-                };
-
-                if (options.embed.author) {
-                    _embed.setAuthor({
-                        name: options.embed.author.name,
-                        iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                        url: options.embed.author.url ? options.embed.author.url : undefined
-                    });
-                }
-
-                if (options.embed.fields) {
-                    _embed.setFields(options.embed.fields);
-                }
-
-                btn1.setDisabled(true);
-                embed.setTimestamp(options.embed.timestamp ? new Date() : null);
-                await msg.edit({
-                    embeds: [embed],
-                    components: [{ type: 1, components: [btn1] }]
-                });
-                await _msg.reply({ embeds: [_embed] });
-
-                gameCollector.stop();
-                collector.stop();
-            };
-            if (parseInt(_msg.content) < number) {
-                const _embed = new EmbedBuilder()
-                    .setTitle(options.embed.title)
-                    .setDescription(options.bigNumber ?
-                        options.bigNumber
-                            .replace(
-                                /{{author}}/g,
-                                _msg.author.toString()
-                            )
-                            .replace(
-                                /{{number}}/g,
-                                `${parsedNumber}`
-                            ) :
-                        `The number is bigger than **${parsedNumber}**!`
-                    )
-                    .setColor(options.embed.color ?? "Blurple")
-                    .setTimestamp(options.embed.timestamp ? new Date() : null)
-                    .setURL(options.embed.url ? options.embed.url : null)
-                    .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                    .setImage(options.embed.image ? options.embed.image : null)
-                    .setFooter({
-                        text: "©️ M3rcena Development | Powered by Mivator",
-                        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-                    });
-
-                if (options.embed.footer) {
-                    _embed.setFooter({
-                        text: options.embed.footer.text,
-                        iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                    });
-                };
-
-                if (options.embed.author) {
-                    _embed.setAuthor({
-                        name: options.embed.author.name,
-                        iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                        url: options.embed.author.url ? options.embed.author.url : undefined
-                    });
-                }
-
-                if (options.embed.fields) {
-                    _embed.setFields(options.embed.fields);
-                }
-
-                await _msg.reply({ embeds: [_embed] });
-            };
-            if (parseInt(_msg.content) > number) {
-                const _embed = new EmbedBuilder()
-                    .setTitle(options.embed.title)
-                    .setDescription(options.smallNumber ?
-                        options.smallNumber
-                            .replace(
-                                /{{author}}/g,
-                                _msg.author.toString()
-                            )
-                            .replace(
-                                /{{number}}/g,
-                                `${parsedNumber}`
-                            ) :
-                        `The number is smaller than **${parsedNumber}**!`
-                    )
-                    .setColor(options.embed.color ?? "Blurple")
-                    .setTimestamp(options.embed.timestamp ? new Date() : null)
-                    .setURL(options.embed.url ? options.embed.url : null)
-                    .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                    .setImage(options.embed.image ? options.embed.image : null)
-                    .setFooter({
-                        text: "©️ M3rcena Development | Powered by Mivator",
-                        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-                    });
-
-                if (options.embed.footer) {
-                    _embed.setFooter({
-                        text: options.embed.footer.text,
-                        iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                    });
-                };
-
-                if (options.embed.author) {
-                    _embed.setAuthor({
-                        name: options.embed.author.name,
-                        iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                        url: options.embed.author.url ? options.embed.author.url : undefined
-                    });
-                }
-
-                if (options.embed.fields) {
-                    _embed.setFields(options.embed.fields);
-                }
-
-                await _msg.reply({ embeds: [_embed] });
-            };
-        });
-
-        gameCollector.on('collect', async (button) => {
-            if (button.user.id !== id) {
-                return button.reply({
-                    content: options.otherMessage ?
-                        options.otherMessage.replace(
-                            /{{author}}/g,
-                            id
-                        ) :
-                        "This is not your game!",
-                    ephemeral: true,
-                })
-            }
-
-            await button.deferUpdate();
-
-            if (button.customId === ids) {
-                btn1.setDisabled(true);
-                gameCollector.stop();
-                collector.stop();
-                embed.setTimestamp(options.embed.timestamp ? new Date() : null);
-                await msg.edit({
-                    embeds: [embed],
-                    components: [{ type: 1, components: [btn1] }]
-                });
-                const _embed = new EmbedBuilder()
-                    .setTitle(options.embed.title)
-                    .setDescription(options.loseMessage ?
-                        options.loseMessage.replace(
-                            /{{number}}/g,
-                            `${number}`
-                        ) :
-                        `The number was **${number}**!`
-                    )
-                    .setColor(options.embed.color ?? "Blurple")
-                    .setTimestamp(options.embed.timestamp ? new Date() : null)
-                    .setURL(options.embed.url ? options.embed.url : null)
-                    .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                    .setImage(options.embed.image ? options.embed.image : null)
-                    .setFooter({
-                        text: "©️ M3rcena Development | Powered by Mivator",
-                        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-                    });
-
-                if (options.embed.footer) {
-                    _embed.setFooter({
-                        text: options.embed.footer.text,
-                        iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                    });
-                };
-
-                if (options.embed.author) {
-                    _embed.setAuthor({
-                        name: options.embed.author.name,
-                        iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                        url: options.embed.author.url ? options.embed.author.url : undefined
-                    });
-                }
-
-                if (options.embed.fields) {
-                    _embed.setFields(options.embed.fields);
-                }
-
-                await msg.edit({ embeds: [_embed] });
-            }
-        });
-
-        collector.on('end', async (_collected, reason) => {
-            if (reason === 'time') {
-                const _embed = new EmbedBuilder()
-                    .setTitle(options.embed.title)
-                    .setDescription(
-                        options.loseMessage ?
-                            options.loseMessage.replace(
-                                /{{number}}/g,
-                                `${number}`
-                            ) :
-                            `The number was **${number}**!`
-                    )
-                    .setColor(options.embed.color ?? "Blurple")
-                    .setTimestamp(options.embed.timestamp ? new Date() : null)
-                    .setURL(options.embed.url ? options.embed.url : null)
-                    .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                    .setImage(options.embed.image ? options.embed.image : null)
-                    .setFooter({
-                        text: "©️ M3rcena Development | Powered by Mivator",
-                        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-                    });
-
-                if (options.embed.footer) {
-                    _embed.setFooter({
-                        text: options.embed.footer.text,
-                        iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                    });
-                };
-
-                if (options.embed.author) {
-                    _embed.setAuthor({
-                        name: options.embed.author.name,
-                        iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                        url: options.embed.author.url ? options.embed.author.url : undefined
-                    });
-                }
-
-                if (options.embed.fields) {
-                    _embed.setFields(options.embed.fields);
-                }
+                    `The number was **${number}**!`
+                let _embed = createEmbed(options.embed);
 
                 btn1.setDisabled(true);
                 embed.setTimestamp(options.embed.timestamp ? new Date() : null);
 
+                const row = new ActionRowBuilder<ButtonBuilder>().addComponents(btn1);
                 await msg.edit({
                     embeds: [embed],
-                    components: [{ type: 1, components: [btn1] }]
+                    components: [row]
                 });
 
                 if (!interaction.channel || !interaction.channel.isSendable()) return;
                 return interaction.channel.send({ embeds: [_embed] });
             }
             data.delete(id);
+            currentGames[interaction.guild.id] = false;
         });
-    }
+    };
+
+    await handleGame(options.publicGame ?? false);
 
     checkPackageUpdates("GuessTheNumber", options.notifyUpdate);
 };

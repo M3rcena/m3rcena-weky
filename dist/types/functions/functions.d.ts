@@ -1,4 +1,5 @@
-import { ActionRowBuilder, BufferResolvable, ButtonBuilder } from "discord.js";
+import { ActionRowBuilder, BufferResolvable, ButtonBuilder, EmbedBuilder } from "discord.js";
+import { Embeds } from "src/Types";
 export declare const getRandomString: (length: number) => string;
 export declare const createButton: (label: string, disabled: boolean) => ButtonBuilder;
 export declare const createDisabledButton: (label: string) => ButtonBuilder;
@@ -14,3 +15,4 @@ export declare const createHangman: (state?: number) => Promise<BufferResolvable
 export declare const fetchhtml: (url: string) => Promise<import("cheerio").CheerioAPI>;
 export declare const shuffleString: (string: string) => string;
 export declare const randomHexColor: () => string;
+export declare const createEmbed: (embedOptions: Embeds, noFields?: boolean) => EmbedBuilder;

@@ -1,7 +1,7 @@
 import chalk from "chalk";
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from "discord.js";
 
-import { checkPackageUpdates } from "../functions/functions";
+import { checkPackageUpdates, createEmbed } from "../functions/functions";
 import { OptionsChecking } from "../functions/OptionChecking";
 
 import type { ChatInputCommandInteraction, Client, Message } from "discord.js";
@@ -43,6 +43,7 @@ const Snake = async (options: SnakeTypes) => {
     const gameBoard: string[] = [];
     let score = 0;
     let foods: string[] = ['🍎', '🍇', '🍊', '🥕', '🥝', '🌽'];
+    let baseDescription = options.embed.description
 
     if (!options.emojis) {
         options.emojis = {
@@ -144,34 +145,9 @@ const Snake = async (options: SnakeTypes) => {
 
     updateFoodLoc();
 
-    let embed = new EmbedBuilder()
-        .setTitle(options.embed.title ? options.embed.title : "Snake Game")
-        .setDescription(`**Score:** ${score}\n\n${getBoardContent(false)}`)
-        .setColor(options.embed.color ?options.embed.color : "Blurple")
-        .setTimestamp(options.embed.timestamp ? new Date() : null)
-        .setFooter({
-            text: "©️ M3rcena Development | Powered by Mivator",
-            iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-        });
-
-    if (options.embed.footer) {
-        embed.setFooter({
-            text: options.embed.footer.text,
-            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-        });
-    };
-
-    if (options.embed.author) {
-        embed.setAuthor({
-            name: options.embed.author.name,
-            iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-            url: options.embed.author.url ? options.embed.author.url : undefined
-        });
-    };
-
-    if (options.embed.fields) {
-        embed.setFields(options.embed.fields);
-    };
+    options.embed.title = options.embed.title ?? "Snake Game";
+    options.embed.description = baseDescription.replace('{{score}}', score.toString()).replace('{{board}}', getBoardContent(false)) ?? `**Score:** ${score}\n\n${getBoardContent(false)}`;
+    let embed = createEmbed(options.embed);
 
     const up = new ButtonBuilder()
         .setEmoji(emojis.up)
@@ -261,7 +237,7 @@ const Snake = async (options: SnakeTypes) => {
             return collector.stop();
         } else {
             snake.unshift(nextPos);
-            
+
             if (apple.x === snake[0].x && apple.y === snake[0].y) {
                 score += 1;
                 snakeLength += 1;
@@ -270,34 +246,11 @@ const Snake = async (options: SnakeTypes) => {
                 snake.pop();
             }
 
-            const embd = new EmbedBuilder()
-                .setTitle(options.embed.title ? options.embed.title : "Snake Game")
-                .setDescription(`**Score:** ${score}\n\n${getBoardContent(false)}`)
-                .setColor(options.embed.color ? options.embed.color : "Blurple")
-                .setTimestamp(options.embed.timestamp ? new Date() : null)
-                .setFooter({
-                    text: "©️ M3rcena Development | Powered by Mivator",
-                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-                });
+            const newBoardContent = getBoardContent(false);
 
-            if (options.embed.footer) {
-                embd.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                });
-            };
+            options.embed.description = baseDescription ? baseDescription.replace("{{score}}", `${score}`).replace("{{board}}", `${newBoardContent}`) : `**Score:** ${score}\n\n${newBoardContent}`;
 
-            if (options.embed.author) {
-                embd.setAuthor({
-                    name: options.embed.author.name,
-                    iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                    url: options.embed.author.url ? options.embed.author.url : undefined
-                });
-            };
-
-            if (options.embed.fields) {
-                embd.setFields(options.embed.fields);
-            };
+            let embd = createEmbed(options.embed);
 
             return msg.edit({ embeds: [embd] });
         }
@@ -305,34 +258,8 @@ const Snake = async (options: SnakeTypes) => {
 
     collector.on("end", async (_, reason) => {
         if (reason === 'time' || reason === 'user') {
-            const embed = new EmbedBuilder()
-                .setTitle(options.embed.title ? options.embed.title : "Snake Game")
-                .setDescription(`**Game Over!**\n\n**Score:** ${score}\n\n${getBoardContent(true)}`)
-                .setColor(options.embed.color ? options.embed.color : "Blurple")
-                .setTimestamp(options.embed.timestamp ? new Date() : null)
-                .setFooter({
-                    text: "©️ M3rcena Development | Powered by Mivator",
-                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-                });
-
-            if (options.embed.footer) {
-                embed.setFooter({
-                    text: options.embed.footer.text,
-                    iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                });
-            };
-
-            if (options.embed.author) {
-                embed.setAuthor({
-                    name: options.embed.author.name,
-                    iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                    url: options.embed.author.url ? options.embed.author.url : undefined
-                });
-            };
-
-            if (options.embed.fields) {
-                embed.setFields(options.embed.fields);
-            };
+            options.embed.description = baseDescription.replace('{{board}}', getBoardContent(true)) ?? `**Game Over!**\n\n**Score:** ${score}\n\n${getBoardContent(true)}`;
+            let embed = createEmbed(options.embed);
 
             up.setDisabled(true);
             down.setDisabled(true);

@@ -1,26 +1,8 @@
-import type { ChatInputCommandInteraction, Client, ColorResolvable, Message, User } from "discord.js";
+import type { ChatInputCommandInteraction, Client, ColorResolvable, EmbedFooterData, Message, User } from "discord.js";
 export interface Calc {
     interaction: Message | ChatInputCommandInteraction;
     client: Client;
-    embed: {
-        color?: ColorResolvable;
-        title: string;
-        url?: string;
-        author?: {
-            name: string;
-            icon_url?: string;
-            url?: string;
-        };
-        footer?: {
-            text: string;
-            icon_url?: string;
-        };
-        description?: string;
-        fields?: Fields[];
-        image?: string;
-        timestamp?: Date;
-        thumbnail?: string;
-    };
+    embed: Embeds;
     invalidQuery?: string;
     disabledQuery?: string;
     notifyUpdate?: boolean;
@@ -28,25 +10,7 @@ export interface Calc {
 export interface Chaos {
     interaction: Message | ChatInputCommandInteraction;
     client: Client;
-    embed: {
-        color?: ColorResolvable;
-        title: string;
-        url?: string;
-        author?: {
-            name: string;
-            icon_url?: string;
-            url?: string;
-        };
-        footer?: {
-            text: string;
-            icon_url?: string;
-        };
-        description?: string;
-        fields?: Fields[];
-        image?: string;
-        timestamp?: Date;
-        thumbnail?: string;
-    };
+    embed: Embeds;
     winMessage?: string;
     loseMessage?: string;
     wrongWord?: string;
@@ -64,25 +28,7 @@ export interface Chaos {
 export interface FastTypeTyping {
     interaction: Message | ChatInputCommandInteraction;
     client: Client;
-    embed: {
-        color?: ColorResolvable;
-        title: string;
-        url?: string;
-        author?: {
-            name: string;
-            icon_url?: string;
-            url?: string;
-        };
-        footer?: {
-            text: string;
-            icon_url?: string;
-        };
-        description?: string;
-        fields?: Fields[];
-        image?: string;
-        timestamp?: Date;
-        thumbnail?: string;
-    };
+    embed: Embeds;
     sentence?: string;
     winMessage?: string;
     loseMessage?: string;
@@ -95,25 +41,7 @@ export interface FastTypeTyping {
 export interface LieSwatterTypes {
     interaction: Message | ChatInputCommandInteraction;
     client: Client;
-    embed: {
-        color?: ColorResolvable;
-        title: string;
-        url?: string;
-        author?: {
-            name: string;
-            icon_url?: string;
-            url?: string;
-        };
-        footer?: {
-            text: string;
-            icon_url?: string;
-        };
-        description?: string;
-        fields?: Fields[];
-        image?: string;
-        timestamp?: Date;
-        thumbnail?: string;
-    };
+    embed: Embeds;
     winMessage?: string;
     loseMessage?: string;
     othersMessage?: string;
@@ -128,25 +56,7 @@ export interface LieSwatterTypes {
 export interface WouldYouRatherTypes {
     interaction: Message | ChatInputCommandInteraction;
     client: Client;
-    embed: {
-        color?: ColorResolvable;
-        title: string;
-        url?: string;
-        author?: {
-            name: string;
-            icon_url?: string;
-            url?: string;
-        };
-        footer?: {
-            text: string;
-            icon_url?: string;
-        };
-        description?: string;
-        fields?: Fields[];
-        image?: string;
-        timestamp?: Date;
-        thumbnail?: string;
-    };
+    embed: Embeds;
     othersMessage?: string;
     thinkMessage?: string;
     buttons?: {
@@ -159,25 +69,7 @@ export interface WouldYouRatherTypes {
 export interface GuessTheNumberTypes {
     interaction: Message | ChatInputCommandInteraction;
     client: Client;
-    embed: {
-        color?: ColorResolvable;
-        title: string;
-        url?: string;
-        author?: {
-            name: string;
-            icon_url?: string;
-            url?: string;
-        };
-        footer?: {
-            text: string;
-            icon_url?: string;
-        };
-        description?: string;
-        fields?: Fields[];
-        image?: string;
-        timestamp?: Date;
-        thumbnail?: string;
-    };
+    embed: Embeds;
     publicGame?: boolean;
     winMessage?: {
         publicGame?: string;
@@ -198,25 +90,7 @@ export interface GuessTheNumberTypes {
 export interface WillYouPressTheButtonTypes {
     interaction: Message | ChatInputCommandInteraction;
     client: Client;
-    embed: {
-        color?: ColorResolvable;
-        title: string;
-        url?: string;
-        author?: {
-            name: string;
-            icon_url?: string;
-            url?: string;
-        };
-        footer?: {
-            text: string;
-            icon_url?: string;
-        };
-        description?: string;
-        fields?: Fields[];
-        image?: string;
-        timestamp?: Date;
-        thumbnail?: string;
-    };
+    embed: Embeds;
     button?: {
         yes?: string;
         no?: string;
@@ -229,25 +103,7 @@ export interface WillYouPressTheButtonTypes {
 export interface QuickClickTypes {
     interaction: Message | ChatInputCommandInteraction;
     client: Client;
-    embed: {
-        color?: ColorResolvable;
-        title: string;
-        url?: string;
-        author?: {
-            name: string;
-            icon_url?: string;
-            url?: string;
-        };
-        footer?: {
-            text: string;
-            icon_url?: string;
-        };
-        description?: string;
-        fields?: Fields[];
-        image?: string;
-        timestamp?: Date;
-        thumbnail?: string;
-    };
+    embed: Embeds;
     waitMessage?: string;
     startMessage?: string;
     winMessage?: string;
@@ -260,25 +116,7 @@ export interface QuickClickTypes {
 export interface NeverHaveIEverTypes {
     interaction: Message | ChatInputCommandInteraction;
     client: Client;
-    embed: {
-        color?: ColorResolvable;
-        title: string;
-        url?: string;
-        author?: {
-            name: string;
-            icon_url?: string;
-            url?: string;
-        };
-        footer?: {
-            text: string;
-            icon_url?: string;
-        };
-        description?: string;
-        fields?: Fields[];
-        image?: string;
-        timestamp?: Date;
-        thumbnail?: string;
-    };
+    embed: Embeds;
     thinkMessage?: string;
     othersMessage?: string;
     buttons?: {
@@ -291,50 +129,14 @@ export interface NeverHaveIEverTypes {
 export interface HangmanTypes {
     interaction: Message | ChatInputCommandInteraction;
     client: Client;
-    embed: {
-        color?: ColorResolvable;
-        title: string;
-        url?: string;
-        author?: {
-            name: string;
-            icon_url?: string;
-            url?: string;
-        };
-        footer?: {
-            text: string;
-            icon_url?: string;
-        };
-        description?: string;
-        fields?: Fields[];
-        image?: string;
-        timestamp?: Date;
-        thumbnail?: string;
-    };
+    embed: Embeds;
     notifyUpdate?: boolean;
     time?: number;
 }
 export interface Types2048 {
     interaction: Message | ChatInputCommandInteraction;
     client: Client;
-    embed: {
-        color?: ColorResolvable;
-        title: string;
-        url?: string;
-        author?: {
-            name: string;
-            icon_url?: string;
-            url?: string;
-        };
-        footer?: {
-            text: string;
-            icon_url?: string;
-        };
-        description?: string;
-        fields?: Fields[];
-        image?: string;
-        timestamp?: Date;
-        thumbnail?: string;
-    };
+    embed: Embeds;
     emojis?: {
         up: string;
         down: string;
@@ -348,25 +150,7 @@ export interface Types2048 {
 export interface ShuffleGuessTypes {
     interaction: Message | ChatInputCommandInteraction;
     client: Client;
-    embed: {
-        color?: ColorResolvable;
-        title: string;
-        url?: string;
-        author?: {
-            name: string;
-            icon_url?: string;
-            url?: string;
-        };
-        footer?: {
-            text: string;
-            icon_url?: string;
-        };
-        description?: string;
-        fields?: Fields[];
-        image?: string;
-        timestamp?: Date;
-        thumbnail?: string;
-    };
+    embed: Embeds;
     buttons?: {
         cancel?: string;
         reshuffle?: string;
@@ -383,25 +167,7 @@ export interface ShuffleGuessTypes {
 export interface SnakeTypes {
     interaction: Message | ChatInputCommandInteraction;
     client: Client;
-    embed: {
-        color?: ColorResolvable;
-        title?: string;
-        url?: string;
-        author?: {
-            name?: string;
-            icon_url?: string;
-            url?: string;
-        };
-        footer?: {
-            text?: string;
-            icon_url?: string;
-        };
-        description?: string;
-        fields?: Fields[];
-        image?: string;
-        timestamp?: Date;
-        thumbnail?: string;
-    };
+    embed: Embeds;
     emojis?: {
         up: string;
         down: string;
@@ -424,25 +190,7 @@ export interface FightTypes {
     interaction: Message | ChatInputCommandInteraction;
     client: Client;
     opponent: User;
-    embed: {
-        color?: ColorResolvable;
-        title?: string;
-        url?: string;
-        author?: {
-            name?: string;
-            icon_url?: string;
-            url?: string;
-        };
-        footer?: {
-            text?: string;
-            icon_url?: string;
-        };
-        description?: string;
-        fields?: Fields[];
-        image?: string;
-        timestamp?: Date;
-        thumbnail?: string;
-    };
+    embed: Embeds;
     buttons?: {
         hit?: string;
         heal?: string;
@@ -466,6 +214,22 @@ export interface FightTypes {
     healMax?: number;
     time?: number;
     notifyUpdate?: boolean;
+}
+export interface Embeds {
+    color?: ColorResolvable;
+    title?: string;
+    url?: string;
+    author?: {
+        name?: string;
+        icon_url?: string;
+        url?: string;
+    };
+    footer?: EmbedFooterData;
+    description?: string;
+    fields?: Fields[];
+    image?: string;
+    timestamp?: Date;
+    thumbnail?: string;
 }
 export interface Fields {
     name: string;

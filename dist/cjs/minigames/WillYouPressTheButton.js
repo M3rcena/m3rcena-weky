@@ -74,35 +74,10 @@ const WillYouPressTheButton = async (options) => {
     const id2 = (0, functions_1.getRandomString)(20) +
         '-' +
         (0, functions_1.getRandomString)(20);
-    let embed = new discord_js_1.EmbedBuilder()
-        .setTitle(`${options.thinkMessage}...`)
-        .setColor(options.embed.color ?? "Blurple")
-        .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
-        .setURL(options.embed.url ? options.embed.url : null)
-        .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-        .setImage(options.embed.image ? options.embed.image : null)
-        .setFooter({
-        text: "©️ M3rcena Development | Powered by Mivator",
-        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-    });
-    if (options.embed.footer) {
-        embed.setFooter({
-            text: options.embed.footer.text,
-            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-        });
-    }
-    ;
-    if (options.embed.author) {
-        embed.setAuthor({
-            name: options.embed.author.name,
-            iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-            url: options.embed.author.url ? options.embed.author.url : undefined
-        });
-    }
-    ;
-    if (options.embed.fields) {
-        embed.setFields(options.embed.fields);
-    }
+    let oldDescription = options.embed.description ?? "```{{statement1}}```\n**but**\n\n```{{statement2}}```";
+    options.embed.title = options.embed.title ?? "Will You Press The Button?";
+    options.embed.description = options.thinkMessage ? options.thinkMessage : "I am thinking";
+    let embed = (0, functions_1.createEmbed)(options.embed);
     const think = await interaction.reply({
         embeds: [embed],
     });
@@ -122,47 +97,11 @@ const WillYouPressTheButton = async (options) => {
         .setStyle(discord_js_1.ButtonStyle.Danger)
         .setLabel(options.button.no)
         .setCustomId(id2);
-    embed = new discord_js_1.EmbedBuilder()
-        .setTitle(options.embed.title)
-        .setDescription(`${options.embed.description
-        .replace('{{statement1}}', res.questions[0].charAt(0).toUpperCase() +
-        res.questions[0].slice(1))
-        .replace('{{statement2}}', res.questions[1].charAt(0).toUpperCase() +
-        res.questions[1].slice(1))}`)
-        .setColor(options.embed.color ?? "Blurple")
-        .setTimestamp(options.embed.timestamp ? new Date() : null)
-        .setURL(options.embed.url ? options.embed.url : null)
-        .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-        .setImage(options.embed.image ? options.embed.image : null)
-        .setFooter({
-        text: "©️ M3rcena Development | Powered by Mivator",
-        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-    });
-    if (options.embed.footer) {
-        embed.setFooter({
-            text: options.embed.footer.text,
-            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-        });
-    }
-    ;
-    if (options.embed.author) {
-        embed.setAuthor({
-            name: options.embed.author.name,
-            iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-            url: options.embed.author.url ? options.embed.author.url : undefined
-        });
-    }
-    if (options.embed.fields) {
-        embed.setFields(options.embed.fields);
-    }
+    options.embed.description = oldDescription.replace('{{statement1}}', res.questions[0].charAt(0).toUpperCase() + res.questions[0].slice(1)).replace('{{statement2}}', res.questions[1].charAt(0).toUpperCase() + res.questions[1].slice(1));
+    embed = (0, functions_1.createEmbed)(options.embed);
     await think.edit({
         embeds: [embed],
-        components: [
-            {
-                type: 1,
-                components: [btn, btn2]
-            }
-        ]
+        components: [new discord_js_1.ActionRowBuilder().addComponents(btn, btn2)]
     });
     const gameCollector = think.createMessageComponentCollector({
         time: options.time ? options.time : 60000,
@@ -193,12 +132,7 @@ const WillYouPressTheButton = async (options) => {
             embed.setTimestamp(new Date());
             await wyptb.editReply({
                 embeds: [embed],
-                components: [
-                    {
-                        type: 1,
-                        components: [btn, btn2]
-                    }
-                ]
+                components: [new discord_js_1.ActionRowBuilder().addComponents(btn, btn2)]
             });
         }
         else if (wyptb.customId === id2) {
@@ -216,12 +150,7 @@ const WillYouPressTheButton = async (options) => {
             embed.setTimestamp(new Date());
             await wyptb.editReply({
                 embeds: [embed],
-                components: [
-                    {
-                        type: 1,
-                        components: [btn, btn2]
-                    }
-                ]
+                components: [new discord_js_1.ActionRowBuilder().addComponents(btn, btn2)]
             });
         }
     });

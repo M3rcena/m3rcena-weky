@@ -1,6 +1,6 @@
 import chalk from "chalk";
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from "discord.js";
-import { checkPackageUpdates, convertTime, getRandomString, shuffleArray } from "../functions/functions.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
+import { checkPackageUpdates, convertTime, createEmbed, getRandomString, shuffleArray } from "../functions/functions.js";
 import { OptionsChecking } from "../functions/OptionChecking.js";
 const currentGames = {};
 const QuickClick = async (options) => {
@@ -76,71 +76,13 @@ const QuickClick = async (options) => {
     }
     ;
     if (currentGames[interaction.guild.id]) {
-        let embed = new EmbedBuilder()
-            .setTitle(options.embed.title)
-            .setDescription(options.ongoingMessage ? options.ongoingMessage.replace('{{channel}}', `${currentGames[`${interaction.guild.id}_channel`]}`) : `A game is already runnning in <#${currentGames[`${interaction.guild.id}_channel`]}>. You can\'t start a new one!`)
-            .setColor(options.embed.color ?? "Blurple")
-            .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
-            .setURL(options.embed.url ? options.embed.url : null)
-            .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-            .setImage(options.embed.image ? options.embed.image : null)
-            .setFooter({
-            text: "©️ M3rcena Development | Powered by Mivator",
-            iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-        });
-        if (options.embed.footer) {
-            embed.setFooter({
-                text: options.embed.footer.text,
-                iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-            });
-        }
-        ;
-        if (options.embed.author) {
-            embed.setAuthor({
-                name: options.embed.author.name,
-                iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                url: options.embed.author.url ? options.embed.author.url : undefined
-            });
-        }
-        ;
-        if (options.embed.fields) {
-            embed.setFields(options.embed.fields);
-        }
-        ;
+        options.embed.description = options.ongoingMessage ? options.ongoingMessage.replace('{{channel}}', `${currentGames[`${interaction.guild.id}_channel`]}`) : `A game is already runnning in <#${currentGames[`${interaction.guild.id}_channel`]}>. You can\'t start a new one!`;
+        let embed = createEmbed(options.embed);
         return interaction.reply({ embeds: [embed] });
     }
     ;
-    let embed = new EmbedBuilder()
-        .setTitle(options.embed.title)
-        .setDescription(options.waitMessage ? options.waitMessage : 'The buttons may appear anytime now!')
-        .setColor(options.embed.color ?? "Blurple")
-        .setTimestamp(options.embed.timestamp ? options.embed.timestamp : null)
-        .setURL(options.embed.url ? options.embed.url : null)
-        .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-        .setImage(options.embed.image ? options.embed.image : null)
-        .setFooter({
-        text: "©️ M3rcena Development | Powered by Mivator",
-        iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-    });
-    if (options.embed.footer) {
-        embed.setFooter({
-            text: options.embed.footer.text,
-            iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-        });
-    }
-    ;
-    if (options.embed.author) {
-        embed.setAuthor({
-            name: options.embed.author.name,
-            iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-            url: options.embed.author.url ? options.embed.author.url : undefined
-        });
-    }
-    ;
-    if (options.embed.fields) {
-        embed.setFields(options.embed.fields);
-    }
-    ;
+    options.embed.description = options.waitMessage ? options.waitMessage : 'The buttons may appear anytime now!';
+    let embed = createEmbed(options.embed);
     const msg = await interaction.reply({ embeds: [embed] });
     currentGames[interaction.guild.id] = true;
     currentGames[`${interaction.guild.id}_channel`] = interaction.channel.id;
@@ -168,37 +110,8 @@ const QuickClick = async (options) => {
         rows.forEach((row, i) => {
             row.addComponents(buttons.slice(0 + i * 5, 5 + i * 5));
         });
-        let _embed = new EmbedBuilder()
-            .setTitle(options.embed.title)
-            .setDescription(options.startMessage ? options.startMessage.replace('{{time}}', convertTime(options.time ? options.time : 60000)) : `First person to press the correct button will win. You have **${convertTime(options.time ? options.time : 60000)}**!`)
-            .setColor(options.embed.color ?? "Blurple")
-            .setTimestamp(options.embed.timestamp ? new Date() : null)
-            .setURL(options.embed.url ? options.embed.url : null)
-            .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-            .setImage(options.embed.image ? options.embed.image : null)
-            .setFooter({
-            text: "©️ M3rcena Development | Powered by Mivator",
-            iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-        });
-        if (options.embed.footer) {
-            _embed.setFooter({
-                text: options.embed.footer.text,
-                iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-            });
-        }
-        ;
-        if (options.embed.author) {
-            _embed.setAuthor({
-                name: options.embed.author.name,
-                iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                url: options.embed.author.url ? options.embed.author.url : undefined
-            });
-        }
-        ;
-        if (options.embed.fields) {
-            _embed.setFields(options.embed.fields);
-        }
-        ;
+        options.embed.description = options.startMessage ? options.startMessage.replace('{{time}}', convertTime(options.time ? options.time : 60000)) : `First person to press the correct button will win. You have **${convertTime(options.time ? options.time : 60000)}**!`;
+        let _embed = createEmbed(options.embed);
         await msg.edit({
             embeds: [_embed],
             components: rows,
@@ -225,40 +138,11 @@ const QuickClick = async (options) => {
                 rows.forEach((row, i) => {
                     row.addComponents(buttons.slice(0 + i * 5, 5 + i * 5));
                 });
-                let __embed = new EmbedBuilder()
-                    .setTitle(options.embed.title)
-                    .setDescription(options.winMessage ? options.winMessage
+                options.embed.description = options.winMessage ? options.winMessage
                     .replace('{{winner}}', button.user.id)
                     .replace('{{time}}', `${(Date.now() - gameCreatedAt) / 1000}`)
-                    : `GG, <@${button.user.id}> pressed the button in **${(Date.now() - gameCreatedAt) / 1000} seconds**.`)
-                    .setColor(options.embed.color ?? "Blurple")
-                    .setTimestamp(options.embed.timestamp ? new Date() : null)
-                    .setURL(options.embed.url ? options.embed.url : null)
-                    .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                    .setImage(options.embed.image ? options.embed.image : null)
-                    .setFooter({
-                    text: "©️ M3rcena Development | Powered by Mivator",
-                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-                });
-                if (options.embed.footer) {
-                    __embed.setFooter({
-                        text: options.embed.footer.text,
-                        iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                    });
-                }
-                ;
-                if (options.embed.author) {
-                    __embed.setAuthor({
-                        name: options.embed.author.name,
-                        iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                        url: options.embed.author.url ? options.embed.author.url : undefined
-                    });
-                }
-                ;
-                if (options.embed.fields) {
-                    __embed.setFields(options.embed.fields);
-                }
-                ;
+                    : `GG, <@${button.user.id}> pressed the button in **${(Date.now() - gameCreatedAt) / 1000} seconds**.`;
+                let __embed = createEmbed(options.embed);
                 await msg.edit({
                     embeds: [__embed],
                     components: rows,
@@ -278,38 +162,8 @@ const QuickClick = async (options) => {
                 rows.forEach((row, i) => {
                     row.addComponents(buttons.slice(0 + i * 5, 5 + i * 5));
                 });
-                let __embed = new EmbedBuilder()
-                    .setTitle(options.embed.title)
-                    .setDescription(options.loseMessage ? options.loseMessage
-                    : 'No one pressed the button in time. So, I dropped the game!')
-                    .setColor(options.embed.color ?? "Blurple")
-                    .setTimestamp(options.embed.timestamp ? new Date() : null)
-                    .setURL(options.embed.url ? options.embed.url : null)
-                    .setThumbnail(options.embed.thumbnail ? options.embed.thumbnail : null)
-                    .setImage(options.embed.image ? options.embed.image : null)
-                    .setFooter({
-                    text: "©️ M3rcena Development | Powered by Mivator",
-                    iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png"
-                });
-                if (options.embed.footer) {
-                    __embed.setFooter({
-                        text: options.embed.footer.text,
-                        iconURL: options.embed.footer.icon_url ? options.embed.footer.icon_url : undefined
-                    });
-                }
-                ;
-                if (options.embed.author) {
-                    __embed.setAuthor({
-                        name: options.embed.author.name,
-                        iconURL: options.embed.author.icon_url ? options.embed.author.icon_url : undefined,
-                        url: options.embed.author.url ? options.embed.author.url : undefined
-                    });
-                }
-                ;
-                if (options.embed.fields) {
-                    __embed.setFields(options.embed.fields);
-                }
-                ;
+                options.embed.description = options.loseMessage ? options.loseMessage : 'No one pressed the button in time. So, I dropped the game!';
+                let __embed = createEmbed(options.embed);
                 await msg.edit({
                     embeds: [__embed],
                     components: rows,
