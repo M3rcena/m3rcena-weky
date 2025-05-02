@@ -2,7 +2,7 @@ import chalk from "chalk";
 import { Client } from "discord.js";
 
 import type {
-    Calc, Chaos, FastTypeTyping, GuessTheNumberTypes, HangmanTypes, LieSwatterTypes,
+    CalcTypes, ChaosTypes, FastTypeTypes, GuessTheNumberTypes, HangmanTypes, LieSwatterTypes,
     NeverHaveIEverTypes, QuickClickTypes, WillYouPressTheButtonTypes, WouldYouRatherTypes,
     Types2048, ShuffleGuessTypes, SnakeTypes, FightTypes
 } from "../Types/";
@@ -83,7 +83,7 @@ const validateEmbedAuthor = (author: any, gameName: string): void => {
 };
 
 export function OptionsChecking(
-    options: Calc | Chaos | FastTypeTyping | GuessTheNumberTypes |
+    options: CalcTypes | ChaosTypes | FastTypeTypes | GuessTheNumberTypes |
         LieSwatterTypes | WouldYouRatherTypes | WillYouPressTheButtonTypes |
         HangmanTypes | NeverHaveIEverTypes | QuickClickTypes | Types2048 |
         ShuffleGuessTypes | SnakeTypes | FightTypes,
@@ -98,8 +98,8 @@ export function OptionsChecking(
     }
 
     // Basic validations
-    if (!options.interaction) {
-        throw createError(GameName, "No interaction provided.");
+    if (!options.interaction && !options.message) {
+        throw createError(GameName, "No interaction or message provided.");
     }
 
     if (!options.client) {

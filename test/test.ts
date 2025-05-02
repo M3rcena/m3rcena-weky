@@ -16,27 +16,26 @@ const client = new Client({
 }) as ExtendedClient;
 
 client.on("ready", async (cl) => {
-    console.log("Bot is ready");
+    console.log(`${cl.user.username} is ready`);
     client.wekyManager = new WekyManager(cl);
 });
 
-client.on("messageCreate", async (message) => {
-    if (message.author.bot) return;
-    if (message.content === "w!calculator") {
+client.on("messageCreate", async (msg) => {
+    if (msg.author.bot) return;
+    if (msg.content === "w!calculator") {
         client.wekyManager.createCalculator({
-            interaction: message,
+            message: msg,
             client: client,
             embed: {
                 color: "Blurple",
                 title: "Calculator | M3rcena Development",
-                timestamp: new Date(),
             }
         })
     };
 
-    if (message.content === 'w!chaoswords') {
+    if (msg.content === 'w!chaoswords') {
         client.wekyManager.createChaosWords({
-            interaction: message,
+            message: msg,
             client: client,
             embed: {
                 color: "Blurple",
@@ -44,11 +43,11 @@ client.on("messageCreate", async (message) => {
                 timestamp: new Date(),
             }
         })
-    }
+    };
 
-    if (message.content === "w!fasttype") {
+    if (msg.content === "w!fasttype") {
         client.wekyManager.createFastType({
-            interaction: message,
+            message: msg,
             client: client,
             embed: {
                 color: "Blurple",
@@ -58,11 +57,11 @@ client.on("messageCreate", async (message) => {
         })
     };
 
-    if (message.content.startsWith("w!fight")) {
-        const opponent = message.mentions.users.first();
+    if (msg.content.startsWith("w!fight")) {
+        const opponent = msg.mentions.users.first();
         if (!opponent) return;
         client.wekyManager.createFight({
-            interaction: message,
+            message: msg,
             client: client,
             opponent: opponent,
             embed: {
@@ -73,9 +72,9 @@ client.on("messageCreate", async (message) => {
         })
     };
 
-    if (message.content === "w!lie-swatter") {
+    if (msg.content === "w!lie-swatter") {
         client.wekyManager.createLieSwatter({
-            interaction: message,
+            message: msg,
             client: client,
             embed: {
                 color: "Blurple",
@@ -85,21 +84,21 @@ client.on("messageCreate", async (message) => {
         })
     };
 
-    if (message.content === "w!wyr") {
+    if (msg.content === "w!wyr") {
         client.wekyManager.createWouldYouRather({
-            interaction: message,
+            message: msg,
             client: client,
             embed: {
                 color: "Blurple",
-                title: "Lie Swatter | M3rcena Development",
+                title: "Would You Rather | M3rcena Development",
                 timestamp: new Date(),
             }
         })
     };
 
-    if (message.content === "w!gtn") {
+    if (msg.content === "w!gtn") {
         client.wekyManager.createGuessTheNumber({
-            interaction: message,
+            message: msg,
             client: client,
             embed: {
                 color: "Blurple",
@@ -110,9 +109,9 @@ client.on("messageCreate", async (message) => {
         })
     };
 
-    if (message.content === "w!wyptb") {
+    if (msg.content === "w!wyptb") {
         client.wekyManager.createWillYouPressTheButton({
-            interaction: message,
+            message: msg,
             client: client,
             embed: {
                 color: "Blurple",
@@ -122,9 +121,9 @@ client.on("messageCreate", async (message) => {
         })
     };
 
-    if (message.content === 'w!quickclick') {
+    if (msg.content === 'w!quickclick') {
         client.wekyManager.createQuickClick({
-            interaction: message,
+            message: msg,
             client: client,
             embed: {
                 color: "Blurple",
@@ -134,9 +133,9 @@ client.on("messageCreate", async (message) => {
         })
     };
 
-    if (message.content === 'w!nhie') {
+    if (msg.content === 'w!nhie') {
         client.wekyManager.createNeverHaveIEver({
-            interaction: message,
+            message: msg,
             client: client,
             embed: {
                 color: "Blurple",
@@ -146,9 +145,9 @@ client.on("messageCreate", async (message) => {
         });
     };
 
-    if (message.content === 'w!hangman') {
+    if (msg.content === 'w!hangman') {
         client.wekyManager.createHangman({
-            interaction: message,
+            message: msg,
             client: client,
             embed: {
                 color: "Blurple",
@@ -158,9 +157,9 @@ client.on("messageCreate", async (message) => {
         });
     };
 
-    if (message.content === 'w!2048') {
+    if (msg.content === 'w!2048') {
         client.wekyManager.create2048({
-            interaction: message,
+            message: msg,
             client: client,
             embed: {
                 color: "Blurple",
@@ -169,9 +168,9 @@ client.on("messageCreate", async (message) => {
         });
     };
 
-    if (message.content === 'w!shuffle') {
+    if (msg.content === 'w!shuffle') {
         client.wekyManager.createShuffleGuess({
-            interaction: message,
+            message: msg,
             client: client,
             embed: {
                 color: "Blurple",
@@ -180,16 +179,16 @@ client.on("messageCreate", async (message) => {
         });
     };
 
-    if (message.content === 'w!snake') {
+    if (msg.content === 'w!snake') {
         client.wekyManager.createSnake({
-            interaction: message,
+            message: msg,
             client: client,
             embed: {
                 color: "Blurple",
-                title: "Snake | M3rcena Development",
+                title: "Snake | M3rcena Development"
             }
-        });
-    };
+        })
+    }
 });
 
-client.login("Your bot token");
+client.login('Your Token Here!');

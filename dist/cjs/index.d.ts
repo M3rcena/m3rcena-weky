@@ -1,5 +1,5 @@
 import DiscordJS from "discord.js";
-import type { Types2048, Calc, Chaos, FastTypeTyping, FightTypes, GuessTheNumberTypes, HangmanTypes, LieSwatterTypes, NeverHaveIEverTypes, QuickClickTypes, WillYouPressTheButtonTypes, WouldYouRatherTypes, ShuffleGuessTypes, SnakeTypes } from "./Types/index.js";
+import type { Types2048, CalcTypes, ChaosTypes, FastTypeTypes, FightTypes, GuessTheNumberTypes, HangmanTypes, LieSwatterTypes, NeverHaveIEverTypes, QuickClickTypes, WillYouPressTheButtonTypes, WouldYouRatherTypes, ShuffleGuessTypes, SnakeTypes } from "./Types";
 export declare class WekyManager {
     private client;
     constructor(client: DiscordJS.Client);
@@ -24,7 +24,7 @@ export declare class WekyManager {
      *
      * @copyright All rights reserved. M3rcena Development
      */
-    create2048(options: Types2048): Promise<DiscordJS.OmitPartialGroupDMChannel<DiscordJS.Message<boolean>>>;
+    create2048(options: Types2048): Promise<void | DiscordJS.Message<boolean>>;
     /**
      *
      * Creates a new instance of the Calculator game.
@@ -46,7 +46,7 @@ export declare class WekyManager {
      *
      * @copyright All rights reserved. M3rcena Development
      */
-    createCalculator(options: Calc): Promise<void>;
+    createCalculator(options: CalcTypes): Promise<void>;
     /**
      *
      * Create a new instance of the Chaos Words game.
@@ -68,7 +68,7 @@ export declare class WekyManager {
      *
      * @copyright All rights reserved. M3rcena Development
      */
-    createChaosWords(options: Chaos): Promise<void>;
+    createChaosWords(options: ChaosTypes): Promise<void>;
     /**
      *
      * Creates a new instance of the Fast Type game.
@@ -90,10 +90,8 @@ export declare class WekyManager {
      *
      * @copyright All rights reserved. M3rcena Development
      */
-    createFastType(options: FastTypeTyping): Promise<void>;
+    createFastType(options: FastTypeTypes): Promise<void>;
     /**
-     *
-     * UNDER DEVELOPMENT! DO NOT USE!
      *
      * Creates a new instance of the Fight game.
      *
@@ -114,7 +112,7 @@ export declare class WekyManager {
      *
      * @copyright All rights reserved. M3rcena Development
      */
-    createFight(options: FightTypes): Promise<void | DiscordJS.OmitPartialGroupDMChannel<DiscordJS.Message<boolean>>>;
+    createFight(options: FightTypes): Promise<DiscordJS.InteractionResponse<boolean> | DiscordJS.OmitPartialGroupDMChannel<DiscordJS.Message<boolean>>>;
     /**
      *
      * Creates a new instance of the Guess The Number game.
@@ -224,7 +222,7 @@ export declare class WekyManager {
      *
      * @copyright All rights reserved. M3rcena Development
      */
-    createQuickClick(options: QuickClickTypes): Promise<any>;
+    createQuickClick(options: QuickClickTypes): Promise<DiscordJS.InteractionResponse<boolean> | DiscordJS.OmitPartialGroupDMChannel<DiscordJS.Message<boolean>>>;
     /**
      *
      * Creates a new instance of the Shuffle Guess game.

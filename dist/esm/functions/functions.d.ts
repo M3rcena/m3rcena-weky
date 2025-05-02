@@ -1,5 +1,5 @@
 import { ActionRowBuilder, BufferResolvable, ButtonBuilder, EmbedBuilder } from "discord.js";
-import { Embeds } from "src/Types";
+import type { Embeds } from "../Types";
 export declare const getRandomString: (length: number) => string;
 export declare const createButton: (label: string, disabled: boolean) => ButtonBuilder;
 export declare const createDisabledButton: (label: string) => ButtonBuilder;

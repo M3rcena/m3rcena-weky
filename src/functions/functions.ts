@@ -7,7 +7,6 @@ import {
 	ActionRowBuilder, BufferResolvable, ButtonBuilder, ButtonStyle, EmbedBuilder
 } from "discord.js";
 import { ofetch } from "ofetch";
-import { Embeds } from "src/Types";
 import stringWidth from "string-width";
 import { promisify } from "util";
 
@@ -16,7 +15,9 @@ import { createCanvas } from "@napi-rs/canvas";
 import weky_package from "../../package.json";
 import wordList from "../data/words.json";
 
+import type { Embeds } from "../Types";
 import type { SKRSContext2D } from "@napi-rs/canvas";
+
 export const getRandomString = function (length: number) {
 	const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 	const randomBytesArray = new Uint8Array(length);

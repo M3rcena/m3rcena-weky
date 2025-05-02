@@ -1,14 +1,19 @@
 import type { ChatInputCommandInteraction, Client, ColorResolvable, EmbedFooterData, Message, User } from "discord.js";
-export interface Calc {
-    interaction: Message | ChatInputCommandInteraction;
+interface BaseCalc {
     client: Client;
     embed: Embeds;
     invalidQuery?: string;
     disabledQuery?: string;
     notifyUpdate?: boolean;
 }
-export interface Chaos {
-    interaction: Message | ChatInputCommandInteraction;
+export type CalcTypes = BaseCalc & ({
+    interaction: ChatInputCommandInteraction;
+    message?: undefined;
+} | {
+    message: Message;
+    interaction?: undefined;
+});
+interface BaseChaos {
     client: Client;
     embed: Embeds;
     winMessage?: string;
@@ -25,8 +30,14 @@ export interface Chaos {
     otherMessage?: string;
     notifyUpdate?: boolean;
 }
-export interface FastTypeTyping {
-    interaction: Message | ChatInputCommandInteraction;
+export type ChaosTypes = BaseChaos & ({
+    interaction: ChatInputCommandInteraction;
+    message?: undefined;
+} | {
+    message: Message;
+    interaction?: undefined;
+});
+interface BaseFastType {
     client: Client;
     embed: Embeds;
     sentence?: string;
@@ -38,8 +49,14 @@ export interface FastTypeTyping {
     cancelMessage?: string;
     notifyUpdate?: boolean;
 }
-export interface LieSwatterTypes {
-    interaction: Message | ChatInputCommandInteraction;
+export type FastTypeTypes = BaseFastType & ({
+    interaction: ChatInputCommandInteraction;
+    message?: undefined;
+} | {
+    message: Message;
+    interaction?: undefined;
+});
+interface BaseLieSwatter {
     client: Client;
     embed: Embeds;
     winMessage?: string;
@@ -53,8 +70,14 @@ export interface LieSwatterTypes {
     time?: number;
     notifyUpdate?: boolean;
 }
-export interface WouldYouRatherTypes {
-    interaction: Message | ChatInputCommandInteraction;
+export type LieSwatterTypes = BaseLieSwatter & ({
+    interaction: ChatInputCommandInteraction;
+    message?: undefined;
+} | {
+    message: Message;
+    interaction?: undefined;
+});
+interface BaseWouldYouRather {
     client: Client;
     embed: Embeds;
     othersMessage?: string;
@@ -66,8 +89,14 @@ export interface WouldYouRatherTypes {
     time?: number;
     notifyUpdate?: boolean;
 }
-export interface GuessTheNumberTypes {
-    interaction: Message | ChatInputCommandInteraction;
+export type WouldYouRatherTypes = BaseWouldYouRather & ({
+    interaction: ChatInputCommandInteraction;
+    message?: undefined;
+} | {
+    message: Message;
+    interaction?: undefined;
+});
+interface BaseGuessTheNumber {
     client: Client;
     embed: Embeds;
     publicGame?: boolean;
@@ -87,8 +116,14 @@ export interface GuessTheNumberTypes {
     gameID?: string;
     notifyUpdate?: boolean;
 }
-export interface WillYouPressTheButtonTypes {
-    interaction: Message | ChatInputCommandInteraction;
+export type GuessTheNumberTypes = BaseGuessTheNumber & ({
+    interaction: ChatInputCommandInteraction;
+    message?: undefined;
+} | {
+    message: Message;
+    interaction?: undefined;
+});
+interface BaseWillYouPressTheButton {
     client: Client;
     embed: Embeds;
     button?: {
@@ -100,8 +135,14 @@ export interface WillYouPressTheButtonTypes {
     time?: number;
     notifyUpdate?: boolean;
 }
-export interface QuickClickTypes {
-    interaction: Message | ChatInputCommandInteraction;
+export type WillYouPressTheButtonTypes = BaseWillYouPressTheButton & ({
+    interaction: ChatInputCommandInteraction;
+    message?: undefined;
+} | {
+    message: Message;
+    interaction?: undefined;
+});
+interface BaseQuickClick {
     client: Client;
     embed: Embeds;
     waitMessage?: string;
@@ -113,8 +154,14 @@ export interface QuickClickTypes {
     emoji?: string;
     notifyUpdate?: boolean;
 }
-export interface NeverHaveIEverTypes {
-    interaction: Message | ChatInputCommandInteraction;
+export type QuickClickTypes = BaseQuickClick & ({
+    interaction: ChatInputCommandInteraction;
+    message?: undefined;
+} | {
+    message: Message;
+    interaction?: undefined;
+});
+interface BaseNeverHaveIEver {
     client: Client;
     embed: Embeds;
     thinkMessage?: string;
@@ -126,15 +173,27 @@ export interface NeverHaveIEverTypes {
     notifyUpdate?: boolean;
     time?: number;
 }
-export interface HangmanTypes {
-    interaction: Message | ChatInputCommandInteraction;
+export type NeverHaveIEverTypes = BaseNeverHaveIEver & ({
+    interaction: ChatInputCommandInteraction;
+    message?: undefined;
+} | {
+    message: Message;
+    interaction?: undefined;
+});
+interface BaseHangman {
     client: Client;
     embed: Embeds;
     notifyUpdate?: boolean;
     time?: number;
 }
-export interface Types2048 {
-    interaction: Message | ChatInputCommandInteraction;
+export type HangmanTypes = BaseHangman & ({
+    interaction: ChatInputCommandInteraction;
+    message?: undefined;
+} | {
+    message: Message;
+    interaction?: undefined;
+});
+interface BaseTypes2048 {
     client: Client;
     embed: Embeds;
     emojis?: {
@@ -147,8 +206,14 @@ export interface Types2048 {
     notifyUpdate?: boolean;
     time?: number;
 }
-export interface ShuffleGuessTypes {
-    interaction: Message | ChatInputCommandInteraction;
+export type Types2048 = BaseTypes2048 & ({
+    message: Message;
+    interaction?: undefined;
+} | {
+    interaction: ChatInputCommandInteraction;
+    message?: undefined;
+});
+interface BaseShuffleGuess {
     client: Client;
     embed: Embeds;
     buttons?: {
@@ -164,8 +229,14 @@ export interface ShuffleGuessTypes {
     time?: number;
     notifyUpdate?: boolean;
 }
-export interface SnakeTypes {
-    interaction: Message | ChatInputCommandInteraction;
+export type ShuffleGuessTypes = BaseShuffleGuess & ({
+    interaction: ChatInputCommandInteraction;
+    message?: undefined;
+} | {
+    message: Message;
+    interaction?: undefined;
+});
+interface BaseSnake {
     client: Client;
     embed: Embeds;
     emojis?: {
@@ -186,8 +257,14 @@ export interface SnakeTypes {
     time?: number;
     notifyUpdate?: boolean;
 }
-export interface FightTypes {
-    interaction: Message | ChatInputCommandInteraction;
+export type SnakeTypes = BaseSnake & ({
+    interaction: ChatInputCommandInteraction;
+    message?: undefined;
+} | {
+    message: Message;
+    interaction?: undefined;
+});
+interface BaseFight {
     client: Client;
     opponent: User;
     embed: Embeds;
@@ -215,6 +292,13 @@ export interface FightTypes {
     time?: number;
     notifyUpdate?: boolean;
 }
+export type FightTypes = BaseFight & ({
+    interaction: ChatInputCommandInteraction;
+    message?: undefined;
+} | {
+    message: Message;
+    interaction?: undefined;
+});
 export interface Embeds {
     color?: ColorResolvable;
     title?: string;
@@ -236,3 +320,4 @@ export interface Fields {
     value: string;
     inline?: boolean;
 }
+export {};

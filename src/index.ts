@@ -1,22 +1,46 @@
 import chalk from "chalk";
 import DiscordJS from "discord.js";
 
-import mini2048 from "./minigames/2048";
-import Calculator from "./minigames/Calculator";
-import ChaosWords from "./minigames/ChaosWords";
-import FastType from "./minigames/FastType";
-import Fight from "./minigames/Fight";
-import GuessTheNumber from "./minigames/GuessTheNumber";
-import Hangman from "./minigames/Hangman";
-import LieSwatter from "./minigames/LieSwatter";
-import NeverHaveIEver from "./minigames/NeverHaveIEver";
-import QuickClick from "./minigames/QuickClick";
-import ShuffleGuess from "./minigames/ShuffleGuess";
-import Snake from "./minigames/Snake";
-import WillYouPressTheButton from "./minigames/WillYouPressTheButton";
-import WouldYouRather from "./minigames/WouldYouRather";
+/**
+ * 
+ * Interaction Minigames
+ * 
+ */
+import mini2048 from "./minigames/Interaction/2024";
+import Calculator from "./minigames/Interaction/Calculator";
+import ChaosWords from "./minigames/Interaction/ChaosWords";
+import FastType from "./minigames/Interaction/FastType";
+import Fight from "./minigames/Interaction/Fight";
+import GuessTheNumber from "./minigames/Interaction/GuessTheNumber";
+import Hangman from "./minigames/Interaction/Hangman";
+import LieSwatter from "./minigames/Interaction/LieSwatter";
+import NeverHaveIEver from "./minigames/Interaction/NeverHaveIEver";
+import QuickClick from "./minigames/Interaction/QuickClick";
+import ShuffleGuess from "./minigames/Interaction/ShuffleGuess";
+import Snake from "./minigames/Interaction/Snake";
+import WillYouPressTheButton from "./minigames/Interaction/WillYouPressTheButton";
+import WouldYouRather from "./minigames/Interaction/WouldYouRather";
+/**
+ * 
+ * Message Minigames
+ * 
+ */
+import mini2048Message from "./minigames/Message/2024";
+import CalculatorMessage from "./minigames/Message/Calculator";
+import ChaosWordsMessage from "./minigames/Message/ChaosWords";
+import FastTypeMessage from "./minigames/Message/FastType";
+import FightMessage from "./minigames/Message/Fight";
+import GuessTheNumberMessage from "./minigames/Message/GuessTheNumber";
+import HangmanMessage from "./minigames/Message/Hangman";
+import LieSwatterMessage from "./minigames/Message/LieSwatter";
+import NeverHaveIEverMessage from "./minigames/Message/NeverHaveIEver";
+import QuickClickMessage from "./minigames/Message/QuickClick";
+import ShuffleGuessMessage from "./minigames/Message/ShuffleGuess";
+import SnakeMessage from "./minigames/Message/Snake";
+import WillYouPressTheButtonMessage from "./minigames/Message/WillYouPressTheButton";
+import WouldYouRatherMessage from "./minigames/Message/WouldYouRather";
 
-import type { Types2048, Calc, Chaos, FastTypeTyping, FightTypes, GuessTheNumberTypes, HangmanTypes, LieSwatterTypes, NeverHaveIEverTypes, QuickClickTypes, WillYouPressTheButtonTypes, WouldYouRatherTypes, ShuffleGuessTypes, SnakeTypes } from "./Types/index";
+import type { Types2048, CalcTypes, ChaosTypes, FastTypeTypes, FightTypes, GuessTheNumberTypes, HangmanTypes, LieSwatterTypes, NeverHaveIEverTypes, QuickClickTypes, WillYouPressTheButtonTypes, WouldYouRatherTypes, ShuffleGuessTypes, SnakeTypes } from "./Types";
 export class WekyManager {
     private client: DiscordJS.Client;
 
@@ -47,8 +71,12 @@ export class WekyManager {
      * @copyright All rights reserved. M3rcena Development
      */
     async create2048(options: Types2048) {
-        return await mini2048(options);
-    }
+        if (options.interaction) {
+            return await mini2048(options);
+        } else if (options.message) {
+            return await mini2048Message(options);
+        }
+    };
 
     /**
      * 
@@ -71,8 +99,12 @@ export class WekyManager {
      * 
      * @copyright All rights reserved. M3rcena Development
      */
-    async createCalculator(options: Calc) {
-        return await Calculator(options);
+    async createCalculator(options: CalcTypes) {
+        if (options.interaction) {
+            return await Calculator(options);
+        } else if (options.message) {
+            return await CalculatorMessage(options);
+        }
     }
 
     /**
@@ -96,8 +128,12 @@ export class WekyManager {
      * 
      * @copyright All rights reserved. M3rcena Development
      */
-    async createChaosWords(options: Chaos) {
-        return await ChaosWords(options);
+    async createChaosWords(options: ChaosTypes) {
+        if (options.interaction) {
+            return await ChaosWords(options);
+        } else if (options.message) {
+            return await ChaosWordsMessage(options);
+        }
     }
 
     /**
@@ -121,13 +157,15 @@ export class WekyManager {
      * 
      * @copyright All rights reserved. M3rcena Development
      */
-    async createFastType(options: FastTypeTyping) {
-        return await FastType(options);
+    async createFastType(options: FastTypeTypes) {
+        if (options.interaction) {
+            return await FastType(options);
+        } else if (options.message) {
+            return await FastTypeMessage(options);
+        }
     }
 
     /**
-     * 
-     * UNDER DEVELOPMENT! DO NOT USE!
      * 
      * Creates a new instance of the Fight game.
      * 
@@ -149,7 +187,11 @@ export class WekyManager {
      * @copyright All rights reserved. M3rcena Development
      */
     async createFight(options: FightTypes) {
-        return await Fight(options);
+        if (options.interaction) {
+            return await Fight(options);
+        } else if (options.message) {
+            return await FightMessage(options);
+        }
     }
 
     /**
@@ -174,7 +216,11 @@ export class WekyManager {
      * @copyright All rights reserved. M3rcena Development
      */
     async createGuessTheNumber(options: GuessTheNumberTypes) {
-        return await GuessTheNumber(options);
+        if (options.interaction) {
+            return await GuessTheNumber(options);
+        } else if (options.message) {
+            return await GuessTheNumberMessage(options);
+        }
     }
 
     /**
@@ -199,7 +245,11 @@ export class WekyManager {
      * @copyright All rights reserved. M3rcena Development
      */
     async createHangman(options: HangmanTypes) {
-        return await Hangman(options);
+        if (options.interaction) {
+            return await Hangman(options);
+        } else if (options.message) {
+            return await HangmanMessage(options);
+        }
     }
 
     /**
@@ -224,7 +274,11 @@ export class WekyManager {
      * @copyright All rights reserved. M3rcena Development
      */
     async createLieSwatter(options: LieSwatterTypes) {
-        return await LieSwatter(options);
+        if (options.interaction) {
+            return await LieSwatter(options);
+        } else if (options.message) {
+            return await LieSwatterMessage(options);
+        }
     }
 
     /**
@@ -249,7 +303,11 @@ export class WekyManager {
      * @copyright All rights reserved. M3rcena Development
      */
     async createNeverHaveIEver(options: NeverHaveIEverTypes) {
-        return await NeverHaveIEver(options);
+        if (options.interaction) {
+            return await NeverHaveIEver(options);
+        } else if (options.message) {
+            return await NeverHaveIEverMessage(options);
+        }
     }
 
     /**
@@ -274,7 +332,11 @@ export class WekyManager {
      * @copyright All rights reserved. M3rcena Development
      */
     async createQuickClick(options: QuickClickTypes) {
-        return await QuickClick(options);
+        if (options.interaction) {
+            return await QuickClick(options);
+        } else if (options.message) {
+            return await QuickClickMessage(options);
+        }
     }
 
     /**
@@ -299,7 +361,11 @@ export class WekyManager {
      * @copyright All rights reserved. M3rcena Development
      */
     async createShuffleGuess(options: ShuffleGuessTypes) {
-        return await ShuffleGuess(options);
+        if (options.interaction) {
+            return await ShuffleGuess(options);
+        } else if (options.message) {
+            return await ShuffleGuessMessage(options);
+        }
     }
 
     /**
@@ -324,7 +390,11 @@ export class WekyManager {
      * @copyright All rights reserved. M3rcena Development
      */
     async createSnake(options: SnakeTypes) {
-        return await Snake(options);
+        if (options.interaction) {
+            return await Snake(options);
+        } else if (options.message) {
+            return await SnakeMessage(options);
+        }
     }
 
     /**
@@ -349,7 +419,11 @@ export class WekyManager {
      * @copyright All rights reserved. M3rcena Development
      */
     async createWillYouPressTheButton(options: WillYouPressTheButtonTypes) {
-        return await WillYouPressTheButton(options);
+        if (options.interaction) {
+            return await WillYouPressTheButton(options);
+        } else if (options.message) {
+            return await WillYouPressTheButtonMessage(options);
+        }
     }
 
     /**
@@ -374,6 +448,10 @@ export class WekyManager {
      * @copyright All rights reserved. M3rcena Development
      */
     async createWouldYouRather(options: WouldYouRatherTypes) {
-        return await WouldYouRather(options);
+        if (options.interaction) {
+            return await WouldYouRather(options);
+        } else if (options.message) {
+            return await WouldYouRatherMessage(options);
+        }
     }
 };

@@ -66,8 +66,8 @@ function OptionsChecking(options, GameName) {
         throw createTypeError(GameName, "Options must be an object.");
     }
     // Basic validations
-    if (!options.interaction) {
-        throw createError(GameName, "No interaction provided.");
+    if (!options.interaction && !options.message) {
+        throw createError(GameName, "No interaction or message provided.");
     }
     if (!options.client) {
         throw createError(GameName, "No client provided.");

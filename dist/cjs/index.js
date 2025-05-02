@@ -4,20 +4,44 @@ exports.WekyManager = void 0;
 const tslib_1 = require("tslib");
 const chalk_1 = tslib_1.__importDefault(require("chalk"));
 const discord_js_1 = tslib_1.__importDefault(require("discord.js"));
-const _2048_1 = tslib_1.__importDefault(require("./minigames/2048.js"));
-const Calculator_1 = tslib_1.__importDefault(require("./minigames/Calculator.js"));
-const ChaosWords_1 = tslib_1.__importDefault(require("./minigames/ChaosWords.js"));
-const FastType_1 = tslib_1.__importDefault(require("./minigames/FastType.js"));
-const Fight_1 = tslib_1.__importDefault(require("./minigames/Fight.js"));
-const GuessTheNumber_1 = tslib_1.__importDefault(require("./minigames/GuessTheNumber.js"));
-const Hangman_1 = tslib_1.__importDefault(require("./minigames/Hangman.js"));
-const LieSwatter_1 = tslib_1.__importDefault(require("./minigames/LieSwatter.js"));
-const NeverHaveIEver_1 = tslib_1.__importDefault(require("./minigames/NeverHaveIEver.js"));
-const QuickClick_1 = tslib_1.__importDefault(require("./minigames/QuickClick.js"));
-const ShuffleGuess_1 = tslib_1.__importDefault(require("./minigames/ShuffleGuess.js"));
-const Snake_1 = tslib_1.__importDefault(require("./minigames/Snake.js"));
-const WillYouPressTheButton_1 = tslib_1.__importDefault(require("./minigames/WillYouPressTheButton.js"));
-const WouldYouRather_1 = tslib_1.__importDefault(require("./minigames/WouldYouRather.js"));
+/**
+ *
+ * Interaction Minigames
+ *
+ */
+const _2024_1 = tslib_1.__importDefault(require("./minigames/Interaction/2024"));
+const Calculator_1 = tslib_1.__importDefault(require("./minigames/Interaction/Calculator"));
+const ChaosWords_1 = tslib_1.__importDefault(require("./minigames/Interaction/ChaosWords"));
+const FastType_1 = tslib_1.__importDefault(require("./minigames/Interaction/FastType"));
+const Fight_1 = tslib_1.__importDefault(require("./minigames/Interaction/Fight"));
+const GuessTheNumber_1 = tslib_1.__importDefault(require("./minigames/Interaction/GuessTheNumber"));
+const Hangman_1 = tslib_1.__importDefault(require("./minigames/Interaction/Hangman"));
+const LieSwatter_1 = tslib_1.__importDefault(require("./minigames/Interaction/LieSwatter"));
+const NeverHaveIEver_1 = tslib_1.__importDefault(require("./minigames/Interaction/NeverHaveIEver"));
+const QuickClick_1 = tslib_1.__importDefault(require("./minigames/Interaction/QuickClick"));
+const ShuffleGuess_1 = tslib_1.__importDefault(require("./minigames/Interaction/ShuffleGuess"));
+const Snake_1 = tslib_1.__importDefault(require("./minigames/Interaction/Snake"));
+const WillYouPressTheButton_1 = tslib_1.__importDefault(require("./minigames/Interaction/WillYouPressTheButton"));
+const WouldYouRather_1 = tslib_1.__importDefault(require("./minigames/Interaction/WouldYouRather"));
+/**
+ *
+ * Message Minigames
+ *
+ */
+const _2024_2 = tslib_1.__importDefault(require("./minigames/Message/2024"));
+const Calculator_2 = tslib_1.__importDefault(require("./minigames/Message/Calculator"));
+const ChaosWords_2 = tslib_1.__importDefault(require("./minigames/Message/ChaosWords"));
+const FastType_2 = tslib_1.__importDefault(require("./minigames/Message/FastType"));
+const Fight_2 = tslib_1.__importDefault(require("./minigames/Message/Fight"));
+const GuessTheNumber_2 = tslib_1.__importDefault(require("./minigames/Message/GuessTheNumber"));
+const Hangman_2 = tslib_1.__importDefault(require("./minigames/Message/Hangman"));
+const LieSwatter_2 = tslib_1.__importDefault(require("./minigames/Message/LieSwatter"));
+const NeverHaveIEver_2 = tslib_1.__importDefault(require("./minigames/Message/NeverHaveIEver"));
+const QuickClick_2 = tslib_1.__importDefault(require("./minigames/Message/QuickClick"));
+const ShuffleGuess_2 = tslib_1.__importDefault(require("./minigames/Message/ShuffleGuess"));
+const Snake_2 = tslib_1.__importDefault(require("./minigames/Message/Snake"));
+const WillYouPressTheButton_2 = tslib_1.__importDefault(require("./minigames/Message/WillYouPressTheButton"));
+const WouldYouRather_2 = tslib_1.__importDefault(require("./minigames/Message/WouldYouRather"));
 class WekyManager {
     client;
     constructor(client) {
@@ -47,8 +71,14 @@ class WekyManager {
      * @copyright All rights reserved. M3rcena Development
      */
     async create2048(options) {
-        return await (0, _2048_1.default)(options);
+        if (options.interaction) {
+            return await (0, _2024_1.default)(options);
+        }
+        else if (options.message) {
+            return await (0, _2024_2.default)(options);
+        }
     }
+    ;
     /**
      *
      * Creates a new instance of the Calculator game.
@@ -71,7 +101,12 @@ class WekyManager {
      * @copyright All rights reserved. M3rcena Development
      */
     async createCalculator(options) {
-        return await (0, Calculator_1.default)(options);
+        if (options.interaction) {
+            return await (0, Calculator_1.default)(options);
+        }
+        else if (options.message) {
+            return await (0, Calculator_2.default)(options);
+        }
     }
     /**
      *
@@ -95,7 +130,12 @@ class WekyManager {
      * @copyright All rights reserved. M3rcena Development
      */
     async createChaosWords(options) {
-        return await (0, ChaosWords_1.default)(options);
+        if (options.interaction) {
+            return await (0, ChaosWords_1.default)(options);
+        }
+        else if (options.message) {
+            return await (0, ChaosWords_2.default)(options);
+        }
     }
     /**
      *
@@ -119,11 +159,14 @@ class WekyManager {
      * @copyright All rights reserved. M3rcena Development
      */
     async createFastType(options) {
-        return await (0, FastType_1.default)(options);
+        if (options.interaction) {
+            return await (0, FastType_1.default)(options);
+        }
+        else if (options.message) {
+            return await (0, FastType_2.default)(options);
+        }
     }
     /**
-     *
-     * UNDER DEVELOPMENT! DO NOT USE!
      *
      * Creates a new instance of the Fight game.
      *
@@ -145,7 +188,12 @@ class WekyManager {
      * @copyright All rights reserved. M3rcena Development
      */
     async createFight(options) {
-        return await (0, Fight_1.default)(options);
+        if (options.interaction) {
+            return await (0, Fight_1.default)(options);
+        }
+        else if (options.message) {
+            return await (0, Fight_2.default)(options);
+        }
     }
     /**
      *
@@ -169,7 +217,12 @@ class WekyManager {
      * @copyright All rights reserved. M3rcena Development
      */
     async createGuessTheNumber(options) {
-        return await (0, GuessTheNumber_1.default)(options);
+        if (options.interaction) {
+            return await (0, GuessTheNumber_1.default)(options);
+        }
+        else if (options.message) {
+            return await (0, GuessTheNumber_2.default)(options);
+        }
     }
     /**
      *
@@ -193,7 +246,12 @@ class WekyManager {
      * @copyright All rights reserved. M3rcena Development
      */
     async createHangman(options) {
-        return await (0, Hangman_1.default)(options);
+        if (options.interaction) {
+            return await (0, Hangman_1.default)(options);
+        }
+        else if (options.message) {
+            return await (0, Hangman_2.default)(options);
+        }
     }
     /**
      *
@@ -217,7 +275,12 @@ class WekyManager {
      * @copyright All rights reserved. M3rcena Development
      */
     async createLieSwatter(options) {
-        return await (0, LieSwatter_1.default)(options);
+        if (options.interaction) {
+            return await (0, LieSwatter_1.default)(options);
+        }
+        else if (options.message) {
+            return await (0, LieSwatter_2.default)(options);
+        }
     }
     /**
      *
@@ -241,7 +304,12 @@ class WekyManager {
      * @copyright All rights reserved. M3rcena Development
      */
     async createNeverHaveIEver(options) {
-        return await (0, NeverHaveIEver_1.default)(options);
+        if (options.interaction) {
+            return await (0, NeverHaveIEver_1.default)(options);
+        }
+        else if (options.message) {
+            return await (0, NeverHaveIEver_2.default)(options);
+        }
     }
     /**
      *
@@ -265,7 +333,12 @@ class WekyManager {
      * @copyright All rights reserved. M3rcena Development
      */
     async createQuickClick(options) {
-        return await (0, QuickClick_1.default)(options);
+        if (options.interaction) {
+            return await (0, QuickClick_1.default)(options);
+        }
+        else if (options.message) {
+            return await (0, QuickClick_2.default)(options);
+        }
     }
     /**
      *
@@ -289,7 +362,12 @@ class WekyManager {
      * @copyright All rights reserved. M3rcena Development
      */
     async createShuffleGuess(options) {
-        return await (0, ShuffleGuess_1.default)(options);
+        if (options.interaction) {
+            return await (0, ShuffleGuess_1.default)(options);
+        }
+        else if (options.message) {
+            return await (0, ShuffleGuess_2.default)(options);
+        }
     }
     /**
      *
@@ -313,7 +391,12 @@ class WekyManager {
      * @copyright All rights reserved. M3rcena Development
      */
     async createSnake(options) {
-        return await (0, Snake_1.default)(options);
+        if (options.interaction) {
+            return await (0, Snake_1.default)(options);
+        }
+        else if (options.message) {
+            return await (0, Snake_2.default)(options);
+        }
     }
     /**
      *
@@ -337,7 +420,12 @@ class WekyManager {
      * @copyright All rights reserved. M3rcena Development
      */
     async createWillYouPressTheButton(options) {
-        return await (0, WillYouPressTheButton_1.default)(options);
+        if (options.interaction) {
+            return await (0, WillYouPressTheButton_1.default)(options);
+        }
+        else if (options.message) {
+            return await (0, WillYouPressTheButton_2.default)(options);
+        }
     }
     /**
      *
@@ -361,7 +449,12 @@ class WekyManager {
      * @copyright All rights reserved. M3rcena Development
      */
     async createWouldYouRather(options) {
-        return await (0, WouldYouRather_1.default)(options);
+        if (options.interaction) {
+            return await (0, WouldYouRather_1.default)(options);
+        }
+        else if (options.message) {
+            return await (0, WouldYouRather_2.default)(options);
+        }
     }
 }
 exports.WekyManager = WekyManager;
