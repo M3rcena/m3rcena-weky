@@ -351,10 +351,6 @@ async function getSurrenderCard(player, winner) {
     ctx.fillStyle = '#ffffff';
     ctx.fillText('SURRENDERED', 250, 590);
     ctx.fillText('WINNER', 550, 590);
-    // Message
-    ctx.font = 'bold 28px Arial';
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText(`${player.username} has surrendered! ${winner.username} wins!`, 400, 700);
     return new discord_js_1.AttachmentBuilder(canvas.toBuffer('image/png'), { name: 'fight-surrender.png' });
 }
 // Denied Card
@@ -490,9 +486,5 @@ async function getTimeoutCard(challenger, opponent) {
     ctx.fillStyle = '#ffffff';
     ctx.fillText('CHALLENGER', 250, 590);
     ctx.fillText('OPPONENT', 550, 590);
-    // Message
-    ctx.font = 'bold 28px Arial';
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText('No response in time. The fight was cancelled.', 400, 700);
     return new discord_js_1.AttachmentBuilder(canvas.toBuffer('image/png'), { name: 'fight-timeout.png' });
 }
