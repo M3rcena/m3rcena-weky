@@ -26,7 +26,7 @@
 
 # Install
 
-Latest stable Version: **`v11.0.0`**
+Latest stable Version: **`v11.0.1`**
 
 <details><summary>👉 via NPM</summary>
 

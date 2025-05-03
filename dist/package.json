@@ -1,6 +1,6 @@
 {
   "name": "@m3rcena/weky",
-  "version": "11.0.0",
+  "version": "11.0.1",
   "description": "A fun npm package to play games within Discord with buttons!",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
@@ -74,5 +74,8 @@
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "peerDependencies": {
+    "discord.js": ">=14.19.2"
   }
 }
