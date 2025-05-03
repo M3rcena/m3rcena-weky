@@ -391,10 +391,6 @@ export async function getSurrenderCard(player: User, winner: User): Promise<Atta
     ctx.fillStyle = '#ffffff';
     ctx.fillText('SURRENDERED', 250, 590);
     ctx.fillText('WINNER', 550, 590);
-    // Message
-    ctx.font = 'bold 28px Arial';
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText(`${player.username} has surrendered! ${winner.username} wins!`, 400, 700);
     return new AttachmentBuilder(canvas.toBuffer('image/png'), { name: 'fight-surrender.png' });
 }
 
@@ -532,9 +528,5 @@ export async function getTimeoutCard(challenger: User, opponent: User): Promise<
     ctx.fillStyle = '#ffffff';
     ctx.fillText('CHALLENGER', 250, 590);
     ctx.fillText('OPPONENT', 550, 590);
-    // Message
-    ctx.font = 'bold 28px Arial';
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText('No response in time. The fight was cancelled.', 400, 700);
     return new AttachmentBuilder(canvas.toBuffer('image/png'), { name: 'fight-timeout.png' });
 }
