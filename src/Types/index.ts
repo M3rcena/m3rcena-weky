@@ -289,6 +289,24 @@ export type FightTypes = BaseFight & (
     { message: Message; interaction?: undefined }
 );
 
+interface BaseGuessThePokemon {
+    client: Client,
+    embed: Embeds,
+    thinkMessage?: string,
+    othersMessage?: string,
+    winMessage?: string,
+    loseMessage?: string,
+    incorrectMessage?: string,
+    time?: number,
+    buttonText?: string,
+    notifyUpdate?: boolean,
+}
+
+export type GuessThePokemonTypes = BaseGuessThePokemon & (
+    { interaction: ChatInputCommandInteraction; message?: undefined } |
+    { message: Message; interaction?: undefined }
+);
+
 export interface Embeds {
     color?: ColorResolvable,
     title?: string,
@@ -310,4 +328,35 @@ export interface Fields {
     name: string,
     value: string,
     inline?: boolean
+}
+
+export interface GuessThePokemonData {
+    abilities: {
+        ability: {
+            name: string,
+            url: string,
+        },
+        is_hidden: boolean,
+        slot: number,
+    }[]
+    base_experience: number,
+    forms: {
+        name: string,
+        url: string,
+    }[]
+    types: {
+        slot: number,
+        type: {
+            name: string,
+            url: string,
+        }
+    }[]
+    name: string,
+    sprites: {
+        other: {
+            home: {
+                front_default: string,
+            }
+        }
+    }
 }

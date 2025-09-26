@@ -5,44 +5,46 @@ import DiscordJS from "discord.js";
  * Interaction Minigames
  *
  */
-import mini2048 from "./minigames/Interaction/2024";
-import Calculator from "./minigames/Interaction/Calculator";
-import ChaosWords from "./minigames/Interaction/ChaosWords";
-import FastType from "./minigames/Interaction/FastType";
-import Fight from "./minigames/Interaction/Fight";
-import GuessTheNumber from "./minigames/Interaction/GuessTheNumber";
-import Hangman from "./minigames/Interaction/Hangman";
-import LieSwatter from "./minigames/Interaction/LieSwatter";
-import NeverHaveIEver from "./minigames/Interaction/NeverHaveIEver";
-import QuickClick from "./minigames/Interaction/QuickClick";
-import ShuffleGuess from "./minigames/Interaction/ShuffleGuess";
-import Snake from "./minigames/Interaction/Snake";
-import WillYouPressTheButton from "./minigames/Interaction/WillYouPressTheButton";
-import WouldYouRather from "./minigames/Interaction/WouldYouRather";
+import mini2048 from "./minigames/Interaction/2024.js";
+import Calculator from "./minigames/Interaction/Calculator.js";
+import ChaosWords from "./minigames/Interaction/ChaosWords.js";
+import FastType from "./minigames/Interaction/FastType.js";
+import Fight from "./minigames/Interaction/Fight.js";
+import GuessTheNumber from "./minigames/Interaction/GuessTheNumber.js";
+import GuessThePokemon from "./minigames/Interaction/GuessThePokemon.js";
+import Hangman from "./minigames/Interaction/Hangman.js";
+import LieSwatter from "./minigames/Interaction/LieSwatter.js";
+import NeverHaveIEver from "./minigames/Interaction/NeverHaveIEver.js";
+import QuickClick from "./minigames/Interaction/QuickClick.js";
+import ShuffleGuess from "./minigames/Interaction/ShuffleGuess.js";
+import Snake from "./minigames/Interaction/Snake.js";
+import WillYouPressTheButton from "./minigames/Interaction/WillYouPressTheButton.js";
+import WouldYouRather from "./minigames/Interaction/WouldYouRather.js";
 /**
  *
  * Message Minigames
  *
  */
-import mini2048Message from "./minigames/Message/2024";
-import CalculatorMessage from "./minigames/Message/Calculator";
-import ChaosWordsMessage from "./minigames/Message/ChaosWords";
-import FastTypeMessage from "./minigames/Message/FastType";
-import FightMessage from "./minigames/Message/Fight";
-import GuessTheNumberMessage from "./minigames/Message/GuessTheNumber";
-import HangmanMessage from "./minigames/Message/Hangman";
-import LieSwatterMessage from "./minigames/Message/LieSwatter";
-import NeverHaveIEverMessage from "./minigames/Message/NeverHaveIEver";
-import QuickClickMessage from "./minigames/Message/QuickClick";
-import ShuffleGuessMessage from "./minigames/Message/ShuffleGuess";
-import SnakeMessage from "./minigames/Message/Snake";
-import WillYouPressTheButtonMessage from "./minigames/Message/WillYouPressTheButton";
-import WouldYouRatherMessage from "./minigames/Message/WouldYouRather";
+import mini2048Message from "./minigames/Message/2024.js";
+import CalculatorMessage from "./minigames/Message/Calculator.js";
+import ChaosWordsMessage from "./minigames/Message/ChaosWords.js";
+import FastTypeMessage from "./minigames/Message/FastType.js";
+import FightMessage from "./minigames/Message/Fight.js";
+import GuessTheNumberMessage from "./minigames/Message/GuessTheNumber.js";
+import GuessThePokemonMessage from "./minigames/Message/GuessThePokemon.js";
+import HangmanMessage from "./minigames/Message/Hangman.js";
+import LieSwatterMessage from "./minigames/Message/LieSwatter.js";
+import NeverHaveIEverMessage from "./minigames/Message/NeverHaveIEver.js";
+import QuickClickMessage from "./minigames/Message/QuickClick.js";
+import ShuffleGuessMessage from "./minigames/Message/ShuffleGuess.js";
+import SnakeMessage from "./minigames/Message/Snake.js";
+import WillYouPressTheButtonMessage from "./minigames/Message/WillYouPressTheButton.js";
+import WouldYouRatherMessage from "./minigames/Message/WouldYouRather.js";
 export class WekyManager {
     client;
     constructor(client) {
         if (!(client instanceof DiscordJS.Client))
-            throw new SyntaxError(`${chalk.red("[WekyManager]")} Invalid DiscordJS Client.`);
+            throw new TypeError(`${chalk.red("[WekyManager]")} Invalid DiscordJS Client.`);
         this.client = client;
     }
     /**
@@ -218,6 +220,35 @@ export class WekyManager {
         }
         else if (options.message) {
             return await GuessTheNumberMessage(options);
+        }
+    }
+    /**
+     *
+     * Creates a new instance of the Guess The Pokemon game.
+     *
+     * @param options The options for the Guess The Pokemon game.
+     * @returns
+     *
+     * @example
+     * ```js
+     * import { WekyManager } from "weky";
+     * import DiscordJS from "discord.js";
+     *
+     * const client = new DiscordJS.Client();
+     *
+     * const weky = new WekyManager(client);
+     *
+     * weky.createGuessThePokemon(); // You can also pass options.
+     * ```
+     *
+     * @copyright All rights reserved. M3rcena Development
+     */
+    async createGuessThePokemon(options) {
+        if (options.interaction) {
+            return await GuessThePokemon(options);
+        }
+        else if (options.message) {
+            return await GuessThePokemonMessage(options);
         }
     }
     /**

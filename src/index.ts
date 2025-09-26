@@ -12,6 +12,7 @@ import ChaosWords from "./minigames/Interaction/ChaosWords";
 import FastType from "./minigames/Interaction/FastType";
 import Fight from "./minigames/Interaction/Fight";
 import GuessTheNumber from "./minigames/Interaction/GuessTheNumber";
+import GuessThePokemon from "./minigames/Interaction/GuessThePokemon";
 import Hangman from "./minigames/Interaction/Hangman";
 import LieSwatter from "./minigames/Interaction/LieSwatter";
 import NeverHaveIEver from "./minigames/Interaction/NeverHaveIEver";
@@ -31,6 +32,7 @@ import ChaosWordsMessage from "./minigames/Message/ChaosWords";
 import FastTypeMessage from "./minigames/Message/FastType";
 import FightMessage from "./minigames/Message/Fight";
 import GuessTheNumberMessage from "./minigames/Message/GuessTheNumber";
+import GuessThePokemonMessage from "./minigames/Message/GuessThePokemon";
 import HangmanMessage from "./minigames/Message/Hangman";
 import LieSwatterMessage from "./minigames/Message/LieSwatter";
 import NeverHaveIEverMessage from "./minigames/Message/NeverHaveIEver";
@@ -40,12 +42,12 @@ import SnakeMessage from "./minigames/Message/Snake";
 import WillYouPressTheButtonMessage from "./minigames/Message/WillYouPressTheButton";
 import WouldYouRatherMessage from "./minigames/Message/WouldYouRather";
 
-import type { Types2048, CalcTypes, ChaosTypes, FastTypeTypes, FightTypes, GuessTheNumberTypes, HangmanTypes, LieSwatterTypes, NeverHaveIEverTypes, QuickClickTypes, WillYouPressTheButtonTypes, WouldYouRatherTypes, ShuffleGuessTypes, SnakeTypes } from "./Types";
+import type { Types2048, CalcTypes, ChaosTypes, FastTypeTypes, FightTypes, GuessTheNumberTypes, HangmanTypes, LieSwatterTypes, NeverHaveIEverTypes, QuickClickTypes, WillYouPressTheButtonTypes, WouldYouRatherTypes, ShuffleGuessTypes, SnakeTypes, GuessThePokemonTypes } from "./Types";
 export class WekyManager {
     private client: DiscordJS.Client;
 
     constructor(client: DiscordJS.Client) {
-        if (!(client instanceof DiscordJS.Client)) throw new SyntaxError(`${chalk.red("[WekyManager]")} Invalid DiscordJS Client.`)
+        if (!(client instanceof DiscordJS.Client)) throw new TypeError(`${chalk.red("[WekyManager]")} Invalid DiscordJS Client.`)
         this.client = client
     }
 
@@ -220,6 +222,35 @@ export class WekyManager {
             return await GuessTheNumber(options);
         } else if (options.message) {
             return await GuessTheNumberMessage(options);
+        }
+    }
+
+    /**
+     * 
+     * Creates a new instance of the Guess The Pokemon game.
+     * 
+     * @param options The options for the Guess The Pokemon game.
+     * @returns 
+     * 
+     * @example
+     * ```js
+     * import { WekyManager } from "weky";
+     * import DiscordJS from "discord.js";
+     * 
+     * const client = new DiscordJS.Client();
+     * 
+     * const weky = new WekyManager(client);
+     * 
+     * weky.createGuessThePokemon(); // You can also pass options.
+     * ```
+     * 
+     * @copyright All rights reserved. M3rcena Development
+     */
+    async createGuessThePokemon(options: GuessThePokemonTypes) {
+        if (options.interaction) {
+            return await GuessThePokemon(options);
+        } else if (options.message) {
+            return await GuessThePokemonMessage(options);
         }
     }
 

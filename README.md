@@ -37,12 +37,15 @@ npm install --save @m3rcena/weky
 </details>
 
 # Documentation
+
 Check out the [Documentation](https://m3rcena.gitbook.io/docs)
 
 # Used in:
+
 <a href="https://discord.com/users/1068868597398650971/"><img src="https://discord.c99.nl/widget/theme-3/1068868597398650971.png" /></a>
 
 # Features
+
 - 🧑 Beginner friendly
 
 - 🎉 Easy to use
@@ -62,37 +65,33 @@ Check out the [Documentation](https://m3rcena.gitbook.io/docs)
 ```js
 const { Client, GatewayIntentBits } = require("discord.js");
 
-const { WekyManager }= require("@m3rcena/weky");
+const { WekyManager } = require("@m3rcena/weky");
 
 const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent,
-    ]
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent],
 });
 
 client.on("ready", async (cl) => {
-    console.log("Bot is ready");
-    client.wekyManager = new WekyManager(cl); // Initialize Weky Manager
+  console.log("Bot is ready");
+  client.wekyManager = new WekyManager(cl); // Initialize Weky Manager
 });
 
 client.on("messageCreate", async (message) => {
-    if (message.author.bot) return;
-    if (message.content === "w!calculator") {
-        client.wekyManager.createCalculator({
-            interaction: message,
-            client: client,
-            embed: {
-                color: "Blurple",
-                title: "Calculator | M3rcena Development",
-                timestamp: new Date(),
-            }
-        })
-    };
+  if (message.author.bot) return;
+  if (message.content === "w!calculator") {
+    client.wekyManager.createCalculator({
+      interaction: message,
+      client: client,
+      embed: {
+        color: "Blurple",
+        title: "Calculator | M3rcena Development",
+        timestamp: new Date(),
+      },
+    });
+  }
 });
 
-client.login('Your bot Token');
+client.login("Your bot Token");
 ```
 
 </details>
@@ -105,34 +104,30 @@ import { Client, GatewayIntentBits } from "discord.js";
 import { WekyManager } from "@m3rcena/weky";
 
 export interface ExtendedClient extends Client {
-    wekyManager: WekyManager;
-};
+  wekyManager: WekyManager;
+}
 
 const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent,
-    ]
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent],
 }) as ExtendedClient;
 
 client.on("ready", async (cl) => {
-    console.log("Bot is ready");
-    client.wekyManager = new WekyManager(cl); // Initialize Weky Manager
+  console.log("Bot is ready");
+  client.wekyManager = new WekyManager(cl); // Initialize Weky Manager
 });
 
 client.on("messageCreate", async (message) => {
-    if (message.author.bot) return;
-    if (message.content === "w!calculator") {
-        client.wekyManager.createCalculator({
-            interaction: message,
-            client: client,
-            embed: {
-                color: "Blurple",
-                title: "Calculator | M3rcena Development",
-            }
-        })
-    };
+  if (message.author.bot) return;
+  if (message.content === "w!calculator") {
+    client.wekyManager.createCalculator({
+      interaction: message,
+      client: client,
+      embed: {
+        color: "Blurple",
+        title: "Calculator | M3rcena Development",
+      },
+    });
+  }
 });
 
 client.login("Your bot token");
@@ -141,19 +136,18 @@ client.login("Your bot token");
 </details>
 
 # Result 📤
+
 <img src="./assets//calculator.png">
 
 # Contributing 🤝
+
 - Contributions, issues and feature requests are welcome!
 - Feel free to check [issues page](https://github.com/M3rcena/m3rcena-weky/issues)
 
 # Support ❔
+
 <a href="https://discord.gg/Wp54QUTgBV"><img src="https://weky.miv4.com/api/discord/server/1224358764463783987/image" /></a>
 
 # Developers 👨‍💻
-<a href="https://discord.com/users/682983233851228161/"><img src="https://discord.c99.nl/widget/theme-3/682983233851228161.png" /></a>
 
-# Contributors
-<a href="https://discord.com/users/498094279793704991/"><img src="https://discord.c99.nl/widget/theme-3/498094279793704991.png" /></a><br>
-<a href="https://discord.com/users/1139406664584409159/"><img src="https://discord.c99.nl/widget/theme-3/1139406664584409159.png" /></a><br>
-<a href="https://discord.com/users/1072592763427754034/"><img src="https://discord.c99.nl/widget/theme-3/1072592763427754034.png" /></a>
+<a href="https://discord.com/users/682983233851228161/"><img src="https://discord.c99.nl/widget/theme-3/682983233851228161.png" /></a>

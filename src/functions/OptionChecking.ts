@@ -4,7 +4,8 @@ import { Client } from "discord.js";
 import type {
     CalcTypes, ChaosTypes, FastTypeTypes, GuessTheNumberTypes, HangmanTypes, LieSwatterTypes,
     NeverHaveIEverTypes, QuickClickTypes, WillYouPressTheButtonTypes, WouldYouRatherTypes,
-    Types2048, ShuffleGuessTypes, SnakeTypes, FightTypes
+    Types2048, ShuffleGuessTypes, SnakeTypes, FightTypes,
+    GuessThePokemonTypes
 } from "../Types/";
 
 const URL_PATTERN = /^https:\/\/([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(:[0-9]+)?(\/.*)?$/;
@@ -86,7 +87,7 @@ export function OptionsChecking(
     options: CalcTypes | ChaosTypes | FastTypeTypes | GuessTheNumberTypes |
         LieSwatterTypes | WouldYouRatherTypes | WillYouPressTheButtonTypes |
         HangmanTypes | NeverHaveIEverTypes | QuickClickTypes | Types2048 |
-        ShuffleGuessTypes | SnakeTypes | FightTypes,
+        ShuffleGuessTypes | SnakeTypes | FightTypes | GuessThePokemonTypes,
     GameName: string
 ): void {
     if (!options) {

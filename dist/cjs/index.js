@@ -9,44 +9,46 @@ const discord_js_1 = tslib_1.__importDefault(require("discord.js"));
  * Interaction Minigames
  *
  */
-const _2024_1 = tslib_1.__importDefault(require("./minigames/Interaction/2024"));
-const Calculator_1 = tslib_1.__importDefault(require("./minigames/Interaction/Calculator"));
-const ChaosWords_1 = tslib_1.__importDefault(require("./minigames/Interaction/ChaosWords"));
-const FastType_1 = tslib_1.__importDefault(require("./minigames/Interaction/FastType"));
-const Fight_1 = tslib_1.__importDefault(require("./minigames/Interaction/Fight"));
-const GuessTheNumber_1 = tslib_1.__importDefault(require("./minigames/Interaction/GuessTheNumber"));
-const Hangman_1 = tslib_1.__importDefault(require("./minigames/Interaction/Hangman"));
-const LieSwatter_1 = tslib_1.__importDefault(require("./minigames/Interaction/LieSwatter"));
-const NeverHaveIEver_1 = tslib_1.__importDefault(require("./minigames/Interaction/NeverHaveIEver"));
-const QuickClick_1 = tslib_1.__importDefault(require("./minigames/Interaction/QuickClick"));
-const ShuffleGuess_1 = tslib_1.__importDefault(require("./minigames/Interaction/ShuffleGuess"));
-const Snake_1 = tslib_1.__importDefault(require("./minigames/Interaction/Snake"));
-const WillYouPressTheButton_1 = tslib_1.__importDefault(require("./minigames/Interaction/WillYouPressTheButton"));
-const WouldYouRather_1 = tslib_1.__importDefault(require("./minigames/Interaction/WouldYouRather"));
+const _2024_1 = tslib_1.__importDefault(require("./minigames/Interaction/2024.js"));
+const Calculator_1 = tslib_1.__importDefault(require("./minigames/Interaction/Calculator.js"));
+const ChaosWords_1 = tslib_1.__importDefault(require("./minigames/Interaction/ChaosWords.js"));
+const FastType_1 = tslib_1.__importDefault(require("./minigames/Interaction/FastType.js"));
+const Fight_1 = tslib_1.__importDefault(require("./minigames/Interaction/Fight.js"));
+const GuessTheNumber_1 = tslib_1.__importDefault(require("./minigames/Interaction/GuessTheNumber.js"));
+const GuessThePokemon_1 = tslib_1.__importDefault(require("./minigames/Interaction/GuessThePokemon.js"));
+const Hangman_1 = tslib_1.__importDefault(require("./minigames/Interaction/Hangman.js"));
+const LieSwatter_1 = tslib_1.__importDefault(require("./minigames/Interaction/LieSwatter.js"));
+const NeverHaveIEver_1 = tslib_1.__importDefault(require("./minigames/Interaction/NeverHaveIEver.js"));
+const QuickClick_1 = tslib_1.__importDefault(require("./minigames/Interaction/QuickClick.js"));
+const ShuffleGuess_1 = tslib_1.__importDefault(require("./minigames/Interaction/ShuffleGuess.js"));
+const Snake_1 = tslib_1.__importDefault(require("./minigames/Interaction/Snake.js"));
+const WillYouPressTheButton_1 = tslib_1.__importDefault(require("./minigames/Interaction/WillYouPressTheButton.js"));
+const WouldYouRather_1 = tslib_1.__importDefault(require("./minigames/Interaction/WouldYouRather.js"));
 /**
  *
  * Message Minigames
  *
  */
-const _2024_2 = tslib_1.__importDefault(require("./minigames/Message/2024"));
-const Calculator_2 = tslib_1.__importDefault(require("./minigames/Message/Calculator"));
-const ChaosWords_2 = tslib_1.__importDefault(require("./minigames/Message/ChaosWords"));
-const FastType_2 = tslib_1.__importDefault(require("./minigames/Message/FastType"));
-const Fight_2 = tslib_1.__importDefault(require("./minigames/Message/Fight"));
-const GuessTheNumber_2 = tslib_1.__importDefault(require("./minigames/Message/GuessTheNumber"));
-const Hangman_2 = tslib_1.__importDefault(require("./minigames/Message/Hangman"));
-const LieSwatter_2 = tslib_1.__importDefault(require("./minigames/Message/LieSwatter"));
-const NeverHaveIEver_2 = tslib_1.__importDefault(require("./minigames/Message/NeverHaveIEver"));
-const QuickClick_2 = tslib_1.__importDefault(require("./minigames/Message/QuickClick"));
-const ShuffleGuess_2 = tslib_1.__importDefault(require("./minigames/Message/ShuffleGuess"));
-const Snake_2 = tslib_1.__importDefault(require("./minigames/Message/Snake"));
-const WillYouPressTheButton_2 = tslib_1.__importDefault(require("./minigames/Message/WillYouPressTheButton"));
-const WouldYouRather_2 = tslib_1.__importDefault(require("./minigames/Message/WouldYouRather"));
+const _2024_2 = tslib_1.__importDefault(require("./minigames/Message/2024.js"));
+const Calculator_2 = tslib_1.__importDefault(require("./minigames/Message/Calculator.js"));
+const ChaosWords_2 = tslib_1.__importDefault(require("./minigames/Message/ChaosWords.js"));
+const FastType_2 = tslib_1.__importDefault(require("./minigames/Message/FastType.js"));
+const Fight_2 = tslib_1.__importDefault(require("./minigames/Message/Fight.js"));
+const GuessTheNumber_2 = tslib_1.__importDefault(require("./minigames/Message/GuessTheNumber.js"));
+const GuessThePokemon_2 = tslib_1.__importDefault(require("./minigames/Message/GuessThePokemon.js"));
+const Hangman_2 = tslib_1.__importDefault(require("./minigames/Message/Hangman.js"));
+const LieSwatter_2 = tslib_1.__importDefault(require("./minigames/Message/LieSwatter.js"));
+const NeverHaveIEver_2 = tslib_1.__importDefault(require("./minigames/Message/NeverHaveIEver.js"));
+const QuickClick_2 = tslib_1.__importDefault(require("./minigames/Message/QuickClick.js"));
+const ShuffleGuess_2 = tslib_1.__importDefault(require("./minigames/Message/ShuffleGuess.js"));
+const Snake_2 = tslib_1.__importDefault(require("./minigames/Message/Snake.js"));
+const WillYouPressTheButton_2 = tslib_1.__importDefault(require("./minigames/Message/WillYouPressTheButton.js"));
+const WouldYouRather_2 = tslib_1.__importDefault(require("./minigames/Message/WouldYouRather.js"));
 class WekyManager {
     client;
     constructor(client) {
         if (!(client instanceof discord_js_1.default.Client))
-            throw new SyntaxError(`${chalk_1.default.red("[WekyManager]")} Invalid DiscordJS Client.`);
+            throw new TypeError(`${chalk_1.default.red("[WekyManager]")} Invalid DiscordJS Client.`);
         this.client = client;
     }
     /**
@@ -222,6 +224,35 @@ class WekyManager {
         }
         else if (options.message) {
             return await (0, GuessTheNumber_2.default)(options);
+        }
+    }
+    /**
+     *
+     * Creates a new instance of the Guess The Pokemon game.
+     *
+     * @param options The options for the Guess The Pokemon game.
+     * @returns
+     *
+     * @example
+     * ```js
+     * import { WekyManager } from "weky";
+     * import DiscordJS from "discord.js";
+     *
+     * const client = new DiscordJS.Client();
+     *
+     * const weky = new WekyManager(client);
+     *
+     * weky.createGuessThePokemon(); // You can also pass options.
+     * ```
+     *
+     * @copyright All rights reserved. M3rcena Development
+     */
+    async createGuessThePokemon(options) {
+        if (options.interaction) {
+            return await (0, GuessThePokemon_1.default)(options);
+        }
+        else if (options.message) {
+            return await (0, GuessThePokemon_2.default)(options);
         }
     }
     /**

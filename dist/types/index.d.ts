@@ -1,5 +1,5 @@
 import DiscordJS from "discord.js";
-import type { Types2048, CalcTypes, ChaosTypes, FastTypeTypes, FightTypes, GuessTheNumberTypes, HangmanTypes, LieSwatterTypes, NeverHaveIEverTypes, QuickClickTypes, WillYouPressTheButtonTypes, WouldYouRatherTypes, ShuffleGuessTypes, SnakeTypes } from "./Types";
+import type { Types2048, CalcTypes, ChaosTypes, FastTypeTypes, FightTypes, GuessTheNumberTypes, HangmanTypes, LieSwatterTypes, NeverHaveIEverTypes, QuickClickTypes, WillYouPressTheButtonTypes, WouldYouRatherTypes, ShuffleGuessTypes, SnakeTypes, GuessThePokemonTypes } from "./Types";
 export declare class WekyManager {
     private client;
     constructor(client: DiscordJS.Client);
@@ -135,6 +135,28 @@ export declare class WekyManager {
      * @copyright All rights reserved. M3rcena Development
      */
     createGuessTheNumber(options: GuessTheNumberTypes): Promise<void>;
+    /**
+     *
+     * Creates a new instance of the Guess The Pokemon game.
+     *
+     * @param options The options for the Guess The Pokemon game.
+     * @returns
+     *
+     * @example
+     * ```js
+     * import { WekyManager } from "weky";
+     * import DiscordJS from "discord.js";
+     *
+     * const client = new DiscordJS.Client();
+     *
+     * const weky = new WekyManager(client);
+     *
+     * weky.createGuessThePokemon(); // You can also pass options.
+     * ```
+     *
+     * @copyright All rights reserved. M3rcena Development
+     */
+    createGuessThePokemon(options: GuessThePokemonTypes): Promise<void>;
     /**
      *
      * Creates a new instance of the Hangman game.
