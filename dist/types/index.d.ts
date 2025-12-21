@@ -24,7 +24,7 @@ export declare class WekyManager {
      *
      * @copyright All rights reserved. M3rcena Development
      */
-    create2048(options: Types2048): Promise<void | DiscordJS.Message<boolean>>;
+    create2048(options: Types2048): Promise<void | DiscordJS.Message<boolean> | DiscordJS.InteractionResponse<boolean>>;
     /**
      *
      * Creates a new instance of the Calculator game.
@@ -310,7 +310,7 @@ export declare class WekyManager {
      *
      * @copyright All rights reserved. M3rcena Development
      */
-    createWillYouPressTheButton(options: WillYouPressTheButtonTypes): Promise<void>;
+    createWillYouPressTheButton(options: WillYouPressTheButtonTypes): Promise<DiscordJS.InteractionResponse<boolean> | DiscordJS.OmitPartialGroupDMChannel<DiscordJS.Message<boolean>>>;
     /**
      *
      * Creates a new instance of the Would You Rather game.

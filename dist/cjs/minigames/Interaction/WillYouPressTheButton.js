@@ -16,50 +16,39 @@ const WillYouPressTheButton = async (options) => {
     let id = interaction.user.id;
     if (!options.button)
         options.button = {};
-    if (typeof options.embed !== 'object') {
+    if (typeof options.embed !== "object") {
         throw new TypeError(chalk_1.default.red("[@m3rcena/weky] WillYouPressTheButton Error:") + " embed must be an object.");
     }
-    ;
     if (!options.button.yes)
-        options.button.yes = 'Yes';
-    if (typeof options.button.yes !== 'string') {
+        options.button.yes = "Yes";
+    if (typeof options.button.yes !== "string") {
         throw new TypeError(chalk_1.default.red("[@m3rcena/weky] WillYouPressTheButton Error:") + " button.yes must be a string.");
     }
-    ;
     if (!options.button.no)
-        options.button.no = 'No';
-    if (typeof options.button.no !== 'string') {
+        options.button.no = "No";
+    if (typeof options.button.no !== "string") {
         throw new TypeError(chalk_1.default.red("[@m3rcena/weky] WillYouPressTheButton Error:") + " button.no must be a string.");
     }
-    ;
     if (!options.thinkMessage)
-        options.thinkMessage = 'I am thinking';
-    if (typeof options.thinkMessage !== 'string') {
+        options.thinkMessage = "I am thinking";
+    if (typeof options.thinkMessage !== "string") {
         throw new TypeError(chalk_1.default.red("[@m3rcena/weky] WillYouPressTheButton Error:") + " thinkMessage must be a string.");
     }
-    ;
     if (!options.othersMessage) {
-        options.othersMessage = 'Only <@{{author}}> can use the buttons!';
+        options.othersMessage = "Only <@{{author}}> can use the buttons!";
     }
-    ;
-    if (typeof options.othersMessage !== 'string') {
+    if (typeof options.othersMessage !== "string") {
         throw new TypeError(chalk_1.default.red("[@m3rcena/weky] WillYouPressTheButton Error:") + " othersMessage must be a string.");
     }
-    ;
     if (!options.embed.description) {
-        options.embed.description = '```{{statement1}}```\n**but**\n\n```{{statement2}}```';
+        options.embed.description = "```{{statement1}}```\n**but**\n\n```{{statement2}}```";
     }
-    ;
-    if (typeof options.embed.description !== 'string') {
+    if (typeof options.embed.description !== "string") {
         throw new TypeError(chalk_1.default.red("[@m3rcena/weky] WillYouPressTheButton Error:") + " embed.description must be a string.");
     }
-    ;
-    const id1 = (0, functions_js_1.getRandomString)(20) +
-        '-' +
-        (0, functions_js_1.getRandomString)(20);
-    const id2 = (0, functions_js_1.getRandomString)(20) +
-        '-' +
-        (0, functions_js_1.getRandomString)(20);
+    return await interaction.reply({ content: "GAME CURRENTLY DISABLED DUE TO API ISSUES!" });
+    const id1 = (0, functions_js_1.getRandomString)(20) + "-" + (0, functions_js_1.getRandomString)(20);
+    const id2 = (0, functions_js_1.getRandomString)(20) + "-" + (0, functions_js_1.getRandomString)(20);
     let oldDescription = options.embed.description ?? "```{{statement1}}```\n**but**\n\n```{{statement2}}```";
     options.embed.title = options.embed.title ?? "Will You Press The Button?";
     options.embed.description = options.thinkMessage ? options.thinkMessage : "I am thinking";
@@ -73,70 +62,61 @@ const WillYouPressTheButton = async (options) => {
         percentage: {
             1: fetchedData.yesNo.yes.persend,
             2: fetchedData.yesNo.no.persend,
-        }
+        },
     };
-    let btn = new discord_js_1.ButtonBuilder()
-        .setStyle(discord_js_1.ButtonStyle.Success)
-        .setLabel(options.button.yes)
-        .setCustomId(id1);
-    let btn2 = new discord_js_1.ButtonBuilder()
-        .setStyle(discord_js_1.ButtonStyle.Danger)
-        .setLabel(options.button.no)
-        .setCustomId(id2);
-    options.embed.description = oldDescription.replace('{{statement1}}', res.questions[0].charAt(0).toUpperCase() + res.questions[0].slice(1)).replace('{{statement2}}', res.questions[1].charAt(0).toUpperCase() + res.questions[1].slice(1));
+    let btn = new discord_js_1.ButtonBuilder().setStyle(discord_js_1.ButtonStyle.Success).setLabel(options.button.yes).setCustomId(id1);
+    let btn2 = new discord_js_1.ButtonBuilder().setStyle(discord_js_1.ButtonStyle.Danger).setLabel(options.button.no).setCustomId(id2);
+    options.embed.description = oldDescription.replace("{{statement1}}", res.questions[0].charAt(0).toUpperCase() + res.questions[0].slice(1)).replace("{{statement2}}", res.questions[1].charAt(0).toUpperCase() + res.questions[1].slice(1));
     embed = (0, functions_js_1.createEmbed)(options.embed);
     await think.edit({
         embeds: [embed],
-        components: [new discord_js_1.ActionRowBuilder().addComponents(btn, btn2)]
+        components: [new discord_js_1.ActionRowBuilder().addComponents(btn, btn2)],
     });
     const gameCollector = think.createMessageComponentCollector({
         time: options.time ? options.time : 60000,
     });
-    gameCollector.on('collect', async (wyptb) => {
+    gameCollector.on("collect", async (wyptb) => {
         if (wyptb.user.id !== id) {
             return wyptb.reply({
-                content: options.othersMessage ?
-                    options.othersMessage.replace('{{author}}', id) :
-                    `Only <@${id}> can use the buttons!`,
-                flags: [discord_js_1.MessageFlags.Ephemeral]
+                content: options.othersMessage ? options.othersMessage.replace("{{author}}", id) : `Only <@${id}> can use the buttons!`,
+                flags: [discord_js_1.MessageFlags.Ephemeral],
             });
         }
-        ;
         await wyptb.deferUpdate();
         if (wyptb.customId === id1) {
             btn = new discord_js_1.ButtonBuilder()
                 .setStyle(discord_js_1.ButtonStyle.Success)
-                .setLabel(`${options.button ? options.button.yes ? options.button.yes : 'Yes' : 'Yes'} (${res.percentage['1']})`)
+                .setLabel(`${options.button ? (options.button.yes ? options.button.yes : "Yes") : "Yes"} (${res.percentage["1"]})`)
                 .setDisabled()
                 .setCustomId(id1);
             btn2 = new discord_js_1.ButtonBuilder()
                 .setStyle(discord_js_1.ButtonStyle.Danger)
-                .setLabel(`${options.button ? options.button.no ? options.button.no : 'No' : 'No'} (${res.percentage['2']})`)
+                .setLabel(`${options.button ? (options.button.no ? options.button.no : "No") : "No"} (${res.percentage["2"]})`)
                 .setDisabled()
                 .setCustomId(id2);
             gameCollector.stop();
             embed.setTimestamp(new Date());
             await wyptb.editReply({
                 embeds: [embed],
-                components: [new discord_js_1.ActionRowBuilder().addComponents(btn, btn2)]
+                components: [new discord_js_1.ActionRowBuilder().addComponents(btn, btn2)],
             });
         }
         else if (wyptb.customId === id2) {
             btn = new discord_js_1.ButtonBuilder()
                 .setStyle(discord_js_1.ButtonStyle.Danger)
-                .setLabel(`${options.button ? options.button.yes ? options.button.yes : 'Yes' : 'Yes'} (${res.percentage['1']})`)
+                .setLabel(`${options.button ? (options.button.yes ? options.button.yes : "Yes") : "Yes"} (${res.percentage["1"]})`)
                 .setDisabled()
                 .setCustomId(id1);
             btn2 = new discord_js_1.ButtonBuilder()
                 .setStyle(discord_js_1.ButtonStyle.Success)
-                .setLabel(`${options.button ? options.button.no ? options.button.no : 'No' : 'No'} (${res.percentage['2']})`)
+                .setLabel(`${options.button ? (options.button.no ? options.button.no : "No") : "No"} (${res.percentage["2"]})`)
                 .setDisabled()
                 .setCustomId(id2);
             gameCollector.stop();
             embed.setTimestamp(new Date());
             await wyptb.editReply({
                 embeds: [embed],
-                components: [new discord_js_1.ActionRowBuilder().addComponents(btn, btn2)]
+                components: [new discord_js_1.ActionRowBuilder().addComponents(btn, btn2)],
             });
         }
     });
