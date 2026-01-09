@@ -1,6 +1,6 @@
 {
   "name": "@m3rcena/weky",
-  "version": "11.1.0",
+  "version": "14.25.1",
   "description": "A fun npm package to play games within Discord with buttons!",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
@@ -17,7 +17,8 @@
   },
   "keywords": [
     "weky",
-    "discord-games"
+    "discord-games",
+    "m3rcena"
   ],
   "homepage": "https://github.com/M3rcena/m3rcena-weky#readme",
   "bugs": {
@@ -54,7 +55,7 @@
   "directories": {
     "test": "test"
   },
-  "license": "ISC",
+  "license": "Apache-2.0",
   "exports": {
     "require": "./dist/cjs/index.js",
     "import": "./dist/esm/index.js",
