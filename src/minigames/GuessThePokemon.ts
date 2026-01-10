@@ -1,13 +1,11 @@
-import { ButtonStyle } from "discord.js";
+import { ButtonBuilder, ButtonStyle } from "discord.js";
 import fetch from "node-fetch";
-
-import { ButtonBuilder } from "@discordjs/builders";
 
 import { convertTime, createEmbed, getRandomString } from "../functions/functions.js";
 import { OptionsChecking } from "../functions/OptionChecking.js";
-import { LoggerManager } from "../handlers/Logger.js";
-import { getContextUserID } from "../functions/context.js";
+import { deferContext, getContextUserID } from "../functions/context.js";
 
+import type { LoggerManager } from "../handlers/Logger.js";
 import type { GuessThePokemonData, GuessThePokemonTypes } from "../Types/index.js";
 
 const gameData = new Set();
@@ -49,6 +47,8 @@ const GuessThePokemon = async (options: GuessThePokemonTypes, loggerManager: Log
 	}
 
 	const userId = getContextUserID(context);
+
+	deferContext(context);
 
 	if (gameData.has(userId)) return;
 	gameData.add(userId);

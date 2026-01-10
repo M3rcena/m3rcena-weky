@@ -1,4 +1,4 @@
-import { getContextUserID } from "../functions/context.js";
+import { deferContext, getContextUserID } from "../functions/context.js";
 
 import type { HangmanTypes } from "../Types";
 import type { NetworkManager } from "../handlers/NetworkManager";
@@ -11,6 +11,9 @@ const Hangman = async (networkManager: NetworkManager, options: HangmanTypes, lo
 		return loggerManager.createError("Hangman", "No channel found or the channel is not eligible for this game!");
 
 	const id = getContextUserID(context);
+
+	deferContext(context);
+
 	const author = context.user || context.author;
 	const username = author.username;
 	const userIcon = author.displayAvatarURL({ extension: "png" });

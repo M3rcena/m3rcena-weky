@@ -2,10 +2,10 @@ import { ActionRowBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle, Compon
 
 import { convertTime, createEmbed, getRandomSentence, getRandomString } from "../functions/functions.js";
 import { OptionsChecking } from "../functions/OptionChecking.js";
+import { deferContext, getContextUserID } from "../functions/context.js";
 
 import type { ChaosTypes, Fields } from "../Types/index.js";
-import { deferContext, getContextUserID } from "../functions/context.js";
-import { LoggerManager } from "../handlers/Logger.js";
+import type { LoggerManager } from "../handlers/Logger.js";
 
 const data = new Set();
 

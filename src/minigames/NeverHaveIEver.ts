@@ -2,7 +2,7 @@ import { ActionRowBuilder, ButtonBuilder, ButtonStyle, Client, ComponentType, Me
 
 import { createEmbed, getRandomString } from "../functions/functions.js";
 import { OptionsChecking } from "../functions/OptionChecking.js";
-import { getContextUserID } from "../functions/context.js";
+import { deferContext, getContextUserID } from "../functions/context.js";
 
 import type { NeverHaveIEverTypes } from "../Types/index.js";
 import type { LoggerManager } from "../handlers/Logger.js";
@@ -10,7 +10,6 @@ import type { LoggerManager } from "../handlers/Logger.js";
 const NeverHaveIEver = async (client: Client, options: NeverHaveIEverTypes, loggerManager: LoggerManager) => {
 	OptionsChecking(options, "NeverHaveIEver", loggerManager);
 
-	// Check if the interaction object is provided
 	const context = options.context;
 
 	if (!context) return loggerManager.createError("Calculator", "No context provided.");
@@ -51,6 +50,8 @@ const NeverHaveIEver = async (client: Client, options: NeverHaveIEverTypes, logg
 	const id2 = getRandomString(20) + "-" + getRandomString(20);
 
 	const id = getContextUserID(context);
+
+	deferContext(context);
 
 	options.embed.description = options.thinkMessage ? options.thinkMessage : "I am thinking...";
 	let embed = createEmbed(options.embed);

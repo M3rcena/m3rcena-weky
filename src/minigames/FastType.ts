@@ -10,11 +10,11 @@ import {
 
 import { convertTime, createEmbed, getRandomString } from "../functions/functions.js";
 import { OptionsChecking } from "../functions/OptionChecking.js";
+import { deferContext, getContextUserID } from "../functions/context.js";
 
 import type { FastTypeTypes } from "../Types/index.js";
-import { deferContext, getContextUserID } from "../functions/context.js";
-import { NetworkManager } from "../handlers/NetworkManager.js";
-import { LoggerManager } from "../handlers/Logger.js";
+import type { NetworkManager } from "../handlers/NetworkManager.js";
+import type { LoggerManager } from "../handlers/Logger.js";
 
 const data = new Set();
 

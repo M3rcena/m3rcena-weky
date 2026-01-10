@@ -3,7 +3,7 @@ import { decode } from "html-entities";
 
 import { convertTime, createEmbed, getRandomString } from "../functions/functions.js";
 import { OptionsChecking } from "../functions/OptionChecking.js";
-import { getContextUserID } from "../functions/context.js";
+import { deferContext, getContextUserID } from "../functions/context.js";
 
 import type { LieSwatterTypes } from "../Types/index.js";
 import type { LoggerManager } from "../handlers/Logger.js";
@@ -32,6 +32,8 @@ const LieSwatter = async (options: LieSwatterTypes, loggerManager: LoggerManager
 		return loggerManager.createError("LieSwatter", "No channel found or the channel is invalid.");
 
 	const id = getContextUserID(context);
+
+	deferContext(context);
 
 	const id1 = getRandomString(20) + "-" + getRandomString(20);
 

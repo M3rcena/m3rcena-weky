@@ -2,10 +2,10 @@ import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, EmbedBuild
 
 import { createEmbed, ErrorEmbed } from "../functions/functions.js";
 import { OptionsChecking } from "../functions/OptionChecking.js";
-import { LoggerManager } from "..//handlers/Logger.js";
 import { getContextUserID } from "../functions/context.js";
-import { NetworkManager } from "../handlers/NetworkManager.js";
 
+import type { LoggerManager } from "..//handlers/Logger.js";
+import type { NetworkManager } from "../handlers/NetworkManager.js";
 import type { Types2048 } from "../Types/index.js";
 
 const mapDirection = (customId: string): string => {
@@ -25,7 +25,6 @@ const mapDirection = (customId: string): string => {
 
 // Main game function that handles the 2048 game logic
 const mini2048 = async (networkManager: NetworkManager, options: Types2048, loggerManager: LoggerManager) => {
-	// Validate the provided options
 	OptionsChecking(options, "2048", loggerManager);
 
 	let context = options.context;

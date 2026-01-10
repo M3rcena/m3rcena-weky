@@ -2,10 +2,10 @@ import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, MessageFla
 
 import { convertTime, createEmbed, getRandomString } from "../functions/functions.js";
 import { OptionsChecking } from "../functions/OptionChecking.js";
+import { deferContext, getContextUserID } from "../functions/context.js";
 
 import type { GuessTheNumberTypes } from "../Types/index.js";
-import { LoggerManager } from "../handlers/Logger.js";
-import { getContextUserID } from "../functions/context.js";
+import type { LoggerManager } from "../handlers/Logger.js";
 
 const data = new Set();
 const currentGames: any = new Object();
@@ -16,6 +16,8 @@ const GuessTheNumber = async (options: GuessTheNumberTypes, loggerManager: Logge
 	let context = options.context;
 
 	let id = getContextUserID(context);
+
+	deferContext(context);
 
 	if (!context.guild) {
 		return loggerManager.createError("GuessTheNumber", "Context must be in Guild");

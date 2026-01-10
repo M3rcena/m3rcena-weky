@@ -14,14 +14,13 @@ import { evaluate } from "mathjs";
 
 import { createButton, createDisabledButton } from "../functions/functions.js";
 import { OptionsChecking } from "../functions/OptionChecking.js";
+import { deferContext, getContextUserID } from "../functions/context.js";
 
 import type { CalcTypes } from "../Types/index.js";
 import type { Client } from "discord.js";
-import { deferContext, getContextUserID } from "../functions/context.js";
-import { LoggerManager } from "../handlers/Logger.js";
+import type { LoggerManager } from "../handlers/Logger.js";
 
 const Calculator = async (client: Client, options: CalcTypes, loggerManager: LoggerManager) => {
-	// Validate calculator options
 	OptionsChecking(options, "Calculator", loggerManager);
 
 	let context = options.context;

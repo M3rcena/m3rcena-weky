@@ -9,12 +9,12 @@ import {
 } from "discord.js";
 
 import { ErrorEmbed } from "../functions/functions.js";
+import { deferContext, getContextUserID } from "../functions/context.js";
 
 import type { PowerUp } from "../Types/fight.js";
 import type { FightTypes } from "../Types/index.js";
-import { LoggerManager } from "../handlers/Logger.js";
-import { getContextUserID } from "../functions/context.js";
-import { NetworkManager } from "../handlers/NetworkManager.js";
+import type { LoggerManager } from "../handlers/Logger.js";
+import type { NetworkManager } from "../handlers/NetworkManager.js";
 
 // Define available powerups
 const POWERUPS: PowerUp[] = [
@@ -72,6 +72,8 @@ const Fight = async (NetworkManager: NetworkManager, options: FightTypes, logger
 	}
 
 	let id = getContextUserID(context);
+
+	deferContext(context);
 
 	if (!context.guild) {
 		loggerManager.createError("Fight", "Guild is not available in this context");
