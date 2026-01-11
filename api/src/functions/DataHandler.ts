@@ -1,5 +1,14 @@
 import Enmap from "enmap";
-import { APIKeys, BotDataTypes, FightDataTypes, FightPlayerType, Game2048Types, HangmanGameTypes } from "../Types";
+import {
+	APIKeys,
+	BotDataTypes,
+	FightDataTypes,
+	FightPlayerType,
+	Game2048Types,
+	HangmanGameTypes,
+	Point,
+	SnakeGameTypes,
+} from "../Types";
 import { randomUUID } from "crypto";
 import CryptoJS from "crypto-js";
 import "dotenv/config";
@@ -40,6 +49,7 @@ export default class DataHandler {
 	private apiKeyData: Enmap<string, APIKeys>;
 	private game2048Data: Enmap<string, Game2048Types>;
 	private hangmanData: Enmap<string, HangmanGameTypes>;
+	private snakeData: Enmap<string, SnakeGameTypes>;
 
 	constructor() {
 		this.botData = new Enmap<string, BotDataTypes>({
@@ -65,6 +75,11 @@ export default class DataHandler {
 		this.hangmanData = new Enmap<string, HangmanGameTypes>({
 			name: "hangmanData",
 			dataDir: "./src/db/Hangman",
+		});
+
+		this.snakeData = new Enmap<string, SnakeGameTypes>({
+			name: "snakeData",
+			dataDir: "./src/db/Snake",
 		});
 	}
 
@@ -719,7 +734,7 @@ export default class DataHandler {
 			playerID,
 			username,
 			word: word.toUpperCase(),
-			displayWord, // Store initial state like "_ _ _ _"
+			displayWord,
 			guessedLetters: [],
 			wrongGuesses: 0,
 			gameOver: false,
@@ -792,5 +807,134 @@ export default class DataHandler {
 
 		this.hangmanData.set(gameID, game);
 		return { success: true, message: "Guessed", game };
+	}
+
+	/**
+	 *
+	 * SNAKE MINIGAME DATABASE
+	 *
+	 */
+
+	/**
+	 * Create a new Snake Game
+	 */
+	public createSnake(playerID: string, username: string): string {
+		const allGames = Array.from(this.snakeData.values()) as unknown as SnakeGameTypes[];
+
+		const existing = allGames.find((g) => g.playerID === playerID);
+
+		if (existing) return existing.gameID;
+
+		const gameID = randomUUID();
+		const gridSize = 15;
+
+		const startX = Math.floor(gridSize / 2);
+		const startY = Math.floor(gridSize / 2);
+
+		const snake: Point[] = [
+			{ x: startX, y: startY },
+			{ x: startX, y: startY + 1 },
+			{ x: startX, y: startY + 2 },
+		];
+
+		const initialData: SnakeGameTypes = {
+			gameID,
+			playerID,
+			username,
+			score: 0,
+			snake,
+			food: this.spawnSnakeFood(snake, gridSize),
+			direction: "UP",
+			gridSize,
+			gameOver: false,
+		};
+
+		this.snakeData.set(gameID, initialData);
+		return gameID;
+	}
+
+	public getSnake(gameID: string): SnakeGameTypes | null {
+		return this.snakeData.get(gameID) || null;
+	}
+
+	public removeSnake(gameID: string): boolean {
+		if (!this.snakeData.has(gameID)) return false;
+		this.snakeData.delete(gameID);
+		return true;
+	}
+
+	/**
+	 * Move Snake Logic
+	 */
+	public moveSnake(gameID: string, direction: "UP" | "DOWN" | "LEFT" | "RIGHT") {
+		const game = this.snakeData.get(gameID);
+		if (!game || game.gameOver) throw new Error("Game not valid");
+
+		const opposites = { UP: "DOWN", DOWN: "UP", LEFT: "RIGHT", RIGHT: "LEFT" };
+		if (opposites[game.direction] === direction) {
+			direction = game.direction;
+		}
+
+		const head = { ...game.snake[0] };
+
+		switch (direction) {
+			case "UP":
+				head.y -= 1;
+				break;
+			case "DOWN":
+				head.y += 1;
+				break;
+			case "LEFT":
+				head.x -= 1;
+				break;
+			case "RIGHT":
+				head.x += 1;
+				break;
+		}
+
+		if (head.x < 0 || head.x >= game.gridSize || head.y < 0 || head.y >= game.gridSize) {
+			game.gameOver = true;
+			this.snakeData.set(gameID, game);
+			return game;
+		}
+
+		const hitSelf = game.snake.some((part, index) => {
+			if (index === game.snake.length - 1 && !(head.x === game.food.x && head.y === game.food.y)) return false;
+			return part.x === head.x && part.y === head.y;
+		});
+
+		if (hitSelf) {
+			game.gameOver = true;
+			this.snakeData.set(gameID, game);
+			return game;
+		}
+
+		game.snake.unshift(head);
+		game.direction = direction;
+
+		if (head.x === game.food.x && head.y === game.food.y) {
+			game.score += 1;
+			game.food = this.spawnSnakeFood(game.snake, game.gridSize);
+		} else {
+			game.snake.pop();
+		}
+
+		this.snakeData.set(gameID, game);
+		return game;
+	}
+
+	private spawnSnakeFood(snake: Point[], size: number): Point {
+		let valid = false;
+		let x = 0;
+		let y = 0;
+
+		while (!valid) {
+			x = Math.floor(Math.random() * size);
+			y = Math.floor(Math.random() * size);
+
+			const onSnake = snake.some((p) => p.x === x && p.y === y);
+			if (!onSnake) valid = true;
+		}
+		return { x, y };
 	}
 }

@@ -103,3 +103,23 @@ export interface DilemmaData {
 		no: { percentage: string; count: string };
 	};
 }
+
+/**
+ * SNAKE TYPES
+ */
+export interface Point {
+	x: number;
+	y: number;
+}
+
+export interface SnakeGameTypes {
+	gameID: string;
+	playerID: string;
+	username: string;
+	score: number;
+	snake: Point[];
+	food: Point;
+	direction: "UP" | "DOWN" | "LEFT" | "RIGHT";
+	gridSize: number;
+	gameOver: boolean;
+}

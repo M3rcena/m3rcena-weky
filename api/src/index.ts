@@ -13,6 +13,7 @@ import Fight from "./routes/Fight/api";
 import Game2048 from "./routes/2048/api";
 import Hangman from "./routes/Hangman/api";
 import WillYouPressTheButton from "./routes/WillYouPressTheButton/api";
+import Snake from "./routes/Snake/api";
 
 import Web from "./routes/Web/api";
 
@@ -79,5 +80,6 @@ app.use("/api/v1/Web", Web);
 app.use("/api/v1/2048", Game2048);
 app.use("/api/v1/Hangman", Hangman);
 app.use("/api/v1/WillYouPressTheButton", WillYouPressTheButton);
+app.use("/api/v1/Snake", Snake);
 
 app.listen(port, () => Logger.info(`Server is listening on port ${port}`));
