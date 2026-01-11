@@ -1,74 +1,71 @@
 {
-  "name": "@m3rcena/weky",
-  "version": "11.1.0",
-  "description": "A fun npm package to play games within Discord with buttons!",
-  "main": "dist/cjs/index.js",
-  "module": "dist/esm/index.js",
-  "types": "dist/types/index.d.ts",
-  "scripts": {
-    "test": "npx tsx --tsconfig ./tsconfig.json ./test/test.ts",
-    "test-cjs": "nodemon test/test.js",
-    "release:prep": "npx copyfiles --flat ./package.json ./dist",
-    "build:all": "npm run build:cjs && npm run build:esm && npm run build:types",
-    "build:cjs": "tsc -p tools/config/tsconfig.cjs.json && tsc-alias -p tools/config/tsconfig.cjs.json",
-    "build:esm": "tsc -p tools/config/tsconfig.esm.json && tsc-alias -p tools/config/tsconfig.esm.json",
-    "build:types": "tsc -p tools/config/tsconfig.types.json && tsc-alias -p tools/config/tsconfig.types.json",
-    "typecheck": "npx tsc --noEmit"
-  },
-  "keywords": [
-    "weky",
-    "discord-games"
-  ],
-  "homepage": "https://github.com/M3rcena/m3rcena-weky#readme",
-  "bugs": {
-    "url": "https://github.com/M3rcena/m3rcena-weky/issues"
-  },
-  "author": {
-    "name": "M3rcena",
-    "url": "https://github.com/M3rcena"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/M3rcena/m3rcena-weky.git"
-  },
-  "dependencies": {
-    "@napi-rs/canvas": "^0.1.86",
-    "axios": "^1.13.2",
-    "chalk": "^5.6.2",
-    "cheerio": "^1.1.2",
-    "discord.js": "^14.25.1",
-    "html-entities": "^2.6.0",
-    "mathjs": "^14.9.1",
-    "node-fetch": "^3.3.2",
-    "ofetch": "^1.5.1",
-    "string-width": "^8.1.0",
-    "util": "^0.12.5"
-  },
-  "devDependencies": {
-    "@types/node-fetch": "^2.6.13",
-    "copyfiles": "^2.4.1",
-    "nodemon": "^3.1.11",
-    "tsc-alias": "^1.8.16",
-    "typescript": "^5.9.3"
-  },
-  "directories": {
-    "test": "test"
-  },
-  "license": "ISC",
-  "exports": {
-    "require": "./dist/cjs/index.js",
-    "import": "./dist/esm/index.js",
-    "types": "./dist/types/index.d.ts",
-    "default": "./dist/cjs/index.js"
-  },
-  "files": [
-    "Examples",
-    "dist"
-  ],
-  "publishConfig": {
-    "provenance": true
-  },
-  "engines": {
-    "node": ">=20.0.0"
-  }
+	"name": "@m3rcena/weky",
+	"version": "14.25.1",
+	"description": "A fun npm package to play games within Discord with buttons!",
+	"main": "dist/cjs/index.js",
+	"module": "dist/esm/index.js",
+	"types": "dist/types/index.d.ts",
+	"scripts": {
+		"release:prep": "npx copyfiles --flat ./package.json ./dist",
+		"build:all": "npm run build:cjs && npm run build:esm && npm run build:types",
+		"build:cjs": "tsc -p tools/config/tsconfig.cjs.json && tsc-alias -p tools/config/tsconfig.cjs.json",
+		"build:esm": "tsc -p tools/config/tsconfig.esm.json && tsc-alias -p tools/config/tsconfig.esm.json",
+		"build:types": "tsc -p tools/config/tsconfig.types.json && tsc-alias -p tools/config/tsconfig.types.json",
+		"typecheck": "npx tsc --noEmit"
+	},
+	"keywords": [
+		"weky",
+		"discord-games",
+		"m3rcena"
+	],
+	"homepage": "https://github.com/M3rcena/m3rcena-weky#readme",
+	"bugs": {
+		"url": "https://github.com/M3rcena/m3rcena-weky/issues"
+	},
+	"author": {
+		"name": "M3rcena",
+		"url": "https://github.com/M3rcena"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/M3rcena/m3rcena-weky.git"
+	},
+	"dependencies": {
+		"chalk": "^5.6.2",
+		"discord.js": "^14.25.1",
+		"html-entities": "^2.6.0",
+		"mathjs": "^14.9.1",
+		"node-fetch": "^3.3.2",
+		"ofetch": "^1.5.1",
+		"string-width": "^8.1.0",
+		"util": "^0.12.5"
+	},
+	"devDependencies": {
+		"@types/node-fetch": "^2.6.13",
+		"@typescript-eslint/eslint-plugin": "^8.52.0",
+		"@typescript-eslint/parser": "^8.52.0",
+		"copyfiles": "^2.4.1",
+		"eslint-plugin-unused-imports": "^4.3.0",
+		"tsc-alias": "^1.8.16",
+		"typescript": "^5.9.3"
+	},
+	"directories": {
+		"test": "test"
+	},
+	"license": "Apache-2.0",
+	"exports": {
+		"require": "./dist/cjs/index.js",
+		"import": "./dist/esm/index.js",
+		"types": "./dist/types/index.d.ts",
+		"default": "./dist/cjs/index.js"
+	},
+	"files": [
+		"dist"
+	],
+	"publishConfig": {
+		"provenance": true
+	},
+	"engines": {
+		"node": ">=20.0.0"
+	}
 }

@@ -1,180 +1,148 @@
-import chalk from "chalk";
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
-import { checkPackageUpdates, convertTime, createEmbed, getRandomString, shuffleArray } from "../functions/functions.js";
-import { OptionsChecking } from "../functions/OptionChecking.js";
-const currentGames = {};
-const QuickClick = async (options) => {
-    OptionsChecking(options, 'GuessTheNumber');
-    let interaction;
-    if (options.interaction.author) {
-        interaction = options.interaction;
+import { ButtonBuilder, ButtonStyle, ComponentType, ContainerBuilder, MessageFlags } from "discord.js";
+const activeChannels = new Set();
+const activeUsers = new Set();
+const QuickClick = async (weky, options) => {
+    const context = options.context;
+    const userId = weky._getContextUserID(context);
+    const channelId = context.channel.id;
+    const messages = {
+        wait: options.waitMessage || "The buttons may appear anytime now...",
+        start: options.startMessage || "Find the **{{emoji}}** button! You have **{{time}}**!",
+        win: options.winMessage || "🏆 GG <@{{winner}}>! You pressed it in **{{time}}s**.",
+        lose: options.loseMessage || "❌ Time's up! No one pressed the button.",
+        ongoing: options.ongoingMessage || "A game is already running in <#{{channel}}>. Finish that first!",
+    };
+    const emoji = options.emoji || "👆";
+    const gameTitle = options.embed.title || "Quick Click";
+    if (activeChannels.has(channelId)) {
+        const errorText = messages.ongoing.replace("{{channel}}", channelId);
+        const errorContainer = new ContainerBuilder()
+            .setAccentColor(0xff0000)
+            .addTextDisplayComponents((text) => text.setContent(`## ❌ Error\n${errorText}`));
+        return context.channel.send({
+            components: [errorContainer],
+            flags: MessageFlags.IsComponentsV2,
+        });
     }
-    else {
-        interaction = options.interaction;
+    if (activeUsers.has(userId)) {
+        const errorContainer = new ContainerBuilder()
+            .setAccentColor(0xff0000)
+            .addTextDisplayComponents((text) => text.setContent(`## ❌ Error\n> You already have a game running! Finish that one first.`));
+        return context.channel.send({
+            components: [errorContainer],
+            flags: MessageFlags.IsComponentsV2,
+        });
     }
-    if (!interaction)
-        throw new Error(chalk.red("[@m3rcena/weky] QuickClick Error:") + " No interaction provided.");
-    if (!interaction.channel || !interaction.channel.isSendable())
-        throw new Error(chalk.red("[@m3rcena/weky] QuickClick Error:") + " Channel is not available in this interaction.");
-    if (!interaction.guild) {
-        throw new Error(chalk.red("[@m3rcena/weky] QuickClick Error:") + " Guild is not available in this interaction.");
-    }
-    ;
-    if (!interaction.channel || !interaction.channel.isSendable()) {
-        throw new Error(chalk.red("[@m3rcena/weky] QuickClick Error:") + " Channel is not available in this interaction.");
-    }
-    ;
-    let client = options.client;
-    let id = "";
-    if (options.interaction.author) {
-        id = options.interaction.author.id;
-    }
-    else {
-        id = options.interaction.user.id;
-    }
-    ;
-    if (!options.time)
-        options.time = 60000;
-    if (options.time < 10000) {
-        throw new Error(chalk.red("[@m3rcena/weky] QuickClick Error:") + " Time argument must be greater than 10 Seconds (in ms i.e. 10000).");
-    }
-    ;
-    if (!options.waitMessage)
-        options.waitMessage = 'The buttons may appear anytime now!';
-    if (typeof options.waitMessage !== 'string') {
-        throw new TypeError(chalk.red("[@m3rcena/weky] QuickClick Error:") + " waitMessage must be a string");
-    }
-    ;
-    if (!options.startMessage)
-        options.startMessage = 'First person to press the correct button will win. You have **{{time}}**!';
-    if (typeof options.startMessage !== 'string') {
-        throw new TypeError(chalk.red("[@m3rcena/weky] QuickClick Error:") + " startMessage must be a string");
-    }
-    ;
-    if (!options.winMessage)
-        options.winMessage = 'GG, <@{{winner}}> pressed the button in **{{time}} seconds**.';
-    if (typeof options.winMessage !== 'string') {
-        throw new TypeError(chalk.red("[@m3rcena/weky] QuickClick Error:") + " winMessage must be a string");
-    }
-    ;
-    if (!options.loseMessage)
-        options.loseMessage = 'No one pressed the button in time. So, I dropped the game!';
-    if (typeof options.loseMessage !== 'string') {
-        throw new TypeError(chalk.red("[@m3rcena/weky] QuickClick Error:") + " loseMessage must be a string");
-    }
-    ;
-    if (!options.emoji)
-        options.emoji = '👆';
-    if (typeof options.emoji !== 'string') {
-        throw new TypeError(chalk.red("[@m3rcena/weky] QuickClick Error:") + " emoji must be a string");
-    }
-    ;
-    if (!options.ongoingMessage)
-        options.ongoingMessage = 'A game is already runnning in <#{{channel}}>. You can\'t start a new one!';
-    if (typeof options.ongoingMessage !== 'string') {
-        throw new TypeError(chalk.red("[@m3rcena/weky] QuickClick Error:") + " ongoingMessage must be a string");
-    }
-    ;
-    if (currentGames[interaction.guild.id]) {
-        options.embed.description = options.ongoingMessage ? options.ongoingMessage.replace('{{channel}}', `${currentGames[`${interaction.guild.id}_channel`]}`) : `A game is already runnning in <#${currentGames[`${interaction.guild.id}_channel`]}>. You can\'t start a new one!`;
-        let embed = createEmbed(options.embed);
-        return interaction.reply({ embeds: [embed] });
-    }
-    ;
-    options.embed.description = options.waitMessage ? options.waitMessage : 'The buttons may appear anytime now!';
-    let embed = createEmbed(options.embed);
-    const msg = await interaction.reply({ embeds: [embed] });
-    currentGames[interaction.guild.id] = true;
-    currentGames[`${interaction.guild.id}_channel`] = interaction.channel.id;
-    setTimeout(async function () {
-        const rows = [];
-        const buttons = [];
-        const gameCreatedAt = Date.now();
-        for (let i = 0; i < 24; i++) {
-            buttons.push(new ButtonBuilder()
-                .setDisabled()
-                .setLabel('\u200b')
-                .setStyle(ButtonStyle.Primary)
-                .setCustomId(getRandomString(20)));
+    activeChannels.add(channelId);
+    activeUsers.add(userId);
+    const createGameContainer = (state, buttons, data) => {
+        const container = new ContainerBuilder();
+        let content = "";
+        switch (state) {
+            case "waiting":
+                container.setAccentColor(0x5865f2);
+                content = `## ${gameTitle}\n> ⏳ ${messages.wait}`;
+                break;
+            case "active":
+                container.setAccentColor(0x5865f2);
+                const startText = messages.start.replace("{{time}}", data?.timeLeft || "60s").replace("{{emoji}}", emoji);
+                content = `## ${gameTitle}\n${startText}`;
+                break;
+            case "won":
+                container.setAccentColor(0x57f287);
+                const winText = messages.win
+                    .replace("{{winner}}", data?.winner || "")
+                    .replace("{{time}}", data?.timeTaken || "0");
+                content = `## ${gameTitle}\n> ${winText}`;
+                break;
+            case "lost":
+                container.setAccentColor(0xed4245); // Red
+                content = `## ${gameTitle}\n> ${messages.lose}`;
+                break;
         }
-        ;
+        container.addTextDisplayComponents((textDisplay) => textDisplay.setContent(content));
+        if (buttons.length > 0) {
+            for (let i = 0; i < 5; i++) {
+                const rowButtons = buttons.slice(i * 5, (i + 1) * 5);
+                if (rowButtons.length > 0) {
+                    container.addActionRowComponents((actionRow) => actionRow.setComponents(...rowButtons));
+                }
+            }
+        }
+        return container;
+    };
+    const buttons = [];
+    for (let i = 0; i < 25; i++) {
         buttons.push(new ButtonBuilder()
-            .setStyle(ButtonStyle.Primary)
-            .setEmoji(options.emoji ? options.emoji : '👆')
-            .setCustomId('weky_correct'));
-        shuffleArray(buttons);
-        for (let i = 0; i < 5; i++) {
-            rows.push(new ActionRowBuilder());
+            .setLabel("\u200b")
+            .setStyle(ButtonStyle.Secondary)
+            .setCustomId(weky.getRandomString(20))
+            .setDisabled(true));
+    }
+    const msg = await context.channel.send({
+        components: [createGameContainer("waiting", buttons)],
+        flags: MessageFlags.IsComponentsV2,
+        allowedMentions: { repliedUser: false },
+    });
+    setTimeout(async function () {
+        const gameCreatedAt = Date.now();
+        if (!msg) {
+            activeChannels.delete(channelId);
+            activeUsers.delete(userId);
+            return;
         }
-        ;
-        rows.forEach((row, i) => {
-            row.addComponents(buttons.slice(0 + i * 5, 5 + i * 5));
-        });
-        options.embed.description = options.startMessage ? options.startMessage.replace('{{time}}', convertTime(options.time ? options.time : 60000)) : `First person to press the correct button will win. You have **${convertTime(options.time ? options.time : 60000)}**!`;
-        let _embed = createEmbed(options.embed);
-        await msg.edit({
-            embeds: [_embed],
-            components: rows,
-        });
-        const Collector = msg.createMessageComponentCollector({
-            filter: (fn) => fn.message.id === msg.id,
+        const winningIndex = Math.floor(Math.random() * buttons.length);
+        buttons[winningIndex].setStyle(ButtonStyle.Primary).setEmoji(emoji).setCustomId("weky_correct").setDisabled(false);
+        const timeString = weky.convertTime(options.time);
+        try {
+            await msg.edit({
+                components: [createGameContainer("active", buttons, { timeLeft: timeString })],
+                flags: MessageFlags.IsComponentsV2,
+            });
+        }
+        catch (e) {
+            activeChannels.delete(channelId);
+            activeUsers.delete(userId);
+            return;
+        }
+        const collector = msg.createMessageComponentCollector({
+            componentType: ComponentType.Button,
             time: options.time,
         });
-        Collector.on('collect', async (button) => {
-            if (!interaction.guild) {
-                throw new Error(chalk.red("[@m3rcena/weky] QuickClick Error:") + " Guild is not available in this interaction.");
-            }
-            ;
-            if (button.customId === 'weky_correct') {
-                await button.deferUpdate();
-                Collector.stop();
-                buttons.forEach((element) => {
-                    element.setDisabled();
-                });
-                rows.length = 0;
-                for (let i = 0; i < 5; i++) {
-                    rows.push(new ActionRowBuilder());
-                }
-                rows.forEach((row, i) => {
-                    row.addComponents(buttons.slice(0 + i * 5, 5 + i * 5));
-                });
-                options.embed.description = options.winMessage ? options.winMessage
-                    .replace('{{winner}}', button.user.id)
-                    .replace('{{time}}', `${(Date.now() - gameCreatedAt) / 1000}`)
-                    : `GG, <@${button.user.id}> pressed the button in **${(Date.now() - gameCreatedAt) / 1000} seconds**.`;
-                let __embed = createEmbed(options.embed);
+        collector.on("collect", async (interaction) => {
+            if (interaction.customId === "weky_correct") {
+                await interaction.deferUpdate();
+                collector.stop("winner");
+                const timeTaken = ((Date.now() - gameCreatedAt) / 1000).toFixed(2);
+                buttons[winningIndex].setDisabled(true).setStyle(ButtonStyle.Success);
                 await msg.edit({
-                    embeds: [__embed],
-                    components: rows,
+                    components: [
+                        createGameContainer("won", buttons, {
+                            winner: interaction.user.id,
+                            timeTaken: timeTaken,
+                        }),
+                    ],
+                    flags: MessageFlags.IsComponentsV2,
                 });
             }
-            return delete currentGames[interaction.guild.id];
+            else {
+                await interaction.deferUpdate();
+            }
         });
-        Collector.on('end', async (_msg, reason) => {
-            if (reason === 'time') {
-                buttons.forEach((element) => {
-                    element.setDisabled();
-                });
-                rows.length = 0;
-                for (let i = 0; i < 5; i++) {
-                    rows.push(new ActionRowBuilder());
+        collector.on("end", async (_collected, reason) => {
+            activeChannels.delete(channelId);
+            activeUsers.delete(userId);
+            if (reason !== "winner") {
+                buttons[winningIndex].setDisabled(true).setStyle(ButtonStyle.Secondary);
+                try {
+                    await msg.edit({
+                        components: [createGameContainer("lost", buttons)],
+                        flags: MessageFlags.IsComponentsV2,
+                    });
                 }
-                rows.forEach((row, i) => {
-                    row.addComponents(buttons.slice(0 + i * 5, 5 + i * 5));
-                });
-                options.embed.description = options.loseMessage ? options.loseMessage : 'No one pressed the button in time. So, I dropped the game!';
-                let __embed = createEmbed(options.embed);
-                await msg.edit({
-                    embeds: [__embed],
-                    components: rows,
-                });
-                if (!interaction.guild) {
-                    return;
-                }
-                return delete currentGames[interaction.guild.id];
+                catch (e) { }
             }
         });
     }, Math.floor(Math.random() * 5000) + 1000);
-    checkPackageUpdates('QuickClick', options.notifyUpdate);
 };
 export default QuickClick;

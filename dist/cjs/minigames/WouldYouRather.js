@@ -1,129 +1,154 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const tslib_1 = require("tslib");
-const chalk_1 = tslib_1.__importDefault(require("chalk"));
 const discord_js_1 = require("discord.js");
-const html_entities_1 = require("html-entities");
 const ofetch_1 = require("ofetch");
-const functions_js_1 = require("../functions/functions.js");
-const OptionChecking_js_1 = require("../functions/OptionChecking.js");
-const WouldYouRather = async (options) => {
-    // Options Check
-    (0, OptionChecking_js_1.OptionsChecking)(options, "WouldYouRather");
-    let interaction;
-    if (options.interaction.author) {
-        interaction = options.interaction;
-    }
-    else {
-        interaction = options.interaction;
-    }
-    if (!interaction)
-        throw new Error(chalk_1.default.red("[@m3rcena/weky] FastType Error:") + " No interaction provided.");
-    if (!interaction.channel || !interaction.channel.isSendable())
-        throw new Error(chalk_1.default.red("[@m3rcena/weky] FastType Error:") + " No channel provided in interaction.");
-    let client = options.client;
-    let id = "";
-    if (options.interaction.author) {
-        id = options.interaction.author.id;
-    }
-    else {
-        id = options.interaction.user.id;
-    }
-    ;
-    const id1 = (0, functions_js_1.getRandomString)(20) +
-        '-' +
-        (0, functions_js_1.getRandomString)(20);
-    const id2 = (0, functions_js_1.getRandomString)(20) +
-        '-' +
-        (0, functions_js_1.getRandomString)(20);
-    options.embed.title = options.embed.title ?? "Would You Rather?";
-    options.embed.description = options.thinkMessage ? options.thinkMessage : "I am thinking";
-    let embed = (0, functions_js_1.createEmbed)(options.embed);
-    const think = await interaction.reply({
-        embeds: [embed]
-    });
-    const number = Math.floor(Math.random() * (700 - 1 + 1)) + 1;
-    const response = await (0, ofetch_1.ofetch)(`https://wouldurather.io/api/question?id=${number}`);
-    const data = response;
-    const res = {
-        questions: [data.option1, data.option2],
-        percentage: {
-            1: ((parseInt(data.option1Votes) /
-                (parseInt(data.option1Votes) + parseInt(data.option2Votes))) *
-                100).toFixed(2) + '%',
-            2: ((parseInt(data.option2Votes) /
-                (parseInt(data.option1Votes) + parseInt(data.option2Votes))) *
-                100).toFixed(2) + '%',
-        },
+const WouldYouRather = async (weky, options) => {
+    const context = options.context;
+    const userId = weky._getContextUserID(context);
+    const buttons = options.buttons || { optionA: "Option A", optionB: "Option B" };
+    const labelA = buttons.optionA;
+    const labelB = buttons.optionB;
+    const thinkMessage = options.thinkMessage || "Thinking...";
+    const othersMessage = options.othersMessage || "Only <@{{author}}> can use the buttons!";
+    const gameTitle = options.embed.title || "Would You Rather?";
+    const defaultColor = typeof options.embed.color === "number" ? options.embed.color : 0x5865f2;
+    const idA = `wyr_a_${weky.getRandomString(10)}`;
+    const idB = `wyr_b_${weky.getRandomString(10)}`;
+    const createGameContainer = (state, data) => {
+        const container = new discord_js_1.ContainerBuilder();
+        let content = "";
+        switch (state) {
+            case "loading":
+                container.setAccentColor(defaultColor);
+                content = `## ${gameTitle}\n> 🔄 ${thinkMessage}`;
+                break;
+            case "active":
+                container.setAccentColor(defaultColor);
+                content =
+                    `## ${gameTitle}\n` +
+                        `> 🅰️ **${capitalizeFirstLetter(data.option1)}**\n\n` +
+                        `**OR**\n\n` +
+                        `> 🅱️ **${capitalizeFirstLetter(data.option2)}**`;
+                break;
+            case "result":
+                container.setAccentColor(0x57f287); // Green
+                content =
+                    `## ${gameTitle}\n` +
+                        `> 🅰️ **${capitalizeFirstLetter(data.option1)}**\n` +
+                        `> 📊 ${data.stats?.a}\n\n` +
+                        `**OR**\n\n` +
+                        `> 🅱️ **${capitalizeFirstLetter(data.option2)}**\n` +
+                        `> 📊 ${data.stats?.b}\n\n` +
+                        `**You chose:** Option ${data.userChoice}`;
+                break;
+            case "timeout":
+                container.setAccentColor(0x99aab5); // Grey
+                content = `## ${gameTitle}\n> ⏳ Time's up! You didn't choose.`;
+                break;
+            case "error":
+                container.setAccentColor(0xff0000); // Red
+                content = `## ❌ Error\n> Failed to fetch question.`;
+                break;
+        }
+        container.addTextDisplayComponents((t) => t.setContent(content));
+        if (state === "active" || state === "result") {
+            const isResult = state === "result";
+            const txtA = isResult ? `${labelA} (${data.stats?.a})` : labelA;
+            const txtB = isResult ? `${labelB} (${data.stats?.b})` : labelB;
+            let styleA = discord_js_1.ButtonStyle.Primary;
+            let styleB = discord_js_1.ButtonStyle.Primary;
+            if (isResult) {
+                if (data.userChoice === "A") {
+                    styleA = discord_js_1.ButtonStyle.Success;
+                    styleB = discord_js_1.ButtonStyle.Secondary;
+                }
+                else {
+                    styleA = discord_js_1.ButtonStyle.Secondary;
+                    styleB = discord_js_1.ButtonStyle.Success;
+                }
+            }
+            const btnA = new discord_js_1.ButtonBuilder().setStyle(styleA).setLabel(txtA).setCustomId(idA).setDisabled(isResult);
+            const btnB = new discord_js_1.ButtonBuilder().setStyle(styleB).setLabel(txtB).setCustomId(idB).setDisabled(isResult);
+            container.addActionRowComponents((row) => row.setComponents(btnA, btnB));
+        }
+        return container;
     };
-    let btn = new discord_js_1.ButtonBuilder()
-        .setStyle(discord_js_1.ButtonStyle.Primary)
-        .setLabel(options.buttons ? options.buttons.optionA : "Option A")
-        .setCustomId(id1);
-    let btn2 = new discord_js_1.ButtonBuilder()
-        .setStyle(discord_js_1.ButtonStyle.Primary)
-        .setLabel(options.buttons ? options.buttons.optionB : "Option B")
-        .setCustomId(id2);
-    options.embed.description = `**Option A:** ${(0, html_entities_1.decode)(res.questions[0])}\n**Option B:** ${(0, html_entities_1.decode)(res.questions[1])}`;
-    embed = (0, functions_js_1.createEmbed)(options.embed);
-    await think.edit({
-        embeds: [embed],
-        components: [new discord_js_1.ActionRowBuilder().addComponents(btn, btn2)]
+    const msg = await context.channel.send({
+        components: [createGameContainer("loading", {})],
+        flags: discord_js_1.MessageFlags.IsComponentsV2,
+        allowedMentions: { repliedUser: false },
     });
-    const gameCollector = think.createMessageComponentCollector({
+    const pageOffset = Math.floor(Math.random() * 690);
+    let apiData;
+    try {
+        apiData = await (0, ofetch_1.ofetch)(`https://io.wyr.app/api/v1/statements/en/easy?pageOffset=${pageOffset}&pageSize=1`, {
+            timeout: 5000,
+            retry: 1,
+        });
+    }
+    catch (e) {
+        return await msg.edit({
+            components: [createGameContainer("error", {})],
+            flags: discord_js_1.MessageFlags.IsComponentsV2,
+        });
+    }
+    const statement = apiData.statements[0];
+    if (!statement || statement.phrase.length < 2) {
+        return await msg.edit({
+            components: [createGameContainer("error", {})],
+            flags: discord_js_1.MessageFlags.IsComponentsV2,
+        });
+    }
+    const opt1 = statement.phrase[0].text;
+    const opt2 = statement.phrase[1].text;
+    const v1 = statement.phrase[0].count;
+    const v2 = statement.phrase[1].count;
+    const total = v1 + v2 || 1;
+    const p1 = ((v1 / total) * 100).toFixed(1) + "%";
+    const p2 = ((v2 / total) * 100).toFixed(1) + "%";
+    await msg.edit({
+        components: [createGameContainer("active", { option1: opt1, option2: opt2 })],
+        flags: discord_js_1.MessageFlags.IsComponentsV2,
+    });
+    const collector = msg.createMessageComponentCollector({
         componentType: discord_js_1.ComponentType.Button,
-        time: options.time ? options.time : undefined
+        time: options.time || 60000,
     });
-    gameCollector.on('collect', async (wyr) => {
-        if (wyr.user.id !== id) {
-            return wyr.reply({
-                content: options.othersMessage ?
-                    options.othersMessage.replace('{{author}}', id) :
-                    `This is not your game!`,
-                ephemeral: true
+    collector.on("collect", async (interaction) => {
+        if (interaction.user.id !== userId) {
+            return interaction.reply({
+                content: othersMessage.replace("{{author}}", userId),
+                flags: [discord_js_1.MessageFlags.Ephemeral],
             });
         }
-        ;
-        await wyr.deferUpdate();
-        if (wyr.customId === id1) {
-            btn = new discord_js_1.ButtonBuilder()
-                .setStyle(discord_js_1.ButtonStyle.Primary)
-                .setLabel(`${options.buttons ? options.buttons.optionA : "Option A"}` + ` (${res.percentage['1']})`)
-                .setCustomId(id1)
-                .setDisabled();
-            btn2 = new discord_js_1.ButtonBuilder()
-                .setStyle(discord_js_1.ButtonStyle.Secondary)
-                .setLabel(`${options.buttons ? options.buttons.optionB : "Option B"}` + ` (${res.percentage['2']})`)
-                .setCustomId(id2)
-                .setDisabled();
-            gameCollector.stop();
-            options.embed.description = `**Option A:** ${(0, html_entities_1.decode)(res.questions[0])} (${res.percentage['1']})\n**Option B:** ${(0, html_entities_1.decode)(res.questions[1])} (${res.percentage['2']})`;
-            const _embed = (0, functions_js_1.createEmbed)(options.embed);
-            await wyr.editReply({
-                embeds: [_embed],
-                components: [new discord_js_1.ActionRowBuilder().addComponents(btn, btn2)]
-            });
-        }
-        else if (wyr.customId === id2) {
-            btn = new discord_js_1.ButtonBuilder()
-                .setStyle(discord_js_1.ButtonStyle.Secondary)
-                .setLabel(`${options.buttons ? options.buttons.optionA : "Option A"}` + ` (${res.percentage['1']})`)
-                .setCustomId(id1)
-                .setDisabled();
-            btn2 = new discord_js_1.ButtonBuilder()
-                .setStyle(discord_js_1.ButtonStyle.Primary)
-                .setLabel(`${options.buttons ? options.buttons.optionB : "Option B"}` + ` (${res.percentage['2']})`)
-                .setCustomId(id2)
-                .setDisabled();
-            gameCollector.stop();
-            options.embed.description = `**Option A:** ${(0, html_entities_1.decode)(res.questions[0])} (${res.percentage['1']})\n**Option B:** ${(0, html_entities_1.decode)(res.questions[1])} (${res.percentage['2']})`;
-            const _embed = (0, functions_js_1.createEmbed)(options.embed);
-            await wyr.editReply({
-                embeds: [_embed],
-                components: [new discord_js_1.ActionRowBuilder().addComponents(btn, btn2)]
-            });
+        await interaction.deferUpdate();
+        const choice = interaction.customId === idA ? "A" : "B";
+        collector.stop("answered");
+        await msg.edit({
+            components: [
+                createGameContainer("result", {
+                    option1: opt1,
+                    option2: opt2,
+                    stats: { a: p1, b: p2 },
+                    userChoice: choice,
+                }),
+            ],
+            flags: discord_js_1.MessageFlags.IsComponentsV2,
+        });
+    });
+    collector.on("end", async (_collected, reason) => {
+        if (reason === "time") {
+            try {
+                await msg.edit({
+                    components: [createGameContainer("timeout", {})],
+                    flags: discord_js_1.MessageFlags.IsComponentsV2,
+                });
+            }
+            catch (e) { }
         }
     });
-    (0, functions_js_1.checkPackageUpdates)("WouldYouRather", options.notifyUpdate);
 };
+function capitalizeFirstLetter(val) {
+    return val.charAt(0).toUpperCase() + String(val).slice(1);
+}
 exports.default = WouldYouRather;

@@ -1,229 +1,162 @@
-import chalk from "chalk";
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } from "discord.js";
+import { ButtonBuilder, ButtonStyle, ComponentType, ContainerBuilder, MessageFlags } from "discord.js";
 import { decode } from "html-entities";
-import { checkPackageUpdates, convertTime, createEmbed, getRandomString } from "../functions/functions.js";
-import { OptionsChecking } from "../functions/OptionChecking.js";
-const LieSwatter = async (options) => {
-    // Check types
-    OptionsChecking(options, "LieSwatter");
-    let interaction;
-    if (options.interaction.author) {
-        interaction = options.interaction;
-    }
-    else {
-        interaction = options.interaction;
-    }
-    if (!interaction)
-        throw new Error(chalk.red("[@m3rcena/weky] LieSwatter Error:") + " No interaction provided.");
-    if (!interaction.channel || !interaction.channel.isSendable())
-        throw new Error(chalk.red("[@m3rcena/weky] LieSwatter Error:") + " No channel found.");
-    let client = options.client;
-    let id = "";
-    if (options.interaction.author) {
-        id = options.interaction.author.id;
-    }
-    else {
-        id = options.interaction.user.id;
-    }
-    ;
-    const id1 = getRandomString(20) +
-        "-" +
-        getRandomString(20);
-    const id2 = getRandomString(20) +
-        "-" +
-        getRandomString(20);
+const LieSwatter = async (weky, options) => {
+    const context = options.context;
+    const userId = weky._getContextUserID(context);
     if (!options.winMessage)
         options.winMessage = "GG, It was a **{{answer}}**. You got it correct in **{{time}}**.";
     if (typeof options.winMessage !== "string") {
-        throw new Error(chalk.red("[@m3rcena/weky] LieSwatter TypeError:") + " Win message must be a string.");
+        return weky._LoggerManager.createTypeError("LieSwatter", "Win message must be a string.");
     }
-    ;
     if (!options.loseMessage)
         options.loseMessage = "Better luck next time! It was a **{{answer}}**.";
     if (typeof options.loseMessage !== "string") {
-        throw new Error(chalk.red("[@m3rcena/weky] LieSwatter TypeError:") + " Lose message must be a string.");
+        return weky._LoggerManager.createTypeError("LieSwatter", "Lose message must be a string.");
     }
-    ;
     if (!options.othersMessage)
         options.othersMessage = "Only <@{{author}}> can use the buttons!";
     if (typeof options.othersMessage !== "string") {
-        throw new Error(chalk.red("[@m3rcena/weky] LieSwatter TypeError:") + " Others message must be a string.");
+        return weky._LoggerManager.createTypeError("LieSwatter", "Others message must be a string.");
     }
-    ;
     if (!options.buttons)
-        options.buttons = {
-            true: "Truth",
-            lie: "Lie"
-        };
+        options.buttons = { true: "Truth", lie: "Lie" };
     if (typeof options.buttons !== "object") {
-        throw new Error(chalk.red("[@m3rcena/weky] LieSwatter TypeError:") + " Buttons must be an object.");
+        return weky._LoggerManager.createTypeError("LieSwatter", "Buttons must be an object.");
     }
-    ;
-    if (!options.buttons.true)
-        options.buttons.true = "Truth";
-    if (typeof options.buttons.true !== "string") {
-        throw new Error(chalk.red("[@m3rcena/weky] LieSwatter TypeError:") + " True button text must be a string.");
-    }
-    ;
-    if (!options.buttons.lie)
-        options.buttons.lie = "Lie";
-    if (typeof options.buttons.lie !== "string") {
-        throw new Error(chalk.red("[@m3rcena/weky] LieSwatter TypeError:") + " Lie button text must be a string.");
-    }
-    ;
-    if (!options.thinkMessage)
-        options.thinkMessage = "I am thinking...";
-    if (typeof options.thinkMessage !== "string") {
-        throw new Error(chalk.red("[@m3rcena/weky] LieSwatter TypeError:") + " Think message must be a string.");
-    }
-    ;
-    options.embed.description = options.thinkMessage;
-    let embed = createEmbed(options.embed);
-    const msg = await interaction.reply({
-        embeds: [embed]
+    const labelTrue = options.buttons.true || "Truth";
+    const labelLie = options.buttons.lie || "Lie";
+    const thinkMessage = options.thinkMessage || "I am thinking...";
+    const gameTitle = options.embed.title || "Lie Swatter";
+    const defaultColor = typeof options.embed.color === "number" ? options.embed.color : 0x5865f2;
+    const idTrue = `ls_true_${weky.getRandomString(10)}`;
+    const idLie = `ls_lie_${weky.getRandomString(10)}`;
+    const createGameContainer = (state, text, correctAnswer) => {
+        const container = new ContainerBuilder();
+        let content = "";
+        switch (state) {
+            case "loading":
+                container.setAccentColor(defaultColor);
+                content = `## ${gameTitle}\n> 🔄 ${text}`;
+                break;
+            case "active":
+                container.setAccentColor(defaultColor);
+                content = `## ${gameTitle}\n> ${text}\n\nIs this statement **True** or a **Lie**?`;
+                break;
+            case "won":
+                container.setAccentColor(0x57f287);
+                content = `## ${gameTitle}\n> ${text}`;
+                break;
+            case "lost":
+            case "timeout":
+                container.setAccentColor(0xed4245);
+                content = `## ${gameTitle}\n> ${text}`;
+                break;
+            case "error":
+                container.setAccentColor(0xff0000);
+                content = `## ❌ Error\n> ${text}`;
+                break;
+        }
+        container.addTextDisplayComponents((t) => t.setContent(content));
+        if (state !== "loading" && state !== "error") {
+            let styleTrue = ButtonStyle.Primary;
+            let styleLie = ButtonStyle.Primary;
+            let disabled = false;
+            if (state !== "active") {
+                disabled = true;
+                if (correctAnswer === "True") {
+                    styleTrue = ButtonStyle.Success;
+                    styleLie = ButtonStyle.Secondary;
+                }
+                else {
+                    styleTrue = ButtonStyle.Secondary;
+                    styleLie = ButtonStyle.Success;
+                }
+            }
+            const btnTrue = new ButtonBuilder()
+                .setCustomId(idTrue)
+                .setLabel(labelTrue)
+                .setStyle(styleTrue)
+                .setDisabled(disabled);
+            const btnLie = new ButtonBuilder().setCustomId(idLie).setLabel(labelLie).setStyle(styleLie).setDisabled(disabled);
+            container.addActionRowComponents((row) => row.setComponents(btnTrue, btnLie));
+        }
+        return container;
+    };
+    const msg = await context.channel.send({
+        components: [createGameContainer("loading", thinkMessage)],
+        flags: MessageFlags.IsComponentsV2,
+        allowedMentions: { repliedUser: false },
     });
-    const result = await fetch(`https://opentdb.com/api.php?amount=1&type=boolean`).then((res) => res.json());
-    const question = result.results[0];
-    let answer;
-    let winningID;
-    if (question.correct_answer === "True") {
-        winningID = id1;
-        answer = options.buttons.true;
+    let result;
+    try {
+        const response = await fetch(`https://opentdb.com/api.php?amount=1&type=boolean`);
+        result = (await response.json());
     }
-    else {
-        winningID = id2;
-        answer = options.buttons.lie;
+    catch (e) {
+        return await msg.edit({
+            components: [createGameContainer("error", "Failed to fetch question from API.")],
+            flags: MessageFlags.IsComponentsV2,
+        });
     }
-    ;
-    let btn1 = new ButtonBuilder()
-        .setCustomId(id1)
-        .setLabel(options.buttons.true)
-        .setStyle(ButtonStyle.Primary);
-    let btn2 = new ButtonBuilder()
-        .setCustomId(id2)
-        .setLabel(options.buttons.lie)
-        .setStyle(ButtonStyle.Primary);
-    options.embed.description = decode(question.question);
-    embed = createEmbed(options.embed);
+    if (!result.results || result.results.length === 0) {
+        return await msg.edit({
+            components: [createGameContainer("error", "API returned no results.")],
+            flags: MessageFlags.IsComponentsV2,
+        });
+    }
+    const questionData = result.results[0];
+    const questionText = decode(questionData.question);
+    const correctAnswerRaw = questionData.correct_answer;
+    const correctLabel = correctAnswerRaw === "True" ? labelTrue : labelLie;
     await msg.edit({
-        embeds: [embed],
-        components: [
-            new ActionRowBuilder().addComponents(btn1, btn2)
-        ]
+        components: [createGameContainer("active", questionText)],
+        flags: MessageFlags.IsComponentsV2,
     });
     const gameCreatedAt = Date.now();
-    const gameCollector = msg.createMessageComponentCollector({
+    const collector = msg.createMessageComponentCollector({
         componentType: ComponentType.Button,
-        time: 60000
+        time: options.time || 60000,
     });
-    gameCollector.on("collect", async (button) => {
-        if (button.user.id !== id) {
-            return button.reply({
-                content: options.othersMessage ?
-                    options.othersMessage.replace(`{{author}}`, id) :
-                    "Only <@" + id + "> can use the buttons!",
-                ephemeral: true
+    collector.on("collect", async (interaction) => {
+        if (interaction.user.id !== userId) {
+            return interaction.reply({
+                content: options.othersMessage
+                    ? options.othersMessage.replace(`{{author}}`, userId)
+                    : "Only <@" + userId + "> can use the buttons!",
+                flags: [MessageFlags.Ephemeral],
             });
         }
-        await button.deferUpdate();
-        if (button.customId === winningID) {
-            btn1 = new ButtonBuilder()
-                .setCustomId(id1)
-                .setLabel(options.buttons ? options.buttons.true : "Truth")
-                .setDisabled();
-            btn2 = new ButtonBuilder()
-                .setCustomId(id2)
-                .setLabel(options.buttons ? options.buttons.lie : "Lie")
-                .setDisabled();
-            gameCollector.stop();
-            if (winningID === id1) {
-                btn1.setStyle(ButtonStyle.Success);
-                btn2.setStyle(ButtonStyle.Danger);
-            }
-            else {
-                btn1.setStyle(ButtonStyle.Danger);
-                btn2.setStyle(ButtonStyle.Success);
-            }
-            embed.setTimestamp(options.embed.timestamp ? new Date() : null);
+        await interaction.deferUpdate();
+        const chosenAnswer = interaction.customId === idTrue ? "True" : "False";
+        const isCorrect = chosenAnswer === correctAnswerRaw;
+        collector.stop(isCorrect ? "won" : "lost");
+        const timeTaken = weky.convertTime(Date.now() - gameCreatedAt);
+        if (isCorrect) {
+            const winText = options.winMessage?.replace(`{{answer}}`, correctLabel).replace(`{{time}}`, timeTaken);
             await msg.edit({
-                embeds: [embed],
-                components: [new ActionRowBuilder().addComponents(btn1, btn2)]
-            });
-            const time = convertTime(Date.now() - gameCreatedAt);
-            options.embed.description = options.winMessage ? options.winMessage
-                .replace(`{{answer}}`, decode(answer))
-                .replace(`{{time}}`, time) : `GG, It was a **${decode(answer)}**. You got it correct in **${time}**.`;
-            const winEmbed = createEmbed(options.embed);
-            if (!interaction.channel || !interaction.channel.isSendable())
-                return;
-            await interaction.channel.send({
-                embeds: [winEmbed]
+                components: [createGameContainer("won", winText, correctAnswerRaw)],
+                flags: MessageFlags.IsComponentsV2,
             });
         }
         else {
-            btn1 = new ButtonBuilder()
-                .setCustomId(id1)
-                .setLabel(options.buttons ? options.buttons.true : "Truth")
-                .setDisabled();
-            btn2 = new ButtonBuilder()
-                .setCustomId(id2)
-                .setLabel(options.buttons ? options.buttons.lie : "Lie")
-                .setDisabled();
-            gameCollector.stop();
-            if (winningID === id1) {
-                btn1.setStyle(ButtonStyle.Success);
-                btn2.setStyle(ButtonStyle.Danger);
-            }
-            else {
-                btn1.setStyle(ButtonStyle.Danger);
-                btn2.setStyle(ButtonStyle.Success);
-            }
-            embed.setTimestamp(options.embed.timestamp ? new Date() : null);
+            const loseText = options.loseMessage?.replace("{{answer}}", correctLabel);
             await msg.edit({
-                embeds: [embed],
-                components: [new ActionRowBuilder().addComponents(btn1, btn2)]
-            });
-            options.embed.description = options.loseMessage ? options.loseMessage.replace('{{answer}}', decode(answer)) : `Better luck next time! It was a **${decode(answer)}**.`;
-            const lostEmbed = createEmbed(options.embed);
-            if (!interaction.channel || !interaction.channel.isSendable())
-                return;
-            await interaction.channel.send({
-                embeds: [lostEmbed]
+                components: [createGameContainer("lost", loseText, correctAnswerRaw)],
+                flags: MessageFlags.IsComponentsV2,
             });
         }
     });
-    gameCollector.on("end", async (collected, reason) => {
+    collector.on("end", async (_, reason) => {
         if (reason === "time") {
-            btn1 = new ButtonBuilder()
-                .setCustomId(id1)
-                .setLabel(options.buttons ? options.buttons.true : "Truth")
-                .setDisabled();
-            btn2 = new ButtonBuilder()
-                .setCustomId(id2)
-                .setLabel(options.buttons ? options.buttons.lie : "Lie")
-                .setDisabled();
-            if (winningID === id1) {
-                btn1.setStyle(ButtonStyle.Success);
-                btn2.setStyle(ButtonStyle.Danger);
+            const loseText = `**Time's up!**\nIt was actually **${correctLabel}**.`;
+            try {
+                await msg.edit({
+                    components: [createGameContainer("timeout", loseText, correctAnswerRaw)],
+                    flags: MessageFlags.IsComponentsV2,
+                });
             }
-            else {
-                btn1.setStyle(ButtonStyle.Danger);
-                btn2.setStyle(ButtonStyle.Success);
-            }
-            embed.setTimestamp(options.embed.timestamp ? new Date() : null);
-            await msg.edit({
-                embeds: [embed],
-                components: [new ActionRowBuilder().addComponents(btn1, btn2)]
-            });
-            options.embed.description = options.loseMessage ? options.loseMessage.replace('{{answer}}', decode(answer)) : `**You run out of Time**\nBetter luck next time! It was a **${decode(answer)}**.`;
-            const lostEmbed = createEmbed(options.embed);
-            if (!interaction.channel || !interaction.channel.isSendable())
-                return;
-            await interaction.channel.send({
-                embeds: [lostEmbed]
-            });
+            catch (e) { }
         }
     });
-    checkPackageUpdates("LieSwatter", options.notifyUpdate);
 };
 export default LieSwatter;

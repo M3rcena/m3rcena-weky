@@ -1,44 +1,157 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, EmbedBuilder, MessageFlags } from "discord.js";
+import {
+	ButtonBuilder,
+	ButtonStyle,
+	ComponentType,
+	ContainerBuilder,
+	MediaGalleryBuilder,
+	MessageFlags,
+} from "discord.js";
 
 import type { CustomOptions, Types2048 } from "../Types/index.js";
 import type { WekyManager } from "../index.js";
 
+const activePlayers = new Set();
+
 const mapDirection = (customId: string): string => {
 	switch (customId) {
-		case "weky_up":
+		case "weky_2048_up":
 			return "UP";
-		case "weky_down":
+		case "weky_2048_down":
 			return "DOWN";
-		case "weky_left":
+		case "weky_2048_left":
 			return "LEFT";
-		case "weky_right":
+		case "weky_2048_right":
 			return "RIGHT";
 		default:
 			return "";
 	}
 };
 
-// Main game function that handles the 2048 game logic
 const mini2048 = async (weky: WekyManager, options: CustomOptions<Types2048>) => {
 	const context = options.context;
+	const userId = weky._getContextUserID(context);
 
-	const userID = weky._getContextUserID(context);
+	if (activePlayers.has(userId)) return;
+	activePlayers.add(userId);
 
-	const member = await context.guild.members.fetch(userID);
-	const username = member.user.username || "Player";
-	const userIcon = member.user?.displayAvatarURL({ extension: "png" }) || "";
+	const member = await context.guild?.members.fetch(userId);
+	const username = member?.user.username || "Player";
+	const userIcon = member?.user.displayAvatarURL({ extension: "png" }) || "";
 
-	const msg = await context.channel.send({ content: "Starting the game..." });
+	const gameTitle = options.embed.title || "2048";
+	const defaultColor = typeof options.embed.color === "number" ? options.embed.color : 0x5865f2;
 
-	const gameID = await weky.NetworkManager.create2048Game(userID, username);
+	const emojiUp = options.emojis?.up || "⬆️";
+	const emojiDown = options.emojis?.down || "⬇️";
+	const emojiLeft = options.emojis?.left || "⬅️";
+	const emojiRight = options.emojis?.right || "➡️";
+
+	const createGameContainer = (
+		state: "loading" | "active" | "won" | "gameover" | "quit" | "timeout" | "error",
+		details?: { error?: string; image?: string; score?: number }
+	) => {
+		const container = new ContainerBuilder();
+		let content = "";
+		const score = details?.score || 0;
+
+		switch (state) {
+			case "loading":
+				container.setAccentColor(defaultColor);
+				content = `## ${gameTitle}\n> 🔄 Starting game...`;
+				break;
+
+			case "active":
+				container.setAccentColor(defaultColor);
+				content = `## ${gameTitle}\n> Combine the tiles to reach **2048**!\n\n**Score:** \`${score}\``;
+				break;
+
+			case "won":
+				container.setAccentColor(0x57f287); // Green
+				content = `## 🎉 You Won!\n> You reached the **2048** tile!\n\n**Final Score:** \`${score}\``;
+				break;
+
+			case "gameover":
+				container.setAccentColor(0xed4245); // Red
+				content = `## 💀 Game Over\n> No more moves available.\n\n**Final Score:** \`${score}\``;
+				break;
+
+			case "quit":
+				container.setAccentColor(0xed4245); // Red
+				content = `## 🛑 Game Stopped\n> You quit the game.\n\n**Final Score:** \`${score}\``;
+				break;
+
+			case "timeout":
+				container.setAccentColor(0xed4245); // Red
+				content = `## ⏱️ Time's Up\n> Game session expired.\n\n**Final Score:** \`${score}\``;
+				break;
+
+			case "error":
+				container.setAccentColor(0xff0000);
+				content = `## ❌ Error\n> ${details?.error || "Unknown error occurred."}`;
+				break;
+		}
+
+		container.addTextDisplayComponents((t) => t.setContent(content));
+
+		if (details?.image) {
+			const gallery = new MediaGalleryBuilder().addItems((item) => item.setURL(`attachment://${details.image}`));
+			container.addMediaGalleryComponents(gallery);
+		}
+
+		if (state === "active") {
+			const up = new ButtonBuilder().setStyle(ButtonStyle.Secondary).setLabel(emojiUp).setCustomId("weky_2048_up");
+			const down = new ButtonBuilder()
+				.setStyle(ButtonStyle.Secondary)
+				.setLabel(emojiDown)
+				.setCustomId("weky_2048_down");
+			const left = new ButtonBuilder()
+				.setStyle(ButtonStyle.Secondary)
+				.setLabel(emojiLeft)
+				.setCustomId("weky_2048_left");
+			const right = new ButtonBuilder()
+				.setStyle(ButtonStyle.Secondary)
+				.setLabel(emojiRight)
+				.setCustomId("weky_2048_right");
+
+			const stop = new ButtonBuilder()
+				.setStyle(ButtonStyle.Danger)
+				.setLabel("Quit")
+				.setCustomId("weky_2048_quit")
+				.setEmoji("🛑");
+
+			const dis1 = new ButtonBuilder()
+				.setLabel(`\u200b`)
+				.setStyle(ButtonStyle.Secondary)
+				.setCustomId("dis1")
+				.setDisabled(true);
+			const dis2 = new ButtonBuilder()
+				.setLabel(`\u200b`)
+				.setStyle(ButtonStyle.Secondary)
+				.setCustomId("dis2")
+				.setDisabled(true);
+
+			container.addActionRowComponents((row) => row.setComponents(dis1, up, dis2, stop));
+
+			container.addActionRowComponents((row) => row.setComponents(left, down, right));
+		}
+
+		return container;
+	};
+
+	const msg = await context.channel.send({
+		components: [createGameContainer("loading")],
+		flags: MessageFlags.IsComponentsV2,
+		allowedMentions: { repliedUser: false },
+	});
+
+	const gameID = await weky.NetworkManager.create2048Game(userId, username);
 
 	if (gameID === "-1") {
-		const embed = weky._createErrorEmbed(
-			"2048",
-			"Could not create game. You might already have one running or the API is down."
-		);
-
-		return await msg.edit({ content: ``, embeds: [embed] }).catch(() => {});
+		activePlayers.delete(userId);
+		return await msg.edit({
+			components: [createGameContainer("error", { error: "Could not create game." })],
+			flags: MessageFlags.IsComponentsV2,
+		});
 	}
 
 	let currentScore = 0;
@@ -46,51 +159,18 @@ const mini2048 = async (weky: WekyManager, options: CustomOptions<Types2048>) =>
 
 	if (!initialImg) {
 		await weky.NetworkManager.end2048Game(gameID);
-		return await msg.edit({ content: "Failed to generate game board." });
+		activePlayers.delete(userId);
+		return await msg.edit({
+			components: [createGameContainer("error", { error: "Failed to generate board." })],
+			flags: MessageFlags.IsComponentsV2,
+		});
 	}
 
-	let originalDescription = options.embed.description;
-	options.embed.description =
-		originalDescription?.replace(`{{score}}`, `${currentScore}`).replace(`{{id}}`, `${userID}`) ||
-		`ID: \`${userID}\`\nScore: \`${currentScore}\``;
-
-	options.embed.image = "attachment://2048-board.png";
-
-	let embed = weky._createEmbed(options.embed);
-
-	const up = new ButtonBuilder()
-		.setStyle(ButtonStyle.Secondary)
-		.setLabel(options.emojis?.up || "⬆️")
-		.setCustomId("weky_up");
-	const down = new ButtonBuilder()
-		.setStyle(ButtonStyle.Secondary)
-		.setLabel(options.emojis?.down || "⬇️")
-		.setCustomId("weky_down");
-	const left = new ButtonBuilder()
-		.setStyle(ButtonStyle.Secondary)
-		.setLabel(options.emojis?.left || "⬅️")
-		.setCustomId("weky_left");
-	const right = new ButtonBuilder()
-		.setStyle(ButtonStyle.Secondary)
-		.setLabel(options.emojis?.right || "➡️")
-		.setCustomId("weky_right");
-	const stop = new ButtonBuilder()
-		.setStyle(ButtonStyle.Danger)
-		.setLabel("Quit")
-		.setCustomId("weky_quit")
-		.setEmoji("🛑");
-
-	const row = new ActionRowBuilder<ButtonBuilder>().addComponents(left, up, down, right);
-	const row2 = new ActionRowBuilder<ButtonBuilder>().addComponents(stop);
-
-	await msg
-		.edit({
-			content: `React with the buttons to play the game!`,
-			embeds: [embed],
-			components: [row, row2],
-			files: [initialImg],
-		})
-		.catch(() => {});
+	await msg.edit({
+		components: [createGameContainer("active", { image: "2048-board.png", score: currentScore })],
+		files: [initialImg],
+		flags: MessageFlags.IsComponentsV2,
+	});
 
 	const collector = msg.createMessageComponentCollector({
 		time: options.time || 600_000,
@@ -98,11 +178,12 @@ const mini2048 = async (weky: WekyManager, options: CustomOptions<Types2048>) =>
 	});
 
 	collector.on("collect", async (btn) => {
-		if (btn.user.id !== userID) {
+		if (btn.user.id !== userId) {
 			return btn.reply({ content: "This is not your game!", flags: [MessageFlags.Ephemeral] });
 		}
 
-		if (btn.customId === "weky_quit") {
+		if (btn.customId === "weky_2048_quit") {
+			await btn.deferUpdate();
 			return collector.stop("quit");
 		}
 
@@ -114,7 +195,7 @@ const mini2048 = async (weky: WekyManager, options: CustomOptions<Types2048>) =>
 		const moveResult = await weky.NetworkManager.move2048(gameID, direction);
 
 		if (!moveResult) {
-			return btn.followUp({ content: "Failed to communicate with game server.", flags: [MessageFlags.Ephemeral] });
+			return btn.followUp({ content: "Connection error!", flags: [MessageFlags.Ephemeral] });
 		}
 
 		if (!moveResult.moved && !moveResult.gameOver) {
@@ -128,54 +209,35 @@ const mini2048 = async (weky: WekyManager, options: CustomOptions<Types2048>) =>
 		}
 
 		const newImg = await weky.NetworkManager.get2048BoardImage(gameID, userIcon);
-
-		if (!newImg) {
-			return btn.followUp({ content: "Failed to render board.", flags: [MessageFlags.Ephemeral] });
+		if (newImg) {
+			await msg
+				.edit({
+					files: [newImg],
+					components: [createGameContainer("active", { image: "2048-board.png", score: currentScore })],
+					flags: MessageFlags.IsComponentsV2,
+				})
+				.catch(() => {});
 		}
-
-		options.embed.description =
-			originalDescription?.replace(`{{score}}`, `${currentScore}`).replace(`{{id}}`, `${userID}`) ||
-			`ID: \`${userID}\`\nScore: \`${currentScore}\``;
-
-		embed = weky._createEmbed(options.embed);
-
-		await msg
-			.edit({
-				embeds: [embed],
-				files: [newImg],
-				components: [row, row2],
-			})
-			.catch(() => {});
 	});
 
 	collector.on("end", async (_, reason) => {
-		const gameOverImg = await weky.NetworkManager.get2048BoardImage(gameID, userIcon);
+		const finalImg = await weky.NetworkManager.get2048BoardImage(gameID, userIcon);
 
 		await weky.NetworkManager.end2048Game(gameID);
+		activePlayers.delete(userId);
 
-		const endEmbed = new EmbedBuilder().setColor(reason === "won" ? "Green" : "Red").setTimestamp(new Date());
-
-		if (reason === "quit") {
-			endEmbed.setTitle("Game Stopped").setDescription(`You quit the game.\nFinal Score: \`${currentScore}\``);
-		} else if (reason === "won") {
-			endEmbed.setTitle("You Won! 🎉").setDescription(`You reached **2048**!\nFinal Score: \`${currentScore}\``);
-		} else if (reason === "gameover") {
-			endEmbed.setTitle("Game Over").setDescription(`No more moves available.\nFinal Score: \`${currentScore}\``);
-		} else {
-			endEmbed.setTitle("Time's Up").setDescription(`Game session expired.\nFinal Score: \`${currentScore}\``);
-		}
-
-		const files = gameOverImg ? [gameOverImg] : [];
-		if (gameOverImg) {
-			endEmbed.setImage("attachment://2048-board.png");
-		}
+		let endState: "won" | "gameover" | "quit" | "timeout" = "gameover";
+		if (reason === "won") endState = "won";
+		else if (reason === "quit") endState = "quit";
+		else if (reason === "time") endState = "timeout";
 
 		await msg
 			.edit({
-				content: ``,
-				embeds: [endEmbed],
-				components: [],
-				files: files,
+				components: [
+					createGameContainer(endState, { image: finalImg ? "2048-board.png" : undefined, score: currentScore }),
+				],
+				files: finalImg ? [finalImg] : [],
+				flags: MessageFlags.IsComponentsV2,
 			})
 			.catch(() => {});
 	});

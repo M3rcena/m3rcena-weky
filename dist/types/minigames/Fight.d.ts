@@ -1,4 +1,4 @@
-import { Message } from "discord.js";
-import type { FightTypes } from "../Types";
-declare const Fight: (options: FightTypes) => Promise<void | import("discord.js").OmitPartialGroupDMChannel<Message<boolean>>>;
+import type { CustomOptions, FightTypes } from "../Types/index.js";
+import type { WekyManager } from "../index.js";
+declare const Fight: (weky: WekyManager, options: CustomOptions<FightTypes>) => Promise<boolean | import("discord.js").Message<true>>;
 export default Fight;

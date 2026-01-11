@@ -1,217 +1,162 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const tslib_1 = require("tslib");
-const chalk_1 = tslib_1.__importDefault(require("chalk"));
 const discord_js_1 = require("discord.js");
-const functions_js_1 = require("../functions/functions.js");
-const OptionChecking_js_1 = require("../functions/OptionChecking.js");
 const data = new Set();
-const ShuffleGuess = async (options) => {
-    // Options Check
-    (0, OptionChecking_js_1.OptionsChecking)(options, "ShuffleGuess");
-    if (!options.interaction.inGuild())
-        return;
-    let interaction;
-    if (options.interaction.author) {
-        interaction = options.interaction;
-    }
-    else {
-        interaction = options.interaction;
-    }
-    if (!interaction)
-        throw new Error(chalk_1.default.red("[@m3rcena/weky] FastType Error:") + " No interaction provided.");
-    if (!interaction.channel || !interaction.channel.isSendable())
-        throw new Error(chalk_1.default.red("[@m3rcena/weky] FastType Error:") + " No channel provided in interaction.");
-    let client = options.client;
-    let id = "";
-    if (options.interaction.author) {
-        id = options.interaction.author.id;
-    }
-    else {
-        id = options.interaction.user.id;
-    }
-    ;
+const ShuffleGuess = async (weky, options) => {
+    const context = options.context;
+    const id = weky._getContextUserID(context);
     if (!options.word) {
-        options.word = (0, functions_js_1.getRandomSentence)(1)[0];
+        options.word = (await weky.NetworkManager.getRandomSentence(1))[0];
     }
-    ;
-    if (options.time < 10000) {
-        throw new Error(chalk_1.default.red("[@m3rcena/weky] ShuffleGuess Error:") + " Time must be greater than 10 Seconds (in ms i.e. 10000)");
+    if (!options.time)
+        options.time = 60000;
+    if (isNaN(options.time) || options.time < 10000) {
+        return weky._LoggerManager.createError("ShuffleGuess", "time must be greater than 10 Seconds (in ms i.e. 10000)");
     }
-    ;
-    if (options.time && typeof options.time !== 'number') {
-        throw new TypeError(chalk_1.default.red("[@m3rcena/weky] ShuffleGuess Error:") + " Time must be a number.");
+    if (options.time && typeof options.time !== "number") {
+        return weky._LoggerManager.createError("ShuffleGuess", "Time must be a number.");
     }
-    ;
-    if (!options.buttons) {
-        options.buttons = {
-            reshuffle: "Reshuffle",
-            cancel: "Cancel"
-        };
-    }
-    ;
-    if (!options.buttons.reshuffle) {
-        options.buttons.reshuffle = "Reshuffle";
-    }
-    ;
-    if (!options.buttons.cancel) {
-        options.buttons.cancel = "Cancel";
-    }
-    ;
-    if (data.has(id))
-        return;
+    const btnLabels = {
+        reshuffle: options.buttons?.reshuffle || "Reshuffle",
+        cancel: options.buttons?.cancel || "Cancel",
+    };
+    const messages = {
+        start: options.startMessage || "The word is **{{word}}**! You have **{{time}}** to guess it.",
+        win: options.winMessage || "✅ **Correct!** You guessed **{{word}}** in **{{time}}**.",
+        lose: options.loseMessage || "❌ **Game Over!** The word was **{{answer}}**.",
+        incorrect: options.incorrectMessage || "❌ **Wrong!** That is not the word.",
+    };
     data.add(id);
-    const id1 = (0, functions_js_1.getRandomString)(20) +
-        '-' +
-        (0, functions_js_1.getRandomString)(20);
-    const id2 = (0, functions_js_1.getRandomString)(20) +
-        '-' +
-        (0, functions_js_1.getRandomString)(20);
-    const word = (0, functions_js_1.shuffleString)(options.word.toString());
-    let disbut = new discord_js_1.ButtonBuilder()
-        .setLabel(options.buttons.reshuffle ? options.buttons.reshuffle : 'Reshuffle')
-        .setStyle(discord_js_1.ButtonStyle.Success)
-        .setCustomId(id1);
-    let cancel = new discord_js_1.ButtonBuilder()
-        .setLabel(options.buttons.cancel ?? 'Cancel')
-        .setStyle(discord_js_1.ButtonStyle.Danger)
-        .setCustomId(id2);
-    options.embed.title = options.embed.title ?? "Shuffle Guess";
-    options.embed.description = options.startMessage ?
-        options.startMessage
-            .replace('{{word}}', word)
-            .replace('{{time}}', (0, functions_js_1.convertTime)(options.time ?? 60000)) :
-        `The word is \`${word}\` and you have ${(0, functions_js_1.convertTime)(options.time ?? 60000)} to guess it!`;
-    let emd = (0, functions_js_1.createEmbed)(options.embed);
-    const embed = await options.interaction.reply({
-        embeds: [emd],
-        components: [new discord_js_1.ActionRowBuilder().addComponents(disbut, cancel)],
-    });
+    const reshuffleId = `shuffle_${weky.getRandomString(10)}`;
+    const cancelId = `cancel_${weky.getRandomString(10)}`;
+    let currentScramble = weky.shuffleString(options.word.toString());
     const gameCreatedAt = Date.now();
-    const gameCollector = options.interaction.channel.createMessageCollector({
-        filter: (m) => m.author.id === id,
-        time: options.time ?? 60000,
+    let isGameActive = true;
+    const createGameContainer = (state, scrambledWord, feedback = "") => {
+        let color = 0x5865f2;
+        if (state === "correct")
+            color = 0x57f287;
+        if (state === "wrong" || state === "lost")
+            color = 0xed4245;
+        if (typeof options.embed.color === "number" && state === "playing")
+            color = options.embed.color;
+        const container = new discord_js_1.ContainerBuilder().setAccentColor(color);
+        let mainContent = options.embed.title || `## Shuffle Guess\n`;
+        if (state === "playing" || state === "wrong") {
+            const timeStr = weky.convertTime(options.time);
+            const desc = messages.start
+                .replace("{{word}}", `\`${scrambledWord.toUpperCase()}\``)
+                .replace("{{time}}", timeStr);
+            mainContent += `${desc}\n\n`;
+            if (state === "wrong" && feedback) {
+                mainContent += `> ${feedback}`;
+            }
+            else {
+                mainContent += `Type your guess in the chat!`;
+            }
+        }
+        else if (state === "correct") {
+            mainContent += feedback;
+        }
+        else if (state === "lost") {
+            mainContent += feedback;
+        }
+        container.addTextDisplayComponents((text) => text.setContent(mainContent));
+        const btnReshuffle = new discord_js_1.ButtonBuilder()
+            .setLabel(btnLabels.reshuffle)
+            .setStyle(discord_js_1.ButtonStyle.Primary)
+            .setCustomId(reshuffleId)
+            .setDisabled(!isGameActive);
+        const btnCancel = new discord_js_1.ButtonBuilder()
+            .setLabel(btnLabels.cancel)
+            .setStyle(discord_js_1.ButtonStyle.Danger)
+            .setCustomId(cancelId)
+            .setDisabled(!isGameActive);
+        container.addActionRowComponents((row) => row.setComponents(btnReshuffle, btnCancel));
+        return container;
+    };
+    const msg = await context.channel.send({
+        components: [createGameContainer("playing", currentScramble)],
+        flags: discord_js_1.MessageFlags.IsComponentsV2,
+        allowedMentions: { repliedUser: false },
     });
-    gameCollector.on('collect', async (msg) => {
-        if (msg.system)
+    const messageCollector = context.channel.createMessageCollector({
+        filter: (m) => m.author.id === id,
+        time: options.time,
+    });
+    const componentCollector = msg.createMessageComponentCollector({
+        componentType: discord_js_1.ComponentType.Button,
+        time: options.time,
+    });
+    messageCollector.on("collect", async (collectedMsg) => {
+        if (!isGameActive)
             return;
-        if (msg.content.toLowerCase() === options.word.toString()) {
-            gameCollector.stop();
-            data.delete(id);
-            disbut = new discord_js_1.ButtonBuilder()
-                .setLabel(options.buttons.reshuffle ? options.buttons.reshuffle : 'Reshuffle')
-                .setStyle(discord_js_1.ButtonStyle.Success)
-                .setCustomId(id1)
-                .setDisabled();
-            cancel = new discord_js_1.ButtonBuilder()
-                .setLabel(options.buttons.cancel ?? 'Cancel')
-                .setStyle(discord_js_1.ButtonStyle.Danger)
-                .setCustomId(id2)
-                .setDisabled();
-            const time = (0, functions_js_1.convertTime)(Date.now() - gameCreatedAt);
-            options.embed.description = options.winMessage ?
-                options.winMessage
-                    .replace('{{word}}', options.word.toString())
-                    .replace('{{time}}', time) :
-                `You have guessed the word \`${options.word.toString()}\` in ${time}!`;
-            let _embed = (0, functions_js_1.createEmbed)(options.embed);
-            msg.reply({ embeds: [_embed] });
-            return embed.edit({
-                embeds: [emd],
-                components: [new discord_js_1.ActionRowBuilder().addComponents(disbut, cancel)],
+        if (collectedMsg.system)
+            return;
+        if (collectedMsg.deletable)
+            await collectedMsg.delete().catch(() => { });
+        const guess = collectedMsg.content.toLowerCase().trim();
+        const correctWord = options.word.toString().toLowerCase().trim();
+        if (guess === correctWord) {
+            isGameActive = false;
+            messageCollector.stop("winner");
+            componentCollector.stop("winner");
+            const timeTaken = weky.convertTime(Date.now() - gameCreatedAt);
+            const winText = messages.win.replace("{{word}}", `\`${options.word}\``).replace("{{time}}", timeTaken);
+            await msg.edit({
+                components: [createGameContainer("correct", currentScramble, winText)],
+                flags: discord_js_1.MessageFlags.IsComponentsV2,
             });
+            data.delete(id);
         }
         else {
-            options.embed.description = options.incorrectMessage ?
-                options.incorrectMessage :
-                `No ${msg.author.toString()}! The word isn\'t \`${msg.content.toLowerCase()}\``;
-            let _embed = (0, functions_js_1.createEmbed)(options.embed);
-            msg.reply({ embeds: [_embed] }).then((m) => setTimeout(() => {
-                if (m.deletable) {
-                    m.delete();
-                }
-                ;
-                if (msg.deletable) {
-                    msg.delete();
-                }
-                ;
-            }, 3000));
-        }
-    });
-    const GameCollector = embed.createMessageComponentCollector({
-        componentType: discord_js_1.ComponentType.Button,
-        filter: (fn) => fn.customId === id1 || fn.customId === id2,
-    });
-    GameCollector.on('collect', async (btn) => {
-        if (btn.user.id !== id) {
-            return btn.reply({
-                content: options.othersMessage ?
-                    options.othersMessage.replace('{{author}}', id) :
-                    `Only <@${id}> can use the buttons!`,
+            const incorrectText = messages.incorrect;
+            await msg.edit({
+                components: [createGameContainer("wrong", currentScramble, incorrectText)],
+                flags: discord_js_1.MessageFlags.IsComponentsV2,
             });
         }
-        ;
-        await btn.deferUpdate();
-        if (btn.customId === id1) {
-            options.embed.description = options.startMessage ?
-                options.startMessage
-                    .replace('{{word}}', (0, functions_js_1.shuffleString)(options.word.toString()))
-                    .replace('{{time}}', (0, functions_js_1.convertTime)(options.time ?? 60000)) :
-                `The word is \`${(0, functions_js_1.shuffleString)(options.word.toString())}\` and you have ${(0, functions_js_1.convertTime)(options.time ?? 60000)} to guess it!`;
-            let _embed = (0, functions_js_1.createEmbed)(options.embed);
-            return embed.edit({
-                embeds: [_embed],
-                components: [new discord_js_1.ActionRowBuilder().addComponents(disbut, cancel)],
+    });
+    componentCollector.on("collect", async (interaction) => {
+        if (interaction.user.id !== id) {
+            return interaction.reply({
+                content: options.othersMessage?.replace("{{author}}", id) || `Only <@${id}> can play!`,
+                flags: [discord_js_1.MessageFlags.Ephemeral],
             });
         }
-        else if (btn.customId === id2) {
-            gameCollector.stop();
+        await interaction.deferUpdate();
+        if (interaction.customId === reshuffleId) {
+            currentScramble = weky.shuffleString(options.word.toString());
+            await msg.edit({
+                components: [createGameContainer("playing", currentScramble)],
+                flags: discord_js_1.MessageFlags.IsComponentsV2,
+            });
+        }
+        else if (interaction.customId === cancelId) {
+            isGameActive = false;
+            messageCollector.stop("cancel");
+            componentCollector.stop("cancel");
+            const loseText = messages.lose.replace("{{answer}}", `\`${options.word}\``);
+            await msg.edit({
+                components: [createGameContainer("lost", currentScramble, loseText)],
+                flags: discord_js_1.MessageFlags.IsComponentsV2,
+            });
             data.delete(id);
-            disbut = new discord_js_1.ButtonBuilder()
-                .setLabel(options.buttons.reshuffle ? options.buttons.reshuffle : 'Reshuffle')
-                .setStyle(discord_js_1.ButtonStyle.Success)
-                .setCustomId(id1)
-                .setDisabled();
-            cancel = new discord_js_1.ButtonBuilder()
-                .setLabel(options.buttons.cancel ?? 'Cancel')
-                .setStyle(discord_js_1.ButtonStyle.Danger)
-                .setCustomId(id2)
-                .setDisabled();
-            options.embed.description = options.loseMessage ?
-                options.loseMessage.replace('{{answer}}', options.word.toString()) :
-                `The word was \`${options.word.toString()}\``;
-            let _embed = (0, functions_js_1.createEmbed)(options.embed);
-            return embed.edit({
-                embeds: [_embed],
-                components: [new discord_js_1.ActionRowBuilder().addComponents(disbut, cancel)],
-            });
         }
-        ;
     });
-    gameCollector.on('end', async (_collected, reason) => {
-        if (reason === 'time') {
-            disbut = new discord_js_1.ButtonBuilder()
-                .setLabel(options.buttons.reshuffle ? options.buttons.reshuffle : 'Reshuffle')
-                .setStyle(discord_js_1.ButtonStyle.Success)
-                .setCustomId(id1)
-                .setDisabled();
-            cancel = new discord_js_1.ButtonBuilder()
-                .setLabel(options.buttons.cancel ?? 'Cancel')
-                .setStyle(discord_js_1.ButtonStyle.Danger)
-                .setCustomId(id2)
-                .setDisabled();
-            options.embed.description = options.loseMessage ?
-                options.loseMessage.replace('{{answer}}', options.word.toString()) :
-                `The word was \`${options.word.toString()}\``;
-            let _embed = (0, functions_js_1.createEmbed)(options.embed);
-            await interaction.reply({ embeds: [_embed] });
+    messageCollector.on("end", async (_collected, reason) => {
+        if (reason === "time") {
+            isGameActive = false;
+            componentCollector.stop();
             data.delete(id);
-            return embed.edit({
-                embeds: [emd],
-                components: [new discord_js_1.ActionRowBuilder().addComponents(disbut, cancel)],
-            });
+            const loseText = messages.lose.replace("{{answer}}", `\`${options.word}\``);
+            if (msg.editable) {
+                await msg.edit({
+                    components: [createGameContainer("lost", currentScramble, loseText)],
+                    flags: discord_js_1.MessageFlags.IsComponentsV2,
+                });
+            }
         }
-        ;
     });
 };
 exports.default = ShuffleGuess;

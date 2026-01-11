@@ -1,18 +1,17 @@
 {
 	"name": "test",
-	"version": "1.0.0",
+	"version": "14.25.1",
 	"main": "index.js",
-	"type": "commonjs",
+	"type": "module",
 	"scripts": {
-		"start": "npx tsx --tsconfig ./tsconfig.json ./index.ts",
-		"test:cjs": "node test.js"
+		"start": "npx tsx --tsconfig ./tsconfig.json ./index.ts"
 	},
 	"keywords": [],
 	"author": "",
 	"license": "ISC",
 	"description": "",
 	"dependencies": {
-		"@m3rcena/weky": "^11.1.0",
+		"@m3rcena/weky": "^14.25.1",
 		"discord.js": "^14.25.1"
 	}
 }

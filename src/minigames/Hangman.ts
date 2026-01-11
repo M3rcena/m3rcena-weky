@@ -1,85 +1,228 @@
-import type { WekyManager } from "../index.js";
+import {
+	ButtonBuilder,
+	ButtonStyle,
+	ComponentType,
+	ContainerBuilder,
+	MediaGalleryBuilder,
+	Message,
+	MessageFlags,
+} from "discord.js";
+
 import type { CustomOptions, HangmanTypes } from "../Types/index.js";
+import type { WekyManager } from "../index.js";
 
 const Hangman = async (weky: WekyManager, options: CustomOptions<HangmanTypes>) => {
 	const context = options.context;
+	const userId = weky._getContextUserID(context);
 
-	const id = weky._getContextUserID(context);
-	const author = context.user || context.author;
-	const username = author.username;
-	const userIcon = author.displayAvatarURL({ extension: "png" });
+	const member = await context.guild?.members.fetch(userId);
+	const username = member?.user.username || "Player";
+	const userIcon = member?.user.displayAvatarURL({ extension: "png" }) || "";
 
-	const gameID = await weky.NetworkManager.createHangmanGame(id, username);
+	const gameTitle = options.embed?.title || "Hangman";
+	const defaultColor = typeof options.embed?.color === "number" ? options.embed.color : 0x5865f2;
+
+	const createGameContainer = (
+		state: "loading" | "active" | "won" | "lost" | "quit" | "timeout" | "error",
+		details?: { error?: string; image?: string; word?: string }
+	) => {
+		const container = new ContainerBuilder();
+		let content = "";
+
+		switch (state) {
+			case "loading":
+				container.setAccentColor(defaultColor);
+				content = `## ${gameTitle}\n> 🔄 Starting game...`;
+				break;
+
+			case "active":
+				container.setAccentColor(defaultColor);
+				content = `## ${gameTitle}\n> Type a letter in the chat to guess!`;
+				break;
+
+			case "won":
+				container.setAccentColor(0x57f287); // Green
+				content = `## 🎉 Victory!\n> You guessed the word: **${details?.word}**`;
+				break;
+
+			case "lost":
+				container.setAccentColor(0xed4245); // Red
+				content = `## 💀 Game Over\n> The word was: **${details?.word}**`;
+				break;
+
+			case "quit":
+				container.setAccentColor(0xed4245); // Red
+				content = `## 🛑 Game Stopped\n> You quit the game. The word was: **${details?.word}**`;
+				break;
+
+			case "timeout":
+				container.setAccentColor(0xed4245); // Red
+				content = `## ⏱️ Time's Up\n> Session expired. The word was: **${details?.word}**`;
+				break;
+
+			case "error":
+				container.setAccentColor(0xff0000);
+				content = `## ❌ Error\n> ${details?.error || "Unknown error."}`;
+				break;
+		}
+
+		container.addTextDisplayComponents((t) => t.setContent(content));
+
+		if (details?.image) {
+			const gallery = new MediaGalleryBuilder().addItems((item) => item.setURL(`attachment://${details.image}`));
+			container.addMediaGalleryComponents(gallery);
+		}
+
+		if (state === "active") {
+			const quitBtn = new ButtonBuilder()
+				.setLabel("Quit Game")
+				.setStyle(ButtonStyle.Danger)
+				.setCustomId("hangman_quit")
+				.setEmoji("🛑");
+
+			container.addActionRowComponents((row) => row.setComponents(quitBtn));
+		}
+
+		return container;
+	};
+
+	const msg = await context.channel.send({
+		components: [createGameContainer("loading")],
+		flags: MessageFlags.IsComponentsV2,
+		allowedMentions: { repliedUser: false },
+	});
+
+	const gameID = await weky.NetworkManager.createHangmanGame(userId, username);
+
 	if (gameID === "-1") {
-		return context.channel.send("Failed to start the game. Please try again later.");
+		return await msg.edit({
+			components: [createGameContainer("error", { error: "Failed to start game." })],
+			flags: MessageFlags.IsComponentsV2,
+		});
 	}
 
 	let attachment = await weky.NetworkManager.getHangmanBoardImage(gameID, userIcon);
 	if (!attachment) {
-		return context.channel.send("Failed to generate game image.");
+		return await msg.edit({
+			components: [createGameContainer("error", { error: "Failed to generate game board." })],
+			flags: MessageFlags.IsComponentsV2,
+		});
 	}
 
-	const msg = await context.channel.send({
+	await msg.edit({
+		components: [createGameContainer("active", { image: "hangman-board.png" })],
 		files: [attachment],
+		flags: MessageFlags.IsComponentsV2,
 	});
 
-	const col = context.channel.createMessageCollector({
-		filter: (m) => m.author.id === id,
-		time: options.time ? options.time : 180_000,
+	const time = options.time || 180_000;
+
+	const chatCollector = context.channel.createMessageCollector({
+		filter: (m: Message) => m.author.id === userId && !m.author.bot,
+		time: time,
 	});
 
-	col.on("collect", async (msg2) => {
-		if (context.channel.isDMBased()) return;
+	const btnCollector = msg.createMessageComponentCollector({
+		componentType: ComponentType.Button,
+		time: time,
+	});
 
-		const char = msg2.content[0]?.toLowerCase();
+	let isGameOver = false;
+	let finalWord = "Unknown";
 
-		if (msg2.deletable) await msg2.delete().catch(() => {});
+	btnCollector.on("collect", async (interaction) => {
+		if (interaction.user.id !== userId) {
+			return interaction.reply({ content: "This is not your game!", flags: [MessageFlags.Ephemeral] });
+		}
+
+		if (interaction.customId === "hangman_quit") {
+			await interaction.deferUpdate();
+			isGameOver = true;
+			chatCollector.stop("quit");
+			btnCollector.stop();
+
+			await weky.NetworkManager.endHangmanGame(gameID);
+
+			await msg.edit({
+				components: [createGameContainer("quit", { word: finalWord !== "Unknown" ? finalWord : "Hidden" })],
+				files: [],
+				flags: MessageFlags.IsComponentsV2,
+			});
+		}
+	});
+
+	chatCollector.on("collect", async (message) => {
+		if (isGameOver) return;
+
+		const char = message.content.trim().charAt(0).toLowerCase();
 
 		if (!char || !/[a-z]/i.test(char)) {
-			const warning = await context.channel.send(`${author}, please provide a **single letter**!`);
-			setTimeout(() => warning.delete().catch(() => {}), 3000);
+			if (message.deletable) await message.delete().catch(() => {});
 			return;
 		}
+
+		if (message.deletable) await message.delete().catch(() => {});
 
 		const response = await weky.NetworkManager.guessHangman(gameID, char);
 
 		if (!response) {
-			return weky._LoggerManager.createError("Hangman", "API failed to respond to guess.");
+			isGameOver = true;
+			chatCollector.stop("error");
+			btnCollector.stop();
+			return msg.edit({
+				components: [createGameContainer("error", { error: "API did not respond." })],
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 
 		if (!response.success) {
-			const warning = await context.channel.send(`${author}, ${response.message}`);
+			const warning = await context.channel.send(`${member}, ${response.message}`);
 			setTimeout(() => warning.delete().catch(() => {}), 3000);
 			return;
 		}
 
 		const { game } = response;
+		finalWord = game.word;
 
 		attachment = await weky.NetworkManager.getHangmanBoardImage(gameID, userIcon);
 
-		await msg
-			.edit({
-				files: [attachment!],
-			})
-			.catch((e) => {
-				col.stop();
-				throw e;
-			});
-
 		if (game.gameOver) {
+			isGameOver = true;
+			chatCollector.stop(game.won ? "won" : "lost");
+			btnCollector.stop();
+
 			await weky.NetworkManager.endHangmanGame(gameID);
-			col.stop("finished");
+
+			await msg.edit({
+				components: [
+					createGameContainer(game.won ? "won" : "lost", {
+						image: "hangman-board.png",
+						word: game.word,
+					}),
+				],
+				files: attachment ? [attachment] : [],
+				flags: MessageFlags.IsComponentsV2,
+			});
+		} else {
+			await msg.edit({
+				components: [createGameContainer("active", { image: "hangman-board.png" })],
+				files: attachment ? [attachment] : [],
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
 	});
 
-	col.on("end", async (_, r) => {
-		if (r === "time") {
+	chatCollector.on("end", async (_, reason) => {
+		if (reason === "time") {
+			isGameOver = true;
+			btnCollector.stop();
 			await weky.NetworkManager.endHangmanGame(gameID);
 
 			await msg
 				.edit({
-					content: "⛔ **Game Ended:** You took too much time to respond.",
+					components: [createGameContainer("timeout", { word: finalWord !== "Unknown" ? finalWord : "Hidden" })],
 					files: [],
+					flags: MessageFlags.IsComponentsV2,
 				})
 				.catch(() => {});
 		}

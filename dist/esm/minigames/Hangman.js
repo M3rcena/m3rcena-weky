@@ -1,117 +1,178 @@
-import chalk from "chalk";
-import { AttachmentBuilder, EmbedBuilder } from "discord.js";
-import words from "../data/words.json";
-import { checkPackageUpdates, createEmbed, createHangman } from "../functions/functions.js";
-import { OptionsChecking } from "../functions/OptionChecking.js";
-const Hangman = async (options) => {
-    OptionsChecking(options, "Hangman");
-    let interaction;
-    if (options.interaction.author) {
-        interaction = options.interaction;
-    }
-    else {
-        interaction = options.interaction;
-    }
-    ;
-    if (!interaction)
-        throw new Error(chalk.red("[@m3rcena/weky] Hangman Error:") + " No interaction provided.");
-    if (!interaction.channel || !interaction.channel.isSendable())
-        throw new Error(chalk.red("[@m3rcena/weky] Hangman Error:") + " No channel found.");
-    let client = options.client;
-    let id = "";
-    if (options.interaction.author) {
-        id = options.interaction.author.id;
-    }
-    else {
-        id = options.interaction.user.id;
-    }
-    ;
-    let wrongs = 0;
-    let at = new AttachmentBuilder(await createHangman(wrongs), {
-        name: "game.png"
-    });
-    let word = words[Math.floor(Math.random() * words.length)];
-    let used = [];
-    options.embed.title = options.embed.title ? options.embed.title : "Hangman Game";
-    options.embed.description = options.embed.description ? options.embed.description.replace(`{{word}}`, `\`\`\`${word.split("").map(v => used.includes(v) ? v.toUpperCase() : "_").join(" ")}`) : `Type a character to guess the word\n\n\`\`\`${word.split("").map(v => used.includes(v) ? v.toUpperCase() : "_").join(" ")}\`\`\``;
-    let embed = createEmbed(options.embed);
-    const msg = await interaction.reply({
-        files: [at],
-        embeds: [embed],
-    });
-    const channel = await interaction.channel;
-    const col = channel.createMessageCollector({
-        filter: (m) => m.author.id === id,
-        time: options.time ? options.time : 180000
-    });
-    const handleMsgDelete = (m, msg) => {
-        if (m.id === msg.id)
-            col.stop("msgDelete");
+import { ButtonBuilder, ButtonStyle, ComponentType, ContainerBuilder, MediaGalleryBuilder, MessageFlags, } from "discord.js";
+const Hangman = async (weky, options) => {
+    const context = options.context;
+    const userId = weky._getContextUserID(context);
+    const member = await context.guild?.members.fetch(userId);
+    const username = member?.user.username || "Player";
+    const userIcon = member?.user.displayAvatarURL({ extension: "png" }) || "";
+    const gameTitle = options.embed?.title || "Hangman";
+    const defaultColor = typeof options.embed?.color === "number" ? options.embed.color : 0x5865f2;
+    const createGameContainer = (state, details) => {
+        const container = new ContainerBuilder();
+        let content = "";
+        switch (state) {
+            case "loading":
+                container.setAccentColor(defaultColor);
+                content = `## ${gameTitle}\n> 🔄 Starting game...`;
+                break;
+            case "active":
+                container.setAccentColor(defaultColor);
+                content = `## ${gameTitle}\n> Type a letter in the chat to guess!`;
+                break;
+            case "won":
+                container.setAccentColor(0x57f287); // Green
+                content = `## 🎉 Victory!\n> You guessed the word: **${details?.word}**`;
+                break;
+            case "lost":
+                container.setAccentColor(0xed4245); // Red
+                content = `## 💀 Game Over\n> The word was: **${details?.word}**`;
+                break;
+            case "quit":
+                container.setAccentColor(0xed4245); // Red
+                content = `## 🛑 Game Stopped\n> You quit the game. The word was: **${details?.word}**`;
+                break;
+            case "timeout":
+                container.setAccentColor(0xed4245); // Red
+                content = `## ⏱️ Time's Up\n> Session expired. The word was: **${details?.word}**`;
+                break;
+            case "error":
+                container.setAccentColor(0xff0000);
+                content = `## ❌ Error\n> ${details?.error || "Unknown error."}`;
+                break;
+        }
+        container.addTextDisplayComponents((t) => t.setContent(content));
+        if (details?.image) {
+            const gallery = new MediaGalleryBuilder().addItems((item) => item.setURL(`attachment://${details.image}`));
+            container.addMediaGalleryComponents(gallery);
+        }
+        if (state === "active") {
+            const quitBtn = new ButtonBuilder()
+                .setLabel("Quit Game")
+                .setStyle(ButtonStyle.Danger)
+                .setCustomId("hangman_quit")
+                .setEmoji("🛑");
+            container.addActionRowComponents((row) => row.setComponents(quitBtn));
+        }
+        return container;
     };
-    if ("token" in msg) {
-        // @ts-ignore
-        msg.edit = (data) => msg.editReply(data);
-    }
-    else {
-        // @ts-ignore
-        client.on("messageDelete", handleMsgDelete.bind(null, msg));
-    }
-    col.on('collect', async (msg2) => {
-        const char = msg2.content[0]?.toLowerCase();
-        if (!/[a-z]/i.test(char))
-            return msg2.reply("You have to **provide** a **letter**, **not** a **number/symbol**!").then(m => setTimeout(() => {
-                if (m.deletable)
-                    m.delete();
-            }, 5000));
-        if (used.includes(char))
-            return msg2.reply("You have **already** used this **letter**!").then(m => setTimeout(() => {
-                if (m.deletable)
-                    m.delete();
-            }, 5000));
-        used.push(char);
-        if (!word.includes(char)) {
-            wrongs++;
-        }
-        ;
-        let done = word.split("").every(v => used.includes(v));
-        let description = wrongs === 6 || done ? `You ${done ? "won" : "lost"} the game, The word was **${word}**` : `Type a character to guess the word\n\n\`\`\`${word.split("").map(v => used.includes(v) ? v.toUpperCase() : "_").join(" ")}\`\`\``;
-        at = new AttachmentBuilder(await createHangman(wrongs), {
-            name: "game.png"
-        });
-        options.embed.description = description;
-        options.embed.color = options.embed.color ? options.embed.color : wrongs === 6 ? "#ff0000" : done ? "Green" : "Blue";
-        options.embed.image = "attachment://game.png";
-        embed = createEmbed(options.embed);
-        await msg.edit({
-            files: [at],
-            embeds: [embed]
-        }).catch((e) => {
-            col.stop();
-            throw e;
-        });
-        if (wrongs === 6 || done) {
-            col.stop();
-        }
-        ;
+    const msg = await context.channel.send({
+        components: [createGameContainer("loading")],
+        flags: MessageFlags.IsComponentsV2,
+        allowedMentions: { repliedUser: false },
     });
-    col.on('end', async (s, r) => {
-        // @ts-ignore
-        client.off("messageDelete", handleMsgDelete.bind(null, msg));
-        if (r === "time") {
-            let embed = new EmbedBuilder()
-                .setTitle("⛔ Game Ended")
-                .setDescription(`\`\`\`You took too much time to respond\`\`\``)
-                .setColor("Red")
-                .setTimestamp(options.embed.timestamp ? new Date() : null);
+    const gameID = await weky.NetworkManager.createHangmanGame(userId, username);
+    if (gameID === "-1") {
+        return await msg.edit({
+            components: [createGameContainer("error", { error: "Failed to start game." })],
+            flags: MessageFlags.IsComponentsV2,
+        });
+    }
+    let attachment = await weky.NetworkManager.getHangmanBoardImage(gameID, userIcon);
+    if (!attachment) {
+        return await msg.edit({
+            components: [createGameContainer("error", { error: "Failed to generate game board." })],
+            flags: MessageFlags.IsComponentsV2,
+        });
+    }
+    await msg.edit({
+        components: [createGameContainer("active", { image: "hangman-board.png" })],
+        files: [attachment],
+        flags: MessageFlags.IsComponentsV2,
+    });
+    const time = options.time || 180_000;
+    const chatCollector = context.channel.createMessageCollector({
+        filter: (m) => m.author.id === userId && !m.author.bot,
+        time: time,
+    });
+    const btnCollector = msg.createMessageComponentCollector({
+        componentType: ComponentType.Button,
+        time: time,
+    });
+    let isGameOver = false;
+    let finalWord = "Unknown";
+    btnCollector.on("collect", async (interaction) => {
+        if (interaction.user.id !== userId) {
+            return interaction.reply({ content: "This is not your game!", flags: [MessageFlags.Ephemeral] });
+        }
+        if (interaction.customId === "hangman_quit") {
+            await interaction.deferUpdate();
+            isGameOver = true;
+            chatCollector.stop("quit");
+            btnCollector.stop();
+            await weky.NetworkManager.endHangmanGame(gameID);
             await msg.edit({
-                attachments: [],
+                components: [createGameContainer("quit", { word: finalWord !== "Unknown" ? finalWord : "Hidden" })],
                 files: [],
-                embeds: [embed]
-            }).catch((e) => {
-                throw e;
+                flags: MessageFlags.IsComponentsV2,
             });
         }
     });
-    checkPackageUpdates("Hangman", options.notifyUpdate);
+    chatCollector.on("collect", async (message) => {
+        if (isGameOver)
+            return;
+        const char = message.content.trim().charAt(0).toLowerCase();
+        if (!char || !/[a-z]/i.test(char)) {
+            if (message.deletable)
+                await message.delete().catch(() => { });
+            return;
+        }
+        if (message.deletable)
+            await message.delete().catch(() => { });
+        const response = await weky.NetworkManager.guessHangman(gameID, char);
+        if (!response) {
+            isGameOver = true;
+            chatCollector.stop("error");
+            btnCollector.stop();
+            return msg.edit({
+                components: [createGameContainer("error", { error: "API did not respond." })],
+                flags: MessageFlags.IsComponentsV2,
+            });
+        }
+        if (!response.success) {
+            const warning = await context.channel.send(`${member}, ${response.message}`);
+            setTimeout(() => warning.delete().catch(() => { }), 3000);
+            return;
+        }
+        const { game } = response;
+        finalWord = game.word;
+        attachment = await weky.NetworkManager.getHangmanBoardImage(gameID, userIcon);
+        if (game.gameOver) {
+            isGameOver = true;
+            chatCollector.stop(game.won ? "won" : "lost");
+            btnCollector.stop();
+            await weky.NetworkManager.endHangmanGame(gameID);
+            await msg.edit({
+                components: [
+                    createGameContainer(game.won ? "won" : "lost", {
+                        image: "hangman-board.png",
+                        word: game.word,
+                    }),
+                ],
+                files: attachment ? [attachment] : [],
+                flags: MessageFlags.IsComponentsV2,
+            });
+        }
+        else {
+            await msg.edit({
+                components: [createGameContainer("active", { image: "hangman-board.png" })],
+                files: attachment ? [attachment] : [],
+                flags: MessageFlags.IsComponentsV2,
+            });
+        }
+    });
+    chatCollector.on("end", async (_, reason) => {
+        if (reason === "time") {
+            isGameOver = true;
+            btnCollector.stop();
+            await weky.NetworkManager.endHangmanGame(gameID);
+            await msg
+                .edit({
+                components: [createGameContainer("timeout", { word: finalWord !== "Unknown" ? finalWord : "Hidden" })],
+                files: [],
+                flags: MessageFlags.IsComponentsV2,
+            })
+                .catch(() => { });
+        }
+    });
 };
 export default Hangman;

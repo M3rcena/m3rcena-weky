@@ -80,9 +80,9 @@ const WillYouPressTheButton = async (weky: WekyManager, options: CustomOptions<W
 				if (data.userChoice === "no") styleYes = ButtonStyle.Secondary;
 			}
 
-			const btnYes = new ButtonBuilder().setStyle(styleYes).setLabel(txtYes).setCustomId(idYes).setDisabled(isResult); // Disable after choice
+			const btnYes = new ButtonBuilder().setStyle(styleYes).setLabel(txtYes).setCustomId(idYes).setDisabled(isResult);
 
-			const btnNo = new ButtonBuilder().setStyle(styleNo).setLabel(txtNo).setCustomId(idNo).setDisabled(isResult); // Disable after choice
+			const btnNo = new ButtonBuilder().setStyle(styleNo).setLabel(txtNo).setCustomId(idNo).setDisabled(isResult);
 
 			container.addActionRowComponents((row) => row.setComponents(btnYes, btnNo));
 		}

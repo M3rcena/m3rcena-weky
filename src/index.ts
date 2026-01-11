@@ -6,12 +6,12 @@ import stringWidth from "string-width";
 import { randomBytes } from "crypto";
 
 import { NetworkManager } from "./handlers/NetworkManager.js";
-import { LoggerManager } from "./handlers/Logger.js";
+import { LoggerManager } from "./handlers/LoggerManager.js";
 import weky_package from "../package.json";
 
 /**
  *
- * Minigames
+ * Minigames Imports
  *
  */
 import mini2048 from "./minigames/2024.js";
@@ -55,7 +55,7 @@ import type {
 
 /**
  *
- * CONSTANT VARIABLES USED IN THE HELPERS / FUNCTIONS
+ * CONSTANT VARIABLES USED FOR CALCULATOR UI LOGIC
  *
  */
 const DANGER_KEYS = new Set(["AC", "DC", "⌫"]);
@@ -85,16 +85,21 @@ const PRIMARY_KEYS = new Set([
 ]);
 const DISABLED_ON_LOCK = new Set(["^", "%", "÷", "AC", "⌫", "x!", "x", "1/x"]);
 const defaultFooter = {
-	text: "©️ M3rcena Development | Powered by Mivator",
+	text: "©️ M3rcena Development",
 	iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png",
 };
 
+/**
+ * The main manager class for the `@m3rcena/weky` package.
+ * This class handles the initialization of minigames, validation of options,
+ * and communication with the Weky API via the NetworkManager.
+ *
+ * @copyright All rights reserved. M3rcena Development
+ */
 export class WekyManager {
 	/**
-	 *
-	 * @internal
-	 * This is for internal use by minigames only. Do not use this manually.
-	 *
+	 * The Discord Client instance.
+	 * @internal This is for internal use by minigames.
 	 */
 	public _client: DiscordJS.Client;
 
@@ -104,16 +109,23 @@ export class WekyManager {
 
 	private URL_PATTERN = /^https:\/\/([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(:[0-9]+)?(\/.*)?$/;
 
+	/**
+	 * Handles API requests to the Weky backend.
+	 */
 	public NetworkManager: NetworkManager;
 
 	/**
-	 *
+	 * Handles error and type error logging to the console.
 	 * @internal
-	 * This is for internal use by minigames only. Do not use this manually.
-	 *
 	 */
 	public _LoggerManager: LoggerManager;
 
+	/**
+	 * Initialize the WekyManager.
+	 * @param {DiscordJS.Client} client The Discord.js Client instance.
+	 * @param {string} apiKey Your Weky API Key.
+	 * @param {boolean} notifyUpdates Whether to log a message in the console if a new version of the package is available.
+	 */
 	constructor(client: DiscordJS.Client, apiKey: string, notifyUpdates: boolean) {
 		// TODO: Enable again after finishing testing
 		// if (!(client instanceof DiscordJS.Client))
@@ -127,25 +139,17 @@ export class WekyManager {
 	}
 
 	/**
+	 * Creates a new instance of the **2048** game.
+	 * Users slide tiles to combine them and reach the 2048 tile.
 	 *
-	 * Creates a new instance of the 2048 game.
-	 *
-	 * @param options The options for the 2048 game.
-	 * @returns
-	 *
+	 * @param options The configuration options for 2048.
 	 * @example
 	 * ```js
-	 * import { WekyManager } from "@m3rcena/weky";
-	 * import DiscordJS from "discord.js";
-	 *
-	 * const client = new DiscordJS.Client();
-	 *
-	 * const weky = new WekyManager(client, true);
-	 *
-	 * weky.create2048(); // You can also pass options.
+	 * weky.create2048({
+	 * context: interaction,
+	 * embed: { title: '2048', color: 'Blurple' }
+	 * });
 	 * ```
-	 *
-	 * @copyright All rights reserved. M3rcena Development
 	 */
 	async create2048(options: Types2048) {
 		this.checkPackageUpdates("2048");
@@ -155,28 +159,20 @@ export class WekyManager {
 	}
 
 	/**
+	 * Creates a new instance of the **Calculator** utility.
+	 * Provides a fully functional calculator using Discord Buttons.
 	 *
-	 * Creates a new instance of the Calculator game.
-	 *
-	 * @param options The options for the Calculator game.
-	 * @returns
-	 *
+	 * @param options The configuration options for the Calculator.
 	 * @example
 	 * ```js
-	 * import { WekyManager } from "@m3rcena/weky";
-	 * import DiscordJS from "discord.js";
-	 *
-	 * const client = new DiscordJS.Client();
-	 *
-	 * const weky = new WekyManager(client, true);
-	 *
-	 * weky.createCalculator(); // You can also pass options.
+	 * weky.createCalculator({
+	 * context: interaction,
+	 * embed: { title: 'Calculator', color: 'Blue' }
+	 * });
 	 * ```
-	 *
-	 * @copyright All rights reserved. M3rcena Development
 	 */
 	async createCalculator(options: CalcTypes) {
-		this.NetworkManager.increaseUsage("calculator");
+		this.NetworkManager._increaseUsage("calculator");
 		this.checkPackageUpdates("Calculator");
 		this.OptionsChecking(options, "Calculator");
 
@@ -184,28 +180,21 @@ export class WekyManager {
 	}
 
 	/**
+	 * Creates a new instance of the **Chaos Words** game.
+	 * Users must unscramble a word or sentence to win.
 	 *
-	 * Create a new instance of the Chaos Words game.
-	 *
-	 * @param options The options for the Chaos Words game.
-	 * @returns
-	 *
+	 * @param options The configuration options for Chaos Words.
 	 * @example
 	 * ```js
-	 * import { WekyManager } from "@m3rcena/weky";
-	 * import DiscordJS from "discord.js";
-	 *
-	 * const client = new DiscordJS.Client();
-	 *
-	 * const weky = new WekyManager(client, true);
-	 *
-	 * weky.createChaosWords(); // You can also pass options.
+	 * weky.createChaosWords({
+	 * context: interaction,
+	 * words: ["hello", "world"], // Optional custom words
+	 * maxTries: 3
+	 * });
 	 * ```
-	 *
-	 * @copyright All rights reserved. M3rcena Development
 	 */
 	async createChaosWords(options: ChaosTypes) {
-		this.NetworkManager.increaseUsage("chaosWords");
+		this.NetworkManager._increaseUsage("chaosWords");
 		this.checkPackageUpdates("ChaosWords");
 		this.OptionsChecking(options, "ChaosWords");
 
@@ -213,53 +202,53 @@ export class WekyManager {
 	}
 
 	/**
+	 * Creates a new instance of the **Fast Type** game.
+	 * Users must type a sentence faster than the time limit.
 	 *
-	 * Creates a new instance of the Fast Type game.
-	 *
-	 * @param options The options for the Fast Type game.
-	 * @returns
-	 *
+	 * @requires `GatewayIntentBits.GuildMessageTyping` to function correctly.
+	 * @param options The configuration options for Fast Type.
 	 * @example
 	 * ```js
-	 * import { WekyManager } from "@m3rcena/weky";
-	 * import DiscordJS from "discord.js";
-	 *
-	 * const client = new DiscordJS.Client();
-	 *
-	 * const weky = new WekyManager(client, true);
-	 *
-	 * weky.createFastType(); // You can also pass options.
+	 * weky.createFastType({
+	 * context: interaction,
+	 * sentence: "Type this fast!",
+	 * time: 60000
+	 * });
 	 * ```
-	 *
-	 * @copyright All rights reserved. M3rcena Development
 	 */
 	async createFastType(options: FastTypeTypes) {
 		this.checkPackageUpdates("FastType");
 		this.OptionsChecking(options, "FastType");
 
+		if (!this._client.options.intents.has(DiscordJS.GatewayIntentBits.GuildMessageTyping)) {
+			const channel = options.context.channel as DiscordJS.GuildTextBasedChannel;
+
+			return channel.send({
+				embeds: [
+					this._createErrorEmbed(
+						"Config",
+						"The owner hasn't activated `GuildMessageTyping` intent on their bot! Please notify them."
+					),
+				],
+			});
+		}
+
 		return await FastType(this, options as CustomOptions<FastTypeTypes>);
 	}
 
 	/**
+	 * Creates a new instance of the **Fight** game.
+	 * A turn-based battle system between two users.
 	 *
-	 * Creates a new instance of the Fight game.
-	 *
-	 * @param options The options for the Fight game.
-	 * @returns
-	 *
+	 * @param options The configuration options for the Fight game.
 	 * @example
 	 * ```js
-	 * import { WekyManager } from "@m3rcena/weky";
-	 * import DiscordJS from "discord.js";
-	 *
-	 * const client = new DiscordJS.Client();
-	 *
-	 * const weky = new WekyManager(client, true);
-	 *
-	 * weky.createFight(); // You can also pass options.
+	 * weky.createFight({
+	 * context: interaction,
+	 * opponent: targetUser,
+	 * embed: { title: 'Fight Arena' }
+	 * });
 	 * ```
-	 *
-	 * @copyright All rights reserved. M3rcena Development
 	 */
 	async createFight(options: FightTypes) {
 		this.checkPackageUpdates("Fight");
@@ -269,28 +258,21 @@ export class WekyManager {
 	}
 
 	/**
+	 * Creates a new instance of the **Guess The Number** game.
+	 * Users guess a number between a specified range.
 	 *
-	 * Creates a new instance of the Guess The Number game.
-	 *
-	 * @param options The options for the Guess The Number game.
-	 * @returns
-	 *
+	 * @param options The configuration options for Guess The Number.
 	 * @example
 	 * ```js
-	 * import { WekyManager } from "@m3rcena/weky";
-	 * import DiscordJS from "discord.js";
-	 *
-	 * const client = new DiscordJS.Client();
-	 *
-	 * const weky = new WekyManager(client, true);
-	 *
-	 * weky.createGuessTheNumber(); // You can also pass options.
+	 * weky.createGuessTheNumber({
+	 * context: interaction,
+	 * number: 55, // Optional, randomized if not provided
+	 * embed: { title: 'Guess The Number' }
+	 * });
 	 * ```
-	 *
-	 * @copyright All rights reserved. M3rcena Development
 	 */
 	async createGuessTheNumber(options: GuessTheNumberTypes) {
-		this.NetworkManager.increaseUsage("guessTheNumber");
+		this.NetworkManager._increaseUsage("guessTheNumber");
 		this.checkPackageUpdates("GuessTheNumber");
 		this.OptionsChecking(options, "GuessTheNumber");
 
@@ -298,28 +280,20 @@ export class WekyManager {
 	}
 
 	/**
+	 * Creates a new instance of the **Guess The Pokemon** game.
+	 * Users must identify a Pokemon from its silhouette or image.
 	 *
-	 * Creates a new instance of the Guess The Pokemon game.
-	 *
-	 * @param options The options for the Guess The Pokemon game.
-	 * @returns
-	 *
+	 * @param options The configuration options for Guess The Pokemon.
 	 * @example
 	 * ```js
-	 * import { WekyManager } from "@m3rcena/weky";
-	 * import DiscordJS from "discord.js";
-	 *
-	 * const client = new DiscordJS.Client();
-	 *
-	 * const weky = new WekyManager(client, true);
-	 *
-	 * weky.createGuessThePokemon(); // You can also pass options.
+	 * weky.createGuessThePokemon({
+	 * context: interaction,
+	 * time: 60000
+	 * });
 	 * ```
-	 *
-	 * @copyright All rights reserved. M3rcena Development
 	 */
 	async createGuessThePokemon(options: GuessThePokemonTypes) {
-		this.NetworkManager.increaseUsage("guessThePokemon");
+		this.NetworkManager._increaseUsage("guessThePokemon");
 		this.checkPackageUpdates("GuessThePokemon");
 		this.OptionsChecking(options, "GuessThePokemon");
 
@@ -327,25 +301,18 @@ export class WekyManager {
 	}
 
 	/**
+	 * Creates a new instance of the **Hangman** game.
+	 * Users guess letters to reveal a hidden word before the hangman is drawn.
 	 *
-	 * Creates a new instance of the Hangman game.
-	 *
-	 * @param options The options for the Hangman game.
-	 * @returns
-	 *
+	 * @param options The configuration options for Hangman.
 	 * @example
 	 * ```js
-	 * import { WekyManager } from "@m3rcena/weky";
-	 * import DiscordJS from "discord.js";
-	 *
-	 * const client = new DiscordJS.Client();
-	 *
-	 * const weky = new WekyManager(client, true);
-	 *
-	 * weky.createHangman(); // You can also pass options.
+	 * weky.createHangman({
+	 * context: interaction,
+	 * theme: 'nature',
+	 * time: 60000
+	 * });
 	 * ```
-	 *
-	 * @copyright All rights reserved. M3rcena Development
 	 */
 	async createHangman(options: HangmanTypes) {
 		this.checkPackageUpdates("Hangman");
@@ -355,28 +322,21 @@ export class WekyManager {
 	}
 
 	/**
+	 * Creates a new instance of the **Lie Swatter** game.
+	 * Users determine if a statement is True or False.
 	 *
-	 * Creates a new instance of the Lie Swatter game.
-	 *
-	 * @param options The options for the Lie Swatter game.
-	 * @returns
-	 *
+	 * @param options The configuration options for Lie Swatter.
 	 * @example
 	 * ```js
-	 * import { WekyManager } from "@m3rcena/weky";
-	 * import DiscordJS from "discord.js";
-	 *
-	 * const client = new DiscordJS.Client();
-	 *
-	 * const weky = new WekyManager(client, true);
-	 *
-	 * weky.createLieSwatter(); // You can also pass options.
+	 * weky.createLieSwatter({
+	 * context: interaction,
+	 * winMessage: "You won!",
+	 * loseMessage: "You lost!"
+	 * });
 	 * ```
-	 *
-	 * @copyright All rights reserved. M3rcena Development
 	 */
 	async createLieSwatter(options: LieSwatterTypes) {
-		this.NetworkManager.increaseUsage("lieSwatter");
+		this.NetworkManager._increaseUsage("lieSwatter");
 		this.checkPackageUpdates("LieSwatter");
 		this.OptionsChecking(options, "LieSwatter");
 
@@ -384,28 +344,20 @@ export class WekyManager {
 	}
 
 	/**
+	 * Creates a new instance of the **Never Have I Ever** game.
+	 * Displays a "Never Have I Ever" statement for users to vote on.
 	 *
-	 * Creates a new instance of the Never Have I Ever game.
-	 *
-	 * @param options The options for the Never Have I Ever game.
-	 * @returns
-	 *
+	 * @param options The configuration options for Never Have I Ever.
 	 * @example
 	 * ```js
-	 * import { WekyManager } from "@m3rcena/weky";
-	 * import DiscordJS from "discord.js";
-	 *
-	 * const client = new DiscordJS.Client();
-	 *
-	 * const weky = new WekyManager(client, true);
-	 *
-	 * weky.createNeverHaveIEver(); // You can also pass options.
+	 * weky.createNeverHaveIEver({
+	 * context: interaction,
+	 * embed: { color: 'Red' }
+	 * });
 	 * ```
-	 *
-	 * @copyright All rights reserved. M3rcena Development
 	 */
 	async createNeverHaveIEver(options: NeverHaveIEverTypes) {
-		this.NetworkManager.increaseUsage("neverHaveIEver");
+		this.NetworkManager._increaseUsage("neverHaveIEver");
 		this.checkPackageUpdates("NeverHaveIEver");
 		this.OptionsChecking(options, "NeverHaveIEver");
 
@@ -413,28 +365,20 @@ export class WekyManager {
 	}
 
 	/**
+	 * Creates a new instance of the **Quick Click** game.
+	 * Users must click the correct button faster than their opponents.
 	 *
-	 * Creates a new instance of the Quick Click game.
-	 *
-	 * @param options The options for the Quick Click game.
-	 * @returns
-	 *
+	 * @param options The configuration options for Quick Click.
 	 * @example
 	 * ```js
-	 * import { WekyManager } from "@m3rcena/weky";
-	 * import DiscordJS from "discord.js";
-	 *
-	 * const client = new DiscordJS.Client();
-	 *
-	 * const weky = new WekyManager(client, true);
-	 *
-	 * weky.createQuickClick(); // You can also pass options.
+	 * weky.createQuickClick({
+	 * context: interaction,
+	 * time: 10000
+	 * });
 	 * ```
-	 *
-	 * @copyright All rights reserved. M3rcena Development
 	 */
 	async createQuickClick(options: QuickClickTypes) {
-		this.NetworkManager.increaseUsage("quickClick");
+		this.NetworkManager._increaseUsage("quickClick");
 		this.checkPackageUpdates("QuickClick");
 		this.OptionsChecking(options, "QuickClick");
 
@@ -442,28 +386,20 @@ export class WekyManager {
 	}
 
 	/**
+	 * Creates a new instance of the **Shuffle Guess** game.
+	 * Users guess a word based on shuffled letters.
 	 *
-	 * Creates a new instance of the Shuffle Guess game.
-	 *
-	 * @param options The options for the Shuffle Guess game.
-	 * @returns
-	 *
+	 * @param options The configuration options for Shuffle Guess.
 	 * @example
 	 * ```js
-	 * import { WekyManager } from "@m3rcena/weky";
-	 * import DiscordJS from "discord.js";
-	 *
-	 * const client = new DiscordJS.Client();
-	 *
-	 * const weky = new WekyManager(client, true);
-	 *
-	 * weky.createShuffleGuess(); // You can also pass options.
+	 * weky.createShuffleGuess({
+	 * context: interaction,
+	 * word: "Discord"
+	 * });
 	 * ```
-	 *
-	 * @copyright All rights reserved. M3rcena Development
 	 */
 	async createShuffleGuess(options: ShuffleGuessTypes) {
-		this.NetworkManager.increaseUsage("shuffleGuess");
+		this.NetworkManager._increaseUsage("shuffleGuess");
 		this.checkPackageUpdates("ShuffleGuess");
 		this.OptionsChecking(options, "ShuffleGuess");
 
@@ -471,56 +407,40 @@ export class WekyManager {
 	}
 
 	/**
+	 * Creates a new instance of the **Snake** game.
+	 * The classic Snake game played using Discord buttons.
 	 *
-	 * Creates a new instance of the Snake game.
-	 *
-	 * @param options The options for the Snake game.
-	 * @returns
-	 *
+	 * @param options The configuration options for Snake.
 	 * @example
 	 * ```js
-	 * import { WekyManager } from "@m3rcena/weky";
-	 * import DiscordJS from "discord.js";
-	 *
-	 * const client = new DiscordJS.Client();
-	 *
-	 * const weky = new WekyManager(client, true);
-	 *
-	 * weky.createSnake(); // You can also pass options.
+	 * weky.createSnake({
+	 * context: interaction,
+	 * emojis: { up: '🔼', down: '🔽', left: '◀️', right: '▶️' }
+	 * });
 	 * ```
-	 *
-	 * @copyright All rights reserved. M3rcena Development
 	 */
 	async createSnake(options: SnakeTypes) {
 		this.checkPackageUpdates("Snake");
 		this.OptionsChecking(options, "Snake");
 
-		return await Snake(options);
+		return await Snake(this, options as CustomOptions<SnakeTypes>);
 	}
 
 	/**
+	 * Creates a new instance of the **Will You Press The Button** game.
+	 * Users are presented with a dilemma and must choose to press or not.
 	 *
-	 * Creates a new instance of the Will You Press The Button game.
-	 *
-	 * @param options The options for the Will You Press The Button game.
-	 * @returns
-	 *
+	 * @param options The configuration options for Will You Press The Button.
 	 * @example
 	 * ```js
-	 * import { WekyManager } from "@m3rcena/weky";
-	 * import DiscordJS from "discord.js";
-	 *
-	 * const client = new DiscordJS.Client();
-	 *
-	 * const weky = new WekyManager(client, true);
-	 *
-	 * weky.createWillYouPressTheButton(); // You can also pass options.
+	 * weky.createWillYouPressTheButton({
+	 * context: interaction,
+	 * embed: { title: 'Press the button?' }
+	 * });
 	 * ```
-	 *
-	 * @copyright All rights reserved. M3rcena Development
 	 */
 	async createWillYouPressTheButton(options: WillYouPressTheButtonTypes) {
-		this.NetworkManager.increaseUsage("willYouPressTheButton");
+		this.NetworkManager._increaseUsage("willYouPressTheButton");
 		this.checkPackageUpdates("WillYouPressTheButton");
 		this.OptionsChecking(options, "WillYouPressTheButton");
 
@@ -528,28 +448,20 @@ export class WekyManager {
 	}
 
 	/**
+	 * Creates a new instance of the **Would You Rather** game.
+	 * Users vote between two difficult options.
 	 *
-	 * Creates a new instance of the Would You Rather game.
-	 *
-	 * @param options The options for the Would You Rather game.
-	 * @returns
-	 *
+	 * @param options The configuration options for Would You Rather.
 	 * @example
 	 * ```js
-	 * import { WekyManager } from "@m3rcena/weky";
-	 * import DiscordJS from "discord.js";
-	 *
-	 * const client = new DiscordJS.Client();
-	 *
-	 * const weky = new WekyManager(client, true);
-	 *
-	 * weky.createWouldYouRather(); // You can also pass options.
+	 * weky.createWouldYouRather({
+	 * context: interaction,
+	 * embed: { title: 'Would You Rather...' }
+	 * });
 	 * ```
-	 *
-	 * @copyright All rights reserved. M3rcena Development
 	 */
 	async createWouldYouRather(options: WouldYouRatherTypes) {
-		this.NetworkManager.increaseUsage("wouldYouRather");
+		this.NetworkManager._increaseUsage("wouldYouRather");
 		this.checkPackageUpdates("WouldYouRather");
 		this.OptionsChecking(options, "WouldYouRather");
 
@@ -557,44 +469,24 @@ export class WekyManager {
 	}
 
 	/**
+	 * Retrieves the bot's usage statistics from the API.
+	 * Includes data on minigames played and API requests made.
 	 *
-	 * Get your Bot Usage of all the Minigames and API Requests
-	 *
-	 * @returns { Promise<BotDataTypes["usage"]> }
-	 *
+	 * @returns {Promise<string | BotDataTypes["usage"] | null>} The usage data object or an error string.
 	 * @example
 	 * ```js
-	 * import { WekyManager } from "@m3rcena/weky";
-	 * import DiscordJS from "discord.js";
-	 *
-	 * const client = new DiscordJS.Client();
-	 *
-	 * const weky = new WekyManager(client, true);
-	 *
-	 * console.log(weky.getUsage());
+	 * const usage = await weky.getUsage();
+	 * console.log(usage);
 	 * ```
-	 *
-	 * @copyright All rights reserverd. M3rcena Development
 	 */
 	async getUsage(): Promise<string | BotDataTypes["usage"] | null> {
 		if (!this.isInitilized) return "You can use that function once the Bot is Ready";
 		return await this.NetworkManager.getUsage();
 	}
 
-	/**
-	 * PRIVATE HELPERS
-	 *
-	 * USED ONLY BY THE CLASS TO VALIDATE OPTIONS AND MAKE SURE THE MINIGAMES ARE STARTING WITH NO ISSUES
-	 *
-	 * @copyright All rights reservered. M3rcena Development
-	 */
-
-	/**
-	 *
-	 * PRIVATE HELPERS FOR CHECKING OPTIONS
-	 *
-	 * @copyright All rights reservered. M3rcena Development
-	 */
+	/* -------------------------------------------------------------------------- */
+	/* PRIVATE VALIDATION HELPERS                        						  */
+	/* -------------------------------------------------------------------------- */
 
 	private validateURL(url: string, gameName: string, context: string): boolean | null {
 		if (typeof url !== "string") {
@@ -661,6 +553,10 @@ export class WekyManager {
 		}
 	}
 
+	/**
+	 * Centralized options validator for all minigames.
+	 * Ensures context, guild, channel, and embed configurations are valid.
+	 */
 	private OptionsChecking(
 		options:
 			| Types2048
@@ -746,12 +642,9 @@ export class WekyManager {
 		this._deferContext(options.context);
 	}
 
-	/**
-	 *
-	 * PRIVATE HELPERS TO CHECK FOR PACKAGE UPDATES
-	 *
-	 * @copyright All rights reservered. M3rcena Development
-	 */
+	/* -------------------------------------------------------------------------- */
+	/* PACKAGE UPDATES                    							              */
+	/* -------------------------------------------------------------------------- */
 
 	private boxConsole(messages: string[]): void {
 		let tips = [];
@@ -813,18 +706,12 @@ export class WekyManager {
 		}
 	}
 
-	/**
-	 *
-	 * CONTEXT BASED PRIVATE HELPERS
-	 *
-	 * @copyright All rights reservered. M3rcena Development
-	 */
+	/* -------------------------------------------------------------------------- */
+	/* CONTEXT BASED HELPERS                       							      */
+	/* -------------------------------------------------------------------------- */
 
 	/**
-	 *
-	 * @internal
-	 * This is for internal use by minigames only. Do not use this manually.
-	 *
+	 * @internal Internal helper to defer the interaction if it's a Slash Command.
 	 */
 	public _deferContext(context: DiscordJS.Context): void {
 		if (!context.isChatInputCommand) return;
@@ -835,28 +722,20 @@ export class WekyManager {
 	}
 
 	/**
-	 *
-	 * @internal
-	 * This is for internal use by minigames only. Do not use this manually.
-	 *
+	 * @internal Internal helper to safely get the user ID from any context (Command or Interaction).
 	 */
 	public _getContextUserID(context: DiscordJS.Context): string {
 		return context.author?.id || context.user?.id || context.member?.id;
 	}
 
-	/**
-	 *
-	 * External Functions used in Minigames
-	 *
-	 */
+	/* -------------------------------------------------------------------------- */
+	/* EXTERNAL PUBLIC UTILS   							                          */
+	/* -------------------------------------------------------------------------- */
 
 	/**
-	 *
-	 * Get a Random String
-	 *
-	 * @param length How big you want the string to be (It doesn't include "weky_")
-	 *
-	 * @copyright All rights reservered. M3rcena Development
+	 * Generates a random string used for unique Button Custom IDs.
+	 * @param length The length of the random string (excluding the 'weky_' prefix).
+	 * @returns {string} e.g. "weky_A1B2C3D4"
 	 */
 	public getRandomString(length: number) {
 		const randomChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -873,12 +752,9 @@ export class WekyManager {
 	}
 
 	/**
-	 *
-	 * Convert a time into a String
-	 *
-	 * @param time The time you want to convert
-	 *
-	 * @copyright All rights reservered. M3rcena Development
+	 * Converts milliseconds into a human-readable string.
+	 * @param time Time in milliseconds.
+	 * @returns {string} e.g. "1 day, 2 hours, 30 minutes"
 	 */
 	public convertTime(time: number): string {
 		const absoluteSeconds = Math.floor((time / 1000) % 60);
@@ -903,12 +779,9 @@ export class WekyManager {
 	}
 
 	/**
-	 *
-	 * Shuffles all string chars to a random string
-	 *
-	 * @param string The string you want to shuffle
-	 *
-	 * @copyright All rights reservered. M3rcena Development
+	 * Shuffles the characters of a string randomly.
+	 * @param string The input string to shuffle.
+	 * @returns {string} The shuffled string.
 	 */
 	public shuffleString(string: string): string {
 		const seed = Date.now();
@@ -924,12 +797,9 @@ export class WekyManager {
 	}
 
 	/**
-	 *
-	 * Shuffles an array
-	 *
-	 * @param array The array you want to shuffle
-	 *
-	 * @copyright All rights reservered. M3rcena Development
+	 * Randomly shuffles the elements of an array.
+	 * @param array The array to shuffle.
+	 * @returns {T[]} The shuffled array.
 	 */
 	public shuffleArray<T>(array: T[]): T[] {
 		for (let i = array.length - 1; i > 0; i--) {
@@ -941,12 +811,10 @@ export class WekyManager {
 		return array;
 	}
 
-	/**
-	 *
-	 * PRIVATE HELPERS FOR CALCULATOR BUTTONS
-	 *
-	 * @copyright All rights reservered. M3rcena Development
-	 */
+	/* -------------------------------------------------------------------------- */
+	/* CALCULATOR BUTTON HELPERS            						              */
+	/* -------------------------------------------------------------------------- */
+
 	private getButtonStyle(label: string): DiscordJS.ButtonStyle {
 		if (DANGER_KEYS.has(label)) return DiscordJS.ButtonStyle.Danger;
 		if (SUCCESS_KEYS.has(label)) return DiscordJS.ButtonStyle.Success;
@@ -955,10 +823,7 @@ export class WekyManager {
 	}
 
 	/**
-	 *
-	 * @internal
-	 * This is for internal use by minigames only. Do not use this manually.
-	 *
+	 * @internal Creates a calculator button with the correct style based on the label.
 	 */
 	public _createButton(label: string, disabled: boolean): DiscordJS.ButtonBuilder {
 		const style = this.getButtonStyle(label);
@@ -977,10 +842,7 @@ export class WekyManager {
 	}
 
 	/**
-	 *
-	 * @internal
-	 * This is for internal use by minigames only. Do not use this manually.
-	 *
+	 * @internal Creates a disabled calculator button (used for locked states).
 	 */
 	public _createDisabledButton(label: string, lock: boolean): DiscordJS.ButtonBuilder {
 		const style = this.getButtonStyle(label);
@@ -998,18 +860,12 @@ export class WekyManager {
 		return btn;
 	}
 
-	/**
-	 *
-	 * PRIVATE HELPERS FOR EMBEDS
-	 *
-	 * @copyright All rights reservered. M3rcena Development
-	 */
+	/* -------------------------------------------------------------------------- */
+	/* EMBED GENERATION HELPERS 						                          */
+	/* -------------------------------------------------------------------------- */
 
 	/**
-	 *
-	 * @internal
-	 * This is for internal use by minigames only. Do not use this manually.
-	 *
+	 * @internal Internal helper to create a standardized Embed based on user options.
 	 */
 	public _createEmbed(embedOptions: Embeds, noFields: boolean = false): DiscordJS.EmbedBuilder {
 		const embed = new DiscordJS.EmbedBuilder()
@@ -1041,10 +897,7 @@ export class WekyManager {
 	}
 
 	/**
-	 *
-	 * @internal
-	 * This is for internal use by minigames only. Do not use this manually.
-	 *
+	 * @internal Internal helper to create a standardized Error Embed.
 	 */
 	public _createErrorEmbed(type: string, errorMessage?: string): DiscordJS.EmbedBuilder {
 		return new DiscordJS.EmbedBuilder()

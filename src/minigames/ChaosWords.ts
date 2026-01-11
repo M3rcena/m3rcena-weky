@@ -9,7 +9,6 @@ const ChaosWords = async (weky: WekyManager, options: CustomOptions<ChaosTypes>)
 	const context = options.context;
 	const userId = weky._getContextUserID(context);
 
-	// --- 1. Validation & State ---
 	if (activePlayers.has(userId)) return;
 	activePlayers.add(userId);
 
@@ -20,9 +19,6 @@ const ChaosWords = async (weky: WekyManager, options: CustomOptions<ChaosTypes>)
 	const maxTries = options.maxTries || 10;
 	const timeLimit = options.time || 60000;
 
-	// --- 2. Game Data Initialization ---
-
-	// A. Get Words
 	let words: string[] = options.words || [];
 	if (words.length === 0) {
 		try {
@@ -37,32 +33,26 @@ const ChaosWords = async (weky: WekyManager, options: CustomOptions<ChaosTypes>)
 		words = words.map((w) => w.toLowerCase());
 	}
 
-	// B. Generate Chaos Characters
 	const totalWordLength = words.join("").length;
 	let charCount = options.charGenerated || totalWordLength + 5;
 
-	// Create random background characters
-	// We store this as an array so we can remove found words easily later
 	const chaosArray: string[] = [];
 	const alphabet = "abcdefghijklmnopqrstuvwxyz";
 	for (let i = 0; i < charCount; i++) {
 		chaosArray.push(alphabet.charAt(Math.floor(Math.random() * alphabet.length)));
 	}
 
-	// Insert actual words randomly into the array
 	words.forEach((word) => {
 		const insertPos = Math.floor(Math.random() * chaosArray.length);
 		chaosArray.splice(insertPos, 0, word);
 	});
 
-	// C. Tracking State
 	const gameState = {
 		remaining: [...words],
 		found: [] as string[],
 		tries: 0,
 	};
 
-	// --- 3. Components V2 Helper ---
 	const createGameContainer = (
 		state: "active" | "correct" | "wrong" | "repeat" | "won" | "lost" | "timeout" | "cancelled",
 		details?: { feedback?: string; timeTaken?: string }
@@ -70,7 +60,6 @@ const ChaosWords = async (weky: WekyManager, options: CustomOptions<ChaosTypes>)
 		const container = new ContainerBuilder();
 		let content = "";
 
-		// -- Text & Color Logic --
 		switch (state) {
 			case "active":
 				container.setAccentColor(defaultColor);
@@ -118,25 +107,18 @@ const ChaosWords = async (weky: WekyManager, options: CustomOptions<ChaosTypes>)
 				break;
 		}
 
-		// -- Construct Main Display --
 		if (state !== "cancelled") {
-			// 1. Current Chaos String (Dynamic: words are removed when found)
 			const currentChaosString = chaosArray.join("");
 			content += `\n\n**Chaos String:**\n\`\`\`text\n${currentChaosString}\n\`\`\``;
 
-			// 2. Found Words List
 			content +=
 				`\n**Words Found (${gameState.found.length}/${words.length}):**\n` +
 				`${gameState.found.length > 0 ? gameState.found.map((w) => `\`${w}\``).join(", ") : "_None yet_"}`;
 
-			// 3. Stats or Missing Words
 			if (state === "won") {
-				// Nothing extra needed
 			} else if (state === "lost" || state === "timeout") {
-				// Show Missing Words
 				content += `\n\n**Missing Words:**\n${gameState.remaining.map((w) => `\`${w}\``).join(", ")}`;
 			} else {
-				// Active Game Stats
 				content += `\n\n**Tries:** ${gameState.tries}/${maxTries}`;
 				content += `\n> ⏳ Time Remaining: **${weky.convertTime(timeLimit)}**`;
 			}
@@ -144,7 +126,6 @@ const ChaosWords = async (weky: WekyManager, options: CustomOptions<ChaosTypes>)
 
 		container.addTextDisplayComponents((t) => t.setContent(content));
 
-		// -- Button Logic --
 		if (state === "active" || state === "correct" || state === "wrong" || state === "repeat") {
 			const btnCancel = new ButtonBuilder()
 				.setStyle(ButtonStyle.Danger)
@@ -157,7 +138,6 @@ const ChaosWords = async (weky: WekyManager, options: CustomOptions<ChaosTypes>)
 		return container;
 	};
 
-	// --- 4. Start Game ---
 	const msg = await context.channel.send({
 		components: [createGameContainer("active")],
 		flags: MessageFlags.IsComponentsV2,
@@ -166,7 +146,6 @@ const ChaosWords = async (weky: WekyManager, options: CustomOptions<ChaosTypes>)
 
 	const gameCreatedAt = Date.now();
 
-	// --- 5. Collectors ---
 	const msgCollector = context.channel.createMessageCollector({
 		filter: (m: Message) => !m.author.bot && m.author.id === userId,
 		time: timeLimit,
@@ -178,13 +157,11 @@ const ChaosWords = async (weky: WekyManager, options: CustomOptions<ChaosTypes>)
 		time: timeLimit,
 	});
 
-	// --- Logic ---
 	msgCollector.on("collect", async (mes: Message) => {
 		const guess = mes.content.toLowerCase().trim();
 
 		if (mes.deletable) await mes.delete().catch(() => {});
 
-		// 1. Already Found?
 		if (gameState.found.includes(guess)) {
 			await msg.edit({
 				components: [createGameContainer("repeat", { feedback: `You already found "${guess}"!` })],
@@ -193,19 +170,15 @@ const ChaosWords = async (weky: WekyManager, options: CustomOptions<ChaosTypes>)
 			return;
 		}
 
-		// 2. Is it a valid remaining word?
 		if (gameState.remaining.includes(guess)) {
-			// Correct Guess
 			gameState.found.push(guess);
 			gameState.remaining = gameState.remaining.filter((w) => w !== guess);
 
-			// REMOVE THE WORD FROM THE CHAOS ARRAY (Visual Update)
 			const indexInChaos = chaosArray.indexOf(guess);
 			if (indexInChaos > -1) {
 				chaosArray.splice(indexInChaos, 1);
 			}
 
-			// CHECK WIN
 			if (gameState.remaining.length === 0) {
 				msgCollector.stop("won");
 				btnCollector.stop();
@@ -218,7 +191,6 @@ const ChaosWords = async (weky: WekyManager, options: CustomOptions<ChaosTypes>)
 					flags: MessageFlags.IsComponentsV2,
 				});
 			} else {
-				// Keep Playing (Correct)
 				const correctMsg = options.correctWord
 					? options.correctWord.replace("{{word}}", guess).replace("{{remaining}}", `${gameState.remaining.length}`)
 					: `Correct! **${guess}** was found.`;
@@ -229,10 +201,8 @@ const ChaosWords = async (weky: WekyManager, options: CustomOptions<ChaosTypes>)
 				});
 			}
 		} else {
-			// Wrong Guess
 			gameState.tries++;
 
-			// CHECK LOSS (Tries)
 			if (gameState.tries >= maxTries) {
 				msgCollector.stop("lost");
 				btnCollector.stop();
@@ -243,7 +213,6 @@ const ChaosWords = async (weky: WekyManager, options: CustomOptions<ChaosTypes>)
 					flags: MessageFlags.IsComponentsV2,
 				});
 			} else {
-				// Keep Playing (Wrong)
 				const wrongMsg = options.wrongWord
 					? options.wrongWord.replace("{{remaining_tries}}", `${maxTries - gameState.tries}`)
 					: `**${guess}** is not in the text!`;
@@ -280,9 +249,7 @@ const ChaosWords = async (weky: WekyManager, options: CustomOptions<ChaosTypes>)
 					components: [createGameContainer("timeout")],
 					flags: MessageFlags.IsComponentsV2,
 				});
-			} catch (e) {
-				// Message deleted
-			}
+			} catch (e) {}
 		}
 	});
 };

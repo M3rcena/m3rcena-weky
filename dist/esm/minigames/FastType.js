@@ -1,166 +1,182 @@
-import chalk from "chalk";
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } from "discord.js";
-import { checkPackageUpdates, convertTime, createEmbed, getRandomSentence, getRandomString } from "../functions/functions.js";
-import { OptionsChecking } from "../functions/OptionChecking.js";
-const data = new Set();
-const FastType = async (options) => {
-    OptionsChecking(options, "FastType");
-    let interaction;
-    if (options.interaction.author) {
-        interaction = options.interaction;
-    }
-    else {
-        interaction = options.interaction;
-    }
-    if (!interaction)
-        throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " No interaction provided.");
-    if (!interaction.channel || !interaction.channel.isSendable() || !interaction.channel.isTextBased())
-        throw new Error(chalk.red("[@m3rcena/weky] FastType Error:") + " Interaction channel is not provided.");
-    let client = options.client;
-    let id = "";
-    if (options.interaction.author) {
-        id = options.interaction.author.id;
-    }
-    else {
-        id = options.interaction.user.id;
-    }
-    ;
-    if (data.has(id))
+import { ButtonBuilder, ButtonStyle, ComponentType, ContainerBuilder, MessageFlags } from "discord.js";
+const activePlayers = new Set();
+const FastType = async (weky, options) => {
+    const context = options.context;
+    const userId = weky._getContextUserID(context);
+    if (activePlayers.has(userId))
         return;
-    data.add(id);
-    const ids = getRandomString(20) +
-        "-" +
-        getRandomString(20);
-    if (!options.sentence) {
-        options.sentence = getRandomSentence(Math.floor(Math.random() * 20) + 3)
-            .toString()
-            .split(',').join(' ');
-    }
-    ;
-    const sentence = options.sentence;
-    const gameCreatedAt = Date.now();
-    let btn1 = new ButtonBuilder()
-        .setStyle(ButtonStyle.Danger)
-        .setLabel(options.buttonText ? options.buttonText : "Cancel")
-        .setCustomId(ids);
-    options.embed.description = options.embed.description ?
-        options.embed.description.replace('{{time}}', convertTime(options.time ? options.time : 60000)) :
-        `You have **${convertTime(options.time ? options.time : 60000)}** to type the sentence below.`;
-    if (!options.embed.fields) {
-        options.embed.fields = [{ name: 'Sentence:', value: `${sentence}` }];
-    }
-    ;
-    const embed = createEmbed(options.embed);
-    const msg = await (interaction || interaction).reply({
-        embeds: [embed],
-        components: [new ActionRowBuilder().addComponents(btn1)],
+    activePlayers.add(userId);
+    const cancelId = `ft_cancel_${weky.getRandomString(10)}`;
+    const gameTitle = options.embed.title || "Fast Type";
+    const defaultColor = typeof options.embed.color === "number" ? options.embed.color : 0x5865f2;
+    const btnText = options.buttonText || "Cancel";
+    const msgWin = options.winMessage || "You typed it in **{{time}}** with **{{wpm}} WPM**!";
+    const msgLose = options.loseMessage || "You made a typo! Better luck next time.";
+    const msgTimeout = options.timeoutMessage || "You ran out of time!";
+    const msgCheat = options.cheatMessage || "⚠️ **Anti-Cheat:** You didn't type! Copy-pasting is not allowed.";
+    let hasStartedTyping = false;
+    const createGameContainer = (state, data) => {
+        const container = new ContainerBuilder();
+        let content = "";
+        switch (state) {
+            case "loading":
+                container.setAccentColor(defaultColor);
+                content = `## ${gameTitle}\n> 🔄 Preparing sentence...`;
+                break;
+            case "active":
+                container.setAccentColor(defaultColor);
+                content =
+                    `## ${gameTitle}\n` +
+                        `> Type the sentence below as fast as you can!\n\n` +
+                        `\`\`\`text\n${data.sentence}\n\`\`\``;
+                break;
+            case "won":
+                container.setAccentColor(0x57f287); // Green
+                const winText = msgWin.replace("{{time}}", data.timeTaken || "0s").replace("{{wpm}}", data.wpm || "0");
+                content = `## 🏆 Fast Fingers!\n> ${winText}\n\n` + `**Sentence:**\n\`\`\`text\n${data.sentence}\n\`\`\``;
+                break;
+            case "lost":
+                container.setAccentColor(0xed4245); // Red
+                content = `## ❌ Incorrect\n> ${msgLose}\n\n` + `**Correct Sentence:**\n\`\`\`text\n${data.sentence}\n\`\`\``;
+                break;
+            case "cheat":
+                container.setAccentColor(0xed4245); // Red
+                content = `## ⚠️ Cheat Detected\n> ${msgCheat}\n\n` + `**Sentence:**\n\`\`\`text\n${data.sentence}\n\`\`\``;
+                break;
+            case "timeout":
+                container.setAccentColor(0xed4245); // Red
+                content = `## ⏱️ Time's Up\n> ${msgTimeout}\n\n` + `**Sentence:**\n\`\`\`text\n${data.sentence}\n\`\`\``;
+                break;
+            case "cancelled":
+                container.setAccentColor(0xed4245); // Red
+                content = `## 🚫 Game Cancelled\n> You ended the game.`;
+                break;
+            case "error":
+                container.setAccentColor(0xff0000);
+                content = `## ❌ Error\n> ${data.errorDetails || "Something went wrong."}`;
+                break;
+        }
+        container.addTextDisplayComponents((t) => t.setContent(content));
+        if (state === "active") {
+            const btnCancel = new ButtonBuilder().setStyle(ButtonStyle.Danger).setLabel(btnText).setCustomId(cancelId);
+            container.addActionRowComponents((row) => row.setComponents(btnCancel));
+        }
+        return container;
+    };
+    const msg = await context.channel.send({
+        components: [createGameContainer("loading", {})],
+        flags: MessageFlags.IsComponentsV2,
+        allowedMentions: { repliedUser: false },
     });
-    const collector = await interaction.channel.createMessageCollector({
-        filter: (m) => !m.author.bot && m.author.id === id,
-        time: options.time ? options.time : 60000
-    });
-    collector.on("collect", async (mes) => {
-        if (mes.content.toLowerCase().trim() === sentence.toLowerCase()) {
-            const time = Date.now() - gameCreatedAt;
-            const minute = (time / 1000 / 60) % 60;
-            const wpm = mes.content.toLowerCase().trim().length / 5 / minute;
-            options.embed.description = options.winMessage ? options.winMessage.replace('{{time}}', convertTime(time)).replace('{{wpm}}', wpm.toFixed(2)) : `You have typed the sentence correctly in **${convertTime(time)}** with **${wpm.toFixed(2)}** WPM.`;
-            options.embed.fields = [];
-            const _embed = createEmbed(options.embed);
-            await interaction.channel.send({ embeds: [_embed] });
-            btn1 = new ButtonBuilder()
-                .setStyle(ButtonStyle.Danger)
-                .setLabel(options.buttonText ? options.buttonText : "Cancel")
-                .setDisabled()
-                .setCustomId(ids);
-            embed.setTimestamp(options.embed.timestamp ? new Date() : null);
-            await msg.edit({
-                embeds: [embed],
-                components: [new ActionRowBuilder().addComponents(btn1)],
+    let sentence = options.sentence;
+    if (!sentence) {
+        try {
+            sentence = await weky.NetworkManager.getText(options.difficulty ? options.difficulty.toLowerCase() : "medium");
+        }
+        catch (e) {
+            activePlayers.delete(userId);
+            return await msg.edit({
+                components: [createGameContainer("error", { errorDetails: "Failed to fetch sentence." })],
+                flags: MessageFlags.IsComponentsV2,
             });
-            collector.stop(mes.author.username);
-            data.delete(id);
+        }
+    }
+    if (sentence.includes("Please try again!")) {
+        activePlayers.delete(userId);
+        return await msg.edit({
+            components: [createGameContainer("error", { errorDetails: sentence })],
+            flags: MessageFlags.IsComponentsV2,
+        });
+    }
+    const typingHandler = (typing) => {
+        if (typing.channel.id === context.channel.id && typing.user.id === userId) {
+            hasStartedTyping = true;
+        }
+    };
+    weky._client.on("typingStart", typingHandler);
+    await msg.edit({
+        components: [createGameContainer("active", { sentence })],
+        flags: MessageFlags.IsComponentsV2,
+    });
+    const gameCreatedAt = Date.now();
+    const timeLimit = options.time || 60000;
+    const msgCollector = context.channel.createMessageCollector({
+        filter: (m) => !m.author.bot && m.author.id === userId,
+        time: timeLimit,
+    });
+    const btnCollector = msg.createMessageComponentCollector({
+        componentType: ComponentType.Button,
+        filter: (i) => i.user.id === userId,
+        time: timeLimit,
+    });
+    const cleanupGame = () => {
+        activePlayers.delete(userId);
+        weky._client.off("typingStart", typingHandler);
+        btnCollector.stop();
+    };
+    msgCollector.on("collect", async (mes) => {
+        const input = mes.content.toLowerCase().trim();
+        const target = sentence.toLowerCase().trim();
+        if (!hasStartedTyping) {
+            msgCollector.stop("cheat");
+            cleanupGame();
+            await msg.edit({
+                components: [createGameContainer("cheat", { sentence })],
+                flags: MessageFlags.IsComponentsV2,
+            });
+            return;
+        }
+        // 2. CHECK ACCURACY
+        if (input === target) {
+            msgCollector.stop("won");
+            cleanupGame();
+            const timeMs = Date.now() - gameCreatedAt;
+            const timeTaken = weky.convertTime(timeMs);
+            const minutes = timeMs / 1000 / 60;
+            const wpm = sentence.length / 5 / minutes;
+            await msg.edit({
+                components: [
+                    createGameContainer("won", {
+                        sentence,
+                        timeTaken,
+                        wpm: wpm.toFixed(2),
+                    }),
+                ],
+                flags: MessageFlags.IsComponentsV2,
+            });
         }
         else {
-            options.embed.fields = [];
-            options.embed.description = options.loseMessage ? options.loseMessage : "Better Luck Next Time!";
-            const _embed = createEmbed(options.embed);
-            await interaction.channel.send({ embeds: [_embed] });
-            collector.stop(mes.author.username);
-            data.delete(id);
-            btn1 = new ButtonBuilder()
-                .setStyle(ButtonStyle.Danger)
-                .setLabel(options.buttonText ? options.buttonText : "Cancel")
-                .setDisabled()
-                .setCustomId(ids);
-            embed.setTimestamp(options.embed.timestamp ? new Date() : null);
+            msgCollector.stop("lost");
+            cleanupGame();
             await msg.edit({
-                embeds: [embed],
-                components: [new ActionRowBuilder().addComponents(btn1)],
+                components: [createGameContainer("lost", { sentence })],
+                flags: MessageFlags.IsComponentsV2,
             });
         }
     });
-    collector.on('end', async (_collected, reason) => {
-        if (reason === 'time') {
-            options.embed.fields = [];
-            options.embed.description = options.loseMessage ? options.loseMessage : "Better Luck Next Time!";
-            const _embed = createEmbed(options.embed);
-            await interaction.channel.send({ embeds: [_embed] });
-            btn1 = new ButtonBuilder()
-                .setStyle(ButtonStyle.Danger)
-                .setLabel(options.buttonText ? options.buttonText : "Cancel")
-                .setDisabled()
-                .setCustomId(ids);
-            embed.setTimestamp(options.embed.timestamp ? new Date() : null);
+    btnCollector.on("collect", async (btn) => {
+        if (btn.customId === cancelId) {
+            await btn.deferUpdate();
+            msgCollector.stop("cancelled");
+            cleanupGame();
             await msg.edit({
-                embeds: [embed],
-                components: [new ActionRowBuilder().addComponents(btn1)],
-            });
-            data.delete(id);
-        }
-    });
-    const gameCollector = msg.createMessageComponentCollector({
-        componentType: ComponentType.Button,
-        filter: (button) => button.customId === ids,
-        time: options.time ? options.time : 60000
-    });
-    gameCollector.on("collect", async (button) => {
-        if (button.user.id !== id) {
-            return button.reply({
-                content: options.othersMessage ? options.othersMessage.replace('{{author}}', id) : `This button is for <@${id}>`,
-                ephemeral: true
+                components: [createGameContainer("cancelled", {})],
+                flags: MessageFlags.IsComponentsV2,
             });
         }
-        ;
-        btn1 = new ButtonBuilder()
-            .setStyle(ButtonStyle.Danger)
-            .setLabel(options.buttonText ? options.buttonText : "Cancel")
-            .setDisabled()
-            .setCustomId(ids);
-        embed.setTimestamp(options.embed.timestamp ? new Date() : null);
-        await button.update({
-            content: options.cancelMessage ? options.cancelMessage : "Game has been cancelled.",
-            embeds: [embed],
-            components: [new ActionRowBuilder().addComponents(btn1)],
-        });
-        gameCollector.stop();
-        data.delete(id);
-        return collector.stop();
     });
-    gameCollector.on("end", async (data, reason) => {
+    msgCollector.on("end", async (_collected, reason) => {
         if (reason === "time") {
-            btn1 = new ButtonBuilder()
-                .setStyle(ButtonStyle.Danger)
-                .setLabel(options.buttonText ? options.buttonText : "Cancel")
-                .setDisabled()
-                .setCustomId(ids);
-            embed.setTimestamp(options.embed.timestamp ? new Date() : null);
-            await msg.edit({
-                embeds: [embed],
-                components: [new ActionRowBuilder().addComponents(btn1)],
-            });
+            cleanupGame();
+            try {
+                await msg.edit({
+                    components: [createGameContainer("timeout", { sentence })],
+                    flags: MessageFlags.IsComponentsV2,
+                });
+            }
+            catch (e) { }
         }
+        weky._client.off("typingStart", typingHandler);
     });
-    checkPackageUpdates("FastType", options.notifyUpdate);
 };
 export default FastType;

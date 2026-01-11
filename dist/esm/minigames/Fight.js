@@ -1,275 +1,259 @@
-import chalk from "chalk";
-import { AttachmentBuilder, EmbedBuilder } from "discord.js";
-import { Canvas, loadImage } from "@napi-rs/canvas";
-import { checkPackageUpdates } from "../functions/functions.js";
-import { OptionsChecking } from "../functions/OptionChecking.js";
-const data = new Set();
-const Fight = async (options) => {
-    return console.log("UNDER DEVELOPMENT");
-    OptionsChecking(options, "Fight");
-    let interaction;
-    if (options.interaction.author) {
-        interaction = options.interaction;
-    }
-    else {
-        interaction = options.interaction;
-    }
-    if (!interaction)
-        throw new Error(chalk.red("[@m3rcena/weky] Fight Error:") + " No interaction provided.");
-    let client = options.client;
-    let id = "";
-    if (options.interaction.author) {
-        id = options.interaction.author.id;
-    }
-    else {
-        id = options.interaction.user.id;
-    }
-    ;
-    if (!interaction.guild) {
-        throw new Error(chalk.red("[@m3rcena/weky] Fight Error:") + " Guild is not available in this interaction.");
-    }
-    ;
-    if (!interaction.channel || !interaction.channel.isSendable()) {
-        throw new Error(chalk.red("[@m3rcena/weky] Fight Error:") + " Channel is not available in this interaction.");
-    }
-    ;
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, ContainerBuilder, MediaGalleryBuilder, MessageFlags, } from "discord.js";
+const POWERUPS = [
+    {
+        id: "double-damage",
+        label: "2x Damage",
+        style: ButtonStyle.Danger,
+        cost: 30,
+        effect: (player, playerUsername) => {
+            player.activeEffects.push("Double Damage (Next Attack)");
+            return `${playerUsername} will deal double damage on their next attack!`;
+        },
+    },
+    {
+        id: "shield",
+        label: "Shield",
+        style: ButtonStyle.Secondary,
+        cost: 25,
+        effect: (player, playerUsername) => {
+            player.activeEffects.push("Shield (Next Attack)");
+            return `${playerUsername} will take half damage from the next attack!`;
+        },
+    },
+    {
+        id: "heal-boost",
+        label: "Heal Boost",
+        style: ButtonStyle.Success,
+        cost: 20,
+        effect: (player, playerUsername) => {
+            player.health += 30;
+            if (player.health > 100)
+                player.health = 100;
+            return `${playerUsername} received a 30 HP healing boost!`;
+        },
+    },
+];
+const Fight = async (weky, options) => {
+    const context = options.context;
+    const userId = weky._getContextUserID(context);
     if (!options.buttons)
         options.buttons = {};
-    if (typeof options.buttons !== "object") {
-        throw new TypeError(chalk.red("[@m3rcena/weky] Fight Error:") + " Buttons must be an object.");
+    const btnHit = options.buttons.hit || "Hit";
+    const btnHeal = options.buttons.heal || "Heal";
+    const btnCancel = options.buttons.cancel || "Surrender";
+    const btnAccept = options.buttons.accept || "Accept";
+    const btnDeny = options.buttons.deny || "Deny";
+    const msgWrongUser = options.wrongUserFight || "**This is not your Game!**";
+    const msgOpponentTurn = options.opponentsTurnMessage || "**Please wait for your opponents move!**";
+    const msgHighHp = options.highHealthMessage || "You cannot heal if your HP is above 80!";
+    const msgLowHp = options.lowHealthMessage || "You cannot cancel the fight if your HP is below 50!";
+    const defaultColor = typeof options.embed?.color === "number" ? options.embed.color : 0xed4245;
+    if (!options.opponent || !options.opponent.user) {
+        return weky._LoggerManager.createError("Fight", "Opponent must be a valid GuildMember.");
     }
-    ;
-    if (!options.buttons.hit)
-        options.buttons.hit = "Hit";
-    if (typeof options.buttons.hit !== "string") {
-        throw new TypeError(chalk.red("[@m3rcena/weky] Fight Error:") + " Hit button text must be a string.");
+    if (userId === options.opponent.id) {
+        return context.channel.send("You cannot fight yourself!");
     }
-    ;
-    if (!options.buttons.heal)
-        options.buttons.heal = "Heal";
-    if (typeof options.buttons.heal !== "string") {
-        throw new TypeError(chalk.red("[@m3rcena/weky] Fight Error:") + " Heal button text must be a string.");
+    const challenger = await context.guild?.members.fetch(userId);
+    const opponent = options.opponent;
+    if (!challenger)
+        return;
+    if ((await weky.NetworkManager.checkPlayerFightStatus(challenger.id)) ||
+        (await weky.NetworkManager.checkPlayerFightStatus(opponent.id))) {
+        return context.channel.send("One of the players is already in a fight!");
     }
-    ;
-    if (!options.buttons.cancel)
-        options.buttons.cancel = "Surrender";
-    if (typeof options.buttons.cancel !== "string") {
-        throw new TypeError(chalk.red("[@m3rcena/weky] Fight Error:") + " Cancel button text must be a string.");
-    }
-    ;
-    if (!options.buttons.accept)
-        options.buttons.accept = "Accept";
-    if (typeof options.buttons.accept !== "string") {
-        throw new TypeError(chalk.red("[@m3rcena/weky] Fight Error:") + " Accept button text must be a string.");
-    }
-    ;
-    if (!options.buttons.deny)
-        options.buttons.deny = "Deny";
-    if (typeof options.buttons.deny !== "string") {
-        throw new TypeError(chalk.red("[@m3rcena/weky] Fight Error:") + " Deny button text must be a string.");
-    }
-    ;
-    if (!options.acceptMessage)
-        options.acceptMessage = "<@{{challenger}}> has challenged <@{{opponent}}> for a fight!";
-    if (typeof options.acceptMessage !== "string") {
-        throw new TypeError(chalk.red("[@m3rcena/weky] Fight Error:") + " Accept message must be a string.");
-    }
-    ;
-    if (!options.winMessage)
-        options.winMessage = "GG, <@{{winner}}> won the fight!";
-    if (typeof options.winMessage !== "string") {
-        throw new TypeError(chalk.red("[@m3rcena/weky] Fight Error:") + " Win message must be a string.");
-    }
-    ;
-    if (!options.endMessage)
-        options.endMessage = "<@{{opponent}}> didn't answer in time. So, I dropped the game!";
-    if (typeof options.endMessage !== "string") {
-        throw new TypeError(chalk.red("[@m3rcena/weky] Fight Error:") + " End message must be a string.");
-    }
-    ;
-    if (!options.cancelMessage)
-        options.cancelMessage = "<@{{opponent}}> refused to have a fight with you!";
-    if (typeof options.cancelMessage !== "string") {
-        throw new TypeError(chalk.red("[@m3rcena/weky] Fight Error:") + " Cancel message must be a string.");
-    }
-    ;
-    if (!options.fightMessage)
-        options.fightMessage = "{{player}} you go first!";
-    if (typeof options.fightMessage !== "string") {
-        throw new TypeError(chalk.red("[@m3rcena/weky] Fight Error:") + " Fight message must be a string.");
-    }
-    ;
-    if (!options.othersMessage)
-        options.othersMessage = "Only {{author}} can use the buttons!";
-    if (typeof options.othersMessage !== "string") {
-        throw new TypeError(chalk.red("[@m3rcena/weky] Fight Error:") + " Others message must be a string.");
-    }
-    ;
-    if (!options.opponentsTurnMessage)
-        options.opponentsTurnMessage = "Please wait for your opponents move!";
-    if (typeof options.opponentsTurnMessage !== "string") {
-        throw new TypeError(chalk.red("[@m3rcena/weky] Fight Error:") + " Opponents turn message must be a string.");
-    }
-    ;
-    if (!options.highHealthMessage)
-        options.highHealthMessage = "You cannot heal if your HP is above 80!";
-    if (typeof options.highHealthMessage !== "string") {
-        throw new TypeError(chalk.red("[@m3rcena/weky] Fight Error:") + " High health message must be a string.");
-    }
-    ;
-    if (!options.lowHealthMessage)
-        options.lowHealthMessage = "You cannot cancel the fight if your HP is below 50!";
-    if (typeof options.lowHealthMessage !== "string") {
-        throw new TypeError(chalk.red("[@m3rcena/weky] Fight Error:") + " Low health message must be a string.");
-    }
-    ;
-    if (!options.returnWinner)
-        options.returnWinner = false;
-    if (typeof options.returnWinner !== "boolean") {
-        throw new TypeError(chalk.red("[@m3rcena/weky] Fight Error:") + " Return winner must be a boolean.");
-    }
-    ;
-    if (!options.opponent) {
-        throw new Error(chalk.red("[@m3rcena/weky] Fight Error:") + " Opponent is missing from the options.");
-    }
-    ;
-    if (!options.opponent.username) {
-        throw new TypeError(chalk.red("[@m3rcena/weky] Fight Error:") + " Opponent option must be User.");
-    }
-    if (id === options.opponent.id) {
-        return interaction.reply({
-            embeds: [
-                new EmbedBuilder()
-                    .setTitle("Fight Error")
-                    .setColor("Red")
-                    .setDescription("Hey there!\n\nIt's not fun to fight yourself!")
-                    .setTimestamp()
-            ],
+    const createGameContainer = (state, details) => {
+        const container = new ContainerBuilder();
+        let content = "";
+        switch (state) {
+            case "request":
+                container.setAccentColor(0xfee75c); // Yellow
+                content = `## ⚔️ Challenge!\n> <@${challenger.id}> challenged <@${opponent.id}> to a fight!`;
+                break;
+            case "active":
+                container.setAccentColor(defaultColor);
+                content = `## ⚔️ Fighting...\n> Use buttons to fight or buy powerups!`;
+                break;
+            case "won":
+                container.setAccentColor(0x57f287); // Green
+                content = `## 🏆 Fight Ended\n> We have a winner!`;
+                break;
+            case "surrender":
+                container.setAccentColor(0xed4245); // Red
+                content = `## 🏳️ Surrendered\n> The fight was forfeited.`;
+                break;
+            case "deny":
+                container.setAccentColor(0xed4245); // Red
+                content = `## 🚫 Denied\n> The challenge was rejected.`;
+                break;
+            case "timeout":
+                container.setAccentColor(0x99aab5); // Grey
+                content = `## ⏱️ Time's Up\n> The session expired.`;
+                break;
+            case "error":
+                container.setAccentColor(0xff0000);
+                content = `## ❌ Error\n> ${details?.error || "Unknown error."}`;
+                break;
+        }
+        container.addTextDisplayComponents((t) => t.setContent(content));
+        if (details?.image) {
+            const gallery = new MediaGalleryBuilder().addItems((item) => item.setURL(`attachment://${details.image}`));
+            container.addMediaGalleryComponents(gallery);
+        }
+        if (state === "request") {
+            const row = new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel(btnAccept).setStyle(ButtonStyle.Success).setCustomId("fight_accept"), new ButtonBuilder().setLabel(btnDeny).setStyle(ButtonStyle.Danger).setCustomId("fight_deny"));
+            container.addActionRowComponents(row);
+        }
+        else if (state === "active") {
+            const mainRow = new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel(btnHit).setStyle(ButtonStyle.Danger).setCustomId("fight_hit"), new ButtonBuilder().setLabel(btnHeal).setStyle(ButtonStyle.Success).setCustomId("fight_heal"), new ButtonBuilder().setLabel(btnCancel).setStyle(ButtonStyle.Secondary).setCustomId("fight_surrender"));
+            container.addActionRowComponents(mainRow);
+            const powerupRow = new ActionRowBuilder().addComponents(POWERUPS.map((p) => new ButtonBuilder().setLabel(`${p.label} (${p.cost}🪙)`).setStyle(p.style).setCustomId(`powerup_${p.id}`)));
+            container.addActionRowComponents(powerupRow);
+        }
+        return container;
+    };
+    const requestCard = await weky.NetworkManager.makeRequestCard(challenger.user.username, challenger.displayAvatarURL({ extension: "png", size: 256 }), opponent.user.username, opponent.displayAvatarURL({ extension: "png", size: 256 }));
+    if (!requestCard)
+        return context.channel.send("Failed to generate request card.");
+    const msg = await context.channel.send({
+        components: [createGameContainer("request", { image: "fight-request.png" })],
+        files: [requestCard],
+        flags: MessageFlags.IsComponentsV2,
+    });
+    const gameId = await weky.NetworkManager.createGame(challenger.id, challenger.user.username, opponent.id, opponent.user.username);
+    const reqCollector = msg.createMessageComponentCollector({
+        componentType: ComponentType.Button,
+        time: options.time || 60000,
+    });
+    reqCollector.on("collect", async (interaction) => {
+        if (interaction.user.id !== opponent.id) {
+            return interaction.reply({ content: msgWrongUser, flags: [MessageFlags.Ephemeral] });
+        }
+        if (interaction.customId === "fight_deny") {
+            await interaction.deferUpdate();
+            reqCollector.stop("deny");
+            const denyCard = await weky.NetworkManager.makeDenyCard(challenger.user.username, challenger.displayAvatarURL({ extension: "png", size: 256 }), opponent.user.username, opponent.displayAvatarURL({ extension: "png", size: 256 }));
+            await weky.NetworkManager.removeGame(gameId);
+            await msg.edit({
+                components: [createGameContainer("deny", { image: "fight-deny.png" })],
+                files: denyCard ? [denyCard] : [],
+                flags: MessageFlags.IsComponentsV2,
+            });
+            return;
+        }
+        if (interaction.customId === "fight_accept") {
+            await interaction.deferUpdate();
+            reqCollector.stop("accept");
+            await startFight(msg, gameId);
+        }
+    });
+    reqCollector.on("end", async (collected, reason) => {
+        if (reason === "time" && collected.size === 0) {
+            const timeoutCard = await weky.NetworkManager.makeTimeOutCard(challenger.user.username, challenger.displayAvatarURL({ extension: "png", size: 256 }), opponent.user.username, opponent.displayAvatarURL({ extension: "png", size: 256 }));
+            await weky.NetworkManager.removeGame(gameId);
+            await msg
+                .edit({
+                components: [createGameContainer("timeout", { image: "fight-timeout.png" })],
+                files: timeoutCard ? [timeoutCard] : [],
+                flags: MessageFlags.IsComponentsV2,
+            })
+                .catch(() => { });
+        }
+    });
+    async function startFight(message, gameID) {
+        const gameCard = await weky.NetworkManager.makeMainCard(gameID, challenger.displayAvatarURL({ extension: "png", size: 256 }), opponent.displayAvatarURL({ extension: "png", size: 256 }));
+        await message.edit({
+            components: [createGameContainer("active", { image: "fight-card.png" })],
+            files: [gameCard],
+            flags: MessageFlags.IsComponentsV2,
+        });
+        const collector = message.createMessageComponentCollector({
+            componentType: ComponentType.Button,
+            time: 300000,
+        });
+        collector.on("collect", async (i) => {
+            if (i.user.id !== challenger.id && i.user.id !== opponent.id) {
+                return i.reply({ content: msgWrongUser, flags: [MessageFlags.Ephemeral] });
+            }
+            const turn = await weky.NetworkManager.getTurn(gameID);
+            if (i.user.id !== turn.userID) {
+                return i.reply({ content: msgOpponentTurn, flags: [MessageFlags.Ephemeral] });
+            }
+            await i.deferUpdate();
+            const player = await weky.NetworkManager.getPlayer(gameID, false);
+            const enemy = await weky.NetworkManager.getPlayer(gameID, true);
+            const playerMember = await i.guild?.members.fetch(player.memberId);
+            const enemyMember = await i.guild?.members.fetch(enemy.memberId);
+            if (!playerMember || !enemyMember)
+                return;
+            if (i.customId === "fight_hit") {
+                let damage = Math.floor(Math.random() * 20) + 10;
+                if (player.activeEffects.includes("Double Damage (Next Attack)")) {
+                    damage *= 2;
+                    player.activeEffects = player.activeEffects.filter((e) => e !== "Double Damage (Next Attack)");
+                }
+                if (enemy.activeEffects.includes("Shield (Next Attack)")) {
+                    damage = Math.floor(damage / 2);
+                    enemy.activeEffects = enemy.activeEffects.filter((e) => e !== "Shield (Next Attack)");
+                }
+                enemy.health -= damage;
+                player.coins += 10;
+                const updated = await weky.NetworkManager.updatePlayers(gameID, player, enemy);
+                if (!updated)
+                    return i.followUp({ content: "API Error", flags: [MessageFlags.Ephemeral] });
+                if (enemy.health <= 0) {
+                    collector.stop("won");
+                    const winCard = await weky.NetworkManager.makeWinCard(playerMember.user.username, playerMember.displayAvatarURL({ extension: "png", size: 256 }), enemyMember.user.username, enemyMember.displayAvatarURL({ extension: "png", size: 256 }));
+                    await weky.NetworkManager.removeGame(gameID);
+                    return message.edit({
+                        components: [createGameContainer("won", { image: "fight-winner.png" })],
+                        files: [winCard],
+                        flags: MessageFlags.IsComponentsV2,
+                    });
+                }
+            }
+            else if (i.customId === "fight_heal") {
+                if (player.health >= 80) {
+                    return i.followUp({ content: msgHighHp, flags: [MessageFlags.Ephemeral] });
+                }
+                const healAmt = Math.floor(Math.random() * 20) + 10;
+                player.health = Math.min(100, player.health + healAmt);
+                await weky.NetworkManager.updatePlayers(gameID, player, enemy);
+            }
+            else if (i.customId === "fight_surrender") {
+                if (player.health < 50) {
+                    return i.followUp({ content: msgLowHp, flags: [MessageFlags.Ephemeral] });
+                }
+                collector.stop("surrender");
+                const surrenderCard = await weky.NetworkManager.makeSurrenderCard(enemyMember.user.username, enemyMember.displayAvatarURL({ extension: "png", size: 256 }), playerMember.user.username, playerMember.displayAvatarURL({ extension: "png", size: 256 }));
+                await weky.NetworkManager.removeGame(gameID);
+                return message.edit({
+                    components: [createGameContainer("surrender", { image: "fight-surrender.png" })],
+                    files: [surrenderCard],
+                    flags: MessageFlags.IsComponentsV2,
+                });
+            }
+            else if (i.customId.startsWith("powerup_")) {
+                const pId = i.customId.split("_")[1];
+                const powerup = POWERUPS.find((p) => p.id === pId);
+                if (powerup && player.coins >= powerup.cost) {
+                    player.coins -= powerup.cost;
+                    const msg = powerup.effect(player, playerMember.user.username);
+                    await weky.NetworkManager.updatePlayers(gameID, player, enemy);
+                    await i.followUp({ content: msg, flags: [MessageFlags.Ephemeral] });
+                }
+                else {
+                    return i.followUp({ content: "Not enough coins!", flags: [MessageFlags.Ephemeral] });
+                }
+            }
+            await weky.NetworkManager.changeTurn(gameID);
+            const newCard = await weky.NetworkManager.makeMainCard(gameID, challenger.displayAvatarURL({ extension: "png", size: 256 }), opponent.displayAvatarURL({ extension: "png", size: 256 }));
+            await message.edit({
+                components: [createGameContainer("active", { image: "fight-card.png" })],
+                files: [newCard],
+                flags: MessageFlags.IsComponentsV2,
+            });
         });
     }
-    ;
-    if (data.has(id) || data.has(options.opponent.id))
-        return;
-    data.add(id);
-    data.add(options.opponent.id);
-    const challenger = interaction.author || interaction.user;
-    const opponent = options.opponent;
-    const requestCard = await getRequestCard(challenger, opponent);
-    const embed = new EmbedBuilder()
-        .setColor(options.embed.color ? options.embed.color : "Blurple")
-        .setImage("attachment://fight-request.png")
-        .setTimestamp(options.embed.timestamp);
-    const msg = await interaction.reply({
-        embeds: [embed],
-        files: [requestCard],
-    });
-    checkPackageUpdates("Fight", options.notifyUpdate);
 };
-async function getRequestCard(challenger, opponent) {
-    // Create canvas with 800x250 dimensions
-    const canvas = new Canvas(800, 250);
-    const ctx = canvas.getContext('2d');
-    // Set blurple background
-    ctx.fillStyle = '#5865F2'; // Discord blurple color
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    // Add decorative elements
-    ctx.fillStyle = '#4752C4'; // Darker blurple for design
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(800, 0);
-    ctx.lineTo(800, 50);
-    ctx.lineTo(0, 80);
-    ctx.closePath();
-    ctx.fill();
-    // Add title text
-    ctx.font = 'bold 32px Arial';
-    ctx.fillStyle = '#FFFFFF';
-    ctx.textAlign = 'center';
-    ctx.fillText('FIGHT REQUEST', 400, 45);
-    // Load and draw avatars
-    const [challengerAvatar, opponentAvatar] = await Promise.all([
-        loadImage(challenger.displayAvatarURL({ extension: 'png', size: 256 })),
-        loadImage(opponent.displayAvatarURL({ extension: 'png', size: 256 }))
-    ]);
-    // Draw challenger avatar (left)
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(200, 125, 80, 0, Math.PI * 2);
-    ctx.closePath();
-    ctx.clip();
-    ctx.drawImage(challengerAvatar, 120, 45, 160, 160);
-    ctx.restore();
-    // Draw opponent avatar (right)
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(600, 125, 80, 0, Math.PI * 2);
-    ctx.closePath();
-    ctx.clip();
-    ctx.drawImage(opponentAvatar, 520, 45, 160, 160);
-    ctx.restore();
-    // Draw VS text with shadow
-    ctx.font = 'bold 72px Arial';
-    ctx.fillStyle = '#4752C4';
-    ctx.fillText('VS', 402, 147); // Shadow
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillText('VS', 400, 145);
-    // Draw names with titles
-    ctx.font = 'bold 24px Arial';
-    ctx.fillStyle = '#FFFFFF';
-    ctx.textAlign = 'center';
-    ctx.fillText('CHALLENGER', 200, 190);
-    ctx.fillText('OPPONENT', 600, 190);
-    ctx.font = '24px Arial';
-    ctx.fillText(challenger.username, 200, 220);
-    ctx.fillText(opponent.username, 600, 220);
-    return new AttachmentBuilder(canvas.toBuffer("image/png"), { name: 'fight-request.png' });
-}
-async function getMainCard(player1, player2) {
-    const canvas = new Canvas(1000, 300);
-    const ctx = canvas.getContext('2d');
-    // Set background
-    ctx.fillStyle = '#2F3136';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    // Load avatars
-    const [avatar1, avatar2] = await Promise.all([
-        loadImage(player1.member.displayAvatarURL({ extension: 'png', size: 256 })),
-        loadImage(player2.member.displayAvatarURL({ extension: 'png', size: 256 }))
-    ]);
-    // Draw player 1 section (left)
-    ctx.drawImage(avatar1, 50, 50, 100, 100);
-    // Health bar player 1
-    ctx.fillStyle = '#3B3B3B';
-    ctx.fillRect(170, 60, 300, 30);
-    ctx.fillStyle = '#FF0000';
-    ctx.fillRect(170, 60, (player1.health / 100) * 300, 30);
-    // Player 1 stats
-    ctx.font = '20px Arial';
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillText(`${player1.member.username} - HP: ${player1.health}`, 170, 120);
-    ctx.fillText(`Coins: ${player1.coins}`, 170, 145);
-    // Draw player 2 section (right)
-    ctx.drawImage(avatar2, 850, 50, 100, 100);
-    // Health bar player 2
-    ctx.fillStyle = '#3B3B3B';
-    ctx.fillRect(530, 60, 300, 30);
-    ctx.fillStyle = '#FF0000';
-    ctx.fillRect(530, 60, (player2.health / 100) * 300, 30);
-    // Player 2 stats
-    ctx.textAlign = 'right';
-    ctx.fillText(`${player2.member.username} - HP: ${player2.health}`, 830, 120);
-    ctx.fillText(`Coins: ${player2.coins}`, 830, 145);
-    // Draw active effects
-    ctx.textAlign = 'left';
-    ctx.font = '18px Arial';
-    ctx.fillText('Active Effects:', 50, 200);
-    player1.activeEffects.forEach((effect, i) => {
-        ctx.fillText(`• ${effect}`, 50, 225 + (i * 25));
-    });
-    ctx.textAlign = 'right';
-    ctx.fillText('Active Effects:', 950, 200);
-    player2.activeEffects.forEach((effect, i) => {
-        ctx.fillText(`• ${effect}`, 950, 225 + (i * 25));
-    });
-    return new AttachmentBuilder(canvas.toBuffer("image/png"), { name: 'fight-status.png' });
-}
 export default Fight;

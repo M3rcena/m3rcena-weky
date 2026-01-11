@@ -1,3 +1,4 @@
-import type { ShuffleGuessTypes } from "../Types/index.js";
-declare const ShuffleGuess: (options: ShuffleGuessTypes) => Promise<void>;
+import type { CustomOptions, ShuffleGuessTypes } from "../Types/index.js";
+import type { WekyManager } from "../index.js";
+declare const ShuffleGuess: (weky: WekyManager, options: CustomOptions<ShuffleGuessTypes>) => Promise<boolean>;
 export default ShuffleGuess;

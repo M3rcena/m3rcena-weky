@@ -57,7 +57,6 @@ const Calculator = async (weky: WekyManager, options: CustomOptions<CalcTypes>) 
 	let disabled: boolean = true;
 	let lastInput: string | null | undefined;
 
-	// Handle modal inputs for special operations (log, sin, etc.)
 	const handleModalInput = async (interact: any, modalId: string, operation: string) => {
 		const modal = new ModalBuilder().setTitle(modalId).setCustomId(`md${modalId}`);
 
@@ -89,12 +88,10 @@ const Calculator = async (weky: WekyManager, options: CustomOptions<CalcTypes>) 
 		});
 	};
 
-	// Process calculations using mathjs
 	const handleCalculation = (input: string): CalculationResult => {
 		try {
 			const result = evaluate(input) as MathJsResult;
 
-			// Handle special cases
 			if (typeof result === "number") {
 				if (isNaN(result)) {
 					return { result: null, error: "Invalid calculation (NaN)" };
@@ -108,7 +105,6 @@ const Calculator = async (weky: WekyManager, options: CustomOptions<CalcTypes>) 
 					}
 					return { result: null, error: "Result is infinite" };
 				}
-				// Check if result is extremely large (more than 15 digits)
 				if (Math.abs(result) > 1e15) {
 					return { result: null, error: "Result too large to display" };
 				}
@@ -122,13 +118,11 @@ const Calculator = async (weky: WekyManager, options: CustomOptions<CalcTypes>) 
 
 	const channel = context.channel;
 
-	// Create Components V2 structure
 	const createCalculatorContainer = (displayText: string, buttonsEnabled: boolean, lock: boolean) => {
 		const container = new ContainerBuilder()
-			.setAccentColor(typeof options.embed.color === "number" ? options.embed.color : 0x5865f2) // Use embed color or default blurple
+			.setAccentColor(typeof options.embed.color === "number" ? options.embed.color : 0x5865f2)
 			.addTextDisplayComponents((textDisplay) => textDisplay.setContent(displayText));
 
-		// First container: text array buttons (25 buttons = 5 rows)
 		for (let i = 0; i < text.length; i += 5) {
 			const rowButtons = text
 				.slice(i, i + 5)
@@ -142,9 +136,8 @@ const Calculator = async (weky: WekyManager, options: CustomOptions<CalcTypes>) 
 	const createCalculatorContainer2 = (buttonsEnabled: boolean, lock: boolean) => {
 		const container = new ContainerBuilder().setAccentColor(
 			typeof options.embed.color === "number" ? options.embed.color : 0x5865f2
-		); // Use embed color or default blurple
+		);
 
-		// Second container: text2 array buttons (15 buttons = 3 rows)
 		for (let i = 0; i < text2.length; i += 5) {
 			const rowButtons = text2
 				.slice(i, i + 5)
@@ -161,13 +154,11 @@ const Calculator = async (weky: WekyManager, options: CustomOptions<CalcTypes>) 
 		allowedMentions: { repliedUser: false },
 	});
 
-	// Send second message with additional buttons
 	const msg2 = await context.channel.send({
 		components: [createCalculatorContainer2(true, false)],
 		flags: MessageFlags.IsComponentsV2,
 	});
 
-	// Calculator logic
 	async function edit() {
 		await msg.edit({
 			components: [createCalculatorContainer(stringify, !disabled, false)],
