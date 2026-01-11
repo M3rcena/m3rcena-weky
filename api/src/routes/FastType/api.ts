@@ -8,7 +8,7 @@ const router = express.Router();
 router.get("/getText", async (req, res) => {
 	try {
 		const difficulty = req.query.difficulty as string;
-		const botID = req.header["x-bot-id"];
+		const botID = req.headers["x-bot-id"] as string;
 
 		const allowedDifficulties = ["easy", "medium", "hard"];
 		if (!difficulty || !allowedDifficulties.includes(difficulty)) {
@@ -39,6 +39,7 @@ router.get("/getText", async (req, res) => {
 			sentence: randomSentence,
 		});
 	} catch (error) {
+		console.error(error);
 		return res.status(500).json({ error: "Failed to retrieve text." });
 	}
 });

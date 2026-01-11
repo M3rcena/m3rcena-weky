@@ -89,3 +89,17 @@ export interface HangmanGameTypes {
 	gameOver: boolean;
 	won: boolean;
 }
+
+/**
+ * WILL YOU PRESS THE BUTTON TYPES
+ */
+export interface DilemmaData {
+	id: string;
+	url: string;
+	question: string;
+	result: string;
+	stats: {
+		yes: { percentage: string; count: string };
+		no: { percentage: string; count: string };
+	};
+}
