@@ -1,6 +1,7 @@
 import express from "express";
 import { database } from "../..";
 import { BotDataTypes } from "../../Types";
+import words from "../../../assets/words.json";
 
 const router = express.Router();
 
@@ -38,6 +39,18 @@ router.post("/increaseUsage", async (req, res) => {
 	database.incrementUsage(botID, "minigames", 1, minigame);
 
 	return res.status(200).send({ success: true });
+});
+
+router.get("/getRandomSentence", async (req, res) => {
+	const length = req.query.length as string;
+
+	const word: string[] = [];
+
+	for (let i = 0; i < Number(length); i++) {
+		word.push(words[Math.floor(Math.random() * words.length)]);
+	}
+
+	return res.status(200).send({ word });
 });
 
 export default router;

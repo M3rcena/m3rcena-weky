@@ -1,12 +1,7 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, EmbedBuilder, MessageFlags } from "discord.js";
 
-import { createEmbed, ErrorEmbed } from "../functions/functions.js";
-import { OptionsChecking } from "../functions/OptionChecking.js";
-import { getContextUserID } from "../functions/context.js";
-
-import type { LoggerManager } from "..//handlers/Logger.js";
-import type { NetworkManager } from "../handlers/NetworkManager.js";
-import type { Types2048 } from "../Types/index.js";
+import type { CustomOptions, Types2048 } from "../Types/index.js";
+import type { WekyManager } from "../index.js";
 
 const mapDirection = (customId: string): string => {
 	switch (customId) {
@@ -24,17 +19,10 @@ const mapDirection = (customId: string): string => {
 };
 
 // Main game function that handles the 2048 game logic
-const mini2048 = async (networkManager: NetworkManager, options: Types2048, loggerManager: LoggerManager) => {
-	OptionsChecking(options, "2048", loggerManager);
-
+const mini2048 = async (weky: WekyManager, options: CustomOptions<Types2048>) => {
 	let context = options.context;
 
-	if (!context.channel || !context.channel.isSendable() || context.channel.isDMBased())
-		return loggerManager.createError("2048", "The Channel must be sendable and not in DMs");
-
-	if (!context.guild) return loggerManager.createError("2048", "No guild found on Context.");
-
-	const userID = getContextUserID(context);
+	const userID = weky._getContextUserID(context);
 
 	const member = await context.guild.members.fetch(userID);
 	const username = member.user.username || "Player";
@@ -42,21 +30,22 @@ const mini2048 = async (networkManager: NetworkManager, options: Types2048, logg
 
 	const msg = await context.channel.send({ content: "Starting the game..." });
 
-	const gameID = await networkManager.create2048Game(userID, username);
+	const gameID = await weky.NetworkManager.create2048Game(userID, username);
 
 	if (gameID === "-1") {
-		const embed = ErrorEmbed("2048")
-			.setDescription("Could not create game. You might already have one running or the API is down.")
-			.setTimestamp(options.embed.timestamp ? new Date() : null);
+		const embed = weky._createErrorEmbed(
+			"2048",
+			"Could not create game. You might already have one running or the API is down."
+		);
 
 		return await msg.edit({ content: ``, embeds: [embed] }).catch(() => {});
 	}
 
 	let currentScore = 0;
-	const initialImg = await networkManager.get2048BoardImage(gameID, userIcon);
+	const initialImg = await weky.NetworkManager.get2048BoardImage(gameID, userIcon);
 
 	if (!initialImg) {
-		await networkManager.end2048Game(gameID);
+		await weky.NetworkManager.end2048Game(gameID);
 		return await msg.edit({ content: "Failed to generate game board." });
 	}
 
@@ -67,7 +56,7 @@ const mini2048 = async (networkManager: NetworkManager, options: Types2048, logg
 
 	options.embed.image = "attachment://2048-board.png";
 
-	let embed = createEmbed(options.embed);
+	let embed = weky._createEmbed(options.embed);
 
 	const up = new ButtonBuilder()
 		.setStyle(ButtonStyle.Secondary)
@@ -122,7 +111,7 @@ const mini2048 = async (networkManager: NetworkManager, options: Types2048, logg
 
 		await btn.deferUpdate();
 
-		const moveResult = await networkManager.move2048(gameID, direction);
+		const moveResult = await weky.NetworkManager.move2048(gameID, direction);
 
 		if (!moveResult) {
 			return btn.followUp({ content: "Failed to communicate with game server.", flags: [MessageFlags.Ephemeral] });
@@ -138,7 +127,7 @@ const mini2048 = async (networkManager: NetworkManager, options: Types2048, logg
 			return collector.stop(moveResult.won ? "won" : "gameover");
 		}
 
-		const newImg = await networkManager.get2048BoardImage(gameID, userIcon);
+		const newImg = await weky.NetworkManager.get2048BoardImage(gameID, userIcon);
 
 		if (!newImg) {
 			return btn.followUp({ content: "Failed to render board.", flags: [MessageFlags.Ephemeral] });
@@ -148,7 +137,7 @@ const mini2048 = async (networkManager: NetworkManager, options: Types2048, logg
 			originalDescription?.replace(`{{score}}`, `${currentScore}`).replace(`{{id}}`, `${userID}`) ||
 			`ID: \`${userID}\`\nScore: \`${currentScore}\``;
 
-		embed = createEmbed(options.embed);
+		embed = weky._createEmbed(options.embed);
 
 		await msg
 			.edit({
@@ -160,9 +149,9 @@ const mini2048 = async (networkManager: NetworkManager, options: Types2048, logg
 	});
 
 	collector.on("end", async (_, reason) => {
-		const gameOverImg = await networkManager.get2048BoardImage(gameID, userIcon);
+		const gameOverImg = await weky.NetworkManager.get2048BoardImage(gameID, userIcon);
 
-		await networkManager.end2048Game(gameID);
+		await weky.NetworkManager.end2048Game(gameID);
 
 		const endEmbed = new EmbedBuilder().setColor(reason === "won" ? "Green" : "Red").setTimestamp(new Date());
 

@@ -1,62 +1,48 @@
 import { ButtonBuilder, ButtonStyle } from "discord.js";
 import fetch from "node-fetch";
 
-import { convertTime, createEmbed, getRandomString } from "../functions/functions.js";
-import { OptionsChecking } from "../functions/OptionChecking.js";
-import { deferContext, getContextUserID } from "../functions/context.js";
-
-import type { LoggerManager } from "../handlers/Logger.js";
-import type { GuessThePokemonData, GuessThePokemonTypes } from "../Types/index.js";
+import type { CustomOptions, GuessThePokemonData, GuessThePokemonTypes } from "../Types/index.js";
+import type { WekyManager } from "../index.js";
 
 const gameData = new Set();
 
-const GuessThePokemon = async (options: GuessThePokemonTypes, loggerManager: LoggerManager) => {
-	OptionsChecking(options, "GuessThePokemon", loggerManager);
-
+const GuessThePokemon = async (weky: WekyManager, options: CustomOptions<GuessThePokemonTypes>) => {
 	let context = options.context;
-
-	if (!context.channel || !context.channel.isSendable())
-		return loggerManager.createError("GuessThePokemon", "No channel found.");
 
 	if (!options.thinkMessage) options.thinkMessage = "Thinking";
 	if (typeof options.thinkMessage !== "string") {
-		return loggerManager.createTypeError("GuessThePokemon", "thinkMessage should be string");
+		return weky._LoggerManager.createTypeError("GuessThePokemon", "thinkMessage should be string");
 	}
 
 	if (!options.embed.description)
 		options.embed.description =
 			"**Type:**\n{{type}}\n\n**Abilities:**\n{{abilities}}\n\nYou only have **{{time}}** to guess the pokémon.";
-	if (typeof options.embed.description !== "string") {
-		return loggerManager.createTypeError("GuessThePokemon", "Embed Description must be a string");
-	}
 
 	if (!options.winMessage) options.winMessage = "GG, It was a **{{answer}}**. You got it correct in **{{time}}**.";
 	if (typeof options.winMessage !== "string") {
-		return loggerManager.createTypeError("GuessTheNumber", "winMessage must be a string");
+		return weky._LoggerManager.createTypeError("GuessTheNumber", "winMessage must be a string");
 	}
 
 	if (!options.loseMessage) options.loseMessage = "Try again! The answer was **{{answer}}**.";
 	if (typeof options.loseMessage !== "string") {
-		return loggerManager.createTypeError("GuessThePokemon", "loseMessage must be a string");
+		return weky._LoggerManager.createTypeError("GuessThePokemon", "loseMessage must be a string");
 	}
 
 	if (!options.incorrectMessage)
 		options.incorrectMessage = "The pokemon we are looking for is not **{{answer}}**! Try again.";
 	if (typeof options.incorrectMessage !== "string") {
-		return loggerManager.createTypeError("GuessThePokemon", "incorrectMessage must be a string");
+		return weky._LoggerManager.createTypeError("GuessThePokemon", "incorrectMessage must be a string");
 	}
 
-	const userId = getContextUserID(context);
-
-	deferContext(context);
+	const userId = weky._getContextUserID(context);
 
 	if (gameData.has(userId)) return;
 	gameData.add(userId);
 
-	const id = getRandomString(20) + "-" + getRandomString(20) + "-" + getRandomString(20);
+	const id = weky.getRandomString(20) + "-" + weky.getRandomString(20) + "-" + weky.getRandomString(20);
 
 	const think = await context.channel.send({
-		embeds: [createEmbed(options.embed).setTitle(`${options.thinkMessage}...`).setDescription(`\u200b`)],
+		embeds: [weky._createEmbed(options.embed).setTitle(`${options.thinkMessage}...`).setDescription(`\u200b`)],
 	});
 
 	const randomNumber = Math.floor(Math.random() * 801);
@@ -76,7 +62,7 @@ const GuessThePokemon = async (options: GuessThePokemonTypes, loggerManager: Log
 		.setLabel(options.buttonText ?? "Cancel")
 		.setCustomId(id);
 
-	const embed = createEmbed(options.embed).setDescription(
+	const embed = weky._createEmbed(options.embed).setDescription(
 		options.embed.description
 			.replace("{{type}}", seperatedTypes)
 			.replace("{{abilities}}", seperatedAbilities)
@@ -101,11 +87,12 @@ const GuessThePokemon = async (options: GuessThePokemonTypes, loggerManager: Log
 		await msg.delete();
 
 		if (content.toLowerCase() === data.name) {
-			const _embed = createEmbed(options.embed)
+			const _embed = weky
+				._createEmbed(options.embed)
 				.setDescription(
 					options.winMessage
 						.replace("{{answer}}", data.name.charAt(0).toUpperCase() + data.name.slice(1))
-						.replace("{{time}}", convertTime(Date.now() - gameCreatedAt))
+						.replace("{{time}}", weky.convertTime(Date.now() - gameCreatedAt))
 				)
 				.setImage(data.sprites.other.home.front_default);
 
@@ -117,7 +104,8 @@ const GuessThePokemon = async (options: GuessThePokemonTypes, loggerManager: Log
 			collector.stop();
 			gameData.delete(userId);
 		} else {
-			const _embed = createEmbed(options.embed)
+			const _embed = weky
+				._createEmbed(options.embed)
 				.setDescription(options.incorrectMessage.replace("{{answer}}", msg.content.toLowerCase()))
 				.setColor("Red");
 
@@ -140,7 +128,8 @@ const GuessThePokemon = async (options: GuessThePokemonTypes, loggerManager: Log
 			collector.stop();
 			gameData.delete(userId);
 
-			const _embed = createEmbed(options.embed)
+			const _embed = weky
+				._createEmbed(options.embed)
 				.setDescription(
 					options.loseMessage.replace("{{answer}}", data.name.charAt(0).toUpperCase() + data.name.slice(1))
 				)
@@ -160,7 +149,8 @@ const GuessThePokemon = async (options: GuessThePokemonTypes, loggerManager: Log
 			collector.stop();
 			gameData.delete(userId);
 
-			const _embed = createEmbed(options.embed)
+			const _embed = weky
+				._createEmbed(options.embed)
 				.setDescription(
 					options.loseMessage.replace("{{answer}}", data.name.charAt(0).toUpperCase() + data.name.slice(1))
 				)

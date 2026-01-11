@@ -1,60 +1,46 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, Client, ComponentType, MessageFlags } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, MessageFlags } from "discord.js";
 
-import { createEmbed, getRandomString } from "../functions/functions.js";
-import { OptionsChecking } from "../functions/OptionChecking.js";
-import { deferContext, getContextUserID } from "../functions/context.js";
+import type { CustomOptions, NeverHaveIEverTypes } from "../Types/index.js";
+import type { WekyManager } from "../index.js";
 
-import type { NeverHaveIEverTypes } from "../Types/index.js";
-import type { LoggerManager } from "../handlers/Logger.js";
-
-const NeverHaveIEver = async (client: Client, options: NeverHaveIEverTypes, loggerManager: LoggerManager) => {
-	OptionsChecking(options, "NeverHaveIEver", loggerManager);
-
+const NeverHaveIEver = async (weky: WekyManager, options: CustomOptions<NeverHaveIEverTypes>) => {
 	const context = options.context;
-
-	if (!context) return loggerManager.createError("Calculator", "No context provided.");
-
-	if (!context.channel || !context.channel.isSendable() || context.channel.isDMBased()) {
-		return loggerManager.createError("NeverHaveIEver", "Context has an invalid channel");
-	}
 
 	if (!options.thinkMessage) options.thinkMessage = "I am thinking";
 	if (typeof options.thinkMessage !== "string") {
-		return loggerManager.createTypeError("NeverHaveIEver", "thinkMessage must be a string.");
+		return weky._LoggerManager.createTypeError("NeverHaveIEver", "thinkMessage must be a string.");
 	}
 
 	if (!options.othersMessage) {
 		options.othersMessage = "Only <@{{author}}> can use the buttons!";
 	}
 	if (typeof options.othersMessage !== "string") {
-		return loggerManager.createTypeError("NeverHaveIEver", "othersMessage must be a string.");
+		return weky._LoggerManager.createTypeError("NeverHaveIEver", "othersMessage must be a string.");
 	}
 
 	if (!options.buttons) options.buttons = {};
 	if (typeof options.buttons !== "object") {
-		return loggerManager.createTypeError("NeverHaveIEver", "buttons must be an object.");
+		return weky._LoggerManager.createTypeError("NeverHaveIEver", "buttons must be an object.");
 	}
 
 	if (!options.buttons.optionA) options.buttons.optionA = "Yes";
 	if (typeof options.buttons.optionA !== "string") {
-		return loggerManager.createTypeError("NeverHaveIEver", "buttons.optionA must be a string.");
+		return weky._LoggerManager.createTypeError("NeverHaveIEver", "buttons.optionA must be a string.");
 	}
 
 	if (!options.buttons.optionB) options.buttons.optionB = "No";
 	if (typeof options.buttons.optionB !== "string") {
-		return loggerManager.createTypeError("NeverHaveIEver", "buttons.optionB must be a string.");
+		return weky._LoggerManager.createTypeError("NeverHaveIEver", "buttons.optionB must be a string.");
 	}
 
-	const id1 = getRandomString(20) + "-" + getRandomString(20);
+	const id1 = weky.getRandomString(20) + "-" + weky.getRandomString(20);
 
-	const id2 = getRandomString(20) + "-" + getRandomString(20);
+	const id2 = weky.getRandomString(20) + "-" + weky.getRandomString(20);
 
-	const id = getContextUserID(context);
-
-	deferContext(context);
+	const id = weky._getContextUserID(context);
 
 	options.embed.description = options.thinkMessage ? options.thinkMessage : "I am thinking...";
-	let embed = createEmbed(options.embed);
+	let embed = weky._createEmbed(options.embed);
 
 	const think = await context.channel.send({
 		embeds: [embed],
@@ -69,7 +55,7 @@ const NeverHaveIEver = async (client: Client, options: NeverHaveIEverTypes, logg
 	);
 
 	if (!statement) {
-		let owner = await client.users.fetch("682983233851228161");
+		let owner = await weky._client.users.fetch("682983233851228161");
 
 		if (owner) {
 			await owner
@@ -99,7 +85,7 @@ const NeverHaveIEver = async (client: Client, options: NeverHaveIEverTypes, logg
 		.setCustomId(id2);
 
 	options.embed.description = statement;
-	embed = createEmbed(options.embed);
+	embed = weky._createEmbed(options.embed);
 
 	await think.edit({
 		embeds: [embed],
@@ -162,7 +148,7 @@ const NeverHaveIEver = async (client: Client, options: NeverHaveIEverTypes, logg
 		}
 	});
 
-	gameCollector.on("end", async (collected, reason) => {
+	gameCollector.on("end", async (_, reason) => {
 		if (reason === "time") {
 			btn = new ButtonBuilder()
 				.setStyle(ButtonStyle.Secondary)

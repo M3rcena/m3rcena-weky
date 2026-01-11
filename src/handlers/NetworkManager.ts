@@ -3,6 +3,8 @@ import { LoggerManager } from "./Logger.js";
 
 import type { BotDataTypes } from "src/Types/index.js";
 
+type MinigameKey = keyof BotDataTypes["usage"]["minigames"];
+
 export class NetworkManager {
 	private baseUrl: string = "http://localhost:8083/api/v1";
 	private client: DiscordJS.Client;
@@ -67,7 +69,7 @@ export class NetworkManager {
 	/**
 	 * Increase usage on specific minigame
 	 */
-	public async increaseUsage(minigame: string): Promise<boolean> {
+	public async increaseUsage(minigame: MinigameKey): Promise<boolean> {
 		try {
 			const res = await this.request<{ success: boolean }>(`/api/v1/increaseUsage`, {
 				method: "POST",
@@ -80,6 +82,23 @@ export class NetworkManager {
 		} catch (error) {
 			this.loggerManager.createError("API", `Failed to increase minigame usage`);
 			return false;
+		}
+	}
+
+	/**
+	 *
+	 * Get a random list of words
+	 *
+	 * @param length How big you want the Random Words Sentence to be
+	 * @returns
+	 */
+	public async getRandomSentence(length: number): Promise<string[]> {
+		try {
+			const res = await this.request<{ word: string[] }>(`/api/v1/getRandomSentence?length=${length}`);
+
+			return res.word;
+		} catch (error) {
+			this.loggerManager.createError("API", `Failed to get a random Sentence`);
 		}
 	}
 

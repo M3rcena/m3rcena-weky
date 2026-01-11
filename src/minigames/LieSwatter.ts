@@ -1,12 +1,8 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, MessageFlags } from "discord.js";
 import { decode } from "html-entities";
 
-import { convertTime, createEmbed, getRandomString } from "../functions/functions.js";
-import { OptionsChecking } from "../functions/OptionChecking.js";
-import { deferContext, getContextUserID } from "../functions/context.js";
-
-import type { LieSwatterTypes } from "../Types/index.js";
-import type { LoggerManager } from "../handlers/Logger.js";
+import type { CustomOptions, LieSwatterTypes } from "../Types/index.js";
+import type { WekyManager } from "../index.js";
 
 interface OpenTDBResponse {
 	response_code: number;
@@ -20,40 +16,30 @@ interface OpenTDBResponse {
 	}[];
 }
 
-const LieSwatter = async (options: LieSwatterTypes, loggerManager: LoggerManager) => {
-	// Check types
-	OptionsChecking(options, "LieSwatter", loggerManager);
-
+const LieSwatter = async (weky: WekyManager, options: CustomOptions<LieSwatterTypes>) => {
 	const context = options.context;
 
-	if (!context) return loggerManager.createError("LieSwatter", "No context provided.");
+	const id = weky._getContextUserID(context);
 
-	if (!context.channel || !context.channel.isSendable() || context.channel.isDMBased())
-		return loggerManager.createError("LieSwatter", "No channel found or the channel is invalid.");
+	const id1 = weky.getRandomString(20) + "-" + weky.getRandomString(20);
 
-	const id = getContextUserID(context);
-
-	deferContext(context);
-
-	const id1 = getRandomString(20) + "-" + getRandomString(20);
-
-	const id2 = getRandomString(20) + "-" + getRandomString(20);
+	const id2 = weky.getRandomString(20) + "-" + weky.getRandomString(20);
 
 	if (!options.winMessage) options.winMessage = "GG, It was a **{{answer}}**. You got it correct in **{{time}}**.";
 
 	if (typeof options.winMessage !== "string") {
-		return loggerManager.createTypeError("LieSwatter", "Win message must be a string.");
+		return weky._LoggerManager.createTypeError("LieSwatter", "Win message must be a string.");
 	}
 
 	if (!options.loseMessage) options.loseMessage = "Better luck next time! It was a **{{answer}}**.";
 
 	if (typeof options.loseMessage !== "string") {
-		return loggerManager.createTypeError("LieSwatter", "Lose message must be a string.");
+		return weky._LoggerManager.createTypeError("LieSwatter", "Lose message must be a string.");
 	}
 
 	if (!options.othersMessage) options.othersMessage = "Only <@{{author}}> can use the buttons!";
 	if (typeof options.othersMessage !== "string") {
-		return loggerManager.createTypeError("LieSwatter", "Others message must be a string.");
+		return weky._LoggerManager.createTypeError("LieSwatter", "Others message must be a string.");
 	}
 
 	if (!options.buttons)
@@ -63,26 +49,26 @@ const LieSwatter = async (options: LieSwatterTypes, loggerManager: LoggerManager
 		};
 
 	if (typeof options.buttons !== "object") {
-		return loggerManager.createTypeError("LieSwatter", "Buttons must be an object.");
+		return weky._LoggerManager.createTypeError("LieSwatter", "Buttons must be an object.");
 	}
 
 	if (!options.buttons.true) options.buttons.true = "Truth";
 	if (typeof options.buttons.true !== "string") {
-		return loggerManager.createTypeError("LieSwatter", "True button text must be a string.");
+		return weky._LoggerManager.createTypeError("LieSwatter", "True button text must be a string.");
 	}
 
 	if (!options.buttons.lie) options.buttons.lie = "Lie";
 	if (typeof options.buttons.lie !== "string") {
-		return loggerManager.createTypeError("LieSwatter", "Lie button text must be a string.");
+		return weky._LoggerManager.createTypeError("LieSwatter", "Lie button text must be a string.");
 	}
 
 	if (!options.thinkMessage) options.thinkMessage = "I am thinking...";
 	if (typeof options.thinkMessage !== "string") {
-		return loggerManager.createTypeError("LieSwatter", "Think message must be a string.");
+		return weky._LoggerManager.createTypeError("LieSwatter", "Think message must be a string.");
 	}
 
 	options.embed.description = options.thinkMessage;
-	let embed = createEmbed(options.embed);
+	let embed = weky._createEmbed(options.embed);
 
 	const msg = await context.channel.send({
 		embeds: [embed],
@@ -109,7 +95,7 @@ const LieSwatter = async (options: LieSwatterTypes, loggerManager: LoggerManager
 	let btn2 = new ButtonBuilder().setCustomId(id2).setLabel(options.buttons.lie).setStyle(ButtonStyle.Primary);
 
 	options.embed.description = decode(question.question);
-	embed = createEmbed(options.embed);
+	embed = weky._createEmbed(options.embed);
 
 	await msg.edit({
 		embeds: [embed],
@@ -155,13 +141,13 @@ const LieSwatter = async (options: LieSwatterTypes, loggerManager: LoggerManager
 
 			embed.setTimestamp(options.embed.timestamp ? new Date() : null);
 
-			const time = convertTime(Date.now() - gameCreatedAt);
+			const time = weky.convertTime(Date.now() - gameCreatedAt);
 
 			options.embed.description = options.winMessage
 				? options.winMessage.replace(`{{answer}}`, decode(answer)).replace(`{{time}}`, time)
 				: `GG, It was a **${decode(answer)}**. You got it correct in **${time}**.`;
 
-			const winEmbed = createEmbed(options.embed).setColor("Green");
+			const winEmbed = weky._createEmbed(options.embed).setColor("Green");
 
 			await msg.edit({
 				embeds: [embed, winEmbed],
@@ -192,7 +178,7 @@ const LieSwatter = async (options: LieSwatterTypes, loggerManager: LoggerManager
 			options.embed.description = options.loseMessage
 				? options.loseMessage.replace("{{answer}}", decode(answer))
 				: `Better luck next time! It was a **${decode(answer)}**.`;
-			const lostEmbed = createEmbed(options.embed).setColor("Red");
+			const lostEmbed = weky._createEmbed(options.embed).setColor("Red");
 
 			await msg.edit({
 				embeds: [embed, lostEmbed],
@@ -201,7 +187,7 @@ const LieSwatter = async (options: LieSwatterTypes, loggerManager: LoggerManager
 		}
 	});
 
-	gameCollector.on("end", async (collected, reason) => {
+	gameCollector.on("end", async (_, reason) => {
 		if (reason === "time") {
 			btn1 = new ButtonBuilder()
 				.setCustomId(id1)
@@ -226,7 +212,7 @@ const LieSwatter = async (options: LieSwatterTypes, loggerManager: LoggerManager
 			options.embed.description = options.loseMessage
 				? options.loseMessage.replace("{{answer}}", decode(answer))
 				: `**You run out of Time**\nBetter luck next time! It was a **${decode(answer)}**.`;
-			const lostEmbed = createEmbed(options.embed).setColor("Red");
+			const lostEmbed = weky._createEmbed(options.embed).setColor("Red");
 
 			await msg.edit({
 				embeds: [embed, lostEmbed],

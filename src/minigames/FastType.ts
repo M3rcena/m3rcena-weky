@@ -8,41 +8,27 @@ import {
 	MessageFlags,
 } from "discord.js";
 
-import { convertTime, createEmbed, getRandomString } from "../functions/functions.js";
-import { OptionsChecking } from "../functions/OptionChecking.js";
-import { deferContext, getContextUserID } from "../functions/context.js";
-
-import type { FastTypeTypes } from "../Types/index.js";
-import type { NetworkManager } from "../handlers/NetworkManager.js";
-import type { LoggerManager } from "../handlers/Logger.js";
+import type { CustomOptions, FastTypeTypes } from "../Types/index.js";
+import type { WekyManager } from "../index.js";
 
 const data = new Set();
 
-const FastType = async (networkManager: NetworkManager, options: FastTypeTypes, loggerManager: LoggerManager) => {
-	OptionsChecking(options, "FastType", loggerManager);
-
+const FastType = async (weky: WekyManager, options: CustomOptions<FastTypeTypes>) => {
 	let context = options.context;
 
-	if (!context.channel || !context.channel.isSendable() || !context.channel.isTextBased()) {
-		loggerManager.createError("FastType", "The Context channel is not Sendable or Text-Based");
-		return;
-	}
-
-	let id = getContextUserID(context);
+	let id = weky._getContextUserID(context);
 
 	if (data.has(id)) return;
 	data.add(id);
 
-	const ids = getRandomString(20) + "-" + getRandomString(20);
-
-	deferContext(context);
+	const ids = weky.getRandomString(20) + "-" + weky.getRandomString(20);
 
 	const sentence = options.sentence
 		? options.sentence
-		: await networkManager.getText(options.difficulty ? options.difficulty.toLowerCase() : "medium");
+		: await weky.NetworkManager.getText(options.difficulty ? options.difficulty.toLowerCase() : "medium");
 
 	if (sentence.includes("Please try again!")) {
-		const embed = createEmbed(options.embed).setDescription(`**${sentence}**`);
+		const embed = weky._createEmbed(options.embed).setDescription(`**${sentence}**`);
 
 		await context.channel.send({
 			embeds: [embed],
@@ -59,14 +45,14 @@ const FastType = async (networkManager: NetworkManager, options: FastTypeTypes, 
 		.setCustomId(ids);
 
 	options.embed.description = options.embed.description
-		? options.embed.description.replace("{{time}}", convertTime(options.time ? options.time : 60000))
-		: `You have **${convertTime(options.time ? options.time : 60000)}** to type the sentence below.`;
+		? options.embed.description.replace("{{time}}", weky.convertTime(options.time ? options.time : 60000))
+		: `You have **${weky.convertTime(options.time ? options.time : 60000)}** to type the sentence below.`;
 
 	if (!options.embed.fields) {
 		options.embed.fields = [{ name: "Sentence:", value: `${sentence}` }];
 	}
 
-	const embed = createEmbed(options.embed);
+	const embed = weky._createEmbed(options.embed);
 
 	const msg = await context.channel.send({
 		embeds: [embed],
@@ -84,10 +70,10 @@ const FastType = async (networkManager: NetworkManager, options: FastTypeTypes, 
 			const minute = (time / 1000 / 60) % 60;
 			const wpm = mes.content.toLowerCase().trim().length / 5 / minute;
 			options.embed.description = options.winMessage
-				? options.winMessage.replace("{{time}}", convertTime(time)).replace("{{wpm}}", wpm.toFixed(2))
-				: `You have typed the sentence correctly in **${convertTime(time)}** with **${wpm.toFixed(2)}** WPM.`;
+				? options.winMessage.replace("{{time}}", weky.convertTime(time)).replace("{{wpm}}", wpm.toFixed(2))
+				: `You have typed the sentence correctly in **${weky.convertTime(time)}** with **${wpm.toFixed(2)}** WPM.`;
 			options.embed.fields = [];
-			const _embed = createEmbed(options.embed).setColor("Green");
+			const _embed = weky._createEmbed(options.embed).setColor("Green");
 
 			embed.setTimestamp(options.embed.timestamp ? new Date() : null);
 
@@ -101,7 +87,7 @@ const FastType = async (networkManager: NetworkManager, options: FastTypeTypes, 
 		} else {
 			options.embed.fields = [];
 			options.embed.title = options.loseMessage ? options.loseMessage : "Better Luck Next Time!";
-			const _embed = createEmbed(options.embed).setColor("Red").setDescription(null);
+			const _embed = weky._createEmbed(options.embed).setColor("Red").setDescription(null);
 
 			collector.stop(mes.author.username);
 			data.delete(id);
@@ -119,7 +105,7 @@ const FastType = async (networkManager: NetworkManager, options: FastTypeTypes, 
 		if (reason === "time") {
 			options.embed.fields = [];
 			options.embed.title = options.loseMessage ? options.loseMessage : "You run out of time!";
-			const _embed = createEmbed(options.embed).setColor("Red").setDescription(null);
+			const _embed = weky._createEmbed(options.embed).setColor("Red").setDescription(null);
 
 			embed.setTimestamp(options.embed.timestamp ? new Date() : null);
 
@@ -150,7 +136,8 @@ const FastType = async (networkManager: NetworkManager, options: FastTypeTypes, 
 
 		embed.setTimestamp(options.embed.timestamp ? new Date() : null);
 
-		const _embed = createEmbed(options.embed)
+		const _embed = weky
+			._createEmbed(options.embed)
 			.setDescription(null)
 			.setTitle("GAME CANCELLED")
 			.setColor("Red")

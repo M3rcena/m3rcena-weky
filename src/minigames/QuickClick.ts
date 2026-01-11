@@ -1,16 +1,7 @@
-import chalk from "chalk";
 import { ActionRowBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle } from "discord.js";
 
-import {
-	checkPackageUpdates,
-	convertTime,
-	createEmbed,
-	getRandomString,
-	shuffleArray,
-} from "../functions/functions.js";
-import { OptionsChecking } from "../functions/OptionChecking.js";
-
-import type { QuickClickTypes } from "../Types/index.js";
+import type { CustomOptions, QuickClickTypes } from "../Types/index.js";
+import type { WekyManager } from "../index.js";
 
 interface GameType {
 	[guildId: string]: boolean | string;
@@ -18,84 +9,66 @@ interface GameType {
 
 const currentGames: GameType = {};
 
-const QuickClick = async (options: QuickClickTypes) => {
-	OptionsChecking(options, "GuessTheNumber");
-
-	let interaction = options.interaction;
-
-	if (!interaction) throw new Error(chalk.red("[@m3rcena/weky] QuickClick Error:") + " No interaction provided.");
-
-	if (!interaction.channel || !interaction.channel.isSendable())
-		throw new Error(chalk.red("[@m3rcena/weky] QuickClick Error:") + " Channel is not available in this interaction.");
-
-	if (!interaction.guild) {
-		throw new Error(chalk.red("[@m3rcena/weky] QuickClick Error:") + " Guild is not available in this interaction.");
-	}
-
-	if (!interaction.channel || !interaction.channel.isSendable()) {
-		throw new Error(chalk.red("[@m3rcena/weky] QuickClick Error:") + " Channel is not available in this interaction.");
-	}
-
-	let id = interaction.user.id;
+// TODO: REMAKE THE GAME USING COMPONENTS V2
+const QuickClick = async (weky: WekyManager, options: CustomOptions<QuickClickTypes>) => {
+	let context = options.context;
 
 	if (!options.time) options.time = 60000;
 	if (options.time < 10000) {
-		throw new Error(
-			chalk.red("[@m3rcena/weky] QuickClick Error:") +
-				" Time argument must be greater than 10 Seconds (in ms i.e. 10000)."
+		return weky._LoggerManager.createError(
+			"QuickClick",
+			"Time argument must be greater than 10 Seconds (in ms i.e. 10000)."
 		);
 	}
 
 	if (!options.waitMessage) options.waitMessage = "The buttons may appear anytime now!";
 	if (typeof options.waitMessage !== "string") {
-		throw new TypeError(chalk.red("[@m3rcena/weky] QuickClick Error:") + " waitMessage must be a string");
+		return weky._LoggerManager.createTypeError("QuickClick", "waitMessage must be a string");
 	}
 
 	if (!options.startMessage)
 		options.startMessage = "First person to press the correct button will win. You have **{{time}}**!";
 	if (typeof options.startMessage !== "string") {
-		throw new TypeError(chalk.red("[@m3rcena/weky] QuickClick Error:") + " startMessage must be a string");
+		return weky._LoggerManager.createTypeError("QuickClick", "startMessage must be a string");
 	}
 
 	if (!options.winMessage) options.winMessage = "GG, <@{{winner}}> pressed the button in **{{time}} seconds**.";
 	if (typeof options.winMessage !== "string") {
-		throw new TypeError(chalk.red("[@m3rcena/weky] QuickClick Error:") + " winMessage must be a string");
+		return weky._LoggerManager.createTypeError("QuickClick", "winMessage must be a string");
 	}
 
 	if (!options.loseMessage) options.loseMessage = "No one pressed the button in time. So, I dropped the game!";
 	if (typeof options.loseMessage !== "string") {
-		throw new TypeError(chalk.red("[@m3rcena/weky] QuickClick Error:") + " loseMessage must be a string");
+		return weky._LoggerManager.createTypeError("QuickClick", "loseMessage must be a string");
 	}
 
 	if (!options.emoji) options.emoji = "👆";
 	if (typeof options.emoji !== "string") {
-		throw new TypeError(chalk.red("[@m3rcena/weky] QuickClick Error:") + " emoji must be a string");
+		return weky._LoggerManager.createTypeError("QuickClick", "emoji must be a string");
 	}
 
 	if (!options.ongoingMessage)
 		options.ongoingMessage = "A game is already runnning in <#{{channel}}>. You can't start a new one!";
 	if (typeof options.ongoingMessage !== "string") {
-		throw new TypeError(chalk.red("[@m3rcena/weky] QuickClick Error:") + " ongoingMessage must be a string");
+		return weky._LoggerManager.createTypeError("QuickClick", "ongoingMessage must be a string");
 	}
 
-	if (currentGames[interaction.guild.id]) {
+	if (currentGames[context.guild.id]) {
 		options.embed.description = options.ongoingMessage
-			? options.ongoingMessage.replace("{{channel}}", `${currentGames[`${interaction.guild.id}_channel`]}`)
-			: `A game is already runnning in <#${
-					currentGames[`${interaction.guild.id}_channel`]
-			  }>. You can\'t start a new one!`;
-		let embed = createEmbed(options.embed);
+			? options.ongoingMessage.replace("{{channel}}", `${currentGames[`${context.guild.id}_channel`]}`)
+			: `A game is already runnning in <#${currentGames[`${context.guild.id}_channel`]}>. You can\'t start a new one!`;
+		let embed = weky._createEmbed(options.embed);
 
-		return interaction.reply({ embeds: [embed] });
+		return context.channel.send({ embeds: [embed] });
 	}
 
 	options.embed.description = options.waitMessage ? options.waitMessage : "The buttons may appear anytime now!";
-	let embed = createEmbed(options.embed);
+	let embed = weky._createEmbed(options.embed);
 
-	const msg = await interaction.reply({ embeds: [embed] });
+	const msg = await context.channel.send({ embeds: [embed] });
 
-	currentGames[interaction.guild.id] = true;
-	currentGames[`${interaction.guild.id}_channel`] = interaction.channel.id;
+	currentGames[context.guild.id] = true;
+	currentGames[`${context.guild.id}_channel`] = context.channel.id;
 
 	setTimeout(async function () {
 		const rows: ActionRowBuilder<ButtonBuilder>[] = [];
@@ -108,7 +81,7 @@ const QuickClick = async (options: QuickClickTypes) => {
 					.setDisabled()
 					.setLabel("\u200b")
 					.setStyle(ButtonStyle.Primary)
-					.setCustomId(getRandomString(20))
+					.setCustomId(weky.getRandomString(20))
 			);
 		}
 
@@ -119,7 +92,7 @@ const QuickClick = async (options: QuickClickTypes) => {
 				.setCustomId("weky_correct")
 		);
 
-		shuffleArray(buttons);
+		weky.shuffleArray(buttons);
 
 		for (let i = 0; i < 5; i++) {
 			rows.push(new ActionRowBuilder<ButtonBuilder>());
@@ -130,11 +103,11 @@ const QuickClick = async (options: QuickClickTypes) => {
 		});
 
 		options.embed.description = options.startMessage
-			? options.startMessage.replace("{{time}}", convertTime(options.time ? options.time : 60000))
-			: `First person to press the correct button will win. You have **${convertTime(
+			? options.startMessage.replace("{{time}}", weky.convertTime(options.time ? options.time : 60000))
+			: `First person to press the correct button will win. You have **${weky.convertTime(
 					options.time ? options.time : 60000
 			  )}**!`;
-		let _embed = createEmbed(options.embed);
+		let _embed = weky._createEmbed(options.embed);
 
 		await msg.edit({
 			embeds: [_embed],
@@ -147,11 +120,6 @@ const QuickClick = async (options: QuickClickTypes) => {
 		});
 
 		Collector.on("collect", async (button: ButtonInteraction) => {
-			if (!interaction.guild) {
-				throw new Error(
-					chalk.red("[@m3rcena/weky] QuickClick Error:") + " Guild is not available in this interaction."
-				);
-			}
 			if (button.customId === "weky_correct") {
 				await button.deferUpdate();
 				Collector.stop();
@@ -172,14 +140,14 @@ const QuickClick = async (options: QuickClickTypes) => {
 							.replace("{{winner}}", button.user.id)
 							.replace("{{time}}", `${(Date.now() - gameCreatedAt) / 1000}`)
 					: `GG, <@${button.user.id}> pressed the button in **${(Date.now() - gameCreatedAt) / 1000} seconds**.`;
-				let __embed = createEmbed(options.embed);
+				let __embed = weky._createEmbed(options.embed);
 
 				await msg.edit({
 					embeds: [__embed],
 					components: rows,
 				});
 			}
-			return delete currentGames[interaction.guild.id];
+			return delete currentGames[context.guild.id];
 		});
 
 		Collector.on("end", async (_msg, reason) => {
@@ -200,23 +168,17 @@ const QuickClick = async (options: QuickClickTypes) => {
 				options.embed.description = options.loseMessage
 					? options.loseMessage
 					: "No one pressed the button in time. So, I dropped the game!";
-				let __embed = createEmbed(options.embed);
+				let __embed = weky._createEmbed(options.embed);
 
 				await msg.edit({
 					embeds: [__embed],
 					components: rows,
 				});
 
-				if (!interaction.guild) {
-					return;
-				}
-
-				return delete currentGames[interaction.guild.id];
+				return delete currentGames[context.guild.id];
 			}
 		});
 	}, Math.floor(Math.random() * 5000) + 1000);
-
-	checkPackageUpdates("QuickClick", options.notifyUpdate);
 };
 
 export default QuickClick;

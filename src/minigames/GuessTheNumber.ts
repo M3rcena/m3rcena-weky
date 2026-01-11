@@ -1,46 +1,29 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, MessageFlags } from "discord.js";
 
-import { convertTime, createEmbed, getRandomString } from "../functions/functions.js";
-import { OptionsChecking } from "../functions/OptionChecking.js";
-import { deferContext, getContextUserID } from "../functions/context.js";
-
-import type { GuessTheNumberTypes } from "../Types/index.js";
-import type { LoggerManager } from "../handlers/Logger.js";
+import type { CustomOptions, GuessTheNumberTypes } from "../Types/index.js";
+import type { WekyManager } from "../index.js";
 
 const data = new Set();
 const currentGames: any = new Object();
 
-const GuessTheNumber = async (options: GuessTheNumberTypes, loggerManager: LoggerManager) => {
-	OptionsChecking(options, "GuessTheNumber", loggerManager);
-
+const GuessTheNumber = async (weky: WekyManager, options: CustomOptions<GuessTheNumberTypes>) => {
 	let context = options.context;
 
-	let id = getContextUserID(context);
+	let id = weky._getContextUserID(context);
 
-	deferContext(context);
-
-	if (!context.guild) {
-		return loggerManager.createError("GuessTheNumber", "Context must be in Guild");
-	}
-
-	if (!context.channel || !context.channel.isSendable() || context.channel.isDMBased()) {
-		return loggerManager.createError(
-			"GuessTheNumber",
-			"Channel is not available in this context or cannot send message."
-		);
-	}
+	weky._deferContext(context);
 
 	if (!options.ongoingMessage) {
 		options.ongoingMessage = "A game is already running in <#{{channel}}>. Try again later!";
 	}
 	if (typeof options.ongoingMessage !== "string") {
-		return loggerManager.createTypeError("GuessTheNumber", "ongoingMessage must be a string.");
+		return weky._LoggerManager.createTypeError("GuessTheNumber", "ongoingMessage must be a string.");
 	}
 
 	if (!options.winMessage) options.winMessage = {};
 	let winMessage = options.winMessage;
 	if (typeof winMessage !== "object") {
-		return loggerManager.createTypeError("GuessTheNumber", "winMessage must be an object.");
+		return weky._LoggerManager.createTypeError("GuessTheNumber", "winMessage must be an object.");
 	}
 
 	let winMessagePublicGame: string;
@@ -51,7 +34,7 @@ const GuessTheNumber = async (options: GuessTheNumberTypes, loggerManager: Logge
 		winMessagePublicGame = options.winMessage.publicGame;
 	}
 	if (typeof winMessagePublicGame !== "string") {
-		return loggerManager.createTypeError("GuessTheNumber", "winMessage.publicGame must be a string.");
+		return weky._LoggerManager.createTypeError("GuessTheNumber", "winMessage.publicGame must be a string.");
 	}
 
 	let winMessagePrivateGame: string;
@@ -61,10 +44,10 @@ const GuessTheNumber = async (options: GuessTheNumberTypes, loggerManager: Logge
 		winMessagePrivateGame = options.winMessage.privateGame;
 	}
 	if (typeof winMessagePrivateGame !== "string") {
-		return loggerManager.createTypeError("GuessTheNumber", "winMessage.privateGame must be a string.");
+		return weky._LoggerManager.createTypeError("GuessTheNumber", "winMessage.privateGame must be a string.");
 	}
 
-	const ids = getRandomString(20) + "-" + getRandomString(20);
+	const ids = weky.getRandomString(20) + "-" + weky.getRandomString(20);
 
 	let number: number;
 	if (!options.number) {
@@ -77,7 +60,7 @@ const GuessTheNumber = async (options: GuessTheNumberTypes, loggerManager: Logge
 	let max: number = number * (Math.floor(Math.random() * 100) + 1) * 13;
 
 	if (typeof number !== "number") {
-		return loggerManager.createTypeError("GuessTheNumber", "Number must be a number.");
+		return weky._LoggerManager.createTypeError("GuessTheNumber", "Number must be a number.");
 	}
 
 	const handleGame = async (isPublic: boolean) => {
@@ -92,7 +75,7 @@ const GuessTheNumber = async (options: GuessTheNumberTypes, loggerManager: Logge
 			if (context.channel.isDMBased()) return;
 
 			return await context.channel.send({
-				embeds: [createEmbed(options.embed)],
+				embeds: [weky._createEmbed(options.embed)],
 			});
 		}
 
@@ -100,13 +83,13 @@ const GuessTheNumber = async (options: GuessTheNumberTypes, loggerManager: Logge
 		if (!isPublic) data.add(id);
 
 		options.embed.description = options.embed.description
-			? options.embed.description.replace(/{{time}}/g, convertTime(options.time ? options.time : 60000))
+			? options.embed.description.replace(/{{time}}/g, weky.convertTime(options.time ? options.time : 60000))
 			: "You have **{{time}}** to guess the number.".replace(
 					/{{time}}/g,
-					convertTime(options.time ? options.time : 60000)
+					weky.convertTime(options.time ? options.time : 60000)
 			  );
 
-		const embed = createEmbed(options.embed);
+		const embed = weky._createEmbed(options.embed);
 		const btn1 = new ButtonBuilder()
 			.setStyle(ButtonStyle.Danger)
 			.setLabel(options.button ? options.button : "Cancel")
@@ -147,7 +130,7 @@ const GuessTheNumber = async (options: GuessTheNumberTypes, loggerManager: Logge
 			await _msg.delete();
 
 			if (parsedNumber === number) {
-				const time = convertTime(Date.now() - gameCreatedAt);
+				const time = weky.convertTime(Date.now() - gameCreatedAt);
 				options.embed.description = isPublic
 					? winMessagePublicGame
 							.replace(/{{number}}/g, number.toString())
@@ -157,7 +140,7 @@ const GuessTheNumber = async (options: GuessTheNumberTypes, loggerManager: Logge
 							.replace(/{{participants}}/g, participants.map((p) => "<@" + p + ">").join(", "))
 					: winMessagePrivateGame.replace(/{{time}}/g, time).replace(/{{number}}/g, `${number}`);
 
-				let _embed = createEmbed(options.embed);
+				let _embed = weky._createEmbed(options.embed);
 
 				await msg.edit({
 					embeds: [_embed],
@@ -169,8 +152,8 @@ const GuessTheNumber = async (options: GuessTheNumberTypes, loggerManager: Logge
 			}
 
 			const compareResponse = (comparison: "bigger" | "smaller", guessed: number) => {
-				options.embed.description = options[comparison === "bigger" ? "bigNumber" : "smallNumber"]
-					? options[comparison === "bigger" ? "bigNumber" : "smallNumber"]
+				options.embed.description = options[comparison === "bigger" ? "biggerNumberMessage" : "smallerNumberMeesage"]
+					? options[comparison === "bigger" ? "biggerNumberMessage" : "smallerNumberMeesage"]
 							.replace(/{{author}}/g, _msg.author.toString())
 							.replace(/{{number}}/g, `${parsedNumber}`)
 					: `The number is ${comparison} than **${parsedNumber}**!`;
@@ -184,7 +167,8 @@ const GuessTheNumber = async (options: GuessTheNumberTypes, loggerManager: Logge
 				return msg.edit({
 					embeds: [
 						embed.setTimestamp(),
-						createEmbed(options.embed)
+						weky
+							._createEmbed(options.embed)
 							.setFields([
 								{
 									name: "Number is above:",
@@ -230,7 +214,7 @@ const GuessTheNumber = async (options: GuessTheNumberTypes, loggerManager: Logge
 				options.embed.description = options.loseMessage
 					? options.loseMessage.replace(/{{number/g, `${number}`)
 					: `The number was **${number}**!`;
-				let _embed = createEmbed(options.embed);
+				let _embed = weky._createEmbed(options.embed);
 
 				msg.edit({ embeds: [_embed] });
 			}
@@ -241,7 +225,7 @@ const GuessTheNumber = async (options: GuessTheNumberTypes, loggerManager: Logge
 				options.embed.description = options.loseMessage
 					? options.loseMessage.replace(/{{number}}/g, `${number}`)
 					: `The number was **${number}**!`;
-				let _embed = createEmbed(options.embed);
+				let _embed = weky._createEmbed(options.embed);
 
 				await msg.edit({
 					embeds: [_embed],

@@ -1,43 +1,29 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle, ComponentType } from "discord.js";
 
-import { convertTime, createEmbed, getRandomSentence, getRandomString } from "../functions/functions.js";
-import { OptionsChecking } from "../functions/OptionChecking.js";
-import { deferContext, getContextUserID } from "../functions/context.js";
-
-import type { ChaosTypes, Fields } from "../Types/index.js";
-import type { LoggerManager } from "../handlers/Logger.js";
+import type { ChaosTypes, CustomOptions, Fields } from "../Types/index.js";
+import type { WekyManager } from "../index.js";
 
 const data = new Set();
 
-const ChaosWords = async (options: ChaosTypes, loggerManager: LoggerManager) => {
-	// Check types
-	OptionsChecking(options, "ChaosWords", loggerManager);
-
+const ChaosWords = async (weky: WekyManager, options: CustomOptions<ChaosTypes>) => {
 	let context = options.context;
 
-	if (!context.channel) {
-		loggerManager.createError("ChaosWords", "No channel found on Context");
-		return;
-	}
-
-	if (!context.channel.isSendable()) {
-		loggerManager.createError("ChaosWords", "Channel is not Sendable");
-		return;
-	}
-
-	let id = getContextUserID(context);
+	let id = weky._getContextUserID(context);
 
 	if (data.has(id)) return;
 	data.add(id);
 
-	const ids = getRandomString(20) + "-" + getRandomString(20);
+	const ids = weky.getRandomString(20) + "-" + weky.getRandomString(20);
 
 	let tries = 0;
 	const array: string[] = [];
 	let remaining = 0;
 	const guessed: string[] = [];
 
-	let words = options.words ? options.words : getRandomSentence(Math.floor(Math.random() * 6) + 2);
+	let words = options.words
+		? options.words
+		: await weky.NetworkManager.getRandomSentence(Math.floor(Math.random() * 6) + 2);
+
 	let charGenerated = options.charGenerated
 		? options.charGenerated
 		: options.words
@@ -77,11 +63,15 @@ const ChaosWords = async (options: ChaosTypes, loggerManager: LoggerManager) => 
 		];
 	}
 
-	let embed = createEmbed(options.embed).setDescription(
-		options.embed.description
-			? options.embed.description.replace("{{time}}", convertTime(options.time ? options.time : 60000))
-			: `You have **${convertTime(options.time ? options.time : 60000)}** to find the correct words in the chaos above.`
-	);
+	let embed = weky
+		._createEmbed(options.embed)
+		.setDescription(
+			options.embed.description
+				? options.embed.description.replace("{{time}}", weky.convertTime(options.time ? options.time : 60000))
+				: `You have **${weky.convertTime(
+						options.time ? options.time : 60000
+				  )}** to find the correct words in the chaos above.`
+		);
 
 	if (!options.embed.fields) {
 		fields = [
@@ -120,8 +110,6 @@ const ChaosWords = async (options: ChaosTypes, loggerManager: LoggerManager) => 
 		.setLabel(options.buttonText ? options.buttonText : "Cancel")
 		.setCustomId(ids);
 
-	deferContext(context);
-
 	const originalSentence = array;
 
 	const msg = await context.channel.send({
@@ -146,13 +134,15 @@ const ChaosWords = async (options: ChaosTypes, loggerManager: LoggerManager) => 
 			remaining++;
 			array.splice(array.indexOf(mes.content.toLowerCase()), 1);
 			guessed.push(mes.content.toLowerCase());
-			let _embed = createEmbed(options.embed).setDescription(
-				options.embed.description
-					? options.embed.description.replace("{{time}}", convertTime(options.time ? options.time : 60000))
-					: `You have **${convertTime(
-							options.time ? options.time : 60000
-					  )}** to find the correct words in the chaos above.`
-			);
+			let _embed = weky
+				._createEmbed(options.embed)
+				.setDescription(
+					options.embed.description
+						? options.embed.description.replace("{{time}}", weky.convertTime(options.time ? options.time : 60000))
+						: `You have **${weky.convertTime(
+								options.time ? options.time : 60000
+						  )}** to find the correct words in the chaos above.`
+				);
 
 			if (!options.embed.fields) {
 				fields = [
@@ -191,7 +181,7 @@ const ChaosWords = async (options: ChaosTypes, loggerManager: LoggerManager) => 
 				.setLabel(options.buttonText ? options.buttonText : "Cancel")
 				.setCustomId(ids);
 
-			const correctEmbed = createEmbed(options.embed, true).setColor(`Green`).setDescription(`
+			const correctEmbed = weky._createEmbed(options.embed, true).setColor(`Green`).setDescription(`
 										${
 											options.correctWord
 												? options.correctWord
@@ -221,8 +211,9 @@ const ChaosWords = async (options: ChaosTypes, loggerManager: LoggerManager) => 
 					components: [new ActionRowBuilder<ButtonBuilder>().addComponents(btn1)],
 				});
 
-				const time = convertTime(Date.now() - gameCreatedAt);
-				let __embed = createEmbed(options.embed)
+				const time = weky.convertTime(Date.now() - gameCreatedAt);
+				let __embed = weky
+					._createEmbed(options.embed)
 					.setColor("Green")
 					.setDescription(
 						options.winMessage ? options.winMessage.replace("{{time}}", time) : `You found all the words in **${time}**`
@@ -265,7 +256,8 @@ const ChaosWords = async (options: ChaosTypes, loggerManager: LoggerManager) => 
 		} else {
 			tries++;
 			if (tries === (options.maxTries ? options.maxTries : 10)) {
-				const _embed = createEmbed(options.embed)
+				const _embed = weky
+					._createEmbed(options.embed)
 					.setDescription(
 						options.loseMessage
 							? options.loseMessage
@@ -306,13 +298,15 @@ const ChaosWords = async (options: ChaosTypes, loggerManager: LoggerManager) => 
 				return game.stop("Too many Tries");
 			}
 
-			let _embed = createEmbed(options.embed).setDescription(
-				options.embed.description
-					? options.embed.description.replace("{{time}}", convertTime(options.time ? options.time : 60000))
-					: `You have **${convertTime(
-							options.time ? options.time : 60000
-					  )}** to find the correct words in the chaos above.`
-			);
+			let _embed = weky
+				._createEmbed(options.embed)
+				.setDescription(
+					options.embed.description
+						? options.embed.description.replace("{{time}}", weky.convertTime(options.time ? options.time : 60000))
+						: `You have **${weky.convertTime(
+								options.time ? options.time : 60000
+						  )}** to find the correct words in the chaos above.`
+				);
 
 			if (!options.embed.fields) {
 				fields = [
@@ -351,18 +345,18 @@ const ChaosWords = async (options: ChaosTypes, loggerManager: LoggerManager) => 
 				.setLabel(options.buttonText ? options.buttonText : "Cancel")
 				.setCustomId(ids);
 
-			const wrongEmbed = createEmbed(options.embed, true).setColor("Red").setDescription(`
-                    ${
-											options.wrongWord
-												? options.wrongWord.replace(
-														`{{remaining_tries}}`,
-														`${options.maxTries ? options.maxTries : 10 - tries}`
-												  )
-												: `**${mes.content.toLowerCase()}** is not the correct word. You have **${
-														options.maxTries ? options.maxTries : 10 - tries
-												  }** tries left.`
-										}
-                    `);
+			const wrongEmbed = weky
+				._createEmbed(options.embed, true)
+				.setColor("Red")
+				.setDescription(
+					`${
+						options.wrongWord
+							? options.wrongWord.replace(`{{remaining_tries}}`, `${options.maxTries ? options.maxTries : 10 - tries}`)
+							: `**${mes.content.toLowerCase()}** is not the correct word. You have **${
+									options.maxTries ? options.maxTries : 10 - tries
+							  }** tries left.`
+					}`
+				);
 
 			msg.edit({
 				embeds: [_embed, wrongEmbed],
@@ -373,9 +367,10 @@ const ChaosWords = async (options: ChaosTypes, loggerManager: LoggerManager) => 
 		}
 	});
 
-	game.on("end", (mes, reason: string) => {
+	game.on("end", (_, reason: string) => {
 		if (reason === "time") {
-			const _embed = createEmbed(options.embed)
+			const _embed = weky
+				._createEmbed(options.embed)
 				.setColor("Red")
 				.setDescription(options.loseMessage ? options.loseMessage : `You failed to find all the words in time.`);
 
@@ -400,7 +395,7 @@ const ChaosWords = async (options: ChaosTypes, loggerManager: LoggerManager) => 
 				];
 
 				let _fields: Fields[] = [];
-				fields.map((field, index) => {
+				fields.map((field) => {
 					_fields.push({
 						name: `${field.name}`,
 						value: `${field.value}`,
@@ -463,7 +458,8 @@ const ChaosWords = async (options: ChaosTypes, loggerManager: LoggerManager) => 
 			embed.setFields(_fields);
 		}
 
-		const stoppedEmbed = createEmbed(options.embed, true)
+		const stoppedEmbed = weky
+			._createEmbed(options.embed, true)
 			.setColor("Red")
 			.setDescription(options.loseMessage ? options.loseMessage : `The game has been stopped by <@${id}>`);
 

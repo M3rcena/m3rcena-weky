@@ -10,19 +10,20 @@ import {
 	TextInputBuilder,
 	TextInputStyle,
 } from "discord.js";
-import { evaluate } from "mathjs";
+import { evaluate, format } from "mathjs";
 
-import { createButton, createDisabledButton } from "../functions/functions.js";
-import { OptionsChecking } from "../functions/OptionChecking.js";
-import { deferContext, getContextUserID } from "../functions/context.js";
+import type { CalcTypes, CustomOptions } from "../Types/index.js";
+import type { WekyManager } from "../index.js";
+import type { Matrix, Unit, Complex, BigNumber } from "mathjs";
 
-import type { CalcTypes } from "../Types/index.js";
-import type { Client } from "discord.js";
-import type { LoggerManager } from "../handlers/Logger.js";
+type MathJsResult = number | string | Complex | BigNumber | Unit | Matrix | boolean;
 
-const Calculator = async (client: Client, options: CalcTypes, loggerManager: LoggerManager) => {
-	OptionsChecking(options, "Calculator", loggerManager);
+interface CalculationResult {
+	result: MathJsResult | null;
+	error: string | null;
+}
 
+const Calculator = async (weky: WekyManager, options: CustomOptions<CalcTypes>) => {
 	let context = options.context;
 
 	let str = " ";
@@ -78,20 +79,20 @@ const Calculator = async (client: Client, options: CalcTypes, loggerManager: Log
 			const modalHandler = async (modal: ModalSubmitInteraction) => {
 				if (!modal.isModalSubmit() || modal.customId !== `md${modalId}`) return;
 
-				client.off("interactionCreate", modalHandler);
+				weky._client.off("interactionCreate", modalHandler);
 				await modal.deferUpdate();
 				resolve(modal.fields.getTextInputValue(`number${modalId}`));
 			};
 
-			client.on("interactionCreate", modalHandler);
-			setTimeout(() => client.off("interactionCreate", modalHandler), 300000);
+			weky._client.on("interactionCreate", modalHandler);
+			setTimeout(() => weky._client.off("interactionCreate", modalHandler), 300000);
 		});
 	};
 
 	// Process calculations using mathjs
-	const handleCalculation = (input: string) => {
+	const handleCalculation = (input: string): CalculationResult => {
 		try {
-			const result = evaluate(input);
+			const result = evaluate(input) as MathJsResult;
 
 			// Handle special cases
 			if (typeof result === "number") {
@@ -119,13 +120,6 @@ const Calculator = async (client: Client, options: CalcTypes, loggerManager: Log
 		}
 	};
 
-	// Set up calculator display using Components V2
-	if (!context.channel || !context.channel.isTextBased() || !context.channel.isSendable()) {
-		loggerManager.createError("Calculator", "Context must be in a Text-Based Channel and Sendable");
-
-		return;
-	}
-
 	const channel = context.channel;
 
 	// Create Components V2 structure
@@ -138,7 +132,7 @@ const Calculator = async (client: Client, options: CalcTypes, loggerManager: Log
 		for (let i = 0; i < text.length; i += 5) {
 			const rowButtons = text
 				.slice(i, i + 5)
-				.map((text) => (buttonsEnabled ? createButton(text, false) : createDisabledButton(text, lock)));
+				.map((text) => (buttonsEnabled ? weky._createButton(text, false) : weky._createDisabledButton(text, lock)));
 			container.addActionRowComponents((actionRow) => actionRow.setComponents(...rowButtons));
 		}
 
@@ -154,14 +148,12 @@ const Calculator = async (client: Client, options: CalcTypes, loggerManager: Log
 		for (let i = 0; i < text2.length; i += 5) {
 			const rowButtons = text2
 				.slice(i, i + 5)
-				.map((text) => (buttonsEnabled ? createButton(text, false) : createDisabledButton(text, lock)));
+				.map((text) => (buttonsEnabled ? weky._createButton(text, false) : weky._createDisabledButton(text, lock)));
 			container.addActionRowComponents((actionRow) => actionRow.setComponents(...rowButtons));
 		}
 
 		return container;
 	};
-
-	deferContext(context);
 
 	const msg = await context.channel.send({
 		components: [createCalculatorContainer(stringify, true, false)],
@@ -208,7 +200,7 @@ const Calculator = async (client: Client, options: CalcTypes, loggerManager: Log
 		}
 	}
 
-	let id = getContextUserID(context);
+	let id = weky._getContextUserID(context);
 
 	const calc = channel.createMessageComponentCollector({
 		componentType: ComponentType.Button,
@@ -298,7 +290,7 @@ const Calculator = async (client: Client, options: CalcTypes, loggerManager: Log
 
 				const { result, error } = handleCalculation(str);
 				if (result !== null) {
-					answer = result;
+					answer = format(result, { precision: 14 });
 					str += " = " + result;
 				} else {
 					str = error;

@@ -47,7 +47,10 @@
   },
   "devDependencies": {
     "@types/node-fetch": "^2.6.13",
+    "@typescript-eslint/eslint-plugin": "^8.52.0",
+    "@typescript-eslint/parser": "^8.52.0",
     "copyfiles": "^2.4.1",
+    "eslint-plugin-unused-imports": "^4.3.0",
     "nodemon": "^3.1.11",
     "tsc-alias": "^1.8.16",
     "typescript": "^5.9.3"

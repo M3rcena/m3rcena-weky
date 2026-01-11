@@ -1,8 +1,13 @@
 import DiscordJS from "discord.js";
+import { promisify } from "util";
+import chalk from "chalk";
+import { exec } from "child_process";
+import stringWidth from "string-width";
+import { randomBytes } from "crypto";
 
 import { NetworkManager } from "./handlers/NetworkManager.js";
 import { LoggerManager } from "./handlers/Logger.js";
-import { checkPackageUpdates } from "./functions/functions.js";
+import weky_package from "../package.json";
 
 /**
  *
@@ -42,27 +47,83 @@ import type {
 	SnakeTypes,
 	GuessThePokemonTypes,
 	BotDataTypes,
+	Fields,
+	Author,
+	Embeds,
+	CustomOptions,
 } from "./Types/index.js";
 
+/**
+ *
+ * CONSTANT VARIABLES USED IN THE HELPERS / FUNCTIONS
+ *
+ */
+const DANGER_KEYS = new Set(["AC", "DC", "⌫"]);
+const SUCCESS_KEYS = new Set([" = "]);
+const PRIMARY_KEYS = new Set([
+	"(",
+	")",
+	"^",
+	"%",
+	"÷",
+	"x",
+	" - ",
+	" + ",
+	".",
+	"RND",
+	"SIN",
+	"COS",
+	"TAN",
+	"LG",
+	"LN",
+	"SQRT",
+	"x!",
+	"1/x",
+	"π",
+	"e",
+	"ans",
+]);
+const DISABLED_ON_LOCK = new Set(["^", "%", "÷", "AC", "⌫", "x!", "x", "1/x"]);
+const defaultFooter = {
+	text: "©️ M3rcena Development | Powered by Mivator",
+	iconURL: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/refs/heads/main/assets/logo.png",
+};
+
 export class WekyManager {
-	private client: DiscordJS.Client;
+	/**
+	 *
+	 * @internal
+	 * This is for internal use by minigames only. Do not use this manually.
+	 *
+	 */
+	public _client: DiscordJS.Client;
+
 	private notifyUpdates: boolean;
 	private isInitilized: boolean = false;
 	private apiKey: string;
 
+	private URL_PATTERN = /^https:\/\/([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(:[0-9]+)?(\/.*)?$/;
+
 	public NetworkManager: NetworkManager;
-	private LoggerManager: LoggerManager;
+
+	/**
+	 *
+	 * @internal
+	 * This is for internal use by minigames only. Do not use this manually.
+	 *
+	 */
+	public _LoggerManager: LoggerManager;
 
 	constructor(client: DiscordJS.Client, apiKey: string, notifyUpdates: boolean) {
 		// TODO: Enable again after finishing testing
 		// if (!(client instanceof DiscordJS.Client))
 		// 	throw new TypeError(`${chalk.red("[WekyManager]")} Invalid DiscordJS Client.`);
-		this.client = client;
+		this._client = client;
 		this.notifyUpdates = notifyUpdates;
 		this.apiKey = apiKey;
 
-		this.LoggerManager = new LoggerManager();
-		this.NetworkManager = new NetworkManager(client, this.LoggerManager, this.apiKey);
+		this._LoggerManager = new LoggerManager();
+		this.NetworkManager = new NetworkManager(this._client, this._LoggerManager, this.apiKey);
 	}
 
 	/**
@@ -87,8 +148,10 @@ export class WekyManager {
 	 * @copyright All rights reserved. M3rcena Development
 	 */
 	async create2048(options: Types2048) {
-		checkPackageUpdates("2048", this.notifyUpdates);
-		return await mini2048(this.NetworkManager, options, this.LoggerManager);
+		this.checkPackageUpdates("2048");
+		this.OptionsChecking(options, "2048");
+
+		return await mini2048(this, options as CustomOptions<Types2048>);
 	}
 
 	/**
@@ -114,8 +177,10 @@ export class WekyManager {
 	 */
 	async createCalculator(options: CalcTypes) {
 		this.NetworkManager.increaseUsage("calculator");
-		checkPackageUpdates("Calculator", this.notifyUpdates);
-		return await Calculator(this.client, options, this.LoggerManager);
+		this.checkPackageUpdates("Calculator");
+		this.OptionsChecking(options, "Calculator");
+
+		return await Calculator(this, options as CustomOptions<CalcTypes>);
 	}
 
 	/**
@@ -141,8 +206,10 @@ export class WekyManager {
 	 */
 	async createChaosWords(options: ChaosTypes) {
 		this.NetworkManager.increaseUsage("chaosWords");
-		checkPackageUpdates("ChaosWords", this.notifyUpdates);
-		return await ChaosWords(options, this.LoggerManager);
+		this.checkPackageUpdates("ChaosWords");
+		this.OptionsChecking(options, "ChaosWords");
+
+		return await ChaosWords(this, options as CustomOptions<ChaosTypes>);
 	}
 
 	/**
@@ -167,8 +234,10 @@ export class WekyManager {
 	 * @copyright All rights reserved. M3rcena Development
 	 */
 	async createFastType(options: FastTypeTypes) {
-		checkPackageUpdates("FastType", this.notifyUpdates);
-		return await FastType(this.NetworkManager, options, this.LoggerManager);
+		this.checkPackageUpdates("FastType");
+		this.OptionsChecking(options, "FastType");
+
+		return await FastType(this, options as CustomOptions<FastTypeTypes>);
 	}
 
 	/**
@@ -193,8 +262,10 @@ export class WekyManager {
 	 * @copyright All rights reserved. M3rcena Development
 	 */
 	async createFight(options: FightTypes) {
-		checkPackageUpdates("Fight", this.notifyUpdates);
-		return await Fight(this.NetworkManager, options, this.LoggerManager);
+		this.checkPackageUpdates("Fight");
+		this.OptionsChecking(options, "Fight");
+
+		return await Fight(this, options as CustomOptions<FightTypes>);
 	}
 
 	/**
@@ -220,8 +291,10 @@ export class WekyManager {
 	 */
 	async createGuessTheNumber(options: GuessTheNumberTypes) {
 		this.NetworkManager.increaseUsage("guessTheNumber");
-		checkPackageUpdates("GuessTheNumber", this.notifyUpdates);
-		return await GuessTheNumber(options, this.LoggerManager);
+		this.checkPackageUpdates("GuessTheNumber");
+		this.OptionsChecking(options, "GuessTheNumber");
+
+		return await GuessTheNumber(this, options as CustomOptions<GuessTheNumberTypes>);
 	}
 
 	/**
@@ -247,8 +320,10 @@ export class WekyManager {
 	 */
 	async createGuessThePokemon(options: GuessThePokemonTypes) {
 		this.NetworkManager.increaseUsage("guessThePokemon");
-		checkPackageUpdates("GuessThePokemon", this.notifyUpdates);
-		return await GuessThePokemon(options, this.LoggerManager);
+		this.checkPackageUpdates("GuessThePokemon");
+		this.OptionsChecking(options, "GuessThePokemon");
+
+		return await GuessThePokemon(this, options as CustomOptions<GuessThePokemonTypes>);
 	}
 
 	/**
@@ -273,8 +348,10 @@ export class WekyManager {
 	 * @copyright All rights reserved. M3rcena Development
 	 */
 	async createHangman(options: HangmanTypes) {
-		checkPackageUpdates("Hangman", this.notifyUpdates);
-		return await Hangman(this.NetworkManager, options, this.LoggerManager);
+		this.checkPackageUpdates("Hangman");
+		this.OptionsChecking(options, "Hangman");
+
+		return await Hangman(this, options as CustomOptions<HangmanTypes>);
 	}
 
 	/**
@@ -300,8 +377,10 @@ export class WekyManager {
 	 */
 	async createLieSwatter(options: LieSwatterTypes) {
 		this.NetworkManager.increaseUsage("lieSwatter");
-		checkPackageUpdates("LieSwatter", this.notifyUpdates);
-		return await LieSwatter(options, this.LoggerManager);
+		this.checkPackageUpdates("LieSwatter");
+		this.OptionsChecking(options, "LieSwatter");
+
+		return await LieSwatter(this, options as CustomOptions<LieSwatterTypes>);
 	}
 
 	/**
@@ -327,8 +406,10 @@ export class WekyManager {
 	 */
 	async createNeverHaveIEver(options: NeverHaveIEverTypes) {
 		this.NetworkManager.increaseUsage("neverHaveIEver");
-		checkPackageUpdates("NeverHaveIEver", this.notifyUpdates);
-		return await NeverHaveIEver(this.client, options, this.LoggerManager);
+		this.checkPackageUpdates("NeverHaveIEver");
+		this.OptionsChecking(options, "NeverHaveIEver");
+
+		return await NeverHaveIEver(this, options as CustomOptions<NeverHaveIEverTypes>);
 	}
 
 	/**
@@ -353,8 +434,11 @@ export class WekyManager {
 	 * @copyright All rights reserved. M3rcena Development
 	 */
 	async createQuickClick(options: QuickClickTypes) {
-		checkPackageUpdates("QuickClick", this.notifyUpdates);
-		return await QuickClick(options);
+		this.NetworkManager.increaseUsage("quickClick");
+		this.checkPackageUpdates("QuickClick");
+		this.OptionsChecking(options, "QuickClick");
+
+		return await QuickClick(this, options as CustomOptions<QuickClickTypes>);
 	}
 
 	/**
@@ -379,7 +463,9 @@ export class WekyManager {
 	 * @copyright All rights reserved. M3rcena Development
 	 */
 	async createShuffleGuess(options: ShuffleGuessTypes) {
-		checkPackageUpdates("ShuffleGuess", this.notifyUpdates);
+		this.checkPackageUpdates("ShuffleGuess");
+		this.OptionsChecking(options, "ShuffleGuess");
+
 		return await ShuffleGuess(options);
 	}
 
@@ -405,7 +491,9 @@ export class WekyManager {
 	 * @copyright All rights reserved. M3rcena Development
 	 */
 	async createSnake(options: SnakeTypes) {
-		checkPackageUpdates("Snake", this.notifyUpdates);
+		this.checkPackageUpdates("Snake");
+		this.OptionsChecking(options, "Snake");
+
 		return await Snake(options);
 	}
 
@@ -431,7 +519,9 @@ export class WekyManager {
 	 * @copyright All rights reserved. M3rcena Development
 	 */
 	async createWillYouPressTheButton(options: WillYouPressTheButtonTypes) {
-		checkPackageUpdates("WillYouPressTheButton", this.notifyUpdates);
+		this.checkPackageUpdates("WillYouPressTheButton");
+		this.OptionsChecking(options, "WillYouPressTheButton");
+
 		return await WillYouPressTheButton(options);
 	}
 
@@ -457,7 +547,9 @@ export class WekyManager {
 	 * @copyright All rights reserved. M3rcena Development
 	 */
 	async createWouldYouRather(options: WouldYouRatherTypes) {
-		checkPackageUpdates("WouldYouRather", this.notifyUpdates);
+		this.checkPackageUpdates("WouldYouRather");
+		this.OptionsChecking(options, "WouldYouRather");
+
 		return await WouldYouRather(options);
 	}
 
@@ -484,5 +576,479 @@ export class WekyManager {
 	async getUsage(): Promise<string | BotDataTypes["usage"] | null> {
 		if (!this.isInitilized) return "You can use that function once the Bot is Ready";
 		return await this.NetworkManager.getUsage();
+	}
+
+	/**
+	 * PRIVATE HELPERS
+	 *
+	 * USED ONLY BY THE CLASS TO VALIDATE OPTIONS AND MAKE SURE THE MINIGAMES ARE STARTING WITH NO ISSUES
+	 *
+	 * @copyright All rights reservered. M3rcena Development
+	 */
+
+	/**
+	 *
+	 * PRIVATE HELPERS FOR CHECKING OPTIONS
+	 *
+	 * @copyright All rights reservered. M3rcena Development
+	 */
+
+	private validateURL(url: string, gameName: string, context: string): boolean | null {
+		if (typeof url !== "string") {
+			return this._LoggerManager.createTypeError(gameName, `${context} must be a string.`);
+		}
+		if (!this.URL_PATTERN.test(url)) {
+			return this._LoggerManager.createError(gameName, `${context} must be a valid URL.`);
+		}
+	}
+
+	private validateString(value: string, gameName: string, fieldName: string, maxLength?: number): boolean | null {
+		if (typeof value !== "string") {
+			return this._LoggerManager.createTypeError(gameName, `${fieldName} must be a string.`);
+		}
+		if (maxLength && value.length > maxLength) {
+			return this._LoggerManager.createError(
+				gameName,
+				`${fieldName} length must be less than ${maxLength} characters.`
+			);
+		}
+	}
+
+	private validateEmbedFields(fields: Fields[], gameName: string): boolean {
+		if (!Array.isArray(fields)) {
+			return this._LoggerManager.createTypeError(gameName, "Embed fields must be an array.");
+		}
+
+		fields.forEach((field) => {
+			if (typeof field !== "object") {
+				return this._LoggerManager.createTypeError(gameName, "Embed field must be an object.");
+			}
+
+			if (!field.name) {
+				return this._LoggerManager.createError(gameName, "No embed field name provided.");
+			}
+			if (this.validateString(field.name, gameName, "Field name", 256)) return true;
+
+			if (!field.value) {
+				return this._LoggerManager.createError(gameName, "No embed field value provided.");
+			}
+			if (this.validateString(field.value, gameName, "Field value", 1024)) return true;
+
+			if (field.inline !== undefined && typeof field.inline !== "boolean") {
+				return this._LoggerManager.createTypeError(gameName, "Embed field inline must be a boolean.");
+			}
+		});
+	}
+
+	private validateEmbedAuthor(author: Author, gameName: string): boolean {
+		if (typeof author !== "object") {
+			return this._LoggerManager.createTypeError(gameName, "Embed author must be an object.");
+		}
+
+		if (!author.name) {
+			return this._LoggerManager.createError(gameName, "No embed author name provided.");
+		}
+
+		if (author.icon_url) {
+			return this.validateURL(author.icon_url, gameName, "Embed author icon URL");
+		}
+
+		if (author.url) {
+			return this.validateURL(author.url, gameName, "Embed author URL");
+		}
+	}
+
+	private OptionsChecking(
+		options:
+			| Types2048
+			| CalcTypes
+			| ChaosTypes
+			| FastTypeTypes
+			| FightTypes
+			| GuessTheNumberTypes
+			| GuessThePokemonTypes
+			| HangmanTypes
+			| LieSwatterTypes
+			| NeverHaveIEverTypes
+			| QuickClickTypes
+			| ShuffleGuessTypes
+			| SnakeTypes
+			| WillYouPressTheButtonTypes
+			| WouldYouRatherTypes,
+		GameName: string
+	): boolean {
+		if (!options) {
+			return this._LoggerManager.createError(GameName, "No options provided.");
+		}
+
+		if (typeof options !== "object") {
+			return this._LoggerManager.createTypeError(GameName, "Options must be an object.");
+		}
+
+		// Basic validations
+		if (!options.context) {
+			return this._LoggerManager.createError(GameName, "No Context provided.");
+		}
+
+		if (!options.context.guild) {
+			return this._LoggerManager.createError(GameName, "The minigame should be in a guild!");
+		}
+
+		if (!options.context.channel || !options.context.channel.isSendable()) {
+			return this._LoggerManager.createError(GameName, "The channel is either unsendable or is a DM Channel");
+		}
+
+		// Embed validations
+		if ("embed" in options && options.embed) {
+			if (typeof options.embed !== "object") {
+				return this._LoggerManager.createTypeError(GameName, "Embed options must be an object.");
+			}
+
+			try {
+				const color = DiscordJS.resolveColor(options.embed.color);
+				if (!color) return this._LoggerManager.createError(GameName, "Embed Color does not exist.");
+			} catch {
+				return this._LoggerManager.createError(GameName, "Embed Color does not exist or was invalid.");
+			}
+
+			if (options.embed.title) {
+				return this.validateString(options.embed.title, GameName, "Embed title", 256);
+			}
+
+			if (options.embed.url) {
+				return this.validateURL(options.embed.url, GameName, "Embed URL");
+			}
+
+			if (options.embed.author) {
+				return this.validateEmbedAuthor(options.embed.author, GameName);
+			}
+
+			if (options.embed.description) {
+				return this.validateString(options.embed.description, GameName, "Embed description", 4096);
+			}
+
+			if (options.embed.fields) {
+				return this.validateEmbedFields(options.embed.fields, GameName);
+			}
+
+			if (options.embed.image) {
+				return this.validateURL(options.embed.image, GameName, "Embed image");
+			}
+
+			if (options.embed.timestamp && !(options.embed.timestamp instanceof Date)) {
+				return this._LoggerManager.createTypeError(GameName, "Embed timestamp must be a date.");
+			}
+		}
+
+		this._deferContext(options.context);
+	}
+
+	/**
+	 *
+	 * PRIVATE HELPERS TO CHECK FOR PACKAGE UPDATES
+	 *
+	 * @copyright All rights reservered. M3rcena Development
+	 */
+
+	private boxConsole(messages: string[]): void {
+		let tips = [];
+		let maxLen = 0;
+		const defaultSpace = 4;
+		const spaceWidth = stringWidth(" ");
+		if (Array.isArray(messages)) {
+			tips = Array.from(messages);
+		} else {
+			tips = [messages];
+		}
+		tips = [" ", ...tips, " "];
+		tips = tips.map((msg) => ({ val: msg, len: stringWidth(msg) }));
+		maxLen = tips.reduce((len, tip) => {
+			maxLen = Math.max(len, tip.len);
+			return maxLen;
+		}, maxLen);
+		maxLen += spaceWidth * 2 * defaultSpace;
+		tips = tips.map(({ val, len }) => {
+			let i = 0;
+			let j = 0;
+			while (len + i * 2 * spaceWidth < maxLen) {
+				i++;
+			}
+			j = i;
+			while (j > 0 && len + i * spaceWidth + j * spaceWidth > maxLen) {
+				j--;
+			}
+			return " ".repeat(i) + val + " ".repeat(j);
+		});
+		const line = chalk.yellow("─".repeat(maxLen));
+		console.log(chalk.yellow("┌") + line + chalk.yellow("┐"));
+		for (const msg of tips) {
+			console.log(chalk.yellow("│") + msg + chalk.yellow("│"));
+		}
+		console.log(chalk.yellow("└") + line + chalk.yellow("┘"));
+	}
+
+	private async checkPackageUpdates(name: string): Promise<void> {
+		if (!this.notifyUpdates) return;
+		try {
+			const execPromise = promisify(exec);
+			const { stdout } = await execPromise("npm show @m3rcena/weky version");
+
+			if (stdout.trim().toString() > weky_package.version) {
+				const advertise = chalk(`Are you using ${chalk.red(name)}? Don't lose out on new features!`);
+
+				const msg = chalk(`New ${chalk.green("version")} of ${chalk.yellow("@m3rcena/weky")} is available!`);
+
+				const msg2 = chalk(`${chalk.red(weky_package.version)} -> ${chalk.green(stdout.trim().toString())}`);
+				const tip = chalk(`Registry: ${chalk.cyan("https://www.npmjs.com/package/@m3rcena/weky")}`);
+
+				const install = chalk(`Run ${chalk.green(`npm i @m3rcena/weky@${stdout.trim().toString()}`)} to update!`);
+
+				this.boxConsole([advertise, msg, msg2, tip, install]);
+			}
+		} catch (error) {
+			console.error(error);
+		}
+	}
+
+	/**
+	 *
+	 * CONTEXT BASED PRIVATE HELPERS
+	 *
+	 * @copyright All rights reservered. M3rcena Development
+	 */
+
+	/**
+	 *
+	 * @internal
+	 * This is for internal use by minigames only. Do not use this manually.
+	 *
+	 */
+	public _deferContext(context: DiscordJS.Context): void {
+		if (!context.isChatInputCommand) return;
+
+		context.deferReply().then(() => {
+			context.deleteReply();
+		});
+	}
+
+	/**
+	 *
+	 * @internal
+	 * This is for internal use by minigames only. Do not use this manually.
+	 *
+	 */
+	public _getContextUserID(context: DiscordJS.Context): string {
+		return context.author?.id || context.user?.id || context.member?.id;
+	}
+
+	/**
+	 *
+	 * External Functions used in Minigames
+	 *
+	 */
+
+	/**
+	 *
+	 * Get a Random String
+	 *
+	 * @param length How big you want the string to be (It doesn't include "weky_")
+	 *
+	 * @copyright All rights reservered. M3rcena Development
+	 */
+	public getRandomString(length: number) {
+		const randomChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+		const randomBytesArray = new Uint8Array(length);
+		randomBytes(length).forEach((byte, index) => {
+			randomBytesArray[index] = byte % randomChars.length;
+		});
+
+		let result = "weky_";
+		for (let i = 0; i < length; i++) {
+			result += randomChars.charAt(randomBytesArray[i]);
+		}
+		return result;
+	}
+
+	/**
+	 *
+	 * Convert a time into a String
+	 *
+	 * @param time The time you want to convert
+	 *
+	 * @copyright All rights reservered. M3rcena Development
+	 */
+	public convertTime(time: number): string {
+		const absoluteSeconds = Math.floor((time / 1000) % 60);
+		const absoluteMinutes = Math.floor((time / (1000 * 60)) % 60);
+		const absoluteHours = Math.floor((time / (1000 * 60 * 60)) % 24);
+		const absoluteDays = Math.floor(time / (1000 * 60 * 60 * 24));
+
+		const d = absoluteDays ? (absoluteDays === 1 ? "1 day" : `${absoluteDays} days`) : null;
+
+		const h = absoluteHours ? (absoluteHours === 1 ? "1 hour" : `${absoluteHours} hours`) : null;
+
+		const m = absoluteMinutes ? (absoluteMinutes === 1 ? "1 minute" : `${absoluteMinutes} minutes`) : null;
+
+		const s = absoluteSeconds ? (absoluteSeconds === 1 ? "1 second" : `${absoluteSeconds} seconds`) : null;
+
+		const absoluteTime = [];
+		if (d) absoluteTime.push(d);
+		if (h) absoluteTime.push(h);
+		if (m) absoluteTime.push(m);
+		if (s) absoluteTime.push(s);
+		return absoluteTime.join(", ");
+	}
+
+	/**
+	 *
+	 * Shuffles all string chars to a random string
+	 *
+	 * @param string The string you want to shuffle
+	 *
+	 * @copyright All rights reservered. M3rcena Development
+	 */
+	public shuffleString(string: string): string {
+		const seed = Date.now();
+		const str = string.split("");
+		const length = str.length;
+		for (let i = length - 1; i > 0; i--) {
+			const j = Math.floor((Math.random() * seed) % (i + 1));
+			const tmp = str[i];
+			str[i] = str[j];
+			str[j] = tmp;
+		}
+		return str.join("");
+	}
+
+	/**
+	 *
+	 * Shuffles an array
+	 *
+	 * @param array The array you want to shuffle
+	 *
+	 * @copyright All rights reservered. M3rcena Development
+	 */
+	public shuffleArray<T>(array: T[]): T[] {
+		for (let i = array.length - 1; i > 0; i--) {
+			const j = Math.floor(Math.random() * (i + 1));
+			const temp = array[i];
+			array[i] = array[j];
+			array[j] = temp;
+		}
+		return array;
+	}
+
+	/**
+	 *
+	 * PRIVATE HELPERS FOR CALCULATOR BUTTONS
+	 *
+	 * @copyright All rights reservered. M3rcena Development
+	 */
+	private getButtonStyle(label: string): DiscordJS.ButtonStyle {
+		if (DANGER_KEYS.has(label)) return DiscordJS.ButtonStyle.Danger;
+		if (SUCCESS_KEYS.has(label)) return DiscordJS.ButtonStyle.Success;
+		if (PRIMARY_KEYS.has(label)) return DiscordJS.ButtonStyle.Primary;
+		return DiscordJS.ButtonStyle.Secondary;
+	}
+
+	/**
+	 *
+	 * @internal
+	 * This is for internal use by minigames only. Do not use this manually.
+	 *
+	 */
+	public _createButton(label: string, disabled: boolean): DiscordJS.ButtonBuilder {
+		const style = this.getButtonStyle(label);
+		const isSpacer = label === "\u200b";
+
+		const btn = new DiscordJS.ButtonBuilder()
+			.setLabel(label)
+			.setStyle(style)
+			.setCustomId(isSpacer ? this.getRandomString(10) : "cal" + label);
+
+		if (disabled || isSpacer) {
+			btn.setDisabled(true);
+		}
+
+		return btn;
+	}
+
+	/**
+	 *
+	 * @internal
+	 * This is for internal use by minigames only. Do not use this manually.
+	 *
+	 */
+	public _createDisabledButton(label: string, lock: boolean): DiscordJS.ButtonBuilder {
+		const style = this.getButtonStyle(label);
+		const isSpacer = label === "\u200b";
+
+		const btn = new DiscordJS.ButtonBuilder()
+			.setLabel(label)
+			.setStyle(style)
+			.setCustomId(isSpacer ? this.getRandomString(10) : "cal" + label);
+
+		if (isSpacer || lock || DISABLED_ON_LOCK.has(label)) {
+			btn.setDisabled(true);
+		}
+
+		return btn;
+	}
+
+	/**
+	 *
+	 * PRIVATE HELPERS FOR EMBEDS
+	 *
+	 * @copyright All rights reservered. M3rcena Development
+	 */
+
+	/**
+	 *
+	 * @internal
+	 * This is for internal use by minigames only. Do not use this manually.
+	 *
+	 */
+	public _createEmbed(embedOptions: Embeds, noFields: boolean = false): DiscordJS.EmbedBuilder {
+		const embed = new DiscordJS.EmbedBuilder()
+			.setTitle(embedOptions.title || null)
+			.setDescription(embedOptions.description || null)
+			.setColor((embedOptions.color as DiscordJS.ColorResolvable) || "Blurple")
+			.setURL(embedOptions.url || null)
+			.setThumbnail(embedOptions.thumbnail || null)
+			.setImage(embedOptions.image || null)
+			.setFooter(embedOptions.footer || defaultFooter);
+
+		if (embedOptions.timestamp) {
+			embed.setTimestamp(embedOptions.timestamp === true ? new Date() : embedOptions.timestamp);
+		}
+
+		if (embedOptions.author) {
+			embed.setAuthor({
+				name: embedOptions.author.name,
+				iconURL: embedOptions.author.icon_url || undefined,
+				url: embedOptions.author.url || undefined,
+			});
+		}
+
+		if (!noFields && embedOptions.fields && embedOptions.fields.length > 0) {
+			embed.setFields(embedOptions.fields);
+		}
+
+		return embed;
+	}
+
+	/**
+	 *
+	 * @internal
+	 * This is for internal use by minigames only. Do not use this manually.
+	 *
+	 */
+	public _createErrorEmbed(type: string, errorMessage?: string): DiscordJS.EmbedBuilder {
+		return new DiscordJS.EmbedBuilder()
+			.setTitle(`${type.toUpperCase()} ERROR`)
+			.setColor("Red")
+			.setTimestamp()
+			.setDescription(errorMessage ? errorMessage : "An unexpected error occurred.")
+			.setFooter({ text: "If unexpected please report this to the developer." });
 	}
 }

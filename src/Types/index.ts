@@ -1,4 +1,4 @@
-import type { ColorResolvable, Context, EmbedFooterData, GuildMember } from "discord.js";
+import type { ColorResolvable, Context, EmbedFooterData, GuildMember, GuildTextBasedChannel } from "discord.js";
 
 export interface CalcTypes {
 	context: Context;
@@ -74,6 +74,8 @@ export interface GuessTheNumberTypes {
 	loseMessage?: string;
 	otherMessage?: string;
 	ongoingMessage?: string;
+	biggerNumberMessage?: string;
+	smallerNumberMeesage?: string;
 	button?: string;
 	number?: number;
 	time?: number;
@@ -209,17 +211,19 @@ export interface Embeds {
 	color?: ColorResolvable;
 	title?: string;
 	url?: string;
-	author?: {
-		name?: string;
-		icon_url?: string;
-		url?: string;
-	};
+	author?: Author;
 	footer?: EmbedFooterData;
 	description?: string;
 	fields?: Fields[];
 	image?: string;
-	timestamp?: Date;
+	timestamp?: Date | boolean;
 	thumbnail?: string;
+}
+
+export interface Author {
+	name: string;
+	icon_url?: string;
+	url?: string;
 }
 
 export interface Fields {
@@ -258,6 +262,13 @@ export interface GuessThePokemonData {
 		};
 	};
 }
+
+export type CustomOptions<T> = T & {
+	context: {
+		channel: GuildTextBasedChannel;
+		guild: NonNullable<Context["guild"]>;
+	};
+};
 
 export interface BotDataTypes {
 	botID: string;

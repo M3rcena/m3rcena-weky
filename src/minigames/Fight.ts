@@ -8,13 +8,9 @@ import {
 	MessageFlags,
 } from "discord.js";
 
-import { ErrorEmbed } from "../functions/functions.js";
-import { deferContext, getContextUserID } from "../functions/context.js";
-
 import type { PowerUp } from "../Types/fight.js";
-import type { FightTypes } from "../Types/index.js";
-import type { LoggerManager } from "../handlers/Logger.js";
-import type { NetworkManager } from "../handlers/NetworkManager.js";
+import type { CustomOptions, FightTypes } from "../Types/index.js";
+import type { WekyManager } from "../index.js";
 
 // Define available powerups
 const POWERUPS: PowerUp[] = [
@@ -51,102 +47,75 @@ const POWERUPS: PowerUp[] = [
 	},
 ];
 
-const Fight = async (NetworkManager: NetworkManager, options: FightTypes, loggerManager: LoggerManager) => {
-	if (!options) {
-		return loggerManager.createError("Fight", "No options provided.");
-	}
-
-	if (typeof options !== "object") {
-		return loggerManager.createTypeError("Fight", "Options must be an object.");
-	}
-
-	if (!options.context) {
-		return loggerManager.createError("Fight", "No Context provided.");
-	}
-
+const Fight = async (weky: WekyManager, options: CustomOptions<FightTypes>) => {
 	let context = options.context;
 
-	if (!context.channel.isSendable() || !context.channel.isTextBased() || context.channel.isDMBased()) {
-		loggerManager.createError("Fight", "The Context channel is not Sendable or Text-Based");
-		return;
-	}
+	let id = weky._getContextUserID(context);
 
-	let id = getContextUserID(context);
-
-	deferContext(context);
-
-	if (!context.guild) {
-		loggerManager.createError("Fight", "Guild is not available in this context");
-		return;
-	}
+	weky._deferContext(context);
 
 	if (!options.buttons) options.buttons = {};
 	if (typeof options.buttons !== "object") {
-		return loggerManager.createTypeError("Fight", "Buttons must be an object.");
+		return weky._LoggerManager.createTypeError("Fight", "Buttons must be an object.");
 	}
 
 	if (!options.buttons.hit) options.buttons.hit = "Hit";
 	if (typeof options.buttons.hit !== "string") {
-		return loggerManager.createTypeError("Fight", "Hit the button text must be a string");
+		return weky._LoggerManager.createTypeError("Fight", "Hit the button text must be a string");
 	}
 
 	if (!options.buttons.heal) options.buttons.heal = "Heal";
 	if (typeof options.buttons.heal !== "string") {
-		return loggerManager.createTypeError("Fight", "Heal button text must be a string.");
+		return weky._LoggerManager.createTypeError("Fight", "Heal button text must be a string.");
 	}
 
 	if (!options.buttons.cancel) options.buttons.cancel = "Surrender";
 	if (typeof options.buttons.cancel !== "string") {
-		return loggerManager.createTypeError("Fight", "Cancel button text must be a string");
+		return weky._LoggerManager.createTypeError("Fight", "Cancel button text must be a string");
 	}
 
 	if (!options.buttons.accept) options.buttons.accept = "Accept";
 	if (typeof options.buttons.accept !== "string") {
-		return loggerManager.createTypeError("Fight", "Accept button text must be a string");
+		return weky._LoggerManager.createTypeError("Fight", "Accept button text must be a string");
 	}
 
 	if (!options.buttons.deny) options.buttons.deny = "Deny";
 	if (typeof options.buttons.deny !== "string") {
-		return loggerManager.createTypeError("Fight", "Deny button text must be a string.");
+		return weky._LoggerManager.createTypeError("Fight", "Deny button text must be a string.");
 	}
 
 	if (!options.wrongUserFight) options.wrongUserFight = "**This is not your Game!**";
 	if (typeof options.wrongUserFight !== "string") {
-		return loggerManager.createTypeError("Fight", "Wrong Fight message must be a string.");
+		return weky._LoggerManager.createTypeError("Fight", "Wrong Fight message must be a string.");
 	}
 
 	if (!options.opponentsTurnMessage) options.opponentsTurnMessage = "**Please wait for your opponents move!**";
 	if (typeof options.opponentsTurnMessage !== "string") {
-		return loggerManager.createTypeError("Fight", "Opponents turn message must be a string.");
+		return weky._LoggerManager.createTypeError("Fight", "Opponents turn message must be a string.");
 	}
 
 	if (!options.highHealthMessage) options.highHealthMessage = "You cannot heal if your HP is above 80!";
 	if (typeof options.highHealthMessage !== "string") {
-		return loggerManager.createTypeError("Fight", "High health message must be a string.");
+		return weky._LoggerManager.createTypeError("Fight", "High health message must be a string.");
 	}
 
 	if (!options.lowHealthMessage) options.lowHealthMessage = "You cannot cancel the fight if your HP is below 50!";
 	if (typeof options.lowHealthMessage !== "string") {
-		return loggerManager.createTypeError("Fight", "Low health message must be a string.");
+		return weky._LoggerManager.createTypeError("Fight", "Low health message must be a string.");
 	}
 
 	if (!options.opponent) {
-		loggerManager.createError("Fight", "Opponent is missing from the options.");
+		weky._LoggerManager.createError("Fight", "Opponent is missing from the options.");
 		return;
 	}
 
 	if (!(options.opponent as GuildMember).user.username) {
-		return loggerManager.createTypeError("Fight", "Opponent option must be User.");
+		return weky._LoggerManager.createTypeError("Fight", "Opponent option must be User.");
 	}
 
 	if (id === options.opponent.id) {
 		return context.channel.send({
-			embeds: [
-				ErrorEmbed("Fight Error")
-					.setColor("Red")
-					.setDescription("**Did you for real try to play with yourself?")
-					.setTimestamp(),
-			],
+			embeds: [weky._createErrorEmbed("Fight Error", "**Did you for real try to play with yourself?")],
 		});
 	}
 
@@ -154,10 +123,10 @@ const Fight = async (NetworkManager: NetworkManager, options: FightTypes, logger
 	const opponent = options.opponent;
 
 	if (
-		(await NetworkManager.checkPlayerFightStatus(challenger.id)) ||
-		(await NetworkManager.checkPlayerFightStatus(opponent.id))
+		(await weky.NetworkManager.checkPlayerFightStatus(challenger.id)) ||
+		(await weky.NetworkManager.checkPlayerFightStatus(opponent.id))
 	) {
-		const errorEmbed = ErrorEmbed("Fight").setDescription("## One of the two Users are already in game!");
+		const errorEmbed = weky._createErrorEmbed("Fight", "## One of the two Users are already in game!");
 
 		await context.channel.send({
 			embeds: [errorEmbed],
@@ -166,7 +135,7 @@ const Fight = async (NetworkManager: NetworkManager, options: FightTypes, logger
 		return;
 	}
 
-	const requestCard = await NetworkManager.makeRequestCard(
+	const requestCard = await weky.NetworkManager.makeRequestCard(
 		challenger.user.username,
 		challenger.displayAvatarURL({ extension: "png", size: 256 }),
 		opponent.user.username,
@@ -174,7 +143,7 @@ const Fight = async (NetworkManager: NetworkManager, options: FightTypes, logger
 	);
 
 	if (!requestCard) {
-		const errorEmbed = ErrorEmbed("API").setTitle("API Failed to get the Request Card! Please notify a Developer.");
+		const errorEmbed = weky._createErrorEmbed("API", "**API Failed to get the Request Card!**");
 
 		await context.channel.send({
 			embeds: [errorEmbed],
@@ -200,7 +169,7 @@ const Fight = async (NetworkManager: NetworkManager, options: FightTypes, logger
 		components: [row],
 	});
 
-	const gameId = await NetworkManager.createGame(
+	const gameId = await weky.NetworkManager.createGame(
 		challenger.id,
 		challenger.user.username,
 		opponent.id,
@@ -217,19 +186,17 @@ const Fight = async (NetworkManager: NetworkManager, options: FightTypes, logger
 
 	collector.on("collect", async (interaction) => {
 		if (interaction.customId === "fight_deny") {
-			const deniedCard = await NetworkManager.makeDenyCard(
+			const deniedCard = await weky.NetworkManager.makeDenyCard(
 				challenger.user.username,
 				challenger.displayAvatarURL({ extension: "png", size: 256 }),
 				opponent.user.username,
 				opponent.displayAvatarURL({ extension: "png", size: 256 })
 			);
 
-			const removed = await NetworkManager.removeGame(gameId);
+			const removed = await weky.NetworkManager.removeGame(gameId);
 
 			if (!removed) {
-				const embed = ErrorEmbed("API").setDescription(
-					"# API Failed to Remove Fight from the Database. Please notify a developer."
-				);
+				const embed = weky._createErrorEmbed("API", "**API Failed to Remove Fight from the Database**");
 
 				await interaction.update({
 					content: null,
@@ -254,24 +221,25 @@ const Fight = async (NetworkManager: NetworkManager, options: FightTypes, logger
 		}
 
 		if (interaction.customId === "fight_accept") {
-			await startFight(gameId, interaction, options, challenger, opponent, NetworkManager);
+			await startFight(gameId, interaction, options, challenger, opponent, weky);
 			collector.stop();
 		}
 	});
 
 	collector.on("end", async (collected, reason) => {
 		if (reason === "time" && collected.size === 0) {
-			const timeoutCard = await NetworkManager.makeTimeOutCard(
+			const timeoutCard = await weky.NetworkManager.makeTimeOutCard(
 				challenger.user.username,
 				challenger.displayAvatarURL({ extension: "png", size: 256 }),
 				opponent.user.username,
 				opponent.displayAvatarURL({ extension: "png", size: 256 })
 			);
 
-			const removed = await NetworkManager.removeGame(gameId);
+			const removed = await weky.NetworkManager.removeGame(gameId);
 
 			if (!removed) {
-				const embed = ErrorEmbed("API").setDescription(
+				const embed = weky._createErrorEmbed(
+					"API",
 					"# API Failed to Remove Fight from the Database. Please notify a developer."
 				);
 
@@ -303,7 +271,7 @@ async function startFight(
 	options: FightTypes,
 	challenger: GuildMember,
 	opponentOriginal: GuildMember,
-	NetworkManager: NetworkManager
+	weky: WekyManager
 ) {
 	// Create action buttons
 	const hit = new ButtonBuilder().setLabel(options.buttons.hit).setStyle(ButtonStyle.Danger).setCustomId("fight_hit");
@@ -330,13 +298,13 @@ async function startFight(
 	const powerupRow = new ActionRowBuilder<ButtonBuilder>().addComponents(...powerupButtons);
 
 	// Update the fight status
-	const gameCard = await NetworkManager.makeMainCard(
+	const gameCard = await weky.NetworkManager.makeMainCard(
 		gameID,
 		challenger.displayAvatarURL({ extension: "png", size: 256 }),
 		opponentOriginal.displayAvatarURL({ extension: "png", size: 256 })
 	);
 
-	let turn = await NetworkManager.getTurn(gameID);
+	let turn = await weky.NetworkManager.getTurn(gameID);
 
 	const msg = await interaction.update({
 		files: [gameCard],
@@ -349,7 +317,7 @@ async function startFight(
 	collector.on("collect", async (i: ButtonInteraction) => {
 		if (i.user.id !== challenger.id && i.user.id !== opponentOriginal.id) {
 			await i.reply({
-				embeds: [ErrorEmbed("Wrong Game!").setDescription(options.wrongUserFight).setColor("Red")],
+				embeds: [weky._createErrorEmbed("Fight", options.wrongUserFight)],
 				flags: [MessageFlags.Ephemeral],
 			});
 
@@ -358,7 +326,7 @@ async function startFight(
 
 		if (i.user.id !== turn.userID) {
 			await i.reply({
-				embeds: [ErrorEmbed("Wrong Turn!").setDescription(options.opponentsTurnMessage).setColor("Red")],
+				embeds: [weky._createErrorEmbed("Fight", options.opponentsTurnMessage)],
 				flags: [MessageFlags.Ephemeral],
 			});
 
@@ -367,8 +335,8 @@ async function startFight(
 
 		await i.deferUpdate();
 
-		const player = await NetworkManager.getPlayer(gameID, false);
-		const opponent = await NetworkManager.getPlayer(gameID, true);
+		const player = await weky.NetworkManager.getPlayer(gameID, false);
+		const opponent = await weky.NetworkManager.getPlayer(gameID, true);
 
 		const playerMember = await i.guild.members.fetch(player.memberId);
 		const opponentMember = await i.guild.members.fetch(opponent.memberId);
@@ -392,10 +360,10 @@ async function startFight(
 			opponent.health -= damage;
 			player.coins += 10;
 
-			const updated = NetworkManager.updatePlayers(gameID, player, opponent);
+			const updated = weky.NetworkManager.updatePlayers(gameID, player, opponent);
 
 			if (!updated) {
-				const embed = ErrorEmbed("API").setDescription("## The API failed to update the data. Please contact a dev!");
+				const embed = weky._createErrorEmbed("API", "**The API failed to update the data.**");
 
 				await i.editReply({
 					embeds: [embed],
@@ -408,19 +376,17 @@ async function startFight(
 			}
 
 			if (opponent.health <= 0) {
-				const winnerCard = await NetworkManager.makeWinCard(
+				const winnerCard = await weky.NetworkManager.makeWinCard(
 					playerMember.user.username,
 					playerMember.displayAvatarURL({ extension: "png", size: 256 }),
 					opponentMember.user.username,
 					opponentMember.displayAvatarURL({ extension: "png", size: 256 })
 				);
 
-				const removed = await NetworkManager.removeGame(gameID);
+				const removed = await weky.NetworkManager.removeGame(gameID);
 
 				if (!removed) {
-					const embed = ErrorEmbed("API").setDescription(
-						"# API Failed to Remove Fight from the Database. Please notify a developer."
-					);
+					const embed = weky._createErrorEmbed("API", "**API Failed to Remove Fight from the Database.**");
 
 					await interaction.update({
 						content: null,
@@ -455,10 +421,10 @@ async function startFight(
 			player.health += healAmount;
 			if (player.health > 100) player.health = 100;
 
-			const updated = NetworkManager.updatePlayers(gameID, player, opponent);
+			const updated = weky.NetworkManager.updatePlayers(gameID, player, opponent);
 
 			if (!updated) {
-				const embed = ErrorEmbed("API").setDescription("## The API failed to update the data. Please contact a dev!");
+				const embed = weky._createErrorEmbed("API", "**The API failed to update the data.**");
 
 				await i.editReply({
 					embeds: [embed],
@@ -478,19 +444,17 @@ async function startFight(
 				return;
 			}
 
-			const surrenderCard = await NetworkManager.makeSurrenderCard(
+			const surrenderCard = await weky.NetworkManager.makeSurrenderCard(
 				opponentMember.user.username,
 				opponentMember.displayAvatarURL({ extension: "png", size: 256 }),
 				playerMember.user.username,
 				playerMember.displayAvatarURL({ extension: "png", size: 256 })
 			);
 
-			const removed = await NetworkManager.removeGame(gameID);
+			const removed = await weky.NetworkManager.removeGame(gameID);
 
 			if (!removed) {
-				const embed = ErrorEmbed("API").setDescription(
-					"# API Failed to Remove Fight from the Database. Please notify a developer."
-				);
+				const embed = weky._createErrorEmbed("API", "**API Failed to Remove Fight from the Database.**");
 
 				await interaction.update({
 					content: null,
@@ -520,10 +484,10 @@ async function startFight(
 				player.coins -= powerup.cost;
 				const effectMessage = powerup.effect(player, playerMember.user.username);
 
-				const updated = NetworkManager.updatePlayers(gameID, player, opponent);
+				const updated = weky.NetworkManager.updatePlayers(gameID, player, opponent);
 
 				if (!updated) {
-					const embed = ErrorEmbed("API").setDescription("## The API failed to update the data. Please contact a dev!");
+					const embed = weky._createErrorEmbed("API", "**The API failed to update the data**");
 
 					await i.editReply({
 						embeds: [embed],
@@ -549,10 +513,10 @@ async function startFight(
 		}
 
 		// Switch turns
-		const turned = await NetworkManager.changeTurn(gameID);
+		const turned = await weky.NetworkManager.changeTurn(gameID);
 
 		if (!turned) {
-			const embed = ErrorEmbed("API").setDescription("## The API failed to update the data. Please contact a dev!");
+			const embed = weky._createErrorEmbed("API", "**The API failed to update the data**");
 
 			await i.editReply({
 				embeds: [embed],
@@ -565,13 +529,13 @@ async function startFight(
 		}
 
 		// Update game state
-		const newGameCard = await NetworkManager.makeMainCard(
+		const newGameCard = await weky.NetworkManager.makeMainCard(
 			gameID,
 			challenger.displayAvatarURL({ extension: "png", size: 256 }),
 			opponentOriginal.displayAvatarURL({ extension: "png", size: 256 })
 		);
 
-		turn = await NetworkManager.getTurn(gameID);
+		turn = await weky.NetworkManager.getTurn(gameID);
 
 		await i.editReply({
 			files: [newGameCard],
