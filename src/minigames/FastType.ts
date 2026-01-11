@@ -1,4 +1,4 @@
-import { ButtonBuilder, ButtonStyle, ComponentType, ContainerBuilder, Message, MessageFlags } from "discord.js";
+import { ButtonBuilder, ButtonStyle, ComponentType, ContainerBuilder, Message, MessageFlags, Typing } from "discord.js";
 
 import type { CustomOptions, FastTypeTypes } from "../Types/index.js";
 import type { WekyManager } from "../index.js";
@@ -20,10 +20,13 @@ const FastType = async (weky: WekyManager, options: CustomOptions<FastTypeTypes>
 
 	const msgWin = options.winMessage || "You typed it in **{{time}}** with **{{wpm}} WPM**!";
 	const msgLose = options.loseMessage || "You made a typo! Better luck next time.";
-	const msgTimeout = "You ran out of time!";
+	const msgTimeout = options.timeoutMessage || "You ran out of time!";
+	const msgCheat = options.cheatMessage || "⚠️ **Anti-Cheat:** You didn't type! Copy-pasting is not allowed.";
+
+	let hasStartedTyping = false;
 
 	const createGameContainer = (
-		state: "loading" | "active" | "won" | "lost" | "timeout" | "cancelled" | "error",
+		state: "loading" | "active" | "won" | "lost" | "timeout" | "cancelled" | "error" | "cheat",
 		data: {
 			sentence?: string;
 			wpm?: string;
@@ -60,6 +63,11 @@ const FastType = async (weky: WekyManager, options: CustomOptions<FastTypeTypes>
 				content = `## ❌ Incorrect\n> ${msgLose}\n\n` + `**Correct Sentence:**\n\`\`\`text\n${data.sentence}\n\`\`\``;
 				break;
 
+			case "cheat":
+				container.setAccentColor(0xed4245); // Red
+				content = `## ⚠️ Cheat Detected\n> ${msgCheat}\n\n` + `**Sentence:**\n\`\`\`text\n${data.sentence}\n\`\`\``;
+				break;
+
 			case "timeout":
 				container.setAccentColor(0xed4245); // Red
 				content = `## ⏱️ Time's Up\n> ${msgTimeout}\n\n` + `**Sentence:**\n\`\`\`text\n${data.sentence}\n\`\`\``;
@@ -80,7 +88,6 @@ const FastType = async (weky: WekyManager, options: CustomOptions<FastTypeTypes>
 
 		if (state === "active") {
 			const btnCancel = new ButtonBuilder().setStyle(ButtonStyle.Danger).setLabel(btnText).setCustomId(cancelId);
-
 			container.addActionRowComponents((row) => row.setComponents(btnCancel));
 		}
 
@@ -114,6 +121,15 @@ const FastType = async (weky: WekyManager, options: CustomOptions<FastTypeTypes>
 		});
 	}
 
+	const typingHandler = (typing: Typing) => {
+		if (typing.channel.id === context.channel.id && typing.user.id === userId) {
+			hasStartedTyping = true;
+		}
+	};
+
+
+	weky._client.on("typingStart", typingHandler);
+
 	await msg.edit({
 		components: [createGameContainer("active", { sentence })],
 		flags: MessageFlags.IsComponentsV2,
@@ -133,14 +149,31 @@ const FastType = async (weky: WekyManager, options: CustomOptions<FastTypeTypes>
 		time: timeLimit,
 	});
 
+	const cleanupGame = () => {
+		activePlayers.delete(userId);
+		weky._client.off("typingStart", typingHandler);
+		btnCollector.stop();
+	};
+
 	msgCollector.on("collect", async (mes: Message) => {
 		const input = mes.content.toLowerCase().trim();
 		const target = sentence!.toLowerCase().trim();
 
+		if (!hasStartedTyping) {
+			msgCollector.stop("cheat");
+			cleanupGame();
+
+			await msg.edit({
+				components: [createGameContainer("cheat", { sentence })],
+				flags: MessageFlags.IsComponentsV2,
+			});
+			return;
+		}
+
+		// 2. CHECK ACCURACY
 		if (input === target) {
 			msgCollector.stop("won");
-			btnCollector.stop();
-			activePlayers.delete(userId);
+			cleanupGame();
 
 			const timeMs = Date.now() - gameCreatedAt;
 			const timeTaken = weky.convertTime(timeMs);
@@ -160,8 +193,7 @@ const FastType = async (weky: WekyManager, options: CustomOptions<FastTypeTypes>
 			});
 		} else {
 			msgCollector.stop("lost");
-			btnCollector.stop();
-			activePlayers.delete(userId);
+			cleanupGame();
 
 			await msg.edit({
 				components: [createGameContainer("lost", { sentence })],
@@ -174,8 +206,7 @@ const FastType = async (weky: WekyManager, options: CustomOptions<FastTypeTypes>
 		if (btn.customId === cancelId) {
 			await btn.deferUpdate();
 			msgCollector.stop("cancelled");
-			btnCollector.stop();
-			activePlayers.delete(userId);
+			cleanupGame();
 
 			await msg.edit({
 				components: [createGameContainer("cancelled", {})],
@@ -186,8 +217,7 @@ const FastType = async (weky: WekyManager, options: CustomOptions<FastTypeTypes>
 
 	msgCollector.on("end", async (_collected, reason) => {
 		if (reason === "time") {
-			btnCollector.stop();
-			activePlayers.delete(userId);
+			cleanupGame();
 
 			try {
 				await msg.edit({
@@ -196,6 +226,7 @@ const FastType = async (weky: WekyManager, options: CustomOptions<FastTypeTypes>
 				});
 			} catch (e) {}
 		}
+		weky._client.off("typingStart", typingHandler);
 	});
 };
 
