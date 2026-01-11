@@ -1,19 +1,22 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, MessageFlags } from "discord.js";
+import { ButtonBuilder, ButtonStyle, ComponentType, ContainerBuilder, MessageFlags } from "discord.js";
 
 import type { CustomOptions, NeverHaveIEverTypes } from "../Types/index.js";
 import type { WekyManager } from "../index.js";
 
+interface ApiResponse {
+	statement: string;
+}
+
 const NeverHaveIEver = async (weky: WekyManager, options: CustomOptions<NeverHaveIEverTypes>) => {
 	const context = options.context;
+	const userId = weky._getContextUserID(context);
 
-	if (!options.thinkMessage) options.thinkMessage = "I am thinking";
+	if (!options.thinkMessage) options.thinkMessage = "I am thinking...";
 	if (typeof options.thinkMessage !== "string") {
 		return weky._LoggerManager.createTypeError("NeverHaveIEver", "thinkMessage must be a string.");
 	}
 
-	if (!options.othersMessage) {
-		options.othersMessage = "Only <@{{author}}> can use the buttons!";
-	}
+	if (!options.othersMessage) options.othersMessage = "Only <@{{author}}> can use the buttons!";
 	if (typeof options.othersMessage !== "string") {
 		return weky._LoggerManager.createTypeError("NeverHaveIEver", "othersMessage must be a string.");
 	}
@@ -23,151 +26,145 @@ const NeverHaveIEver = async (weky: WekyManager, options: CustomOptions<NeverHav
 		return weky._LoggerManager.createTypeError("NeverHaveIEver", "buttons must be an object.");
 	}
 
-	if (!options.buttons.optionA) options.buttons.optionA = "Yes";
-	if (typeof options.buttons.optionA !== "string") {
-		return weky._LoggerManager.createTypeError("NeverHaveIEver", "buttons.optionA must be a string.");
-	}
+	const labelYes = options.buttons.optionA || "Yes";
+	const labelNo = options.buttons.optionB || "No";
 
-	if (!options.buttons.optionB) options.buttons.optionB = "No";
-	if (typeof options.buttons.optionB !== "string") {
-		return weky._LoggerManager.createTypeError("NeverHaveIEver", "buttons.optionB must be a string.");
-	}
+	const gameTitle = options.embed.title || "Never Have I Ever";
+	const defaultColor = typeof options.embed.color === "number" ? options.embed.color : 0x5865f2;
 
-	const id1 = weky.getRandomString(20) + "-" + weky.getRandomString(20);
+	const idYes = `nhie_yes_${weky.getRandomString(10)}`;
+	const idNo = `nhie_no_${weky.getRandomString(10)}`;
 
-	const id2 = weky.getRandomString(20) + "-" + weky.getRandomString(20);
+	const createGameContainer = (
+		state: "loading" | "active" | "yes" | "no" | "timeout" | "error",
+		statementText: string
+	) => {
+		const container = new ContainerBuilder();
+		let content = "";
 
-	const id = weky._getContextUserID(context);
+		switch (state) {
+			case "loading":
+				container.setAccentColor(defaultColor);
+				content = `## ${gameTitle}\n> 🔄 ${options.thinkMessage}`;
+				break;
 
-	options.embed.description = options.thinkMessage ? options.thinkMessage : "I am thinking...";
-	let embed = weky._createEmbed(options.embed);
+			case "active":
+				container.setAccentColor(defaultColor);
+				content = `## ${gameTitle}\n> ${statementText}`;
+				break;
 
-	const think = await context.channel.send({
-		embeds: [embed],
-	});
+			case "yes":
+				container.setAccentColor(0x57f287);
+				content = `## ${gameTitle}\n> ${statementText}\n\n✅ **I have done this.**`;
+				break;
 
-	interface ApiResponse {
-		statement: string;
-	}
+			case "no":
+				container.setAccentColor(0xed4245);
+				content = `## ${gameTitle}\n> ${statementText}\n\n❌ **I have never done this.**`;
+				break;
 
-	let { statement } = await fetch("https://api.nhie.io/v2/statements/next?language=en&category=harmless").then(
-		(res) => res.json() as Promise<ApiResponse>
-	);
+			case "timeout":
+				container.setAccentColor(0x99aab5);
+				content = `## ${gameTitle}\n> ${statementText}\n\n⏳ **Time's up!**`;
+				break;
 
-	if (!statement) {
-		let owner = await weky._client.users.fetch("682983233851228161");
-
-		if (owner) {
-			await owner
-				.send({
-					content: "NHIE API is down, please fix it as soon as possible!",
-				})
-				.catch(() => {});
+			case "error":
+				container.setAccentColor(0xff0000);
+				content = `## ❌ Error\n> ${statementText}`;
+				break;
 		}
 
-		return await think.edit({
-			content: "Failed to fetch statement from API",
-			embeds: [],
-			components: [],
+		container.addTextDisplayComponents((text) => text.setContent(content));
+
+		if (state !== "loading" && state !== "error") {
+			const btnYes = new ButtonBuilder()
+				.setLabel(labelYes)
+				.setStyle(state === "yes" ? ButtonStyle.Success : ButtonStyle.Primary)
+				.setCustomId(idYes)
+				.setDisabled(state !== "active");
+
+			const btnNo = new ButtonBuilder()
+				.setLabel(labelNo)
+				.setStyle(state === "no" ? ButtonStyle.Danger : ButtonStyle.Secondary)
+				.setCustomId(idNo)
+				.setDisabled(state !== "active");
+
+			container.addActionRowComponents((row) => row.setComponents(btnYes, btnNo));
+		}
+
+		return container;
+	};
+
+	const msg = await context.channel.send({
+		components: [createGameContainer("loading", "")],
+		flags: MessageFlags.IsComponentsV2,
+		allowedMentions: { repliedUser: false },
+	});
+
+	let statement = "";
+	try {
+		const res = await fetch("https://api.nhie.io/v2/statements/next?language=en&category=harmless");
+		const data = (await res.json()) as ApiResponse;
+		statement = data.statement ? data.statement.trim() : "";
+	} catch (e) {
+		return await msg.edit({
+			components: [createGameContainer("error", "Failed to fetch statement from API.")],
+			flags: MessageFlags.IsComponentsV2,
 		});
 	}
 
-	statement = statement.trim();
+	if (!statement) {
+		return await msg.edit({
+			components: [createGameContainer("error", "API returned no statement.")],
+			flags: MessageFlags.IsComponentsV2,
+		});
+	}
 
-	let btn = new ButtonBuilder()
-		.setStyle(ButtonStyle.Primary)
-		.setLabel(options.buttons.optionA ? options.buttons.optionA : "Yes")
-		.setCustomId(id1);
-
-	let btn2 = new ButtonBuilder()
-		.setStyle(ButtonStyle.Primary)
-		.setLabel(options.buttons.optionB ? options.buttons.optionB : "No")
-		.setCustomId(id2);
-
-	options.embed.description = statement;
-	embed = weky._createEmbed(options.embed);
-
-	await think.edit({
-		embeds: [embed],
-		components: [new ActionRowBuilder<ButtonBuilder>().addComponents(btn, btn2)],
+	await msg.edit({
+		components: [createGameContainer("active", statement)],
+		flags: MessageFlags.IsComponentsV2,
 	});
 
-	const gameCollector = think.createMessageComponentCollector({
+	const collector = msg.createMessageComponentCollector({
 		componentType: ComponentType.Button,
-		time: options.time ? options.time : 60000,
+		time: options.time || 60000,
 	});
 
-	gameCollector.on("collect", async (nhie) => {
-		if (nhie.user.id !== id) {
-			return nhie.reply({
+	collector.on("collect", async (interaction) => {
+		if (interaction.user.id !== userId) {
+			return interaction.reply({
 				content: options.othersMessage
-					? options.othersMessage.replace("{{author}}", id)
-					: `Only <@${id}> can use the buttons!`,
+					? options.othersMessage.replace("{{author}}", userId)
+					: `Only <@${userId}> can use the buttons!`,
 				flags: [MessageFlags.Ephemeral],
 			});
 		}
 
-		await nhie.deferUpdate();
+		await interaction.deferUpdate();
 
-		if (nhie.customId === id1) {
-			btn = new ButtonBuilder()
-				.setStyle(ButtonStyle.Primary)
-				.setLabel(`${options.buttons ? options.buttons.optionA : "Yes"} (Yes)`)
-				.setCustomId(id1)
-				.setDisabled();
-
-			btn2 = new ButtonBuilder()
-				.setStyle(ButtonStyle.Secondary)
-				.setLabel(`${options.buttons ? options.buttons.optionB : "No"} (No)`)
-				.setCustomId(id2)
-				.setDisabled();
-
-			gameCollector.stop();
-			await think.edit({
-				embeds: [embed],
-				components: [new ActionRowBuilder<ButtonBuilder>().addComponents(btn, btn2)],
+		if (interaction.customId === idYes) {
+			collector.stop("yes");
+			await msg.edit({
+				components: [createGameContainer("yes", statement)],
+				flags: MessageFlags.IsComponentsV2,
 			});
-		} else if (nhie.customId === id2) {
-			btn = new ButtonBuilder()
-				.setStyle(ButtonStyle.Secondary)
-				.setLabel(`${options.buttons ? options.buttons.optionA : "Yes"} (Yes)`)
-				.setCustomId(id1)
-				.setDisabled();
-
-			btn2 = new ButtonBuilder()
-				.setStyle(ButtonStyle.Primary)
-				.setLabel(`${options.buttons ? options.buttons.optionB : "No"} (No)`)
-				.setCustomId(id2)
-				.setDisabled();
-
-			gameCollector.stop();
-			await think.edit({
-				embeds: [embed],
-				components: [new ActionRowBuilder<ButtonBuilder>().addComponents(btn, btn2)],
+		} else if (interaction.customId === idNo) {
+			collector.stop("no");
+			await msg.edit({
+				components: [createGameContainer("no", statement)],
+				flags: MessageFlags.IsComponentsV2,
 			});
 		}
 	});
 
-	gameCollector.on("end", async (_, reason) => {
+	collector.on("end", async (_collected, reason) => {
 		if (reason === "time") {
-			btn = new ButtonBuilder()
-				.setStyle(ButtonStyle.Secondary)
-				.setLabel(`${options.buttons ? options.buttons.optionA : "Yes"} (Yes)`)
-				.setCustomId(id1)
-				.setDisabled();
-
-			btn2 = new ButtonBuilder()
-				.setStyle(ButtonStyle.Secondary)
-				.setLabel(`${options.buttons ? options.buttons.optionB : "No"} (No)`)
-				.setCustomId(id2)
-				.setDisabled();
-
-			embed.setDescription(statement + "\n\n**The game has ended!**");
-
-			await think.edit({
-				embeds: [embed],
-				components: [new ActionRowBuilder<ButtonBuilder>().addComponents(btn, btn2)],
-			});
+			try {
+				await msg.edit({
+					components: [createGameContainer("timeout", statement)],
+					flags: MessageFlags.IsComponentsV2,
+				});
+			} catch (e) {}
 		}
 	});
 };

@@ -1,4 +1,4 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, MessageFlags } from "discord.js";
+import { ButtonBuilder, ButtonStyle, ComponentType, ContainerBuilder, MessageFlags } from "discord.js";
 
 import type { CustomOptions, GuessTheNumberTypes } from "../Types/index.js";
 import type { WekyManager } from "../index.js";
@@ -7,236 +7,229 @@ const data = new Set();
 const currentGames: any = new Object();
 
 const GuessTheNumber = async (weky: WekyManager, options: CustomOptions<GuessTheNumberTypes>) => {
-	let context = options.context;
+	const context = options.context;
+	const userId = weky._getContextUserID(context);
+	const channelId = context.channel.id;
 
-	let id = weky._getContextUserID(context);
-
-	weky._deferContext(context);
+	const isPublic = options.publicGame ?? false;
 
 	if (!options.ongoingMessage) {
 		options.ongoingMessage = "A game is already running in <#{{channel}}>. Try again later!";
 	}
-	if (typeof options.ongoingMessage !== "string") {
-		return weky._LoggerManager.createTypeError("GuessTheNumber", "ongoingMessage must be a string.");
-	}
 
 	if (!options.winMessage) options.winMessage = {};
-	let winMessage = options.winMessage;
-	if (typeof winMessage !== "object") {
-		return weky._LoggerManager.createTypeError("GuessTheNumber", "winMessage must be an object.");
-	}
+	const winMsgPublic =
+		options.winMessage.publicGame ||
+		"GG! The number was **{{number}}**. <@{{winner}}> guessed it in **{{time}}**.\n\n__**Stats:**__\n**Participants:** {{totalparticipants}}";
+	const winMsgPrivate =
+		options.winMessage.privateGame || "GG! The number was **{{number}}**. You guessed it in **{{time}}**.";
 
-	let winMessagePublicGame: string;
-	if (!options.winMessage.publicGame) {
-		winMessagePublicGame =
-			"GG, The number was **{{number}}**. <@{{winner}}> made it in **{{time}}**.\n\n__**Stats of the game:**__\n**Duration**: {{time}}\n**Number of participants**: {{totalparticipants}} Participants\n**Participants**: {{participants}}";
-	} else {
-		winMessagePublicGame = options.winMessage.publicGame;
-	}
-	if (typeof winMessagePublicGame !== "string") {
-		return weky._LoggerManager.createTypeError("GuessTheNumber", "winMessage.publicGame must be a string.");
-	}
-
-	let winMessagePrivateGame: string;
-	if (!options.winMessage.privateGame) {
-		winMessagePrivateGame = "GG, The number which I guessed was **{{number}}**. You made it in **{{time}}**.";
-	} else {
-		winMessagePrivateGame = options.winMessage.privateGame;
-	}
-	if (typeof winMessagePrivateGame !== "string") {
-		return weky._LoggerManager.createTypeError("GuessTheNumber", "winMessage.privateGame must be a string.");
-	}
-
-	const ids = weky.getRandomString(20) + "-" + weky.getRandomString(20);
-
-	let number: number;
-	if (!options.number) {
-		number = Math.floor(Math.random() * 1000);
-	} else {
-		number = options.number;
-	}
-
-	let min: number = -1;
-	let max: number = number * (Math.floor(Math.random() * 100) + 1) * 13;
-
+	let number = options.number;
 	if (typeof number !== "number") {
-		return weky._LoggerManager.createTypeError("GuessTheNumber", "Number must be a number.");
+		number = Math.floor(Math.random() * 1000) + 1;
 	}
 
-	const handleGame = async (isPublic: boolean) => {
-		const participants: string[] = [];
+	let min = 0;
+	let max = number * (Math.floor(Math.random() * 5) + 2);
 
-		if (isPublic && currentGames[context.guild.id]) {
-			options.embed.description = options.ongoingMessage.replace(
-				/{{channel}}/g,
-				currentGames[`${context.guild.id}_channel`]
-			);
+	const gameTitle = options.embed.title || "Guess The Number";
+	const defaultColor = typeof options.embed.color === "number" ? options.embed.color : 0x5865f2;
+	const cancelId = `gtn_cancel_${weky.getRandomString(10)}`;
 
-			if (context.channel.isDMBased()) return;
+	const createGameContainer = (
+		state: "active" | "won" | "lost" | "higher" | "lower",
+		gameData: {
+			guess?: number;
+			min?: number;
+			max?: number;
+			winner?: string;
+			timeTaken?: string;
+			participants?: string[];
+		}
+	) => {
+		const container = new ContainerBuilder();
+		let content = "";
 
-			return await context.channel.send({
-				embeds: [weky._createEmbed(options.embed)],
+		switch (state) {
+			case "active":
+				container.setAccentColor(defaultColor); // Blurple
+				content =
+					`## ${gameTitle}\n` +
+					`> 🔢 I'm thinking of a number...\n` +
+					`> ⏳ Time: **${weky.convertTime(options.time || 60000)}**\n\n` +
+					`**Hint Range:** \`${gameData.min ?? min}\` - \`${gameData.max ?? max}\`\n` +
+					`Type your guess in the chat!`;
+				break;
+
+			case "higher":
+				container.setAccentColor(0xfee75c); // Yellow
+				content =
+					`## ${gameTitle}\n` +
+					`> 🔼 The number is **HIGHER** than **${gameData.guess}**!\n\n` +
+					`**Current Range:** \`${gameData.min}\` - \`${gameData.max}\``;
+				break;
+
+			case "lower":
+				container.setAccentColor(0xe67e22); // Orange
+				content =
+					`## ${gameTitle}\n` +
+					`> 🔽 The number is **LOWER** than **${gameData.guess}**!\n\n` +
+					`**Current Range:** \`${gameData.min}\` - \`${gameData.max}\``;
+				break;
+
+			case "won":
+				container.setAccentColor(0x57f287); // Green
+				let winText = isPublic ? winMsgPublic : winMsgPrivate;
+				winText = winText
+					.replace("{{number}}", `${number}`)
+					.replace("{{winner}}", gameData.winner || "")
+					.replace("{{time}}", gameData.timeTaken || "")
+					.replace("{{totalparticipants}}", `${gameData.participants?.length || 1}`);
+
+				content = `## 🏆 Correct!\n> ${winText}`;
+				break;
+
+			case "lost":
+				container.setAccentColor(0xed4245); // Red
+				const loseText = (options.loseMessage || "The number was **{{number}}**.").replace("{{number}}", `${number}`);
+				content = `## ❌ Game Over\n> ${loseText}`;
+				break;
+		}
+
+		container.addTextDisplayComponents((t) => t.setContent(content));
+
+		if (state === "active" || state === "higher" || state === "lower") {
+			const btnCancel = new ButtonBuilder()
+				.setStyle(ButtonStyle.Danger)
+				.setLabel(options.button || "Give Up")
+				.setCustomId(cancelId);
+
+			container.addActionRowComponents((row) => row.setComponents(btnCancel));
+		}
+
+		return container;
+	};
+
+	if (isPublic && currentGames[context.guild.id]) {
+		const msg = options.ongoingMessage.replace("{{channel}}", currentGames[`${context.guild.id}_channel`]);
+		const errorContainer = new ContainerBuilder()
+			.setAccentColor(0xff0000)
+			.addTextDisplayComponents((t) => t.setContent(`## ❌ Error\n> ${msg}`));
+
+		return context.channel.send({ components: [errorContainer], flags: MessageFlags.IsComponentsV2 });
+	}
+
+	if (!isPublic) {
+		if (data.has(userId)) return;
+		data.add(userId);
+	} else {
+		currentGames[context.guild.id] = true;
+		currentGames[`${context.guild.id}_channel`] = channelId;
+	}
+
+	const msg = await context.channel.send({
+		components: [createGameContainer("active", { min, max })],
+		flags: MessageFlags.IsComponentsV2,
+	});
+
+	const gameCreatedAt = Date.now();
+	const participants: string[] = [];
+
+	const msgCollector = context.channel.createMessageCollector({
+		filter: (m) => (isPublic ? !m.author.bot : m.author.id === userId),
+		time: options.time || 60000,
+	});
+
+	const btnCollector = msg.createMessageComponentCollector({
+		componentType: ComponentType.Button,
+		time: options.time || 60000,
+	});
+
+	msgCollector.on("collect", async (collectedMsg) => {
+		if (isPublic && !participants.includes(collectedMsg.author.id)) {
+			participants.push(collectedMsg.author.id);
+		}
+
+		const guess = parseInt(collectedMsg.content, 10);
+		if (isNaN(guess)) return;
+
+		if (collectedMsg.deletable) await collectedMsg.delete().catch(() => {});
+
+		if (guess === number) {
+			msgCollector.stop("won");
+			btnCollector.stop();
+
+			const timeTaken = weky.convertTime(Date.now() - gameCreatedAt);
+
+			await msg.edit({
+				components: [
+					createGameContainer("won", {
+						winner: collectedMsg.author.id,
+						timeTaken,
+						participants,
+					}),
+				],
+				flags: MessageFlags.IsComponentsV2,
+			});
+		} else {
+			let state: "higher" | "lower" = "active" as any;
+
+			if (guess < number) {
+				state = "higher";
+				if (guess > min) min = guess;
+			} else {
+				state = "lower";
+				if (guess < max) max = guess;
+			}
+
+			await msg.edit({
+				components: [
+					createGameContainer(state, {
+						guess,
+						min,
+						max,
+					}),
+				],
+				flags: MessageFlags.IsComponentsV2,
+			});
+		}
+	});
+
+	btnCollector.on("collect", async (btn) => {
+		if (btn.user.id !== userId) {
+			return btn.reply({
+				content: options.otherMessage?.replace("{{author}}", userId) || "This is not your game!",
+				flags: [MessageFlags.Ephemeral],
 			});
 		}
 
-		if (!isPublic && data.has(id)) return;
-		if (!isPublic) data.add(id);
+		await btn.deferUpdate();
 
-		options.embed.description = options.embed.description
-			? options.embed.description.replace(/{{time}}/g, weky.convertTime(options.time ? options.time : 60000))
-			: "You have **{{time}}** to guess the number.".replace(
-					/{{time}}/g,
-					weky.convertTime(options.time ? options.time : 60000)
-			  );
+		if (btn.customId === cancelId) {
+			msgCollector.stop("cancelled");
+			btnCollector.stop();
 
-		const embed = weky._createEmbed(options.embed);
-		const btn1 = new ButtonBuilder()
-			.setStyle(ButtonStyle.Danger)
-			.setLabel(options.button ? options.button : "Cancel")
-			.setCustomId(ids);
-
-		const row = new ActionRowBuilder<ButtonBuilder>().addComponents(btn1);
-
-		if (context.channel.isDMBased()) return;
-
-		const msg = await context.channel.send({
-			embeds: [embed],
-			components: [row],
-		});
-
-		const gameCreatedAt = Date.now();
-
-		const collector = context.channel?.createMessageCollector({
-			filter: (m) => (isPublic ? !m.author.bot : m.author.id === id),
-			time: options.time ? options.time : 60000,
-		});
-
-		const gameCollector = msg.createMessageComponentCollector({
-			componentType: ComponentType.Button,
-		});
-
-		if (isPublic) {
-			currentGames[context.guild.id] = true;
-			currentGames[`${context.guild.id}_channel`] = context.channel.id;
+			await msg.edit({
+				components: [createGameContainer("lost", {})],
+				flags: MessageFlags.IsComponentsV2,
+			});
 		}
+	});
 
-		collector.on("collect", async (_msg) => {
-			if (isPublic && !participants.includes(_msg.author.id)) {
-				participants.push(_msg.author.id);
-			}
+	msgCollector.on("end", async (_collected, reason) => {
+		if (!isPublic) data.delete(userId);
+		else delete currentGames[context.guild.id];
 
-			const parsedNumber = parseInt(_msg.content, 10);
-
-			await _msg.delete();
-
-			if (parsedNumber === number) {
-				const time = weky.convertTime(Date.now() - gameCreatedAt);
-				options.embed.description = isPublic
-					? winMessagePublicGame
-							.replace(/{{number}}/g, number.toString())
-							.replace(/{{winner}}/g, _msg.author.id)
-							.replace(/{{time}}/g, time)
-							.replace(/{{totalparticipants}}/g, `${participants.length}`)
-							.replace(/{{participants}}/g, participants.map((p) => "<@" + p + ">").join(", "))
-					: winMessagePrivateGame.replace(/{{time}}/g, time).replace(/{{number}}/g, `${number}`);
-
-				let _embed = weky._createEmbed(options.embed);
-
+		if (reason === "time") {
+			btnCollector.stop();
+			try {
 				await msg.edit({
-					embeds: [_embed],
-					components: [],
+					components: [createGameContainer("lost", {})],
+					flags: MessageFlags.IsComponentsV2,
 				});
-
-				gameCollector.stop();
-				collector.stop();
-			}
-
-			const compareResponse = (comparison: "bigger" | "smaller", guessed: number) => {
-				options.embed.description = options[comparison === "bigger" ? "biggerNumberMessage" : "smallerNumberMeesage"]
-					? options[comparison === "bigger" ? "biggerNumberMessage" : "smallerNumberMeesage"]
-							.replace(/{{author}}/g, _msg.author.toString())
-							.replace(/{{number}}/g, `${parsedNumber}`)
-					: `The number is ${comparison} than **${parsedNumber}**!`;
-
-				if (comparison === "bigger" && guessed > min) {
-					min = guessed;
-				} else if (comparison === "smaller" && guessed < max) {
-					max = guessed;
-				}
-
-				return msg.edit({
-					embeds: [
-						embed.setTimestamp(),
-						weky
-							._createEmbed(options.embed)
-							.setFields([
-								{
-									name: "Number is above:",
-									value: `\`${min}\``,
-									inline: true,
-								},
-								{
-									name: "Number is below:",
-									value: `\`${max}\``,
-									inline: true,
-								},
-							])
-							.setColor(comparison === "bigger" ? "Green" : "Red"),
-					],
-					components: [row],
-				});
-			};
-
-			if (parsedNumber < number) compareResponse("bigger", parsedNumber);
-			if (parsedNumber > number) compareResponse("smaller", parsedNumber);
-		});
-
-		gameCollector.on("collect", async (button) => {
-			if (button.user.id !== id) {
-				return button.reply({
-					content: options.otherMessage ? options.otherMessage.replace(/{{author}}/g, id) : "This is not your game!",
-					flags: [MessageFlags.Ephemeral],
-				});
-			}
-
-			await button.deferUpdate();
-
-			if (button.customId === ids) {
-				btn1.setDisabled(true);
-				gameCollector.stop();
-				collector.stop();
-				embed.setTimestamp(options.embed.timestamp ? new Date() : null);
-				msg.edit({
-					embeds: [embed],
-					components: [{ type: 1, components: [btn1] }],
-				});
-
-				options.embed.description = options.loseMessage
-					? options.loseMessage.replace(/{{number/g, `${number}`)
-					: `The number was **${number}**!`;
-				let _embed = weky._createEmbed(options.embed);
-
-				msg.edit({ embeds: [_embed] });
-			}
-		});
-
-		collector.on("end", async (_collected, reason) => {
-			if (reason === "time") {
-				options.embed.description = options.loseMessage
-					? options.loseMessage.replace(/{{number}}/g, `${number}`)
-					: `The number was **${number}**!`;
-				let _embed = weky._createEmbed(options.embed);
-
-				await msg.edit({
-					embeds: [_embed],
-				});
-			}
-			data.delete(id);
-			currentGames[context.guild.id] = false;
-		});
-	};
-
-	await handleGame(options.publicGame ?? false);
+			} catch (e) {}
+		}
+	});
 };
 
 export default GuessTheNumber;

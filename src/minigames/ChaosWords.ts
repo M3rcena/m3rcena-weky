@@ -1,476 +1,289 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle, ComponentType } from "discord.js";
+import { ButtonBuilder, ButtonStyle, ComponentType, ContainerBuilder, Message, MessageFlags } from "discord.js";
 
-import type { ChaosTypes, CustomOptions, Fields } from "../Types/index.js";
+import type { ChaosTypes, CustomOptions } from "../Types/index.js";
 import type { WekyManager } from "../index.js";
 
-const data = new Set();
+const activePlayers = new Set();
 
 const ChaosWords = async (weky: WekyManager, options: CustomOptions<ChaosTypes>) => {
-	let context = options.context;
+	const context = options.context;
+	const userId = weky._getContextUserID(context);
 
-	let id = weky._getContextUserID(context);
+	// --- 1. Validation & State ---
+	if (activePlayers.has(userId)) return;
+	activePlayers.add(userId);
 
-	if (data.has(id)) return;
-	data.add(id);
+	const cancelId = `chaos_cancel_${weky.getRandomString(10)}`;
+	const gameTitle = options.embed.title || "Chaos Words";
+	const defaultColor = typeof options.embed.color === "number" ? options.embed.color : 0x5865f2;
 
-	const ids = weky.getRandomString(20) + "-" + weky.getRandomString(20);
+	const maxTries = options.maxTries || 10;
+	const timeLimit = options.time || 60000;
 
-	let tries = 0;
-	const array: string[] = [];
-	let remaining = 0;
-	const guessed: string[] = [];
+	// --- 2. Game Data Initialization ---
 
-	let words = options.words
-		? options.words
-		: await weky.NetworkManager.getRandomSentence(Math.floor(Math.random() * 6) + 2);
-
-	let charGenerated = options.charGenerated
-		? options.charGenerated
-		: options.words
-		? options.words.join("").length - 1
-		: 0;
-	if (words.join("").length > charGenerated) {
-		charGenerated = words.join("").length - 1;
+	// A. Get Words
+	let words: string[] = options.words || [];
+	if (words.length === 0) {
+		try {
+			const fetchedWords = await weky.NetworkManager.getRandomSentence(Math.floor(Math.random() * 3) + 2);
+			words = fetchedWords.map((w) => w.toLowerCase().replace(/[^a-z]/g, ""));
+			words = words.filter((w) => w.length > 0);
+		} catch (e) {
+			activePlayers.delete(userId);
+			return context.channel.send("Failed to fetch words.");
+		}
+	} else {
+		words = words.map((w) => w.toLowerCase());
 	}
 
-	for (let i = 0; i < charGenerated; i++) {
-		array.push("abcdefghijklmnopqrstuvwxyz".charAt(Math.floor(Math.random() * "abcdefghijklmnopqrstuvwxyz".length)));
+	// B. Generate Chaos Characters
+	const totalWordLength = words.join("").length;
+	let charCount = options.charGenerated || totalWordLength + 5;
+
+	// Create random background characters
+	// We store this as an array so we can remove found words easily later
+	const chaosArray: string[] = [];
+	const alphabet = "abcdefghijklmnopqrstuvwxyz";
+	for (let i = 0; i < charCount; i++) {
+		chaosArray.push(alphabet.charAt(Math.floor(Math.random() * alphabet.length)));
 	}
 
-	words.forEach((e) => {
-		array.splice(Math.floor(Math.random() * array.length), 0, e);
+	// Insert actual words randomly into the array
+	words.forEach((word) => {
+		const insertPos = Math.floor(Math.random() * chaosArray.length);
+		chaosArray.splice(insertPos, 0, word);
 	});
 
-	let fields: Fields[] = [];
-	if (!options.embed.fields) {
-		fields = [
-			{
-				name: "Sentence:",
-				value: array.join(""),
-			},
-			{
-				name: "Words Found / Remaining:",
-				value: `${remaining} / ${words.length}`,
-			},
-			{
-				name: "Words Found:",
-				value: `${guessed.join(", ")}`,
-			},
-			{
-				name: "Words:",
-				value: words.join(", "),
-			},
-		];
-	}
+	// C. Tracking State
+	const gameState = {
+		remaining: [...words],
+		found: [] as string[],
+		tries: 0,
+	};
 
-	let embed = weky
-		._createEmbed(options.embed)
-		.setDescription(
-			options.embed.description
-				? options.embed.description.replace("{{time}}", weky.convertTime(options.time ? options.time : 60000))
-				: `You have **${weky.convertTime(
-						options.time ? options.time : 60000
-				  )}** to find the correct words in the chaos above.`
-		);
+	// --- 3. Components V2 Helper ---
+	const createGameContainer = (
+		state: "active" | "correct" | "wrong" | "repeat" | "won" | "lost" | "timeout" | "cancelled",
+		details?: { feedback?: string; timeTaken?: string }
+	) => {
+		const container = new ContainerBuilder();
+		let content = "";
 
-	if (!options.embed.fields) {
-		fields = [
-			{
-				name: "Sentence:",
-				value: array.join(""),
-			},
-			{
-				name: "Words Found / Remaining:",
-				value: `${remaining} / ${words.length}`,
-			},
-			{
-				name: "Words Found:",
-				value: `${guessed.join(", ")}`,
-			},
-			{
-				name: "Words:",
-				value: words.join(", "),
-			},
-		];
+		// -- Text & Color Logic --
+		switch (state) {
+			case "active":
+				container.setAccentColor(defaultColor);
+				content = `## ${gameTitle}\n> Find the hidden words in the text below!`;
+				break;
 
-		let _field: Fields[] = [];
-		fields.map((field, index) => {
-			if (index < 2) {
-				_field.push({
-					name: `${field.name}`,
-					value: `${field.value}`,
-				});
+			case "correct":
+				container.setAccentColor(0x57f287); // Green
+				content = `## ${gameTitle}\n> ✅ **${details?.feedback}**`;
+				break;
+
+			case "wrong":
+				container.setAccentColor(0xed4245); // Red
+				content = `## ${gameTitle}\n> ❌ **${details?.feedback}**`;
+				break;
+
+			case "repeat":
+				container.setAccentColor(0xfee75c); // Yellow
+				content = `## ${gameTitle}\n> ⚠️ **${details?.feedback}**`;
+				break;
+
+			case "won":
+				container.setAccentColor(0x57f287); // Green
+				const winMsg = (options.winMessage || "You found all words in **{{time}}**!").replace(
+					"{{time}}",
+					details?.timeTaken || ""
+				);
+				content = `## 🏆 You Won!\n> ${winMsg}`;
+				break;
+
+			case "lost":
+				container.setAccentColor(0xed4245); // Red
+				const loseMsg = options.loseMessage || "You failed to find all words.";
+				content = `## ❌ Game Over\n> ${loseMsg}`;
+				break;
+
+			case "timeout":
+				container.setAccentColor(0xed4245); // Red
+				content = `## ⏱️ Time's Up\n> You ran out of time!`;
+				break;
+
+			case "cancelled":
+				container.setAccentColor(0xed4245); // Red
+				content = `## 🚫 Cancelled\n> Game ended by player.`;
+				break;
+		}
+
+		// -- Construct Main Display --
+		if (state !== "cancelled") {
+			// 1. Current Chaos String (Dynamic: words are removed when found)
+			const currentChaosString = chaosArray.join("");
+			content += `\n\n**Chaos String:**\n\`\`\`text\n${currentChaosString}\n\`\`\``;
+
+			// 2. Found Words List
+			content +=
+				`\n**Words Found (${gameState.found.length}/${words.length}):**\n` +
+				`${gameState.found.length > 0 ? gameState.found.map((w) => `\`${w}\``).join(", ") : "_None yet_"}`;
+
+			// 3. Stats or Missing Words
+			if (state === "won") {
+				// Nothing extra needed
+			} else if (state === "lost" || state === "timeout") {
+				// Show Missing Words
+				content += `\n\n**Missing Words:**\n${gameState.remaining.map((w) => `\`${w}\``).join(", ")}`;
+			} else {
+				// Active Game Stats
+				content += `\n\n**Tries:** ${gameState.tries}/${maxTries}`;
+				content += `\n> ⏳ Time Remaining: **${weky.convertTime(timeLimit)}**`;
 			}
-		});
-		embed.setFields(_field);
-	}
+		}
 
-	let btn1 = new ButtonBuilder()
-		.setStyle(ButtonStyle.Danger)
-		.setLabel(options.buttonText ? options.buttonText : "Cancel")
-		.setCustomId(ids);
+		container.addTextDisplayComponents((t) => t.setContent(content));
 
-	const originalSentence = array;
+		// -- Button Logic --
+		if (state === "active" || state === "correct" || state === "wrong" || state === "repeat") {
+			const btnCancel = new ButtonBuilder()
+				.setStyle(ButtonStyle.Danger)
+				.setLabel(options.buttonText || "Cancel")
+				.setCustomId(cancelId);
 
+			container.addActionRowComponents((row) => row.setComponents(btnCancel));
+		}
+
+		return container;
+	};
+
+	// --- 4. Start Game ---
 	const msg = await context.channel.send({
-		embeds: [embed],
-		components: [new ActionRowBuilder<ButtonBuilder>().addComponents(btn1)],
+		components: [createGameContainer("active")],
+		flags: MessageFlags.IsComponentsV2,
+		allowedMentions: { repliedUser: false },
 	});
 
 	const gameCreatedAt = Date.now();
 
-	if (!context.channel || !context.channel.isTextBased()) return;
-	const game = context.channel.createMessageCollector({
-		filter: (m) => m.author.id === id,
-		time: options.time ? options.time : 60000,
+	// --- 5. Collectors ---
+	const msgCollector = context.channel.createMessageCollector({
+		filter: (m: Message) => !m.author.bot && m.author.id === userId,
+		time: timeLimit,
 	});
 
-	if (!context.channel || !context.channel.isSendable()) return;
-	game.on("collect", async (mes) => {
-		if (words === undefined) return;
-		const condition = words.includes(mes.content.toLowerCase()) && !guessed.includes(mes.content.toLowerCase());
+	const btnCollector = msg.createMessageComponentCollector({
+		componentType: ComponentType.Button,
+		filter: (i) => i.user.id === userId,
+		time: timeLimit,
+	});
 
-		if (condition) {
-			remaining++;
-			array.splice(array.indexOf(mes.content.toLowerCase()), 1);
-			guessed.push(mes.content.toLowerCase());
-			let _embed = weky
-				._createEmbed(options.embed)
-				.setDescription(
-					options.embed.description
-						? options.embed.description.replace("{{time}}", weky.convertTime(options.time ? options.time : 60000))
-						: `You have **${weky.convertTime(
-								options.time ? options.time : 60000
-						  )}** to find the correct words in the chaos above.`
-				);
+	// --- Logic ---
+	msgCollector.on("collect", async (mes: Message) => {
+		const guess = mes.content.toLowerCase().trim();
 
-			if (!options.embed.fields) {
-				fields = [
-					{
-						name: "Sentence:",
-						value: array.join(""),
-					},
-					{
-						name: "Words Found / Remaining:",
-						value: `${remaining} / ${words.length}`,
-					},
-					{
-						name: "Words Found:",
-						value: `${guessed.join(", ")}`,
-					},
-					{
-						name: "Words:",
-						value: words.join(", "),
-					},
-				];
+		if (mes.deletable) await mes.delete().catch(() => {});
 
-				let _field: Fields[] = [];
-				fields.map((field, index) => {
-					if (index < 3) {
-						_field.push({
-							name: `${field.name}`,
-							value: `${field.value}`,
-						});
-					}
-				});
-				_embed.setFields(_field);
+		// 1. Already Found?
+		if (gameState.found.includes(guess)) {
+			await msg.edit({
+				components: [createGameContainer("repeat", { feedback: `You already found "${guess}"!` })],
+				flags: MessageFlags.IsComponentsV2,
+			});
+			return;
+		}
+
+		// 2. Is it a valid remaining word?
+		if (gameState.remaining.includes(guess)) {
+			// Correct Guess
+			gameState.found.push(guess);
+			gameState.remaining = gameState.remaining.filter((w) => w !== guess);
+
+			// REMOVE THE WORD FROM THE CHAOS ARRAY (Visual Update)
+			const indexInChaos = chaosArray.indexOf(guess);
+			if (indexInChaos > -1) {
+				chaosArray.splice(indexInChaos, 1);
 			}
 
-			btn1 = new ButtonBuilder()
-				.setStyle(ButtonStyle.Danger)
-				.setLabel(options.buttonText ? options.buttonText : "Cancel")
-				.setCustomId(ids);
+			// CHECK WIN
+			if (gameState.remaining.length === 0) {
+				msgCollector.stop("won");
+				btnCollector.stop();
+				activePlayers.delete(userId);
 
-			const correctEmbed = weky._createEmbed(options.embed, true).setColor(`Green`).setDescription(`
-										${
-											options.correctWord
-												? options.correctWord
-														.replace("{{word}}", mes.content.toLowerCase())
-														.replace("{{remaining}}", `${words.length - remaining}`)
-												: `GG, **${mes.content.toLowerCase()}** was correct! You have to find **${
-														words.length - remaining
-												  }** more word(s).`
-										}
-										`);
+				const timeTaken = weky.convertTime(Date.now() - gameCreatedAt);
+
+				await msg.edit({
+					components: [createGameContainer("won", { timeTaken })],
+					flags: MessageFlags.IsComponentsV2,
+				});
+			} else {
+				// Keep Playing (Correct)
+				const correctMsg = options.correctWord
+					? options.correctWord.replace("{{word}}", guess).replace("{{remaining}}", `${gameState.remaining.length}`)
+					: `Correct! **${guess}** was found.`;
+
+				await msg.edit({
+					components: [createGameContainer("correct", { feedback: correctMsg })],
+					flags: MessageFlags.IsComponentsV2,
+				});
+			}
+		} else {
+			// Wrong Guess
+			gameState.tries++;
+
+			// CHECK LOSS (Tries)
+			if (gameState.tries >= maxTries) {
+				msgCollector.stop("lost");
+				btnCollector.stop();
+				activePlayers.delete(userId);
+
+				await msg.edit({
+					components: [createGameContainer("lost")],
+					flags: MessageFlags.IsComponentsV2,
+				});
+			} else {
+				// Keep Playing (Wrong)
+				const wrongMsg = options.wrongWord
+					? options.wrongWord.replace("{{remaining_tries}}", `${maxTries - gameState.tries}`)
+					: `**${guess}** is not in the text!`;
+
+				await msg.edit({
+					components: [createGameContainer("wrong", { feedback: wrongMsg })],
+					flags: MessageFlags.IsComponentsV2,
+				});
+			}
+		}
+	});
+
+	btnCollector.on("collect", async (btn) => {
+		if (btn.customId === cancelId) {
+			await btn.deferUpdate();
+			msgCollector.stop("cancelled");
+			btnCollector.stop();
+			activePlayers.delete(userId);
 
 			await msg.edit({
-				embeds: [_embed, correctEmbed],
-				components: [new ActionRowBuilder<ButtonBuilder>().addComponents(btn1)],
+				components: [createGameContainer("cancelled")],
+				flags: MessageFlags.IsComponentsV2,
 			});
-
-			if (remaining === words.length) {
-				if (!context.channel || !context.channel.isSendable()) return;
-				btn1 = new ButtonBuilder()
-					.setStyle(ButtonStyle.Danger)
-					.setLabel(options.buttonText ? options.buttonText : "Cancel")
-					.setDisabled()
-					.setCustomId(ids);
-
-				await msg.edit({
-					embeds: [embed],
-					components: [new ActionRowBuilder<ButtonBuilder>().addComponents(btn1)],
-				});
-
-				const time = weky.convertTime(Date.now() - gameCreatedAt);
-				let __embed = weky
-					._createEmbed(options.embed)
-					.setColor("Green")
-					.setDescription(
-						options.winMessage ? options.winMessage.replace("{{time}}", time) : `You found all the words in **${time}**`
-					);
-
-				if (!options.embed.fields) {
-					fields = [
-						{
-							name: "Sentence:",
-							value: originalSentence.join(""),
-						},
-						{
-							name: "Words:",
-							value: words.join(", "),
-						},
-					];
-
-					let _field: Fields[] = [];
-					fields.map((field) => {
-						_field.push({
-							name: `${field.name}`,
-							value: `${field.value}`,
-						});
-					});
-					__embed.setFields(_field);
-				}
-
-				await msg.edit({
-					embeds: [__embed],
-					components: [],
-				});
-
-				data.delete(id);
-				if (mes.deletable) mes.delete();
-
-				return game.stop();
-			}
-
-			if (mes.deletable) mes.delete();
-		} else {
-			tries++;
-			if (tries === (options.maxTries ? options.maxTries : 10)) {
-				const _embed = weky
-					._createEmbed(options.embed)
-					.setDescription(
-						options.loseMessage
-							? options.loseMessage
-							: `You failed to find all the words in ${options.maxTries ? options.maxTries.toString() : "10"} tries.`
-					)
-					.setColor("Red");
-
-				if (!options.embed.fields) {
-					fields = [
-						{
-							name: "Original Sentence:",
-							value: originalSentence.join(""),
-						},
-						{
-							name: "Words:",
-							value: words.join(", "),
-						},
-					];
-
-					let _fields: Fields[] = [];
-					fields.map((field) => {
-						_fields.push({
-							name: `${field.name}`,
-							value: `${field.value}`,
-						});
-					});
-					_embed.setFields(_fields);
-				}
-
-				await msg.edit({
-					embeds: [_embed],
-					components: [],
-				});
-
-				if (mes.deletable) mes.delete();
-
-				data.delete(id);
-				return game.stop("Too many Tries");
-			}
-
-			let _embed = weky
-				._createEmbed(options.embed)
-				.setDescription(
-					options.embed.description
-						? options.embed.description.replace("{{time}}", weky.convertTime(options.time ? options.time : 60000))
-						: `You have **${weky.convertTime(
-								options.time ? options.time : 60000
-						  )}** to find the correct words in the chaos above.`
-				);
-
-			if (!options.embed.fields) {
-				fields = [
-					{
-						name: "Sentence:",
-						value: array.join(""),
-					},
-					{
-						name: "Words Found / Remaining:",
-						value: `${remaining} / ${words.length}`,
-					},
-					{
-						name: "Words Found:",
-						value: `${guessed.join(", ")}`,
-					},
-					{
-						name: "Words:",
-						value: words.join(", "),
-					},
-				];
-
-				let _field: Fields[] = [];
-				fields.map((field, index) => {
-					if (index < 3) {
-						_field.push({
-							name: `${field.name}`,
-							value: `${field.value}`,
-						});
-					}
-				});
-				_embed.setFields(_field);
-			}
-
-			btn1 = new ButtonBuilder()
-				.setStyle(ButtonStyle.Danger)
-				.setLabel(options.buttonText ? options.buttonText : "Cancel")
-				.setCustomId(ids);
-
-			const wrongEmbed = weky
-				._createEmbed(options.embed, true)
-				.setColor("Red")
-				.setDescription(
-					`${
-						options.wrongWord
-							? options.wrongWord.replace(`{{remaining_tries}}`, `${options.maxTries ? options.maxTries : 10 - tries}`)
-							: `**${mes.content.toLowerCase()}** is not the correct word. You have **${
-									options.maxTries ? options.maxTries : 10 - tries
-							  }** tries left.`
-					}`
-				);
-
-			msg.edit({
-				embeds: [_embed, wrongEmbed],
-				components: [new ActionRowBuilder<ButtonBuilder>().addComponents(btn1)],
-			});
-
-			if (mes.deletable) mes.delete();
 		}
 	});
 
-	game.on("end", (_, reason: string) => {
+	msgCollector.on("end", async (_collected, reason) => {
 		if (reason === "time") {
-			const _embed = weky
-				._createEmbed(options.embed)
-				.setColor("Red")
-				.setDescription(options.loseMessage ? options.loseMessage : `You failed to find all the words in time.`);
+			btnCollector.stop();
+			activePlayers.delete(userId);
 
-			if (!options.embed.fields) {
-				fields = [
-					{
-						name: "Original Sentence:",
-						value: originalSentence.join(""),
-					},
-					{
-						name: "Words Found / Remaining:",
-						value: `${remaining} / ${words.length}`,
-					},
-					{
-						name: "Words:",
-						value: words.join(", "),
-					},
-					{
-						name: "Words Found:",
-						value: `${guessed.length > 0 ? guessed.join(", ") : "**No Words Found!**"}`,
-					},
-				];
-
-				let _fields: Fields[] = [];
-				fields.map((field) => {
-					_fields.push({
-						name: `${field.name}`,
-						value: `${field.value}`,
-					});
+			try {
+				await msg.edit({
+					components: [createGameContainer("timeout")],
+					flags: MessageFlags.IsComponentsV2,
 				});
-				_embed.setFields(_fields);
+			} catch (e) {
+				// Message deleted
 			}
-
-			btn1 = new ButtonBuilder()
-				.setStyle(ButtonStyle.Danger)
-				.setLabel(options.buttonText ? options.buttonText : "Cancel")
-				.setDisabled()
-				.setCustomId(ids);
-
-			msg.edit({
-				embeds: [_embed],
-				components: [],
-			});
-
-			data.delete(id);
 		}
-	});
-
-	const gameCollector = msg.createMessageComponentCollector({
-		componentType: ComponentType.Button,
-	});
-
-	gameCollector.on("collect", async (button: ButtonInteraction) => {
-		await button.deferUpdate();
-
-		if (options.embed.fields) {
-			embed.setFields(options.embed.fields);
-		} else {
-			fields = [
-				{
-					name: "Original Sentence:",
-					value: originalSentence.join(""),
-				},
-				{
-					name: "Words Found / Remaining:",
-					value: `${remaining} / ${words.length}`,
-				},
-				{
-					name: "Words:",
-					value: words.join(", "),
-				},
-				{
-					name: "Words Found:",
-					value: `${guessed.length > 0 ? guessed.join(", ") : "**No Words found**"}`,
-				},
-			];
-
-			let _fields: Fields[] = [];
-			fields.map((field) => {
-				_fields.push({
-					name: `${field.name}`,
-					value: `${field.value}`,
-				});
-			});
-			embed.setFields(_fields);
-		}
-
-		const stoppedEmbed = weky
-			._createEmbed(options.embed, true)
-			.setColor("Red")
-			.setDescription(options.loseMessage ? options.loseMessage : `The game has been stopped by <@${id}>`);
-
-		await msg.edit({
-			embeds: [embed, stoppedEmbed],
-			components: [],
-		});
-
-		data.delete(id);
-		gameCollector.stop();
-		return game.stop();
 	});
 };
 

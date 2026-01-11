@@ -20,7 +20,7 @@ const mapDirection = (customId: string): string => {
 
 // Main game function that handles the 2048 game logic
 const mini2048 = async (weky: WekyManager, options: CustomOptions<Types2048>) => {
-	let context = options.context;
+	const context = options.context;
 
 	const userID = weky._getContextUserID(context);
 

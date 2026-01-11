@@ -93,6 +93,17 @@ export interface WillYouPressTheButtonTypes {
 	time?: number;
 }
 
+export interface DilemmaData {
+	id: string;
+	url: string;
+	question: string;
+	result: string;
+	stats: {
+		yes: { percentage: string; count: string };
+		no: { percentage: string; count: string };
+	};
+}
+
 export interface QuickClickTypes {
 	context: Context;
 	embed: Embeds;

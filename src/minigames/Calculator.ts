@@ -24,7 +24,7 @@ interface CalculationResult {
 }
 
 const Calculator = async (weky: WekyManager, options: CustomOptions<CalcTypes>) => {
-	let context = options.context;
+	const context = options.context;
 
 	let str = " ";
 	let stringify = "```\n" + str + "\n```";

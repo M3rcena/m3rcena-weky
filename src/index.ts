@@ -463,10 +463,11 @@ export class WekyManager {
 	 * @copyright All rights reserved. M3rcena Development
 	 */
 	async createShuffleGuess(options: ShuffleGuessTypes) {
+		this.NetworkManager.increaseUsage("shuffleGuess");
 		this.checkPackageUpdates("ShuffleGuess");
 		this.OptionsChecking(options, "ShuffleGuess");
 
-		return await ShuffleGuess(options);
+		return await ShuffleGuess(this, options as CustomOptions<ShuffleGuessTypes>);
 	}
 
 	/**
@@ -519,10 +520,11 @@ export class WekyManager {
 	 * @copyright All rights reserved. M3rcena Development
 	 */
 	async createWillYouPressTheButton(options: WillYouPressTheButtonTypes) {
+		this.NetworkManager.increaseUsage("willYouPressTheButton");
 		this.checkPackageUpdates("WillYouPressTheButton");
 		this.OptionsChecking(options, "WillYouPressTheButton");
 
-		return await WillYouPressTheButton(options);
+		return await WillYouPressTheButton(this, options as CustomOptions<WillYouPressTheButtonTypes>);
 	}
 
 	/**
@@ -547,10 +549,11 @@ export class WekyManager {
 	 * @copyright All rights reserved. M3rcena Development
 	 */
 	async createWouldYouRather(options: WouldYouRatherTypes) {
+		this.NetworkManager.increaseUsage("wouldYouRather");
 		this.checkPackageUpdates("WouldYouRather");
 		this.OptionsChecking(options, "WouldYouRather");
 
-		return await WouldYouRather(options);
+		return await WouldYouRather(this, options as CustomOptions<WouldYouRatherTypes>);
 	}
 
 	/**

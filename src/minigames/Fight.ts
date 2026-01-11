@@ -48,9 +48,9 @@ const POWERUPS: PowerUp[] = [
 ];
 
 const Fight = async (weky: WekyManager, options: CustomOptions<FightTypes>) => {
-	let context = options.context;
+	const context = options.context;
 
-	let id = weky._getContextUserID(context);
+	const id = weky._getContextUserID(context);
 
 	weky._deferContext(context);
 

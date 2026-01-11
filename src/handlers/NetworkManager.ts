@@ -1,7 +1,7 @@
 import DiscordJS, { AttachmentBuilder } from "discord.js";
 import { LoggerManager } from "./Logger.js";
 
-import type { BotDataTypes } from "src/Types/index.js";
+import type { BotDataTypes, DilemmaData } from "src/Types/index.js";
 
 type MinigameKey = keyof BotDataTypes["usage"]["minigames"];
 
@@ -71,7 +71,7 @@ export class NetworkManager {
 	 */
 	public async increaseUsage(minigame: MinigameKey): Promise<boolean> {
 		try {
-			const res = await this.request<{ success: boolean }>(`/api/v1/increaseUsage`, {
+			const res = await this.request<{ success: boolean }>(`/increaseUsage`, {
 				method: "POST",
 				body: JSON.stringify({
 					minigame,
@@ -94,7 +94,7 @@ export class NetworkManager {
 	 */
 	public async getRandomSentence(length: number): Promise<string[]> {
 		try {
-			const res = await this.request<{ word: string[] }>(`/api/v1/getRandomSentence?length=${length}`);
+			const res = await this.request<{ word: string[] }>(`/getRandomSentence?length=${length}`);
 
 			return res.word;
 		} catch (error) {
@@ -697,6 +697,39 @@ export class NetworkManager {
 		} catch (error) {
 			this.loggerManager.createError("API", `Failed to end Hangman game: ${error}`);
 			return false;
+		}
+	}
+
+	/**
+	 * WILL YOU PRESS THE BUTTON MINIGAME REQUESTS
+	 */
+
+	/**
+	 * Get a RANDOM dilemma for Will You Press The Button?
+	 * @returns {Promise<DilemmaData | null>}
+	 */
+	public async getWillYouPressTheButton(): Promise<DilemmaData | null> {
+		try {
+			const res = await this.request<DilemmaData>(`/WillYouPressTheButton/`);
+			return res;
+		} catch (error) {
+			this.loggerManager.createError("API", `Failed to get random WYPTB dilemma: ${error}`);
+			return null;
+		}
+	}
+
+	/**
+	 * Get a SPECIFIC dilemma by ID for Will You Press The Button?
+	 * @param {string | number} code The ID of the dilemma (e.g. 12345)
+	 * @returns {Promise<DilemmaData | null>}
+	 */
+	public async getWillYouPressTheButtonID(code: string | number): Promise<DilemmaData | null> {
+		try {
+			const res = await this.request<DilemmaData>(`/WillYouPressTheButton/${code}`);
+			return res;
+		} catch (error) {
+			this.loggerManager.createError("API", `Failed to get WYPTB dilemma ${code}: ${error}`);
+			return null;
 		}
 	}
 }

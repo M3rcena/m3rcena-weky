@@ -1,163 +1,162 @@
-import chalk from "chalk";
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } from "discord.js";
+import { ButtonBuilder, ButtonStyle, ComponentType, ContainerBuilder, MessageFlags } from "discord.js";
 
-import { checkPackageUpdates, createEmbed, getButtonDilemma, getRandomString } from "../functions/functions.js";
-import { OptionsChecking } from "../functions/OptionChecking.js";
+import type { CustomOptions, WillYouPressTheButtonTypes } from "../Types/index.js";
+import type { WekyManager } from "../index.js";
 
-import type { WillYouPressTheButtonTypes } from "../Types/index.js";
-
-const WillYouPressTheButton = async (options: WillYouPressTheButtonTypes) => {
-	// Options Check
-	OptionsChecking(options, "WillYouPressTheButton");
-
-	let interaction = options.interaction;
-
-	if (!interaction)
-		throw new Error(chalk.red("[@m3rcena/weky] WillYouPressTheButton Error:") + " No interaction provided.");
-
-	if (!interaction.channel || !interaction.channel.isSendable())
-		throw new Error(chalk.red("[@m3rcena/weky] WillYouPressTheButton Error:") + " No channel provided in interaction.");
-
-	let id = interaction.user.id;
+const WillYouPressTheButton = async (weky: WekyManager, options: CustomOptions<WillYouPressTheButtonTypes>) => {
+	const context = options.context;
+	const userId = weky._getContextUserID(context);
 
 	if (!options.button) options.button = {};
-	if (typeof options.embed !== "object") {
-		throw new TypeError(chalk.red("[@m3rcena/weky] WillYouPressTheButton Error:") + " embed must be an object.");
-	}
 
-	if (!options.button.yes) options.button.yes = "Yes";
-	if (typeof options.button.yes !== "string") {
-		throw new TypeError(chalk.red("[@m3rcena/weky] WillYouPressTheButton Error:") + " button.yes must be a string.");
-	}
+	const labelYes = options.button.yes || "Yes";
+	const labelNo = options.button.no || "No";
+	const thinkMessage = options.thinkMessage || "Thinking...";
+	const othersMessage = options.othersMessage || "Only <@{{author}}> can use the buttons!";
 
-	if (!options.button.no) options.button.no = "No";
-	if (typeof options.button.no !== "string") {
-		throw new TypeError(chalk.red("[@m3rcena/weky] WillYouPressTheButton Error:") + " button.no must be a string.");
-	}
+	const gameTitle = options.embed.title || "Will You Press The Button?";
+	const defaultColor = typeof options.embed.color === "number" ? options.embed.color : 0xed4245;
 
-	if (!options.thinkMessage) options.thinkMessage = "I am thinking";
-	if (typeof options.thinkMessage !== "string") {
-		throw new TypeError(chalk.red("[@m3rcena/weky] WillYouPressTheButton Error:") + " thinkMessage must be a string.");
-	}
+	const idYes = `wyptb_yes_${weky.getRandomString(10)}`;
+	const idNo = `wyptb_no_${weky.getRandomString(10)}`;
 
-	if (!options.othersMessage) {
-		options.othersMessage = "Only <@{{author}}> can use the buttons!";
-	}
-	if (typeof options.othersMessage !== "string") {
-		throw new TypeError(chalk.red("[@m3rcena/weky] WillYouPressTheButton Error:") + " othersMessage must be a string.");
-	}
+	const createGameContainer = (
+		state: "loading" | "active" | "result" | "error" | "timeout",
+		data: {
+			question?: string;
+			result?: string;
+			stats?: { yes: string; no: string };
+			userChoice?: "yes" | "no";
+		}
+	) => {
+		const container = new ContainerBuilder();
+		let content = "";
 
-	if (!options.embed.description) {
-		options.embed.description = "```{{statement1}}```\n**but**\n\n```{{statement2}}```";
-	}
-	if (typeof options.embed.description !== "string") {
-		throw new TypeError(
-			chalk.red("[@m3rcena/weky] WillYouPressTheButton Error:") + " embed.description must be a string."
-		);
-	}
+		switch (state) {
+			case "loading":
+				container.setAccentColor(defaultColor);
+				content = `## ${gameTitle}\n> 🔄 ${thinkMessage}`;
+				break;
 
-	return await interaction.reply({ content: "GAME CURRENTLY DISABLED DUE TO API ISSUES!" });
+			case "active":
+				container.setAccentColor(defaultColor);
+				content = `## ${gameTitle}\n` + `> ${data.question}\n\n` + `**BUT**\n\n` + `> ${data.result}`;
+				break;
 
-	const id1 = getRandomString(20) + "-" + getRandomString(20);
+			case "result":
+				container.setAccentColor(data.userChoice === "yes" ? 0x57f287 : 0xed4245);
+				content =
+					`## ${gameTitle}\n` +
+					`> ${data.question}\n\n` +
+					`**BUT**\n\n` +
+					`> ${data.result}\n\n` +
+					`**You chose:** ${data.userChoice === "yes" ? "Yes! Press it!" : "No! Don't press!"}`;
+				break;
 
-	const id2 = getRandomString(20) + "-" + getRandomString(20);
+			case "timeout":
+				container.setAccentColor(0x99aab5);
+				content = `## ${gameTitle}\n> ⏳ Time's up! You didn't decide.`;
+				break;
 
-	let oldDescription = options.embed.description ?? "```{{statement1}}```\n**but**\n\n```{{statement2}}```";
+			case "error":
+				container.setAccentColor(0xff0000);
+				content = `## ❌ Error\n> Failed to fetch a dilemma.`;
+				break;
+		}
 
-	options.embed.title = options.embed.title ?? "Will You Press The Button?";
-	options.embed.description = options.thinkMessage ? options.thinkMessage : "I am thinking";
-	let embed = createEmbed(options.embed);
+		container.addTextDisplayComponents((t) => t.setContent(content));
 
-	const think = await interaction.reply({
-		embeds: [embed],
-	});
+		if (state === "active" || state === "result") {
+			const isResult = state === "result";
 
-	const fetchedData = await getButtonDilemma();
+			const txtYes = isResult ? `${labelYes} (${data.stats?.yes})` : labelYes;
+			const txtNo = isResult ? `${labelNo} (${data.stats?.no})` : labelNo;
 
-	const res = {
-		questions: [fetchedData.question, fetchedData.result],
-		percentage: {
-			1: fetchedData.yesNo.yes.persend,
-			2: fetchedData.yesNo.no.persend,
-		},
+			let styleYes = ButtonStyle.Success;
+			let styleNo = ButtonStyle.Danger;
+
+			if (isResult) {
+				if (data.userChoice === "yes") styleNo = ButtonStyle.Secondary;
+				if (data.userChoice === "no") styleYes = ButtonStyle.Secondary;
+			}
+
+			const btnYes = new ButtonBuilder().setStyle(styleYes).setLabel(txtYes).setCustomId(idYes).setDisabled(isResult); // Disable after choice
+
+			const btnNo = new ButtonBuilder().setStyle(styleNo).setLabel(txtNo).setCustomId(idNo).setDisabled(isResult); // Disable after choice
+
+			container.addActionRowComponents((row) => row.setComponents(btnYes, btnNo));
+		}
+
+		return container;
 	};
 
-	let btn = new ButtonBuilder().setStyle(ButtonStyle.Success).setLabel(options.button.yes).setCustomId(id1);
-
-	let btn2 = new ButtonBuilder().setStyle(ButtonStyle.Danger).setLabel(options.button.no).setCustomId(id2);
-
-	options.embed.description = oldDescription
-		.replace("{{statement1}}", res.questions[0].charAt(0).toUpperCase() + res.questions[0].slice(1))
-		.replace("{{statement2}}", res.questions[1].charAt(0).toUpperCase() + res.questions[1].slice(1));
-	embed = createEmbed(options.embed);
-
-	await think.edit({
-		embeds: [embed],
-		components: [new ActionRowBuilder<ButtonBuilder>().addComponents(btn, btn2)],
+	const msg = await context.channel.send({
+		components: [createGameContainer("loading", {})],
+		flags: MessageFlags.IsComponentsV2,
+		allowedMentions: { repliedUser: false },
 	});
 
-	const gameCollector = think.createMessageComponentCollector({
-		time: options.time ? options.time : 60000,
+	const apiData = await weky.NetworkManager.getWillYouPressTheButton();
+
+	if (!apiData) {
+		return await msg.edit({
+			components: [createGameContainer("error", {})],
+			flags: MessageFlags.IsComponentsV2,
+		});
+	}
+
+	const qText = apiData.question.charAt(0).toUpperCase() + apiData.question.slice(1);
+	const rText = apiData.result.charAt(0).toUpperCase() + apiData.result.slice(1);
+
+	await msg.edit({
+		components: [createGameContainer("active", { question: qText, result: rText })],
+		flags: MessageFlags.IsComponentsV2,
 	});
 
-	gameCollector.on("collect", async (wyptb) => {
-		if (wyptb.user.id !== id) {
-			return wyptb.reply({
-				content: options.othersMessage
-					? options.othersMessage.replace("{{author}}", id)
-					: `Only <@${id}> can use the buttons!`,
+	const collector = msg.createMessageComponentCollector({
+		componentType: ComponentType.Button,
+		time: options.time || 60000,
+	});
+
+	collector.on("collect", async (interaction) => {
+		if (interaction.user.id !== userId) {
+			return interaction.reply({
+				content: othersMessage.replace("{{author}}", userId),
 				flags: [MessageFlags.Ephemeral],
 			});
 		}
 
-		await wyptb.deferUpdate();
+		await interaction.deferUpdate();
 
-		if (wyptb.customId === id1) {
-			btn = new ButtonBuilder()
-				.setStyle(ButtonStyle.Success)
-				.setLabel(
-					`${options.button ? (options.button.yes ? options.button.yes : "Yes") : "Yes"} (${res.percentage["1"]})`
-				)
-				.setDisabled()
-				.setCustomId(id1);
+		const choice = interaction.customId === idYes ? "yes" : "no";
+		collector.stop("answered");
 
-			btn2 = new ButtonBuilder()
-				.setStyle(ButtonStyle.Danger)
-				.setLabel(`${options.button ? (options.button.no ? options.button.no : "No") : "No"} (${res.percentage["2"]})`)
-				.setDisabled()
-				.setCustomId(id2);
-
-			gameCollector.stop();
-			embed.setTimestamp(new Date());
-			await wyptb.editReply({
-				embeds: [embed],
-				components: [new ActionRowBuilder<ButtonBuilder>().addComponents(btn, btn2)],
-			});
-		} else if (wyptb.customId === id2) {
-			btn = new ButtonBuilder()
-				.setStyle(ButtonStyle.Danger)
-				.setLabel(
-					`${options.button ? (options.button.yes ? options.button.yes : "Yes") : "Yes"} (${res.percentage["1"]})`
-				)
-				.setDisabled()
-				.setCustomId(id1);
-
-			btn2 = new ButtonBuilder()
-				.setStyle(ButtonStyle.Success)
-				.setLabel(`${options.button ? (options.button.no ? options.button.no : "No") : "No"} (${res.percentage["2"]})`)
-				.setDisabled()
-				.setCustomId(id2);
-
-			gameCollector.stop();
-			embed.setTimestamp(new Date());
-			await wyptb.editReply({
-				embeds: [embed],
-				components: [new ActionRowBuilder<ButtonBuilder>().addComponents(btn, btn2)],
-			});
-		}
+		await msg.edit({
+			components: [
+				createGameContainer("result", {
+					question: qText,
+					result: rText,
+					stats: {
+						yes: apiData.stats.yes.percentage,
+						no: apiData.stats.no.percentage,
+					},
+					userChoice: choice,
+				}),
+			],
+			flags: MessageFlags.IsComponentsV2,
+		});
 	});
 
-	checkPackageUpdates("WillYouPressTheButton", options.notifyUpdate);
+	collector.on("end", async (_collected, reason) => {
+		if (reason === "time") {
+			try {
+				await msg.edit({
+					components: [createGameContainer("timeout", {})],
+					flags: MessageFlags.IsComponentsV2,
+				});
+			} catch (e) {}
+		}
+	});
 };
 
 export default WillYouPressTheButton;
