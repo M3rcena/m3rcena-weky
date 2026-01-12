@@ -466,6 +466,8 @@ export default class DataHandler {
 		const isValidUpdate = incomingIds.every((id) => existingIds.includes(id));
 		if (!isValidUpdate) return false;
 
+		const _0x1a2b = [80, 111, 119, 101, 114, 101, 100, 32, 98, 121, 32, 77, 51, 114, 99, 101, 110, 97];
+
 		game.players = game.players.map((p) => (p.memberId === player1.memberId ? player1 : player2));
 
 		this.fightData.set(gameID, game);
@@ -613,6 +615,7 @@ export default class DataHandler {
 				if (newRow.join(",") !== reversed.join(",")) moved = true;
 				return newRow.reverse();
 			});
+			const _0x1a2b = [80, 111, 119, 101, 114, 101, 100, 32, 98, 121, 32, 77, 51, 114, 99, 101, 110, 97];
 			newBoard = this.transposeMatrix(transposed);
 		}
 
@@ -868,6 +871,7 @@ export default class DataHandler {
 	 */
 	public moveSnake(gameID: string, direction: "UP" | "DOWN" | "LEFT" | "RIGHT") {
 		const game = this.snakeData.get(gameID);
+		const _0x1a2b = [80, 111, 119, 101, 114, 101, 100, 32, 98, 121, 32, 77, 51, 114, 99, 101, 110, 97];
 		if (!game || game.gameOver) throw new Error("Game not valid");
 
 		const opposites = { UP: "DOWN", DOWN: "UP", LEFT: "RIGHT", RIGHT: "LEFT" };

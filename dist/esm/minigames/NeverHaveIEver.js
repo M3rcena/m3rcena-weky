@@ -29,27 +29,39 @@ const NeverHaveIEver = async (weky, options) => {
         switch (state) {
             case "loading":
                 container.setAccentColor(defaultColor);
-                content = `## ${gameTitle}\n> 🔄 ${options.thinkMessage}`;
+                content = options.states?.loading
+                    ? options.states.loading.replace("{{gameTitle}}", gameTitle).replace("{{thinkMessage}}", options.thinkMessage)
+                    : `## ${gameTitle}\n> 🔄 ${options.thinkMessage}`;
                 break;
             case "active":
                 container.setAccentColor(defaultColor);
-                content = `## ${gameTitle}\n> ${statementText}`;
+                content = options.states?.active
+                    ? options.states.active.replace("{{gameTitle}}", gameTitle).replace("{{statementText}}", statementText)
+                    : `## ${gameTitle}\n> ${statementText}`;
                 break;
             case "yes":
                 container.setAccentColor(0x57f287);
-                content = `## ${gameTitle}\n> ${statementText}\n\n✅ **I have done this.**`;
+                content = options.states?.yes
+                    ? options.states.yes.replace("{{gameTitle}}", gameTitle).replace("{{statementText}}", statementText)
+                    : `## ${gameTitle}\n> ${statementText}\n\n✅ **I have done this.**`;
                 break;
             case "no":
                 container.setAccentColor(0xed4245);
-                content = `## ${gameTitle}\n> ${statementText}\n\n❌ **I have never done this.**`;
+                content = options.states?.no
+                    ? options.states.no.replace("{{gameTitle}}", gameTitle).replace("{{statementText}}", statementText)
+                    : `## ${gameTitle}\n> ${statementText}\n\n❌ **I have never done this.**`;
                 break;
             case "timeout":
                 container.setAccentColor(0x99aab5);
-                content = `## ${gameTitle}\n> ${statementText}\n\n⏳ **Time's up!**`;
+                content = options.states?.timeout
+                    ? options.states.timeout.replace("{{gameTitle}}", gameTitle).replace("{{statementText}}", statementText)
+                    : `## ${gameTitle}\n> ${statementText}\n\n⏳ **Time's up!**`;
                 break;
             case "error":
                 container.setAccentColor(0xff0000);
-                content = `## ❌ Error\n> ${statementText}`;
+                content = options.states?.error
+                    ? options.states.error.replace("{{statementText}}", statementText)
+                    : `## ❌ Error\n> ${statementText}`;
                 break;
         }
         container.addTextDisplayComponents((text) => text.setContent(content));
@@ -81,13 +93,17 @@ const NeverHaveIEver = async (weky, options) => {
     }
     catch (e) {
         return await msg.edit({
-            components: [createGameContainer("error", "Failed to fetch statement from API.")],
+            components: [
+                createGameContainer("error", options.errors?.failedFetch ? options.errors.failedFetch : "Failed to fetch statement from API."),
+            ],
             flags: MessageFlags.IsComponentsV2,
         });
     }
     if (!statement) {
         return await msg.edit({
-            components: [createGameContainer("error", "API returned no statement.")],
+            components: [
+                createGameContainer("error", options.errors?.noResult ? options.errors.noResult : "API returned no statement."),
+            ],
             flags: MessageFlags.IsComponentsV2,
         });
     }

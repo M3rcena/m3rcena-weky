@@ -13,8 +13,8 @@ const ChaosWords = async (weky: WekyManager, options: CustomOptions<ChaosTypes>)
 	activePlayers.add(userId);
 
 	const cancelId = `chaos_cancel_${weky.getRandomString(10)}`;
-	const gameTitle = options.embed.title || "Chaos Words";
-	const defaultColor = typeof options.embed.color === "number" ? options.embed.color : 0x5865f2;
+	const gameTitle = options.embed?.title || "Chaos Words";
+	const defaultColor = typeof options.embed?.color === "number" ? options.embed.color : 0x5865f2;
 
 	const maxTries = options.maxTries || 10;
 	const timeLimit = options.time || 60000;
@@ -27,7 +27,7 @@ const ChaosWords = async (weky: WekyManager, options: CustomOptions<ChaosTypes>)
 			words = words.filter((w) => w.length > 0);
 		} catch (e) {
 			activePlayers.delete(userId);
-			return context.channel.send("Failed to fetch words.");
+			return context.channel.send(options.failedFetchMessage ? options.failedFetchMessage : "Failed to fetch words.");
 		}
 	} else {
 		words = words.map((w) => w.toLowerCase());
@@ -63,64 +63,95 @@ const ChaosWords = async (weky: WekyManager, options: CustomOptions<ChaosTypes>)
 		switch (state) {
 			case "active":
 				container.setAccentColor(defaultColor);
-				content = `## ${gameTitle}\n> Find the hidden words in the text below!`;
+				content = options.states?.active
+					? options.states.active.replace("{{gameTitle}}", gameTitle)
+					: `## ${gameTitle}\n> Find the hidden words in the text below!`;
 				break;
 
 			case "correct":
 				container.setAccentColor(0x57f287); // Green
-				content = `## ${gameTitle}\n> ✅ **${details?.feedback}**`;
+				content = options.states?.correct
+					? options.states.correct.replace("{{gameTitle}}", gameTitle).replace("{{detailsFeedback}}", details?.feedback)
+					: `## ${gameTitle}\n> ✅ **${details?.feedback}**`;
 				break;
 
 			case "wrong":
 				container.setAccentColor(0xed4245); // Red
-				content = `## ${gameTitle}\n> ❌ **${details?.feedback}**`;
+				content = options.states?.wrong
+					? options.states.wrong.replace("{{gameTitle}}", gameTitle).replace("{{detailsFeedback}}", details?.feedback)
+					: `## ${gameTitle}\n> ❌ **${details?.feedback}**`;
 				break;
 
 			case "repeat":
 				container.setAccentColor(0xfee75c); // Yellow
-				content = `## ${gameTitle}\n> ⚠️ **${details?.feedback}**`;
+				content = options.states?.repeat
+					? options.states.repeat.replace("{{gameTitle}}", gameTitle).replace("{{detailsFeedback}}", details?.feedback)
+					: `## ${gameTitle}\n> ⚠️ **${details?.feedback}**`;
 				break;
 
 			case "won":
 				container.setAccentColor(0x57f287); // Green
-				const winMsg = (options.winMessage || "You found all words in **{{time}}**!").replace(
-					"{{time}}",
-					details?.timeTaken || ""
-				);
-				content = `## 🏆 You Won!\n> ${winMsg}`;
+				const winMsg = options.states?.won?.winMessage
+					? options.states.won.winMessage.replace("{{timeTaken}}", details.timeTaken || "")
+					: `You found all words in **${details.timeTaken || ""}**!`;
+				content = options.states?.won?.winContent
+					? options.states.won.winMessage.replace("{{winMsg}}", winMsg)
+					: `## 🏆 You Won!\n> ${winMsg}`;
 				break;
 
 			case "lost":
 				container.setAccentColor(0xed4245); // Red
-				const loseMsg = options.loseMessage || "You failed to find all words.";
-				content = `## ❌ Game Over\n> ${loseMsg}`;
+				const loseMsg = options.states?.lost?.loseMessage
+					? options.states.lost.loseMessage
+					: "You failed to find all words.";
+				content = options.states?.lost?.loseContent
+					? options.states.lost.loseContent.replace("{{loseMsg}}", loseMsg)
+					: `## ❌ Game Over\n> ${loseMsg}`;
 				break;
 
 			case "timeout":
 				container.setAccentColor(0xed4245); // Red
-				content = `## ⏱️ Time's Up\n> You ran out of time!`;
+				content = options.states?.timeout ? options.states.timeout : `## ⏱️ Time's Up\n> You ran out of time!`;
 				break;
 
 			case "cancelled":
 				container.setAccentColor(0xed4245); // Red
-				content = `## 🚫 Cancelled\n> Game ended by player.`;
+				content = options.states?.cancelled ? options.states.cancelled : `## 🚫 Cancelled\n> Game ended by player.`;
 				break;
 		}
 
 		if (state !== "cancelled") {
 			const currentChaosString = chaosArray.join("");
-			content += `\n\n**Chaos String:**\n\`\`\`text\n${currentChaosString}\n\`\`\``;
+			content += options.states?.chaosString
+				? options.states.chaosString.replace("{{currentChaosString}}", currentChaosString)
+				: `\n\n**Chaos String:**\n\`\`\`text\n${currentChaosString}\n\`\`\``;
 
-			content +=
-				`\n**Words Found (${gameState.found.length}/${words.length}):**\n` +
-				`${gameState.found.length > 0 ? gameState.found.map((w) => `\`${w}\``).join(", ") : "_None yet_"}`;
+			content += options.states?.wordsFound?.main
+				? options.states?.wordsFound.main
+						.replace("{{totalFound}}", `${gameState.found.length}/${words.length}`)
+						.replace(
+							"{{wordList}}}",
+							gameState.found.length > 0
+								? gameState.found.map((w) => `\`${w}\``).join(", ")
+								: options.states?.wordsFound?.noneYet
+								? options.states.wordsFound.noneYet
+								: "_None yet_"
+						)
+				: `\n**Words Found (${gameState.found.length}/${words.length}):**\n` +
+				  `${gameState.found.length > 0 ? gameState.found.map((w) => `\`${w}\``).join(", ") : "_None yet_"}`;
 
 			if (state === "won") {
 			} else if (state === "lost" || state === "timeout") {
-				content += `\n\n**Missing Words:**\n${gameState.remaining.map((w) => `\`${w}\``).join(", ")}`;
+				content += options.states?.missingWords
+					? options.states.missingWords.replace("{{words}}", gameState.remaining.map((w) => `\`${w}\``).join(", "))
+					: `\n\n**Missing Words:**\n${gameState.remaining.map((w) => `\`${w}\``).join(", ")}`;
 			} else {
-				content += `\n\n**Tries:** ${gameState.tries}/${maxTries}`;
-				content += `\n> ⏳ Time Remaining: **${weky.convertTime(timeLimit)}**`;
+				content += options.states?.tries
+					? options.states.tries.replace("{{totalTries}}", `${gameState.tries}/${maxTries}`)
+					: `\n\n**Tries:** ${gameState.tries}/${maxTries}`;
+				content += options.states?.timeRemaining
+					? options.states.timeRemaining.replace("{{time}}", weky.convertTime(timeLimit))
+					: `\n> ⏳ Time Remaining: **${weky.convertTime(timeLimit)}**`;
 			}
 		}
 
@@ -129,7 +160,7 @@ const ChaosWords = async (weky: WekyManager, options: CustomOptions<ChaosTypes>)
 		if (state === "active" || state === "correct" || state === "wrong" || state === "repeat") {
 			const btnCancel = new ButtonBuilder()
 				.setStyle(ButtonStyle.Danger)
-				.setLabel(options.buttonText || "Cancel")
+				.setLabel(options.cancelButton || "Cancel")
 				.setCustomId(cancelId);
 
 			container.addActionRowComponents((row) => row.setComponents(btnCancel));
@@ -164,7 +195,13 @@ const ChaosWords = async (weky: WekyManager, options: CustomOptions<ChaosTypes>)
 
 		if (gameState.found.includes(guess)) {
 			await msg.edit({
-				components: [createGameContainer("repeat", { feedback: `You already found "${guess}"!` })],
+				components: [
+					createGameContainer("repeat", {
+						feedback: options.wordAlreadyFound
+							? options.wordAlreadyFound.replace("{{guess}}", guess)
+							: `You already found "${guess}"!`,
+					}),
+				],
 				flags: MessageFlags.IsComponentsV2,
 			});
 			return;
@@ -192,7 +229,7 @@ const ChaosWords = async (weky: WekyManager, options: CustomOptions<ChaosTypes>)
 				});
 			} else {
 				const correctMsg = options.correctWord
-					? options.correctWord.replace("{{word}}", guess).replace("{{remaining}}", `${gameState.remaining.length}`)
+					? options.correctWord.replace("{{guess}}", guess).replace("{{remaining}}", `${gameState.remaining.length}`)
 					: `Correct! **${guess}** was found.`;
 
 				await msg.edit({
@@ -214,7 +251,9 @@ const ChaosWords = async (weky: WekyManager, options: CustomOptions<ChaosTypes>)
 				});
 			} else {
 				const wrongMsg = options.wrongWord
-					? options.wrongWord.replace("{{remaining_tries}}", `${maxTries - gameState.tries}`)
+					? options.wrongWord
+							.replace("{{guess}}", guess)
+							.replace("{{remaining_tries}}", `${maxTries - gameState.tries}`)
 					: `**${guess}** is not in the text!`;
 
 				await msg.edit({

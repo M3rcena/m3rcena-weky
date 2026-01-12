@@ -14,6 +14,7 @@ const WouldYouRather = async (weky: WekyManager, options: CustomOptions<WouldYou
 
 	const thinkMessage = options.thinkMessage || "Thinking...";
 	const othersMessage = options.othersMessage || "Only <@{{author}}> can use the buttons!";
+
 	const gameTitle = options.embed.title || "Would You Rather?";
 	const defaultColor = typeof options.embed.color === "number" ? options.embed.color : 0x5865f2;
 
@@ -35,38 +36,50 @@ const WouldYouRather = async (weky: WekyManager, options: CustomOptions<WouldYou
 		switch (state) {
 			case "loading":
 				container.setAccentColor(defaultColor);
-				content = `## ${gameTitle}\n> 🔄 ${thinkMessage}`;
+				content = options.states?.loading
+					? options.states.loading.replace("{{gameTitle}}", gameTitle).replace("{{thinkMessage}}", thinkMessage)
+					: `## ${gameTitle}\n> 🔄 ${thinkMessage}`;
 				break;
 
 			case "active":
 				container.setAccentColor(defaultColor);
-				content =
-					`## ${gameTitle}\n` +
-					`> 🅰️ **${capitalizeFirstLetter(data.option1)}**\n\n` +
-					`**OR**\n\n` +
-					`> 🅱️ **${capitalizeFirstLetter(data.option2)}**`;
+				content = options.states?.active
+					? options.states.active
+							.replace("{{gameTitle}}", gameTitle)
+							.replace("{{option1}}", capitalizeFirstLetter(data.option1))
+							.replace("{{option2}}", capitalizeFirstLetter(data.option2))
+					: `## ${gameTitle}\n> 🅰️ **${capitalizeFirstLetter(
+							data.option1
+					  )}**\n\n**OR**\n\n> 🅱️ **${capitalizeFirstLetter(data.option2)}**`;
 				break;
 
 			case "result":
 				container.setAccentColor(0x57f287); // Green
-				content =
-					`## ${gameTitle}\n` +
-					`> 🅰️ **${capitalizeFirstLetter(data.option1)}**\n` +
-					`> 📊 ${data.stats?.a}\n\n` +
-					`**OR**\n\n` +
-					`> 🅱️ **${capitalizeFirstLetter(data.option2)}**\n` +
-					`> 📊 ${data.stats?.b}\n\n` +
-					`**You chose:** Option ${data.userChoice}`;
+				content = options.states?.result
+					? options.states.result
+							.replace("{{gameTitle}}", gameTitle)
+							.replace("{{option1}}", capitalizeFirstLetter(data.option1))
+							.replace("{{option2}}", capitalizeFirstLetter(data.option2))
+							.replace("{{stats1}}", data.stats?.a)
+							.replace("{{stats2}}", data.stats?.b)
+							.replace("{{userChoice}}", data.userChoice)
+					: `## ${gameTitle}\n> 🅰️ **${capitalizeFirstLetter(data.option1)}**\n> 📊 ${
+							data.stats?.a
+					  }\n\n**OR**\n\n> 🅱️ **${capitalizeFirstLetter(data.option2)}**\n> 📊 ${
+							data.stats?.b
+					  }\n\n**You chose:** Option ${data.userChoice}`;
 				break;
 
 			case "timeout":
 				container.setAccentColor(0x99aab5); // Grey
-				content = `## ${gameTitle}\n> ⏳ Time's up! You didn't choose.`;
+				content = options.states?.timeout
+					? options.states.timeout.replace("{{gameTitle}}", gameTitle)
+					: `## ${gameTitle}\n> ⏳ Time's up! You didn't choose.`;
 				break;
 
 			case "error":
 				container.setAccentColor(0xff0000); // Red
-				content = `## ❌ Error\n> Failed to fetch question.`;
+				content = options.states?.error ? options.states.error : `## ❌ Error\n> Failed to fetch question.`;
 				break;
 		}
 

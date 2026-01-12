@@ -37,27 +37,37 @@ const Snake = async (weky, options) => {
         switch (state) {
             case "loading":
                 container.setAccentColor(defaultColor);
-                content = `## ${gameTitle}\n> 🔄 Starting game...`;
+                content = options.states?.loading
+                    ? options.states.loading.replace("{{gameTitle}}", gameTitle)
+                    : `## ${gameTitle}\n> 🔄 Starting game...`;
                 break;
             case "active":
                 container.setAccentColor(defaultColor);
-                content = `## ${gameTitle}\n> Use the buttons below to control the snake!`;
+                content = options.states?.active
+                    ? options.states.active.replace("{{gameTitle}}", gameTitle)
+                    : `## ${gameTitle}\n> Use the buttons below to control the snake!`;
                 break;
             case "gameover":
                 container.setAccentColor(0xed4245); // Red
-                content = `## 💀 Game Over\n> You hit a wall or yourself!`;
+                content = options.states?.gameover ? options.states.gameover : `## 💀 Game Over\n> You hit a wall or yourself!`;
                 break;
             case "quit":
                 container.setAccentColor(0xed4245); // Red
-                content = `## 🛑 Game Stopped\n> You quit the game.`;
+                content = options.states?.quit ? options.states.quit : `## 🛑 Game Stopped\n> You quit the game.`;
                 break;
             case "timeout":
                 container.setAccentColor(0xed4245); // Red
-                content = `## ⏱️ Time's Up\n> Game session expired.`;
+                content = options.states?.timeout ? options.states.timeout : `## ⏱️ Time's Up\n> Game session expired.`;
                 break;
             case "error":
                 container.setAccentColor(0xff0000);
-                content = `## ❌ Error\n> ${details?.error || "Unknown error occurred."}`;
+                content = options.states?.error?.main
+                    ? options.states.error.main.replace("{{error}}", details?.error || options.states?.error?.unknownError
+                        ? options.states.error.unknownError
+                        : "Unknown error occurred.")
+                    : `## ❌ Error\n> ${details?.error || options.states?.error?.unknownError
+                        ? options.states.error.unknownError
+                        : "Unknown error occurred."}`;
                 break;
         }
         container.addTextDisplayComponents((t) => t.setContent(content));
@@ -102,7 +112,11 @@ const Snake = async (weky, options) => {
     if (gameID === "-1") {
         activePlayers.delete(userId);
         return await msg.edit({
-            components: [createGameContainer("error", { error: "Could not create game." })],
+            components: [
+                createGameContainer("error", {
+                    error: options.errors?.couldNotCreateGame ? options.errors.couldNotCreateGame : "Could not create game.",
+                }),
+            ],
             flags: discord_js_1.MessageFlags.IsComponentsV2,
         });
     }
@@ -111,7 +125,13 @@ const Snake = async (weky, options) => {
         await weky.NetworkManager.endSnakeGame(gameID);
         activePlayers.delete(userId);
         return await msg.edit({
-            components: [createGameContainer("error", { error: "Failed to generate board." })],
+            components: [
+                createGameContainer("error", {
+                    error: options.errors?.failedToGenerateBoard
+                        ? options.errors.failedToGenerateBoard
+                        : "Failed to generate board.",
+                }),
+            ],
             flags: discord_js_1.MessageFlags.IsComponentsV2,
         });
     }
@@ -126,7 +146,10 @@ const Snake = async (weky, options) => {
     });
     collector.on("collect", async (btn) => {
         if (btn.user.id !== userId) {
-            return btn.reply({ content: "This is not your game!", flags: [discord_js_1.MessageFlags.Ephemeral] });
+            return btn.reply({
+                content: options.othersMessage ? options.othersMessage : "This is not your game!",
+                flags: [discord_js_1.MessageFlags.Ephemeral],
+            });
         }
         if (btn.customId === "weky_snake_quit") {
             await btn.deferUpdate();
@@ -138,7 +161,10 @@ const Snake = async (weky, options) => {
         await btn.deferUpdate();
         const moveResult = await weky.NetworkManager.moveSnake(gameID, direction);
         if (!moveResult) {
-            return btn.followUp({ content: "Connection error!", flags: [discord_js_1.MessageFlags.Ephemeral] });
+            return btn.followUp({
+                content: options.errors?.connectionError ? options.errors?.connectionError : "Connection error!",
+                flags: [discord_js_1.MessageFlags.Ephemeral],
+            });
         }
         if (moveResult.gameOver || moveResult.won) {
             return collector.stop("gameover");

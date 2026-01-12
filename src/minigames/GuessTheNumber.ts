@@ -53,28 +53,36 @@ const GuessTheNumber = async (weky: WekyManager, options: CustomOptions<GuessThe
 		switch (state) {
 			case "active":
 				container.setAccentColor(defaultColor); // Blurple
-				content =
-					`## ${gameTitle}\n` +
-					`> 🔢 I'm thinking of a number...\n` +
-					`> ⏳ Time: **${weky.convertTime(options.time || 60000)}**\n\n` +
-					`**Hint Range:** \`${gameData.min ?? min}\` - \`${gameData.max ?? max}\`\n` +
-					`Type your guess in the chat!`;
+				content = options.states?.active
+					? options.states.active
+							.replace("{{gameTitle}}", gameTitle)
+							.replace("{{time}}", weky.convertTime(options.time || 60000))
+							.replace("{{hintRange}}", `\`${gameData.min ?? min}\` - \`${gameData.max ?? max}\``)
+					: `## ${gameTitle}\n> 🔢 I'm thinking of a number...\n> ⏳ Time: **${weky.convertTime(
+							options.time || 60000
+					  )}**\n\n**Hint Range:** \`${gameData.min ?? min}\` - \`${
+							gameData.max ?? max
+					  }\`\nType your guess in the chat!`;
 				break;
 
 			case "higher":
 				container.setAccentColor(0xfee75c); // Yellow
-				content =
-					`## ${gameTitle}\n` +
-					`> 🔼 The number is **HIGHER** than **${gameData.guess}**!\n\n` +
-					`**Current Range:** \`${gameData.min}\` - \`${gameData.max}\``;
+				content = options.states?.higher
+					? options.states.higher
+							.replace("{{gameTitle}}", gameTitle)
+							.replace("{{guess}}", gameData.guess.toString())
+							.replace("{{currentRange}}", `\`${gameData.min}\` - \`${gameData.max}\``)
+					: `## ${gameTitle}\n> 🔼 The number is **HIGHER** than **${gameData.guess}**!\n\n**Current Range:** \`${gameData.min}\` - \`${gameData.max}\``;
 				break;
 
 			case "lower":
 				container.setAccentColor(0xe67e22); // Orange
-				content =
-					`## ${gameTitle}\n` +
-					`> 🔽 The number is **LOWER** than **${gameData.guess}**!\n\n` +
-					`**Current Range:** \`${gameData.min}\` - \`${gameData.max}\``;
+				content = options.states?.lower
+					? options.states.lower
+							.replace("{{gameTitle}}", gameTitle)
+							.replace("{{guess}}", gameData.guess.toString())
+							.replace("{{currentRange}}", `\`${gameData.min}\` - \`${gameData.max}\``)
+					: `## ${gameTitle}\n> 🔽 The number is **LOWER** than **${gameData.guess}**!\n\n**Current Range:** \`${gameData.min}\` - \`${gameData.max}\``;
 				break;
 
 			case "won":
@@ -86,13 +94,17 @@ const GuessTheNumber = async (weky: WekyManager, options: CustomOptions<GuessThe
 					.replace("{{time}}", gameData.timeTaken || "")
 					.replace("{{totalparticipants}}", `${gameData.participants?.length || 1}`);
 
-				content = `## 🏆 Correct!\n> ${winText}`;
+				content = options.states?.won
+					? options.states.won.replace("{{winText}}", winText)
+					: `## 🏆 Correct!\n> ${winText}`;
 				break;
 
 			case "lost":
 				container.setAccentColor(0xed4245); // Red
 				const loseText = (options.loseMessage || "The number was **{{number}}**.").replace("{{number}}", `${number}`);
-				content = `## ❌ Game Over\n> ${loseText}`;
+				content = options.states?.lost
+					? options.states.lost.replace("{{loseText}}", loseText)
+					: `## ❌ Game Over\n> ${loseText}`;
 				break;
 		}
 
@@ -101,7 +113,7 @@ const GuessTheNumber = async (weky: WekyManager, options: CustomOptions<GuessThe
 		if (state === "active" || state === "higher" || state === "lower") {
 			const btnCancel = new ButtonBuilder()
 				.setStyle(ButtonStyle.Danger)
-				.setLabel(options.button || "Give Up")
+				.setLabel(options.giveUpButton || "Give Up")
 				.setCustomId(cancelId);
 
 			container.addActionRowComponents((row) => row.setComponents(btnCancel));

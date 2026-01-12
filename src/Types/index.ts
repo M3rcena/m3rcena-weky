@@ -7,19 +7,29 @@ import type {
 	GuildTextBasedChannel,
 } from "discord.js";
 
+// TODO: TRY TO MAKE THE PICK<EMBEDS> OPTIONAL
+
 /**
  * 2048 TYPES
  */
 export interface Types2048 {
 	context: Context;
-	embed: Embeds;
+	embed: Pick<Embeds, "title" | "color">;
+
 	emojis?: {
 		up: string;
 		down: string;
 		left: string;
 		right: string;
 	};
-	othersMessage?: string;
+
+	loadingMessage?: string;
+	activeMessage?: string;
+	wonMessage?: string;
+	gameoverMessage?: string;
+	quitMessage?: string;
+	timeoutMessage?: string;
+	errorMessage?: string;
 
 	time?: number;
 }
@@ -29,9 +39,46 @@ export interface Types2048 {
  */
 export interface CalcTypes {
 	context: Context;
-	embed: Embeds;
-	invalidQuery?: string;
-	disabledQuery?: string;
+	embed: Pick<Embeds, "color">;
+
+	operationTitles?: {
+		logarithm?: string;
+		squareRoot?: string;
+		round?: string;
+		sine?: string;
+		cosine?: string;
+		tangent?: string;
+		naturalLogarithm?: string;
+		reciprocal?: string;
+		factorial?: string;
+	};
+
+	oporationLabels?: {
+		logarithm?: string;
+		squareRoot?: string;
+		round?: string;
+		sine?: string;
+		cosine?: string;
+		tangent?: string;
+		naturalLogarithm?: string;
+		reciprocal?: string;
+		factorial?: string;
+	};
+
+	errorMessages?: {
+		invalidCalculation?: string;
+		infiniteResult?: string;
+		largeResult?: string;
+	};
+
+	modals?: {
+		display?: string;
+		labels?: string;
+		noPromptYet?: string;
+	};
+
+	sessionEndMessage?: string;
+	othersMessage?: string;
 }
 
 /**
@@ -39,19 +86,46 @@ export interface CalcTypes {
  */
 export interface ChaosTypes {
 	context: Context;
-	embed: Embeds;
-	winMessage?: string;
-	loseMessage?: string;
-	wrongWord?: string;
+	embed: Pick<Embeds, "title" | "color">;
+
+	failedFetchMessage?: string;
+
+	states?: {
+		active?: string;
+		correct?: string;
+		wrong?: string;
+		repeat?: string;
+		won?: {
+			winMessage?: string;
+			winContent?: string;
+		};
+		lost?: {
+			loseMessage?: string;
+			loseContent?: string;
+		};
+		timeout?: string;
+		cancelled?: string;
+
+		chaosString?: string;
+		wordsFound?: {
+			main?: string;
+			noneYet?: string;
+		};
+		missingWords?: string;
+		tries?: string;
+		timeRemaining?: string;
+	};
+
+	cancelButton?: string;
+
+	wordAlreadyFound?: string;
 	correctWord?: string;
-	time?: number;
-	words?: string[];
+	wrongWord?: string;
+
 	charGenerated?: number;
-	startMessage?: string;
-	endMessage?: string;
+	words?: string[];
 	maxTries?: number;
-	buttonText?: string;
-	otherMessage?: string;
+	time?: number;
 }
 
 /**
@@ -59,17 +133,34 @@ export interface ChaosTypes {
  */
 export interface FastTypeTypes {
 	context: Context;
-	embed: Embeds;
+	embed: Pick<Embeds, "title" | "color">;
+
 	sentence?: string;
-	difficulty?: string;
+	difficulty?: "easy" | "medium" | "hard";
+	time?: number;
+
 	winMessage?: string;
 	loseMessage?: string;
-	time?: number;
-	buttonText?: string;
-	othersMessage?: string;
-	cancelMessage?: string;
 	timeoutMessage?: string;
 	cheatMessage?: string;
+
+	states?: {
+		loading?: string;
+		active?: string;
+		won?: string;
+		lost?: string;
+		cheat?: string;
+		timeout?: string;
+		cancelled?: string;
+		error?: {
+			main?: string;
+			details?: string;
+		};
+	};
+
+	failedFetchError?: string;
+
+	cancelButton?: string;
 }
 
 /**
@@ -78,7 +169,26 @@ export interface FastTypeTypes {
 export interface FightTypes {
 	context: Context;
 	opponent: GuildMember;
-	embed?: Embeds;
+	embed?: Pick<Embeds, "color">;
+	time?: number;
+
+	powerups?: {
+		doubleDamage?: {
+			label?: string;
+			effectMessage?: string;
+			replyMessage?: string;
+		};
+		shield?: {
+			label?: string;
+			effectMessage?: string;
+			replyMessage?: string;
+		};
+		healBoost?: {
+			label?: string;
+			replyMessage?: string;
+		};
+	};
+
 	buttons?: {
 		hit?: string;
 		heal?: string;
@@ -86,15 +196,28 @@ export interface FightTypes {
 		accept?: string;
 		deny?: string;
 	};
+
+	states?: {
+		request?: string;
+		active?: string;
+		won?: string;
+		surrender?: string;
+		deny?: string;
+		timeout?: string;
+		error?: {
+			main?: string;
+			uknownError?: string;
+		};
+	};
+
+	failedRequestCardGeneration?: string;
+	notEnoughtCoins?: string;
+
 	wrongUserFight?: string;
 	opponentsTurnMessage?: string;
 	highHealthMessage?: string;
 	lowHealthMessage?: string;
-	dmgMin?: number;
-	dmgMax?: number;
-	healMin?: number;
-	healMax?: number;
-	time?: number;
+	playerAlreadyInFight?: string;
 }
 
 export interface PowerUp {
@@ -121,20 +244,29 @@ export interface PlayerData {
  */
 export interface GuessTheNumberTypes {
 	context: Context;
-	embed: Embeds;
+	embed: Pick<Embeds, "title" | "color">;
+
 	publicGame?: boolean;
+	time?: number;
+	number?: number;
+
+	states?: {
+		active?: string;
+		higher?: string;
+		won?: string;
+		lower?: string;
+		lost?: string;
+	};
+
+	giveUpButton?: string;
+
+	ongoingMessage?: string;
 	winMessage?: {
 		publicGame?: string;
 		privateGame?: string;
 	};
 	loseMessage?: string;
 	otherMessage?: string;
-	ongoingMessage?: string;
-	biggerNumberMessage?: string;
-	smallerNumberMeesage?: string;
-	button?: string;
-	number?: number;
-	time?: number;
 }
 
 /**
@@ -142,14 +274,24 @@ export interface GuessTheNumberTypes {
  */
 export interface GuessThePokemonTypes {
 	context: Context;
-	embed: Embeds;
+	embed: Pick<Embeds, "title" | "color">;
+	time?: number;
+
+	states?: {
+		loading?: string;
+		active?: string;
+		wrong?: string;
+		won?: string;
+		lost?: string;
+		error?: string;
+	};
+
+	giveUpButton?: string;
+
 	thinkMessage?: string;
-	othersMessage?: string;
 	winMessage?: string;
 	loseMessage?: string;
 	incorrectMessage?: string;
-	time?: number;
-	buttonText?: string;
 }
 
 export interface GuessThePokemonData {
@@ -188,8 +330,29 @@ export interface GuessThePokemonData {
  */
 export interface HangmanTypes {
 	context: Context;
-	embed?: Embeds;
+	embed?: Pick<Embeds, "title" | "color">;
 	time?: number;
+
+	states?: {
+		loading?: string;
+		active?: string;
+		won?: string;
+		lost?: string;
+		quit?: string;
+		timeout?: string;
+		error?: {
+			main?: string;
+			unknownError?: string;
+		};
+	};
+
+	errors?: {
+		failedToStart?: string;
+		failedToGenerate?: string;
+		noApiResponse?: string;
+	};
+
+	othersMessage?: string;
 }
 
 /**
@@ -197,15 +360,32 @@ export interface HangmanTypes {
  */
 export interface LieSwatterTypes {
 	context: Context;
-	embed: Embeds;
+	embed: Pick<Embeds, "title" | "color">;
+
 	winMessage?: string;
 	loseMessage?: string;
 	othersMessage?: string;
 	thinkMessage?: string;
+	timesUpMessage?: string;
+
+	states?: {
+		loading?: string;
+		active?: string;
+		won?: string;
+		lost?: string;
+		error?: string;
+	};
+
+	errors?: {
+		failedFetch?: string;
+		noResult?: string;
+	};
+
 	buttons?: {
 		true: string;
 		lie: string;
 	};
+
 	time?: number;
 }
 
@@ -214,12 +394,28 @@ export interface LieSwatterTypes {
  */
 export interface NeverHaveIEverTypes {
 	context: Context;
-	embed: Embeds;
+	embed: Pick<Embeds, "title" | "color">;
+
 	thinkMessage?: string;
 	othersMessage?: string;
+
+	states?: {
+		loading?: string;
+		active?: string;
+		yes?: string;
+		no?: string;
+		timeout?: string;
+		error?: string;
+	};
+
 	buttons?: {
 		optionA?: string;
 		optionB?: string;
+	};
+
+	errors?: {
+		failedFetch?: string;
+		noResult?: string;
 	};
 
 	time?: number;
@@ -230,12 +426,26 @@ export interface NeverHaveIEverTypes {
  */
 export interface QuickClickTypes {
 	context: Context;
-	embed: Embeds;
+	embed: Pick<Embeds, "title">;
+
 	waitMessage?: string;
 	startMessage?: string;
 	winMessage?: string;
 	loseMessage?: string;
 	ongoingMessage?: string;
+
+	errors?: {
+		main?: string;
+		gameAlreadyRunning?: string;
+	};
+
+	states?: {
+		waiting?: string;
+		active?: string;
+		won?: string;
+		lost?: string;
+	};
+
 	time?: number;
 	emoji?: string;
 }
@@ -245,16 +455,21 @@ export interface QuickClickTypes {
  */
 export interface ShuffleGuessTypes {
 	context: Context;
-	embed: Embeds;
+	embed: Pick<Embeds, "title" | "color">;
+
 	buttons?: {
 		cancel?: string;
 		reshuffle?: string;
 	};
+
+	mainContent?: string;
+
 	winMessage?: string;
 	loseMessage?: string;
 	othersMessage?: string;
 	startMessage?: string;
 	incorrectMessage?: string;
+
 	word?: string;
 	time?: number;
 }
@@ -264,22 +479,35 @@ export interface ShuffleGuessTypes {
  */
 export interface SnakeTypes {
 	context: Context;
-	embed: Embeds;
+	embed: Pick<Embeds, "title" | "color">;
+
 	emojis?: {
 		up: string;
 		down: string;
 		left: string;
 		right: string;
-		stop: string;
-		board: string;
-		food: string;
 	};
-	snake?: {
-		head: string;
-		body: string;
-		tail: string;
-		skull: string;
+
+	states?: {
+		loading?: string;
+		active?: string;
+		gameover?: string;
+		quit?: string;
+		timeout?: string;
+		error?: {
+			main?: string;
+			unknownError?: string;
+		};
 	};
+
+	errors?: {
+		couldNotCreateGame?: string;
+		failedToGenerateBoard?: string;
+		connectionError?: string;
+	};
+
+	othersMessage?: string;
+
 	time?: number;
 }
 export interface Point {
@@ -304,13 +532,27 @@ export interface SnakeGameTypes {
  */
 export interface WillYouPressTheButtonTypes {
 	context: Context;
-	embed: Embeds;
+	embed: Pick<Embeds, "title" | "color">;
+
+	states?: {
+		loading?: string;
+		active?: string;
+		result?: string;
+		timeout?: string;
+		error?: string;
+	};
+
 	button?: {
 		yes?: string;
 		no?: string;
 	};
+
+	yesPress?: string;
+	noPress?: string;
+
 	thinkMessage?: string;
 	othersMessage?: string;
+
 	time?: number;
 }
 
@@ -330,13 +572,24 @@ export interface DilemmaData {
  */
 export interface WouldYouRatherTypes {
 	context: Context;
-	embed: Embeds;
+	embed: Pick<Embeds, "title" | "color">;
+
 	othersMessage?: string;
 	thinkMessage?: string;
+
 	buttons?: {
 		optionA: string;
 		optionB: string;
 	};
+
+	states?: {
+		loading?: string;
+		active?: string;
+		result?: string;
+		timeout?: string;
+		error?: string;
+	};
+
 	time?: number;
 }
 
@@ -344,8 +597,8 @@ export interface WouldYouRatherTypes {
  * CUSTOMIZABLE EMBEDS TYPES
  */
 export interface Embeds {
-	color?: ColorResolvable;
-	title?: string;
+	color: ColorResolvable;
+	title: string;
 	url?: string;
 	author?: Author;
 	footer?: EmbedFooterData;

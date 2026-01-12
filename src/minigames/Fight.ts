@@ -13,43 +13,55 @@ import {
 import type { CustomOptions, FightTypes, PowerUp } from "../Types/index.js";
 import type { WekyManager } from "../index.js";
 
-const POWERUPS: PowerUp[] = [
-	{
-		id: "double-damage",
-		label: "2x Damage",
-		style: ButtonStyle.Danger,
-		cost: 30,
-		effect: (player, playerUsername) => {
-			player.activeEffects.push("Double Damage (Next Attack)");
-			return `${playerUsername} will deal double damage on their next attack!`;
-		},
-	},
-	{
-		id: "shield",
-		label: "Shield",
-		style: ButtonStyle.Secondary,
-		cost: 25,
-		effect: (player, playerUsername) => {
-			player.activeEffects.push("Shield (Next Attack)");
-			return `${playerUsername} will take half damage from the next attack!`;
-		},
-	},
-	{
-		id: "heal-boost",
-		label: "Heal Boost",
-		style: ButtonStyle.Success,
-		cost: 20,
-		effect: (player, playerUsername) => {
-			player.health += 30;
-			if (player.health > 100) player.health = 100;
-			return `${playerUsername} received a 30 HP healing boost!`;
-		},
-	},
-];
-
 const Fight = async (weky: WekyManager, options: CustomOptions<FightTypes>) => {
 	const context = options.context;
 	const userId = weky._getContextUserID(context);
+
+	const POWERUPS: PowerUp[] = [
+		{
+			id: "double-damage",
+			label: options.powerups?.doubleDamage?.label ? options.powerups.doubleDamage.label : "2x Damage",
+			style: ButtonStyle.Danger,
+			cost: 30,
+			effect: (player, playerUsername) => {
+				player.activeEffects.push(
+					options.powerups?.doubleDamage?.effectMessage
+						? options.powerups?.doubleDamage?.effectMessage
+						: "Double Damage (Next Attack)"
+				);
+				return options.powerups?.doubleDamage?.replyMessage
+					? options.powerups.doubleDamage.replyMessage.replace("{{username}}", playerUsername)
+					: `${playerUsername} will deal double damage on their next attack!`;
+			},
+		},
+		{
+			id: "shield",
+			label: options.powerups?.shield?.label ? options.powerups.shield.label : "Shield",
+			style: ButtonStyle.Secondary,
+			cost: 25,
+			effect: (player, playerUsername) => {
+				player.activeEffects.push(
+					options.powerups?.shield?.effectMessage ? options.powerups.shield.effectMessage : "Shield (Next Attack)"
+				);
+				return options.powerups?.shield?.replyMessage
+					? options.powerups.shield.replyMessage.replace("{{username}}", playerUsername)
+					: `${playerUsername} will take half damage from the next attack!`;
+			},
+		},
+		{
+			id: "heal-boost",
+			label: options.powerups?.healBoost?.label ? options.powerups.healBoost.label : "Heal Boost",
+			style: ButtonStyle.Success,
+			cost: 20,
+			effect: (player, playerUsername) => {
+				player.health += 30;
+				if (player.health > 100) player.health = 100;
+				return options.powerups?.healBoost?.replyMessage
+					? options.powerups.healBoost.replyMessage.replace("{{username}}", playerUsername)
+					: `${playerUsername} received a 30 HP healing boost!`;
+			},
+		},
+	];
 
 	if (!options.buttons) options.buttons = {};
 	const btnHit = options.buttons.hit || "Hit";
@@ -81,7 +93,9 @@ const Fight = async (weky: WekyManager, options: CustomOptions<FightTypes>) => {
 		(await weky.NetworkManager.checkPlayerFightStatus(challenger.id)) ||
 		(await weky.NetworkManager.checkPlayerFightStatus(opponent.id))
 	) {
-		return context.channel.send("One of the players is already in a fight!");
+		return context.channel.send(
+			options.playerAlreadyInFight ? options.playerAlreadyInFight : "One of the players is already in a fight!"
+		);
 	}
 
 	const createGameContainer = (
@@ -94,31 +108,46 @@ const Fight = async (weky: WekyManager, options: CustomOptions<FightTypes>) => {
 		switch (state) {
 			case "request":
 				container.setAccentColor(0xfee75c); // Yellow
-				content = `## ⚔️ Challenge!\n> <@${challenger.id}> challenged <@${opponent.id}> to a fight!`;
+				content = options.states?.request
+					? options.states.request
+							.replace("{{challengerMention}}", `<@${challenger.id}>`)
+							.replace("{{opponentMention}}", `<@${opponent.id}>`)
+					: `## ⚔️ Challenge!\n> <@${challenger.id}> challenged <@${opponent.id}> to a fight!`;
 				break;
 			case "active":
 				container.setAccentColor(defaultColor);
-				content = `## ⚔️ Fighting...\n> Use buttons to fight or buy powerups!`;
+				content = options.states?.active
+					? options.states.active
+					: `## ⚔️ Fighting...\n> Use buttons to fight or buy powerups!`;
 				break;
 			case "won":
 				container.setAccentColor(0x57f287); // Green
-				content = `## 🏆 Fight Ended\n> We have a winner!`;
+				content = options.states?.won ? options.states.won : `## 🏆 Fight Ended\n> We have a winner!`;
 				break;
 			case "surrender":
 				container.setAccentColor(0xed4245); // Red
-				content = `## 🏳️ Surrendered\n> The fight was forfeited.`;
+				content = options.states?.surrender
+					? options.states.surrender
+					: `## 🏳️ Surrendered\n> The fight was forfeited.`;
 				break;
 			case "deny":
 				container.setAccentColor(0xed4245); // Red
-				content = `## 🚫 Denied\n> The challenge was rejected.`;
+				content = options.states?.deny ? options.states.deny : `## 🚫 Denied\n> The challenge was rejected.`;
 				break;
 			case "timeout":
 				container.setAccentColor(0x99aab5); // Grey
-				content = `## ⏱️ Time's Up\n> The session expired.`;
+				content = options.states?.timeout ? options.states.timeout : `## ⏱️ Time's Up\n> The session expired.`;
 				break;
 			case "error":
 				container.setAccentColor(0xff0000);
-				content = `## ❌ Error\n> ${details?.error || "Unknown error."}`;
+				content = options.states?.error?.main
+					? options.states.error.main.replace(
+							"{{error}}",
+							details?.error || options.states?.error?.uknownError ? options.states.error.uknownError : "Unknown error."
+					  )
+					: `## ❌ Error\n> ${
+							details?.error || options.states?.error?.uknownError ? options.states.error.uknownError : "Unknown error."
+					  }`;
 				break;
 		}
 
@@ -161,7 +190,10 @@ const Fight = async (weky: WekyManager, options: CustomOptions<FightTypes>) => {
 		opponent.displayAvatarURL({ extension: "png", size: 256 })
 	);
 
-	if (!requestCard) return context.channel.send("Failed to generate request card.");
+	if (!requestCard)
+		return context.channel.send(
+			options.failedRequestCardGeneration ? options.failedRequestCardGeneration : "Failed to generate request card."
+		);
 
 	const msg = await context.channel.send({
 		components: [createGameContainer("request", { image: "fight-request.png" })],
@@ -274,13 +306,31 @@ const Fight = async (weky: WekyManager, options: CustomOptions<FightTypes>) => {
 			if (i.customId === "fight_hit") {
 				let damage = Math.floor(Math.random() * 20) + 10;
 
-				if (player.activeEffects.includes("Double Damage (Next Attack)")) {
+				if (
+					player.activeEffects.includes(
+						options.powerups?.doubleDamage?.effectMessage
+							? options.powerups?.doubleDamage?.effectMessage
+							: "Double Damage (Next Attack)"
+					)
+				) {
 					damage *= 2;
-					player.activeEffects = player.activeEffects.filter((e) => e !== "Double Damage (Next Attack)");
+					player.activeEffects = player.activeEffects.filter((e) =>
+						e !== options.powerups?.doubleDamage?.effectMessage
+							? options.powerups?.doubleDamage?.effectMessage
+							: "Double Damage (Next Attack)"
+					);
 				}
-				if (enemy.activeEffects.includes("Shield (Next Attack)")) {
+				if (
+					enemy.activeEffects.includes(
+						options.powerups?.shield?.effectMessage ? options.powerups.shield.effectMessage : "Shield (Next Attack)"
+					)
+				) {
 					damage = Math.floor(damage / 2);
-					enemy.activeEffects = enemy.activeEffects.filter((e) => e !== "Shield (Next Attack)");
+					enemy.activeEffects = enemy.activeEffects.filter((e) =>
+						e !== options.powerups?.shield?.effectMessage
+							? options.powerups.shield.effectMessage
+							: "Shield (Next Attack)"
+					);
 				}
 
 				enemy.health -= damage;
@@ -339,7 +389,10 @@ const Fight = async (weky: WekyManager, options: CustomOptions<FightTypes>) => {
 					await weky.NetworkManager.updatePlayers(gameID, player, enemy);
 					await i.followUp({ content: msg, flags: [MessageFlags.Ephemeral] });
 				} else {
-					return i.followUp({ content: "Not enough coins!", flags: [MessageFlags.Ephemeral] });
+					return i.followUp({
+						content: options.notEnoughtCoins ? options.notEnoughtCoins : "Not enough coins!",
+						flags: [MessageFlags.Ephemeral],
+					});
 				}
 			}
 

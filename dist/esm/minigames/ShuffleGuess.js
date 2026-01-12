@@ -50,7 +50,7 @@ const ShuffleGuess = async (weky, options) => {
                 mainContent += `> ${feedback}`;
             }
             else {
-                mainContent += `Type your guess in the chat!`;
+                mainContent += options.mainContent ? options.mainContent : `Type your guess in the chat!`;
             }
         }
         else if (state === "correct") {

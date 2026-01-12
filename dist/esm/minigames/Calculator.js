@@ -1,307 +1,294 @@
-import { ComponentType, ContainerBuilder, EmbedBuilder, LabelBuilder, MessageFlags, ModalBuilder, TextDisplayBuilder, TextInputBuilder, TextInputStyle, } from "discord.js";
+import { ComponentType, ContainerBuilder, LabelBuilder, MessageFlags, ModalBuilder, TextDisplayBuilder, TextInputBuilder, TextInputStyle, } from "discord.js";
 import { evaluate, format } from "mathjs";
+const MAIN_KEYS = [
+    "DC",
+    "RND",
+    "SIN",
+    "COS",
+    "TAN",
+    "^",
+    "LG",
+    "LN",
+    "(",
+    ")",
+    "SQRT",
+    "AC",
+    "⌫",
+    "%",
+    "÷",
+    "x!",
+    "7",
+    "8",
+    "9",
+    "x",
+];
+const SEC_KEYS = ["1/x", "4", "5", "6", " - ", "π", "1", "2", "3", " + ", "ans", "e", "0", ".", "="];
+const INVALID_START_KEYS = ["⌫", "AC", "=", "x", "÷", "%", "^", "x!", ")"];
 const Calculator = async (weky, options) => {
-    const context = options.context;
-    let str = " ";
-    let stringify = "```\n" + str + "\n```";
-    const text = [
-        "DC",
-        "RND",
-        "SIN",
-        "COS",
-        "TAN",
-        "^",
-        "LG",
-        "LN",
-        "(",
-        ")",
-        "SQRT",
-        "AC",
-        "⌫",
-        "%",
-        "÷",
-        "x!",
-        "7",
-        "8",
-        "9",
-        "x",
-    ];
-    const text2 = ["1/x", "4", "5", "6", " - ", "π", "1", "2", "3", " + ", "ans", "e", "0", ".", "="];
-    let disabled = true;
-    let lastInput;
-    const handleModalInput = async (interact, modalId, operation) => {
-        const modal = new ModalBuilder().setTitle(modalId).setCustomId(`md${modalId}`);
-        const input = new TextInputBuilder()
-            .setCustomId(`number${modalId}`)
-            .setStyle(TextInputStyle.Short)
-            .setRequired(true);
-        const label = new LabelBuilder().setLabel(`Enter the number for ${operation}`).setTextInputComponent(input);
-        const text = new TextDisplayBuilder().setContent(`## Current Calculation Prompt:\n${str === " " ? "```No Prompt Yet```" : stringify}`);
-        modal.addTextDisplayComponents(text).addLabelComponents(label);
-        await interact.showModal(modal);
-        return new Promise((resolve) => {
-            const modalHandler = async (modal) => {
-                if (!modal.isModalSubmit() || modal.customId !== `md${modalId}`)
-                    return;
-                weky._client.off("interactionCreate", modalHandler);
-                await modal.deferUpdate();
-                resolve(modal.fields.getTextInputValue(`number${modalId}`));
-            };
-            weky._client.on("interactionCreate", modalHandler);
-            setTimeout(() => weky._client.off("interactionCreate", modalHandler), 300000);
-        });
+    const { context, embed: embedOptions } = options;
+    const authorId = weky._getContextUserID(context);
+    const accentColor = typeof embedOptions.color === "number" ? embedOptions.color : 0x5865f2;
+    const MODAL_OPERATIONS = {
+        calLG: {
+            title: options.operationTitles?.logarithm ? options.operationTitles.logarithm : "Logarithm",
+            label: options.oporationLabels?.logarithm ? options.oporationLabels.logarithm : "logarithm 10",
+            funcName: "log10",
+        },
+        calSQRT: {
+            title: options.operationTitles?.squareRoot ? options.operationTitles.squareRoot : "Square Root",
+            label: options.oporationLabels?.squareRoot ? options.oporationLabels.squareRoot : "square root",
+            funcName: "sqrt",
+        },
+        calRND: {
+            title: options.operationTitles?.round ? options.operationTitles.round : "Round",
+            label: options.oporationLabels?.round ? options.oporationLabels.round : "round",
+            funcName: "round",
+        },
+        calSIN: {
+            title: options.operationTitles?.sine ? options.operationTitles.sine : "Sine",
+            label: options.oporationLabels?.sine ? options.oporationLabels.sine : "sine",
+            funcName: "sin",
+        },
+        calCOS: {
+            title: options.operationTitles?.cosine ? options.operationTitles.cosine : "Cosine",
+            label: options.oporationLabels?.cosine ? options.oporationLabels.cosine : "cosine",
+            funcName: "cos",
+        },
+        calTAN: {
+            title: options.operationTitles?.tangent ? options.operationTitles.tangent : "Tangent",
+            label: options.oporationLabels?.tangent ? options.oporationLabels.tangent : "tangent",
+            funcName: "tan",
+        },
+        calLN: {
+            title: options.operationTitles?.naturalLogarithm ? options.operationTitles.naturalLogarithm : "Natural Logarithm",
+            label: options.oporationLabels?.naturalLogarithm ? options.oporationLabels.naturalLogarithm : "natural logarithm",
+            funcName: "log",
+        },
+        "cal1/x": {
+            title: options.operationTitles?.reciprocal ? options.operationTitles.reciprocal : "Reciprocal",
+            label: options.oporationLabels?.reciprocal ? options.oporationLabels.reciprocal : "reciprocal",
+            funcName: "1/",
+        },
+        "calx!": {
+            title: options.operationTitles?.factorial ? options.operationTitles.factorial : "Factorial",
+            label: options.oporationLabels?.factorial ? options.oporationLabels.factorial : "factorial",
+            funcName: "!",
+            isSuffix: true,
+        },
     };
-    const handleCalculation = (input) => {
+    let currentExpression = " ";
+    let lastAnswer = "";
+    let isFinished = false;
+    let hasCalculated = false;
+    const getDisplay = () => `\`\`\`\n${currentExpression}\n\`\`\``;
+    const calculateResult = (input) => {
         try {
             const result = evaluate(input);
             if (typeof result === "number") {
-                if (isNaN(result)) {
-                    return { result: null, error: "Invalid calculation (NaN)" };
-                }
-                if (!isFinite(result)) {
-                    if (result === Infinity) {
-                        return { result: null, error: "Result too large (∞)" };
-                    }
-                    if (result === -Infinity) {
-                        return { result: null, error: "Result too small (-∞)" };
-                    }
-                    return { result: null, error: "Result is infinite" };
-                }
-                if (Math.abs(result) > 1e15) {
-                    return { result: null, error: "Result too large to display" };
-                }
+                if (isNaN(result))
+                    return {
+                        result: null,
+                        error: options.errorMessages?.invalidCalculation
+                            ? options.errorMessages.invalidCalculation
+                            : "Invalid calculation (NaN)",
+                    };
+                if (!isFinite(result))
+                    return {
+                        result: null,
+                        error: options.errorMessages?.infiniteResult ? options.errorMessages.infiniteResult : "Result is infinite",
+                    };
+                if (Math.abs(result) > 1e15)
+                    return {
+                        result: null,
+                        error: options.errorMessages?.largeResult ? options.errorMessages.largeResult : "Result too large",
+                    };
             }
             return { result, error: null };
         }
         catch (e) {
-            return { result: null, error: options.invalidQuery || "Invalid calculation" };
+            return {
+                result: null,
+                error: options.errorMessages?.invalidCalculation
+                    ? options.errorMessages.invalidCalculation
+                    : "Invalid calculation",
+            };
+            // @ts-ignore
+            const errorCode = Buffer.from("UG93ZXJlZCBieSBNM3JjZW5h", "base64").toString("utf-8");
         }
     };
-    const channel = context.channel;
-    const createCalculatorContainer = (displayText, buttonsEnabled, lock) => {
-        const container = new ContainerBuilder()
-            .setAccentColor(typeof options.embed.color === "number" ? options.embed.color : 0x5865f2)
-            .addTextDisplayComponents((textDisplay) => textDisplay.setContent(displayText));
-        for (let i = 0; i < text.length; i += 5) {
-            const rowButtons = text
-                .slice(i, i + 5)
-                .map((text) => (buttonsEnabled ? weky._createButton(text, false) : weky._createDisabledButton(text, lock)));
-            container.addActionRowComponents((actionRow) => actionRow.setComponents(...rowButtons));
+    const buildRows = (keys, forceEmpty = false) => {
+        const container = new ContainerBuilder().setAccentColor(accentColor);
+        const isEmpty = currentExpression.trim() === "" || forceEmpty;
+        if (keys === MAIN_KEYS) {
+            container.addTextDisplayComponents((td) => td.setContent(getDisplay()));
+        }
+        for (let i = 0; i < keys.length; i += 5) {
+            const chunk = keys.slice(i, i + 5);
+            const buttons = chunk.map((k) => {
+                let isDisabled = isFinished;
+                if (!isDisabled) {
+                    if (k === "ans" && !hasCalculated) {
+                        isDisabled = true;
+                    }
+                    if (isEmpty && INVALID_START_KEYS.includes(k)) {
+                        isDisabled = true;
+                    }
+                }
+                return isDisabled ? weky._createDisabledButton(k, true) : weky._createButton(k, false);
+            });
+            // @ts-ignore
+            const labelsCode = Buffer.from("UG93ZXJlZCBieSBNM3JjZW5h", "base64").toString("utf-8");
+            container.addActionRowComponents((row) => row.setComponents(...buttons));
         }
         return container;
     };
-    const createCalculatorContainer2 = (buttonsEnabled, lock) => {
-        const container = new ContainerBuilder().setAccentColor(typeof options.embed.color === "number" ? options.embed.color : 0x5865f2);
-        for (let i = 0; i < text2.length; i += 5) {
-            const rowButtons = text2
-                .slice(i, i + 5)
-                .map((text) => (buttonsEnabled ? weky._createButton(text, false) : weky._createDisabledButton(text, lock)));
-            container.addActionRowComponents((actionRow) => actionRow.setComponents(...rowButtons));
+    const handleModal = async (interaction, config) => {
+        const modalId = config.title;
+        const modal = new ModalBuilder().setTitle(modalId).setCustomId(`md${modalId}`);
+        const input = new TextInputBuilder()
+            .setCustomId(`input${modalId}`)
+            .setStyle(TextInputStyle.Short)
+            .setRequired(true);
+        const textDisplay = new TextDisplayBuilder().setContent(options.modals?.display
+            ? options.modals.display.replace("{{currentExpression}}", currentExpression === " "
+                ? `\`\`\`${options.modals?.noPromptYet ? options.modals.noPromptYet : "No Prompt Yet"}\`\`\``
+                : getDisplay())
+            : `## Current Calculation:\n${currentExpression === " " ? "```No Prompt Yet```" : getDisplay()}`);
+        modal
+            .addTextDisplayComponents(textDisplay)
+            .addLabelComponents(new LabelBuilder()
+            .setLabel(options.modals?.labels
+            ? options.modals.labels.replace("{{label}}", config.label)
+            : `Enter number for ${config.label}`)
+            .setTextInputComponent(input));
+        await interaction.showModal(modal);
+        try {
+            const submitted = await interaction.awaitModalSubmit({
+                filter: (i) => i.customId === `md${modalId}` && i.user.id === authorId,
+                time: 300_000,
+            });
+            await submitted.deferUpdate();
+            return submitted.fields.getTextInputValue(`input${modalId}`);
         }
-        return container;
+        catch {
+            return null;
+        }
     };
-    const msg = await context.channel.send({
-        components: [createCalculatorContainer(stringify, true, false)],
+    const msg1 = await context.channel.send({
+        components: [buildRows(MAIN_KEYS)],
         flags: MessageFlags.IsComponentsV2,
         allowedMentions: { repliedUser: false },
     });
     const msg2 = await context.channel.send({
-        components: [createCalculatorContainer2(true, false)],
+        components: [buildRows(SEC_KEYS)],
         flags: MessageFlags.IsComponentsV2,
     });
-    async function edit() {
-        await msg.edit({
-            components: [createCalculatorContainer(stringify, !disabled, false)],
+    const updateUI = async (forceEmpty = false) => {
+        const p1 = msg1.edit({
+            components: [buildRows(MAIN_KEYS, forceEmpty)],
             flags: MessageFlags.IsComponentsV2,
-            allowedMentions: { repliedUser: false },
         });
-    }
-    async function edit2() {
-        if (msg2.editable) {
-            await msg2.edit({
-                components: [createCalculatorContainer2(!disabled, false)],
+        const p2 = msg2.editable
+            ? msg2.edit({
+                components: [buildRows(SEC_KEYS, forceEmpty)],
                 flags: MessageFlags.IsComponentsV2,
-            });
-        }
-    }
-    async function lock() {
-        await msg.edit({
-            components: [createCalculatorContainer(stringify, false, true)],
-            flags: MessageFlags.IsComponentsV2,
-            allowedMentions: { repliedUser: false },
-        });
-        if (msg2.editable) {
-            await msg2.edit({
-                components: [createCalculatorContainer2(false, true)],
-                flags: MessageFlags.IsComponentsV2,
-            });
-        }
-    }
-    let id = weky._getContextUserID(context);
-    const calc = channel.createMessageComponentCollector({
+            })
+            : Promise.resolve();
+        await Promise.all([p1, p2]);
+    };
+    const collector = context.channel.createMessageComponentCollector({
         componentType: ComponentType.Button,
-        time: 300000,
+        time: 300_000,
+        filter: (i) => {
+            if (i.user.id !== authorId) {
+                i.reply({
+                    content: options.othersMessage
+                        ? options.othersMessage.replace("{{authorTag}}", `<@${authorId}>`)
+                        : `Only <@${authorId}> can use this calculator!`,
+                    flags: [MessageFlags.Ephemeral],
+                });
+                return false;
+            }
+            return true;
+        },
     });
-    let answer = "0";
-    calc.on("collect", async (interact) => {
-        if (interact.user.id !== id) {
-            return interact.reply({
-                embeds: [
-                    new EmbedBuilder()
-                        .setTitle(options.embed.title ? options.embed.title : "Error | Weky Calculator")
-                        .setDescription(`You are not allowed to interact with this calculator as you are not the user who initiated the command.\n\n**Note:** This calculator is only for the user <@${id}>`)
-                        .setColor("Red")
-                        .setTimestamp(options.embed.timestamp ? new Date() : null),
-                ],
-                flags: [MessageFlags.Ephemeral],
-            });
+    collector.on("collect", async (interaction) => {
+        const id = interaction.customId;
+        const rawValue = id.replace("cal", "");
+        if (id in MODAL_OPERATIONS) {
         }
-        if (interact.customId !== "calLG" &&
-            interact.customId !== "calSQRT" &&
-            interact.customId !== "calRND" &&
-            interact.customId !== "calSIN" &&
-            interact.customId !== "calCOS" &&
-            interact.customId !== "calTAN" &&
-            interact.customId !== "calLN" &&
-            interact.customId !== "cal1/x" &&
-            interact.customId !== "calx!")
-            await interact.deferUpdate();
-        switch (interact.customId) {
-            case "calAC":
-                lastInput = null;
-                str = " ";
-                stringify = "```\n" + str + "\n```";
-                edit();
-                edit2();
+        else {
+            await interaction.deferUpdate();
+        }
+        switch (true) {
+            case id === "calDC":
+                collector.stop();
+                return;
+            case id === "calAC":
+                currentExpression = " ";
                 break;
-            case "calx":
-                lastInput = interact.customId;
-                str += " * ";
-                stringify = "```\n" + str + "\n```";
-                edit();
-                edit2();
+            case id === "cal⌫":
+                if (!currentExpression || currentExpression === " ")
+                    break;
+                currentExpression = currentExpression.endsWith(" ")
+                    ? currentExpression.slice(0, -3)
+                    : currentExpression.slice(0, -1);
+                if (currentExpression === "")
+                    currentExpression = " ";
                 break;
-            case "cal÷":
-                lastInput = interact.customId;
-                str += " / ";
-                stringify = "```\n" + str + "\n```";
-                edit();
-                edit2();
-                break;
-            case "cal⌫":
-                if (str === " " || str === "" || str === null || str === undefined) {
-                    lastInput = null;
+            case id === "cal=":
+                if (!currentExpression.trim())
                     return;
-                }
-                lastInput = interact.customId;
-                if (str.slice(0, -1) === " " ||
-                    str.slice(0, -1) === "" ||
-                    str.slice(0, -1) === null ||
-                    str.slice(0, -1) === undefined) {
-                    lastInput = null;
-                }
-                str = str.slice(-1) === " " ? str.slice(0, -3) : str.slice(0, -1);
-                stringify = "```\n" + str + "\n```";
-                edit();
-                edit2();
-                break;
-            case "cal=":
-                lastInput = null;
-                if (str === " " || str === "" || str === null || str === undefined) {
-                    return;
-                }
-                const { result, error } = handleCalculation(str);
+                const { result, error } = calculateResult(currentExpression);
                 if (result !== null) {
-                    answer = format(result, { precision: 14 });
-                    str += " = " + result;
+                    lastAnswer = format(result, { precision: 14 });
+                    currentExpression += ` = ${lastAnswer}`;
+                    hasCalculated = true;
+                    await updateUI(true);
+                    currentExpression = " ";
                 }
                 else {
-                    str = error;
-                    answer = "0";
-                }
-                stringify = "```\n" + str + "\n```";
-                edit();
-                edit2();
-                str = " ";
-                stringify = "```\n" + str + "\n```";
-                break;
-            case "calLG":
-            case "calSQRT":
-            case "calRND":
-            case "calSIN":
-            case "calCOS":
-            case "calTAN":
-            case "calLN":
-            case "cal1/x":
-            case "calx!": {
-                const operationMap = {
-                    calLG: ["Log", "logarithm 10", "log10"],
-                    calSQRT: ["Sqrt", "square root", "sqrt"],
-                    calRND: ["Rnd", "round", "round"],
-                    calSIN: ["Sin", "sine", "sin"],
-                    calCOS: ["Cos", "cosine", "cos"],
-                    calTAN: ["Tan", "tangent", "tan"],
-                    calLN: ["Ln", "natural logarithm", "log"],
-                    "cal1/x": ["Reciprocal", "reciprocal", "1/"],
-                    "calx!": ["Factorial", "factorial", "!"],
-                };
-                const [modalTitle, operation, func] = operationMap[interact.customId];
-                const number = await handleModalInput(interact, modalTitle, operation);
-                if (number) {
-                    str += func === "!" ? number + func : `${func}(${number})`;
-                    stringify = "```\n" + str + "\n```";
-                    lastInput = interact.customId;
-                    edit();
-                    edit2();
+                    currentExpression = error || "Error";
+                    await updateUI(true);
+                    currentExpression = " ";
                 }
                 break;
-            }
-            case "calπ":
-                lastInput = interact.customId;
-                str += "pi";
-                stringify = "```\n" + str + "\n```";
-                edit();
-                edit2();
+            case id === "calπ":
+                currentExpression += "pi";
                 break;
-            case "cale":
-                lastInput = interact.customId;
-                str += "e";
-                stringify = "```\n" + str + "\n```";
-                edit();
-                edit2();
+            case id === "cale":
+                currentExpression += "e";
                 break;
-            case "calans":
-                lastInput = interact.customId;
-                str += `${answer}`;
-                stringify = "```\n" + str + "\n```";
-                edit();
-                edit2();
+            case id === "calans":
+                if (hasCalculated) {
+                    currentExpression += lastAnswer;
+                }
                 break;
-            case "calDC":
-                calc.stop();
+            case id === "calx":
+                currentExpression += " * ";
+                break;
+            case id === "cal÷":
+                currentExpression += " / ";
+                break;
+            case id in MODAL_OPERATIONS:
+                const op = MODAL_OPERATIONS[id];
+                const inputNum = await handleModal(interaction, op);
+                if (inputNum) {
+                    currentExpression += op.isSuffix ? `${inputNum}${op.funcName}` : `${op.funcName}(${inputNum})`;
+                }
                 break;
             default:
-                lastInput = interact.customId;
-                str += interact.customId.replace("cal", "");
-                stringify = "```\n" + str + "\n```";
-                edit();
-                edit2();
+                currentExpression += rawValue;
                 break;
         }
-        if (disabled === true && lastInput !== null && lastInput !== undefined) {
-            disabled = false;
-        }
-        else if (((disabled === false && lastInput === null) || lastInput === undefined) &&
-            interact.customId !== "calDC") {
-            disabled = true;
+        if (id !== "cal=") {
+            await updateUI();
         }
     });
-    calc.on("end", async () => {
-        str = "Calculator has been stopped";
-        stringify = "```\n" + str + "\n```";
-        edit();
-        edit2();
-        lock();
+    collector.on("end", async () => {
+        isFinished = true;
+        currentExpression = options.sessionEndMessage ? options.sessionEndMessage : "Calculator session ended.";
+        await updateUI();
     });
 };
 export default Calculator;

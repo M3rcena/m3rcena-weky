@@ -32,37 +32,60 @@ const Hangman = async (weky: WekyManager, options: CustomOptions<HangmanTypes>) 
 		switch (state) {
 			case "loading":
 				container.setAccentColor(defaultColor);
-				content = `## ${gameTitle}\n> 🔄 Starting game...`;
+				content = options.states?.loading
+					? options.states.loading.replace("{{gameTitle}}", gameTitle)
+					: `## ${gameTitle}\n> 🔄 Starting game...`;
 				break;
 
 			case "active":
 				container.setAccentColor(defaultColor);
-				content = `## ${gameTitle}\n> Type a letter in the chat to guess!`;
+				content = options.states?.active
+					? options.states.active.replace("{{gameTitle}}", gameTitle)
+					: `## ${gameTitle}\n> Type a letter in the chat to guess!`;
 				break;
 
 			case "won":
 				container.setAccentColor(0x57f287); // Green
-				content = `## 🎉 Victory!\n> You guessed the word: **${details?.word}**`;
+				content = options.states?.won
+					? options.states.won.replace("{{word}}", details?.word)
+					: `## 🎉 Victory!\n> You guessed the word: **${details?.word}**`;
 				break;
 
 			case "lost":
 				container.setAccentColor(0xed4245); // Red
-				content = `## 💀 Game Over\n> The word was: **${details?.word}**`;
+				content = options.states?.lost
+					? options.states.lost.replace("{{word}}", details?.word)
+					: `## 💀 Game Over\n> The word was: **${details?.word}**`;
 				break;
 
 			case "quit":
 				container.setAccentColor(0xed4245); // Red
-				content = `## 🛑 Game Stopped\n> You quit the game. The word was: **${details?.word}**`;
+				content = options.states?.quit
+					? options.states.quit.replace("{{word}}", details?.word)
+					: `## 🛑 Game Stopped\n> You quit the game. The word was: **${details?.word}**`;
 				break;
 
 			case "timeout":
 				container.setAccentColor(0xed4245); // Red
-				content = `## ⏱️ Time's Up\n> Session expired. The word was: **${details?.word}**`;
+				content = options.states?.timeout
+					? options.states.timeout.replace("{{word}}", details?.word)
+					: `## ⏱️ Time's Up\n> Session expired. The word was: **${details?.word}**`;
 				break;
 
 			case "error":
 				container.setAccentColor(0xff0000);
-				content = `## ❌ Error\n> ${details?.error || "Unknown error."}`;
+				content = options.states?.error?.main
+					? options.states.error.main.replace(
+							"{{error}}",
+							details?.error || options.states?.error?.unknownError
+								? options.states.error.unknownError
+								: "Unknown error."
+					  )
+					: `## ❌ Error\n> ${
+							details?.error || options.states?.error?.unknownError
+								? options.states.error.unknownError
+								: "Unknown error."
+					  }`;
 				break;
 		}
 
@@ -96,7 +119,11 @@ const Hangman = async (weky: WekyManager, options: CustomOptions<HangmanTypes>) 
 
 	if (gameID === "-1") {
 		return await msg.edit({
-			components: [createGameContainer("error", { error: "Failed to start game." })],
+			components: [
+				createGameContainer("error", {
+					error: options.errors?.failedToStart ? options.errors.failedToStart : "Failed to start game.",
+				}),
+			],
 			flags: MessageFlags.IsComponentsV2,
 		});
 	}
@@ -104,7 +131,11 @@ const Hangman = async (weky: WekyManager, options: CustomOptions<HangmanTypes>) 
 	let attachment = await weky.NetworkManager.getHangmanBoardImage(gameID, userIcon);
 	if (!attachment) {
 		return await msg.edit({
-			components: [createGameContainer("error", { error: "Failed to generate game board." })],
+			components: [
+				createGameContainer("error", {
+					error: options.errors?.failedToGenerate ? options.errors.failedToGenerate : "Failed to generate game board.",
+				}),
+			],
 			flags: MessageFlags.IsComponentsV2,
 		});
 	}
@@ -132,7 +163,10 @@ const Hangman = async (weky: WekyManager, options: CustomOptions<HangmanTypes>) 
 
 	btnCollector.on("collect", async (interaction) => {
 		if (interaction.user.id !== userId) {
-			return interaction.reply({ content: "This is not your game!", flags: [MessageFlags.Ephemeral] });
+			return interaction.reply({
+				content: options.othersMessage ? options.othersMessage : "This is not your game!",
+				flags: [MessageFlags.Ephemeral],
+			});
 		}
 
 		if (interaction.customId === "hangman_quit") {
@@ -170,7 +204,11 @@ const Hangman = async (weky: WekyManager, options: CustomOptions<HangmanTypes>) 
 			chatCollector.stop("error");
 			btnCollector.stop();
 			return msg.edit({
-				components: [createGameContainer("error", { error: "API did not respond." })],
+				components: [
+					createGameContainer("error", {
+						error: options.errors?.noApiResponse ? options.errors.noApiResponse : "API did not respond.",
+					}),
+				],
 				flags: MessageFlags.IsComponentsV2,
 			});
 		}

@@ -38,24 +38,32 @@ const LieSwatter = async (weky, options) => {
         switch (state) {
             case "loading":
                 container.setAccentColor(defaultColor);
-                content = `## ${gameTitle}\n> 🔄 ${text}`;
+                content = options.states?.loading
+                    ? options.states.loading.replace("{{text}}", text)
+                    : `## ${gameTitle}\n> 🔄 ${text}`;
                 break;
             case "active":
                 container.setAccentColor(defaultColor);
-                content = `## ${gameTitle}\n> ${text}\n\nIs this statement **True** or a **Lie**?`;
+                content = options.states?.active
+                    ? options.states.active.replace("{{gameTitle}}", gameTitle).replace("{{text}}", text)
+                    : `## ${gameTitle}\n> ${text}\n\nIs this statement **True** or a **Lie**?`;
                 break;
             case "won":
                 container.setAccentColor(0x57f287);
-                content = `## ${gameTitle}\n> ${text}`;
+                content = options.states?.won
+                    ? options.states.won.replace("{{gameTitle}}", gameTitle).replace("{{text}}", text)
+                    : `## ${gameTitle}\n> ${text}`;
                 break;
             case "lost":
             case "timeout":
                 container.setAccentColor(0xed4245);
-                content = `## ${gameTitle}\n> ${text}`;
+                content = options.states?.lost
+                    ? options.states.lost.replace("{{gameTitle}}", gameTitle).replace("{{text}}", text)
+                    : `## ${gameTitle}\n> ${text}`;
                 break;
             case "error":
                 container.setAccentColor(0xff0000);
-                content = `## ❌ Error\n> ${text}`;
+                content = options.states?.error ? options.states.error.replace("{{text}}", text) : `## ❌ Error\n> ${text}`;
                 break;
         }
         container.addTextDisplayComponents((t) => t.setContent(content));
@@ -96,13 +104,17 @@ const LieSwatter = async (weky, options) => {
     }
     catch (e) {
         return await msg.edit({
-            components: [createGameContainer("error", "Failed to fetch question from API.")],
+            components: [
+                createGameContainer("error", options.errors?.failedFetch ? options.errors.failedFetch : "Failed to fetch question from API."),
+            ],
             flags: discord_js_1.MessageFlags.IsComponentsV2,
         });
     }
     if (!result.results || result.results.length === 0) {
         return await msg.edit({
-            components: [createGameContainer("error", "API returned no results.")],
+            components: [
+                createGameContainer("error", options.errors?.noResult ? options.errors.noResult : "API returned no results."),
+            ],
             flags: discord_js_1.MessageFlags.IsComponentsV2,
         });
     }
@@ -150,7 +162,9 @@ const LieSwatter = async (weky, options) => {
     });
     collector.on("end", async (_, reason) => {
         if (reason === "time") {
-            const loseText = `**Time's up!**\nIt was actually **${correctLabel}**.`;
+            const loseText = options.timesUpMessage
+                ? options.timesUpMessage.replace("{{correctLabel}}", correctLabel)
+                : `**Time's up!**\nIt was actually **${correctLabel}**.`;
             try {
                 await msg.edit({
                     components: [createGameContainer("timeout", loseText, correctAnswerRaw)],

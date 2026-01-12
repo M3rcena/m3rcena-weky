@@ -69,7 +69,7 @@ const ShuffleGuess = async (weky: WekyManager, options: CustomOptions<ShuffleGue
 			if (state === "wrong" && feedback) {
 				mainContent += `> ${feedback}`;
 			} else {
-				mainContent += `Type your guess in the chat!`;
+				mainContent += options.mainContent ? options.mainContent : `Type your guess in the chat!`;
 			}
 		} else if (state === "correct") {
 			mainContent += feedback;

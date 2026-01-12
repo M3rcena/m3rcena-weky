@@ -11,7 +11,7 @@ const FastType = async (weky, options) => {
     const cancelId = `ft_cancel_${weky.getRandomString(10)}`;
     const gameTitle = options.embed.title || "Fast Type";
     const defaultColor = typeof options.embed.color === "number" ? options.embed.color : 0x5865f2;
-    const btnText = options.buttonText || "Cancel";
+    const btnText = options.cancelButton || "Cancel";
     const msgWin = options.winMessage || "You typed it in **{{time}}** with **{{wpm}} WPM**!";
     const msgLose = options.loseMessage || "You made a typo! Better luck next time.";
     const msgTimeout = options.timeoutMessage || "You ran out of time!";
@@ -23,39 +23,56 @@ const FastType = async (weky, options) => {
         switch (state) {
             case "loading":
                 container.setAccentColor(defaultColor);
-                content = `## ${gameTitle}\n> 🔄 Preparing sentence...`;
+                content = options.states?.loading
+                    ? options.states.loading.replace("{{gameTitle", gameTitle)
+                    : `## ${gameTitle}\n> 🔄 Preparing sentence...`;
                 break;
             case "active":
                 container.setAccentColor(defaultColor);
-                content =
-                    `## ${gameTitle}\n` +
-                        `> Type the sentence below as fast as you can!\n\n` +
-                        `\`\`\`text\n${data.sentence}\n\`\`\``;
+                content = options.states?.active
+                    ? options.states.active.replace("{{gameTitle}}", gameTitle).replace("{{sentence}}", data.sentence)
+                    : `## ${gameTitle}\n> Type the sentence below as fast as you can!\n\n\`\`\`text\n${data.sentence}\n\`\`\``;
                 break;
             case "won":
                 container.setAccentColor(0x57f287); // Green
                 const winText = msgWin.replace("{{time}}", data.timeTaken || "0s").replace("{{wpm}}", data.wpm || "0");
-                content = `## 🏆 Fast Fingers!\n> ${winText}\n\n` + `**Sentence:**\n\`\`\`text\n${data.sentence}\n\`\`\``;
+                content = options.states?.won
+                    ? options.states.won.replace("{{winText}}", winText).replace("{{sentence}}", data.sentence)
+                    : `## 🏆 Fast Fingers!\n> ${winText}\n\n**Sentence:**\n\`\`\`text\n${data.sentence}\n\`\`\``;
                 break;
             case "lost":
                 container.setAccentColor(0xed4245); // Red
-                content = `## ❌ Incorrect\n> ${msgLose}\n\n` + `**Correct Sentence:**\n\`\`\`text\n${data.sentence}\n\`\`\``;
+                content = options.states?.lost
+                    ? options.states.lost.replace("{{msgLose}}", msgLose).replace("{{sentence}}", data.sentence)
+                    : `## ❌ Incorrect\n> ${msgLose}\n\n` + `**Correct Sentence:**\n\`\`\`text\n${data.sentence}\n\`\`\``;
                 break;
             case "cheat":
                 container.setAccentColor(0xed4245); // Red
-                content = `## ⚠️ Cheat Detected\n> ${msgCheat}\n\n` + `**Sentence:**\n\`\`\`text\n${data.sentence}\n\`\`\``;
+                content = options.states?.cheat
+                    ? options.states.cheat.replace("{{msgCheat}}", msgCheat).replace("{{sentence}}", data.sentence)
+                    : `## ⚠️ Cheat Detected\n> ${msgCheat}\n\n` + `**Sentence:**\n\`\`\`text\n${data.sentence}\n\`\`\``;
                 break;
             case "timeout":
                 container.setAccentColor(0xed4245); // Red
-                content = `## ⏱️ Time's Up\n> ${msgTimeout}\n\n` + `**Sentence:**\n\`\`\`text\n${data.sentence}\n\`\`\``;
+                content = options.states?.timeout
+                    ? options.states.timeout.replace("{{msgTimeout}}", msgTimeout).replace("{{sentence}}", data.sentence)
+                    : `## ⏱️ Time's Up\n> ${msgTimeout}\n\n` + `**Sentence:**\n\`\`\`text\n${data.sentence}\n\`\`\``;
                 break;
             case "cancelled":
                 container.setAccentColor(0xed4245); // Red
-                content = `## 🚫 Game Cancelled\n> You ended the game.`;
+                content = options.states?.cancelled
+                    ? options.states.cancelled.replace("{{sentence}}", data.sentence)
+                    : `## 🚫 Game Cancelled\n> You ended the game.`;
                 break;
             case "error":
                 container.setAccentColor(0xff0000);
-                content = `## ❌ Error\n> ${data.errorDetails || "Something went wrong."}`;
+                content = options.states?.error?.main
+                    ? options.states.error?.main.replace("{{error}}", data.errorDetails || options.states?.error?.details
+                        ? options.states.error.details
+                        : "Something went wrong.")
+                    : `## ❌ Error\n> ${data.errorDetails || options.states?.error?.details
+                        ? options.states.error.details
+                        : "Something went wrong."}`;
                 break;
         }
         container.addTextDisplayComponents((t) => t.setContent(content));
@@ -78,7 +95,11 @@ const FastType = async (weky, options) => {
         catch (e) {
             activePlayers.delete(userId);
             return await msg.edit({
-                components: [createGameContainer("error", { errorDetails: "Failed to fetch sentence." })],
+                components: [
+                    createGameContainer("error", {
+                        errorDetails: options.failedFetchError ? options.failedFetchError : "Failed to fetch sentence.",
+                    }),
+                ],
                 flags: discord_js_1.MessageFlags.IsComponentsV2,
             });
         }

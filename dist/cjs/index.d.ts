@@ -268,6 +268,7 @@ export declare class WekyManager {
     private validateString;
     private validateEmbedFields;
     private validateEmbedAuthor;
+    private validateEmbed;
     /**
      * Centralized options validator for all minigames.
      * Ensures context, guild, channel, and embed configurations are valid.

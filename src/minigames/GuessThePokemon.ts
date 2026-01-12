@@ -43,7 +43,7 @@ const GuessThePokemon = async (weky: WekyManager, options: CustomOptions<GuessTh
 	const gameTitle = options.embed.title || "Guess The Pokémon";
 	const defaultColor = typeof options.embed.color === "number" ? options.embed.color : 0x5865f2;
 	const cancelId = `gtp_cancel_${weky.getRandomString(10)}`;
-	const btnText = options.buttonText || "Give Up";
+	const btnText = options.giveUpButton || "Give Up";
 
 	const createGameContainer = (
 		state: "loading" | "active" | "wrong" | "won" | "lost" | "error",
@@ -63,44 +63,55 @@ const GuessThePokemon = async (weky: WekyManager, options: CustomOptions<GuessTh
 		switch (state) {
 			case "loading":
 				container.setAccentColor(defaultColor);
-				content = `## ${gameTitle}\n> 🔄 ${options.thinkMessage}`;
+				content = options.states?.loading
+					? options.states.loading.replace("{{gameTitle}}", gameTitle).replace("{{thinkMessage}}", options.thinkMessage)
+					: `## ${gameTitle}\n> 🔄 ${options.thinkMessage}`;
 				break;
 
 			case "active":
 				container.setAccentColor(defaultColor);
-				content =
-					`## ${gameTitle}\n` +
-					`**Types:** ${data.types}\n` +
-					`**Abilities:** ${data.abilities}\n\n` +
-					`> ⏳ Time: **${data.timeLeft || options.time}**\n` +
-					`> Type your guess in the chat!`;
+				content = options.states?.active
+					? options.states.active
+							.replace("{{gameTitle}}", gameTitle)
+							.replace("{{types}}", data.types)
+							.replace("{{abilities}}", data.abilities)
+							.replace("{{time}}", data.timeLeft || options.time.toString())
+					: `## ${gameTitle}\n**Types:** ${data.types}\n**Abilities:** ${data.abilities}\n\n> ⏳ Time: **${
+							data.timeLeft || options.time
+					  }**\n> Type your guess in the chat!`;
 				break;
 
 			case "wrong":
 				container.setAccentColor(0xed4245); // Red
 				const wrongMsg = options.incorrectMessage!.replace("{{answer}}", data.wrongGuess || "that");
-				content =
-					`## ${gameTitle}\n` +
-					`**Types:** ${data.types}\n` +
-					`**Abilities:** ${data.abilities}\n\n` +
-					`> ❌ **${wrongMsg}**`;
+				content = options.states?.wrong
+					? options.states.wrong
+							.replace("{{gameTitle}}", gameTitle)
+							.replace("{{types}}", data.types)
+							.replace("{{abilities}}", data.abilities)
+							.replace("{{wrongMsg}}", wrongMsg)
+					: `## ${gameTitle}\n**Types:** ${data.types}\n**Abilities:** ${data.abilities}\n\n> ❌ **${wrongMsg}**`;
 				break;
 
 			case "won":
 				container.setAccentColor(0x57f287); // Green
 				const winMsg = options.winMessage!.replace("{{answer}}", data.name!).replace("{{time}}", data.timeTaken!);
-				content = `## 🏆 You caught it!\n> ${winMsg}`;
+				content = options.states?.won
+					? options.states.won.replace("{{winMsg}}", winMsg)
+					: `## 🏆 You caught it!\n> ${winMsg}`;
 				break;
 
 			case "lost":
 				container.setAccentColor(0xed4245); // Red
 				const loseMsg = options.loseMessage!.replace("{{answer}}", data.name!);
-				content = `## ❌ Game Over\n> ${loseMsg}`;
+				content = options.states?.lost
+					? options.states.lost.replace("{{loseMsg}}", loseMsg)
+					: `## ❌ Game Over\n> ${loseMsg}`;
 				break;
 
 			case "error":
 				container.setAccentColor(0xff0000);
-				content = `## ❌ Error\n> Failed to fetch Pokémon data.`;
+				content = options.states?.error ? options.states.error : `## ❌ Error\n> Failed to fetch Pokémon data.`;
 				break;
 		}
 

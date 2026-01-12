@@ -119,7 +119,8 @@ export class WekyManager {
      */
     async create2048(options) {
         this.checkPackageUpdates("2048");
-        this.OptionsChecking(options, "2048");
+        if (this.OptionsChecking(options, "2048"))
+            return;
         return await mini2048(this, options);
     }
     /**
@@ -138,7 +139,8 @@ export class WekyManager {
     async createCalculator(options) {
         this.NetworkManager._increaseUsage("calculator");
         this.checkPackageUpdates("Calculator");
-        this.OptionsChecking(options, "Calculator");
+        if (this.OptionsChecking(options, "Calculator"))
+            return;
         return await Calculator(this, options);
     }
     /**
@@ -158,7 +160,8 @@ export class WekyManager {
     async createChaosWords(options) {
         this.NetworkManager._increaseUsage("chaosWords");
         this.checkPackageUpdates("ChaosWords");
-        this.OptionsChecking(options, "ChaosWords");
+        if (this.OptionsChecking(options, "ChaosWords"))
+            return;
         return await ChaosWords(this, options);
     }
     /**
@@ -178,7 +181,8 @@ export class WekyManager {
      */
     async createFastType(options) {
         this.checkPackageUpdates("FastType");
-        this.OptionsChecking(options, "FastType");
+        if (this.OptionsChecking(options, "FastType"))
+            return;
         if (!this._client.options.intents.has(DiscordJS.GatewayIntentBits.GuildMessageTyping)) {
             const channel = options.context.channel;
             return channel.send({
@@ -205,7 +209,8 @@ export class WekyManager {
      */
     async createFight(options) {
         this.checkPackageUpdates("Fight");
-        this.OptionsChecking(options, "Fight");
+        if (this.OptionsChecking(options, "Fight"))
+            return;
         return await Fight(this, options);
     }
     /**
@@ -225,7 +230,8 @@ export class WekyManager {
     async createGuessTheNumber(options) {
         this.NetworkManager._increaseUsage("guessTheNumber");
         this.checkPackageUpdates("GuessTheNumber");
-        this.OptionsChecking(options, "GuessTheNumber");
+        if (this.OptionsChecking(options, "GuessTheNumber"))
+            return;
         return await GuessTheNumber(this, options);
     }
     /**
@@ -244,7 +250,8 @@ export class WekyManager {
     async createGuessThePokemon(options) {
         this.NetworkManager._increaseUsage("guessThePokemon");
         this.checkPackageUpdates("GuessThePokemon");
-        this.OptionsChecking(options, "GuessThePokemon");
+        if (this.OptionsChecking(options, "GuessThePokemon"))
+            return;
         return await GuessThePokemon(this, options);
     }
     /**
@@ -263,7 +270,8 @@ export class WekyManager {
      */
     async createHangman(options) {
         this.checkPackageUpdates("Hangman");
-        this.OptionsChecking(options, "Hangman");
+        if (this.OptionsChecking(options, "Hangman"))
+            return;
         return await Hangman(this, options);
     }
     /**
@@ -283,7 +291,8 @@ export class WekyManager {
     async createLieSwatter(options) {
         this.NetworkManager._increaseUsage("lieSwatter");
         this.checkPackageUpdates("LieSwatter");
-        this.OptionsChecking(options, "LieSwatter");
+        if (this.OptionsChecking(options, "LieSwatter"))
+            return;
         return await LieSwatter(this, options);
     }
     /**
@@ -302,7 +311,8 @@ export class WekyManager {
     async createNeverHaveIEver(options) {
         this.NetworkManager._increaseUsage("neverHaveIEver");
         this.checkPackageUpdates("NeverHaveIEver");
-        this.OptionsChecking(options, "NeverHaveIEver");
+        if (this.OptionsChecking(options, "NeverHaveIEver"))
+            return;
         return await NeverHaveIEver(this, options);
     }
     /**
@@ -321,7 +331,8 @@ export class WekyManager {
     async createQuickClick(options) {
         this.NetworkManager._increaseUsage("quickClick");
         this.checkPackageUpdates("QuickClick");
-        this.OptionsChecking(options, "QuickClick");
+        if (this.OptionsChecking(options, "QuickClick"))
+            return;
         return await QuickClick(this, options);
     }
     /**
@@ -340,7 +351,8 @@ export class WekyManager {
     async createShuffleGuess(options) {
         this.NetworkManager._increaseUsage("shuffleGuess");
         this.checkPackageUpdates("ShuffleGuess");
-        this.OptionsChecking(options, "ShuffleGuess");
+        if (this.OptionsChecking(options, "ShuffleGuess"))
+            return;
         return await ShuffleGuess(this, options);
     }
     /**
@@ -358,7 +370,8 @@ export class WekyManager {
      */
     async createSnake(options) {
         this.checkPackageUpdates("Snake");
-        this.OptionsChecking(options, "Snake");
+        if (this.OptionsChecking(options, "Snake"))
+            return;
         return await Snake(this, options);
     }
     /**
@@ -377,7 +390,8 @@ export class WekyManager {
     async createWillYouPressTheButton(options) {
         this.NetworkManager._increaseUsage("willYouPressTheButton");
         this.checkPackageUpdates("WillYouPressTheButton");
-        this.OptionsChecking(options, "WillYouPressTheButton");
+        if (this.OptionsChecking(options, "WillYouPressTheButton"))
+            return;
         return await WillYouPressTheButton(this, options);
     }
     /**
@@ -396,7 +410,8 @@ export class WekyManager {
     async createWouldYouRather(options) {
         this.NetworkManager._increaseUsage("wouldYouRather");
         this.checkPackageUpdates("WouldYouRather");
-        this.OptionsChecking(options, "WouldYouRather");
+        if (this.OptionsChecking(options, "WouldYouRather"))
+            return;
         return await WouldYouRather(this, options);
     }
     /**
@@ -471,11 +486,48 @@ export class WekyManager {
             return this.validateURL(author.url, gameName, "Embed author URL");
         }
     }
+    validateEmbed(embed, GameName) {
+        if (typeof embed !== "object") {
+            return this._LoggerManager.createTypeError(GameName, "Embed options must be an object.");
+        }
+        if (embed.color) {
+            try {
+                const color = DiscordJS.resolveColor(embed.color);
+                if (!color)
+                    return this._LoggerManager.createError(GameName, "Embed Color does not exist.");
+            }
+            catch {
+                return this._LoggerManager.createError(GameName, "Embed Color does not exist or was invalid.");
+            }
+        }
+        if (embed.title) {
+            return this.validateString(embed.title, GameName, "Embed title", 256);
+        }
+        if (embed.url) {
+            return this.validateURL(embed.url, GameName, "Embed URL");
+        }
+        if (embed.author) {
+            return this.validateEmbedAuthor(embed.author, GameName);
+        }
+        if (embed.description) {
+            return this.validateString(embed.description, GameName, "Embed description", 4096);
+        }
+        if (embed.fields) {
+            return this.validateEmbedFields(embed.fields, GameName);
+        }
+        if (embed.image) {
+            return this.validateURL(embed.image, GameName, "Embed image");
+        }
+        if (embed.timestamp && !(embed.timestamp instanceof Date)) {
+            return this._LoggerManager.createTypeError(GameName, "Embed timestamp must be a date.");
+        }
+    }
     /**
      * Centralized options validator for all minigames.
      * Ensures context, guild, channel, and embed configurations are valid.
      */
     OptionsChecking(options, GameName) {
+        this._deferContext(options.context);
         if (!options) {
             return this._LoggerManager.createError(GameName, "No options provided.");
         }
@@ -493,41 +545,9 @@ export class WekyManager {
             return this._LoggerManager.createError(GameName, "The channel is either unsendable or is a DM Channel");
         }
         // Embed validations
-        if ("embed" in options && options.embed) {
-            if (typeof options.embed !== "object") {
-                return this._LoggerManager.createTypeError(GameName, "Embed options must be an object.");
-            }
-            try {
-                const color = DiscordJS.resolveColor(options.embed.color);
-                if (!color)
-                    return this._LoggerManager.createError(GameName, "Embed Color does not exist.");
-            }
-            catch {
-                return this._LoggerManager.createError(GameName, "Embed Color does not exist or was invalid.");
-            }
-            if (options.embed.title) {
-                return this.validateString(options.embed.title, GameName, "Embed title", 256);
-            }
-            if (options.embed.url) {
-                return this.validateURL(options.embed.url, GameName, "Embed URL");
-            }
-            if (options.embed.author) {
-                return this.validateEmbedAuthor(options.embed.author, GameName);
-            }
-            if (options.embed.description) {
-                return this.validateString(options.embed.description, GameName, "Embed description", 4096);
-            }
-            if (options.embed.fields) {
-                return this.validateEmbedFields(options.embed.fields, GameName);
-            }
-            if (options.embed.image) {
-                return this.validateURL(options.embed.image, GameName, "Embed image");
-            }
-            if (options.embed.timestamp && !(options.embed.timestamp instanceof Date)) {
-                return this._LoggerManager.createTypeError(GameName, "Embed timestamp must be a date.");
-            }
+        if (options.embed) {
+            return this.validateEmbed(options.embed, GameName);
         }
-        this._deferContext(options.context);
     }
     /* -------------------------------------------------------------------------- */
     /* PACKAGE UPDATES                    							              */
@@ -545,6 +565,8 @@ export class WekyManager {
         }
         tips = [" ", ...tips, " "];
         tips = tips.map((msg) => ({ val: msg, len: stringWidth(msg) }));
+        // @ts-ignore
+        const variable = Buffer.from("UG93ZXJlZCBieSBNM3JjZW5h", "base64").toString("utf-8");
         maxLen = tips.reduce((len, tip) => {
             maxLen = Math.max(len, tip.len);
             return maxLen;

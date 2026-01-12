@@ -20,7 +20,7 @@ const QuickClick = async (weky, options) => {
         const errorText = messages.ongoing.replace("{{channel}}", channelId);
         const errorContainer = new discord_js_1.ContainerBuilder()
             .setAccentColor(0xff0000)
-            .addTextDisplayComponents((text) => text.setContent(`## ❌ Error\n${errorText}`));
+            .addTextDisplayComponents((text) => text.setContent(options.errors?.main ? options.errors.main.replace("{{error}}", errorText) : `## ❌ Error\n${errorText}`));
         return context.channel.send({
             components: [errorContainer],
             flags: discord_js_1.MessageFlags.IsComponentsV2,
@@ -29,7 +29,9 @@ const QuickClick = async (weky, options) => {
     if (activeUsers.has(userId)) {
         const errorContainer = new discord_js_1.ContainerBuilder()
             .setAccentColor(0xff0000)
-            .addTextDisplayComponents((text) => text.setContent(`## ❌ Error\n> You already have a game running! Finish that one first.`));
+            .addTextDisplayComponents((text) => text.setContent(options.errors?.gameAlreadyRunning
+            ? options.errors.gameAlreadyRunning
+            : `## ❌ Error\n> You already have a game running! Finish that one first.`));
         return context.channel.send({
             components: [errorContainer],
             flags: discord_js_1.MessageFlags.IsComponentsV2,
@@ -43,23 +45,31 @@ const QuickClick = async (weky, options) => {
         switch (state) {
             case "waiting":
                 container.setAccentColor(0x5865f2);
-                content = `## ${gameTitle}\n> ⏳ ${messages.wait}`;
+                content = options.states?.waiting
+                    ? options.states.waiting.replace("{{gameTitle}}", gameTitle).replace("{{messagesWait}}", messages.wait)
+                    : `## ${gameTitle}\n> ⏳ ${messages.wait}`;
                 break;
             case "active":
                 container.setAccentColor(0x5865f2);
                 const startText = messages.start.replace("{{time}}", data?.timeLeft || "60s").replace("{{emoji}}", emoji);
-                content = `## ${gameTitle}\n${startText}`;
+                content = options.states?.active
+                    ? options.states.active.replace("{{gameTitle}}", gameTitle).replace("{{startText}}", startText)
+                    : `## ${gameTitle}\n${startText}`;
                 break;
             case "won":
                 container.setAccentColor(0x57f287);
                 const winText = messages.win
                     .replace("{{winner}}", data?.winner || "")
                     .replace("{{time}}", data?.timeTaken || "0");
-                content = `## ${gameTitle}\n> ${winText}`;
+                content = options.states?.won
+                    ? options.states.won.replace("{{gameTitle}}", gameTitle).replace("{{winText}}", winText)
+                    : `## ${gameTitle}\n> ${winText}`;
                 break;
             case "lost":
                 container.setAccentColor(0xed4245); // Red
-                content = `## ${gameTitle}\n> ${messages.lose}`;
+                content = options.states?.lost
+                    ? options.states.lost.replace("{{gameTitle}}", gameTitle).replace("{{messagesLose}}", messages.lose)
+                    : `## ${gameTitle}\n> ${messages.lose}`;
                 break;
         }
         container.addTextDisplayComponents((textDisplay) => textDisplay.setContent(content));

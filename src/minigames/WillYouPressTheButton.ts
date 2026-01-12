@@ -35,32 +35,59 @@ const WillYouPressTheButton = async (weky: WekyManager, options: CustomOptions<W
 		switch (state) {
 			case "loading":
 				container.setAccentColor(defaultColor);
-				content = `## ${gameTitle}\n> 🔄 ${thinkMessage}`;
+				content = options.states?.loading
+					? options.states.loading.replace("{{gameTitle}}", gameTitle).replace("{{thinkMessage}}", thinkMessage)
+					: `## ${gameTitle}\n> 🔄 ${thinkMessage}`;
 				break;
 
 			case "active":
 				container.setAccentColor(defaultColor);
-				content = `## ${gameTitle}\n` + `> ${data.question}\n\n` + `**BUT**\n\n` + `> ${data.result}`;
+				content = options.states?.active
+					? options.states.active
+							.replace("{{gameTitle}}", gameTitle)
+							.replace("{{question}}", data.question)
+							.replace("{{result}}", data.result)
+					: `## ${gameTitle}\n` + `> ${data.question}\n\n` + `**BUT**\n\n` + `> ${data.result}`;
 				break;
 
 			case "result":
 				container.setAccentColor(data.userChoice === "yes" ? 0x57f287 : 0xed4245);
-				content =
-					`## ${gameTitle}\n` +
-					`> ${data.question}\n\n` +
-					`**BUT**\n\n` +
-					`> ${data.result}\n\n` +
-					`**You chose:** ${data.userChoice === "yes" ? "Yes! Press it!" : "No! Don't press!"}`;
+				content = options.states?.result
+					? options.states.result
+							.replace("{{gameTitle}}", gameTitle)
+							.replace("{{question}}", data.question)
+							.replace("{{result}}", data.result)
+							.replace(
+								"{{chose}}",
+								data.userChoice === "yes"
+									? options.yesPress
+										? options.yesPress
+										: "Yes! Press it!"
+									: options.noPress
+									? options.noPress
+									: "No! Don't press!"
+							)
+					: `## ${gameTitle}\n> ${data.question}\n\n**BUT**\n\n> ${data.result}\n\n**You chose:** ${
+							data.userChoice === "yes"
+								? options.yesPress
+									? options.yesPress
+									: "Yes! Press it!"
+								: options.noPress
+								? options.noPress
+								: "No! Don't press!"
+					  }`;
 				break;
 
 			case "timeout":
 				container.setAccentColor(0x99aab5);
-				content = `## ${gameTitle}\n> ⏳ Time's up! You didn't decide.`;
+				content = options.states?.timeout
+					? options.states.timeout.replace("{{gameTitle}}", gameTitle)
+					: `## ${gameTitle}\n> ⏳ Time's up! You didn't decide.`;
 				break;
 
 			case "error":
 				container.setAccentColor(0xff0000);
-				content = `## ❌ Error\n> Failed to fetch a dilemma.`;
+				content = options.states?.error ? options.states.error : `## ❌ Error\n> Failed to fetch a dilemma.`;
 				break;
 		}
 

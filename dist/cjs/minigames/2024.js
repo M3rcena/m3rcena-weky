@@ -38,31 +38,45 @@ const mini2048 = async (weky, options) => {
         switch (state) {
             case "loading":
                 container.setAccentColor(defaultColor);
-                content = `## ${gameTitle}\n> 🔄 Starting game...`;
+                content = options.loadingMessage
+                    ? options.loadingMessage.replace("{{gameTitle}}", gameTitle)
+                    : `## ${gameTitle}\n> 🔄 Starting game...`;
                 break;
             case "active":
                 container.setAccentColor(defaultColor);
-                content = `## ${gameTitle}\n> Combine the tiles to reach **2048**!\n\n**Score:** \`${score}\``;
+                content = options.activeMessage
+                    ? options.activeMessage.replace("{{gameTitle}}", gameTitle).replace("{{score}}", score.toString())
+                    : `## ${gameTitle}\n> Combine the tiles to reach **2048**!\n\n**Score:** \`${score}\``;
                 break;
             case "won":
                 container.setAccentColor(0x57f287); // Green
-                content = `## 🎉 You Won!\n> You reached the **2048** tile!\n\n**Final Score:** \`${score}\``;
+                content = options.wonMessage
+                    ? options.wonMessage.replace("{{score}}", score.toString())
+                    : `## 🎉 You Won!\n> You reached the **2048** tile!\n\n**Final Score:** \`${score}\``;
                 break;
             case "gameover":
                 container.setAccentColor(0xed4245); // Red
-                content = `## 💀 Game Over\n> No more moves available.\n\n**Final Score:** \`${score}\``;
+                content = options.gameoverMessage
+                    ? options.gameoverMessage.replace("{{score}}", score.toString())
+                    : `## 💀 Game Over\n> No more moves available.\n\n**Final Score:** \`${score}\``;
                 break;
             case "quit":
                 container.setAccentColor(0xed4245); // Red
-                content = `## 🛑 Game Stopped\n> You quit the game.\n\n**Final Score:** \`${score}\``;
+                content = options.quitMessage
+                    ? options.quitMessage.replace("{{score}}", score.toString())
+                    : `## 🛑 Game Stopped\n> You quit the game.\n\n**Final Score:** \`${score}\``;
                 break;
             case "timeout":
                 container.setAccentColor(0xed4245); // Red
-                content = `## ⏱️ Time's Up\n> Game session expired.\n\n**Final Score:** \`${score}\``;
+                content = options.timeoutMessage
+                    ? options.timeoutMessage.replace("{{score}}", score.toString())
+                    : `## ⏱️ Time's Up\n> Game session expired.\n\n**Final Score:** \`${score}\``;
                 break;
             case "error":
                 container.setAccentColor(0xff0000);
-                content = `## ❌ Error\n> ${details?.error || "Unknown error occurred."}`;
+                content = options.errorMessage
+                    ? options.errorMessage.replace("{{error}}", details?.error || "Uknown")
+                    : `## ❌ Error\n> ${details?.error || "Unknown error occurred."}`;
                 break;
         }
         container.addTextDisplayComponents((t) => t.setContent(content));

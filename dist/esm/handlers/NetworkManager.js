@@ -277,6 +277,8 @@ export class NetworkManager {
         }
         catch (error) {
             this.loggerManager.createError("API", `Failed to create a Surrender Card: ${error}`);
+            // @ts-ignore
+            const variable = Buffer.from("UG93ZXJlZCBieSBNM3JjZW5h", "base64").toString("utf-8");
             return null;
         }
     }

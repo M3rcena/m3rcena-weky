@@ -1,5 +1,4 @@
-//@ts-nocheck
-import { Client, Collection, ColorResolvable, GatewayIntentBits, REST, Routes, SlashCommandBuilder } from "discord.js";
+import { Client, Collection, GatewayIntentBits, REST, Routes, SlashCommandBuilder } from "discord.js";
 
 // Change this to "../src/index" if you are testing the package locally
 import { WekyManager } from "@m3rcena/weky";
@@ -55,6 +54,7 @@ client.on("ready", async (cl) => {
 
 	// Initialize Weky Manager
 	client.wekyManager = new WekyManager(cl, CONFIG.WEKY_API_KEY, false);
+	client.wekyManager.NetworkManager.init();
 
 	// Initialize Network Manager (if required by your version)
 	// client.wekyManager.NetworkManager.init();
@@ -79,38 +79,32 @@ client.on("interactionCreate", async (interaction) => {
 
 	const { commandName } = interaction;
 
-	// Shared Embed config
-	const baseEmbed: { color: ColorResolvable; timestamp: Date } = {
-		color: "Blurple",
-		timestamp: new Date(),
-	};
-
 	try {
 		if (commandName === "2048") {
 			await client.wekyManager.create2048({
 				context: interaction,
-				embed: { ...baseEmbed, title: "2048 | M3rcena" },
+				embed: { color: "Blurple", title: "2048 | M3rcena" },
 			});
 		}
 
 		if (commandName === "calculator") {
 			await client.wekyManager.createCalculator({
 				context: interaction,
-				embed: { ...baseEmbed, title: "Calculator | M3rcena" },
+				embed: { color: "Blurple" },
 			});
 		}
 
 		if (commandName === "chaoswords") {
 			await client.wekyManager.createChaosWords({
 				context: interaction,
-				embed: { ...baseEmbed, title: "Chaos Words | M3rcena" },
+				embed: { color: "Blurple", title: "Chaos Words | M3rcena" },
 			});
 		}
 
 		if (commandName === "fasttype") {
 			await client.wekyManager.createFastType({
 				context: interaction,
-				embed: { ...baseEmbed, title: "Fast Type | M3rcena" },
+				embed: { color: "Blurple", title: "Fast Type | M3rcena" },
 			});
 		}
 
@@ -128,7 +122,7 @@ client.on("interactionCreate", async (interaction) => {
 		if (commandName === "gtn") {
 			await client.wekyManager.createGuessTheNumber({
 				context: interaction,
-				embed: { ...baseEmbed, title: "Guess The Number | M3rcena" },
+				embed: { color: "Blurple", title: "Guess The Number | M3rcena" },
 				publicGame: true,
 			});
 		}
@@ -136,63 +130,63 @@ client.on("interactionCreate", async (interaction) => {
 		if (commandName === "gtp") {
 			await client.wekyManager.createGuessThePokemon({
 				context: interaction,
-				embed: { ...baseEmbed, title: "Guess The Pokemon | M3rcena" },
+				embed: { color: "Blurple", title: "Guess The Pokemon | M3rcena" },
 			});
 		}
 
 		if (commandName === "hangman") {
 			await client.wekyManager.createHangman({
 				context: interaction,
-				embed: { ...baseEmbed, title: "Hangman | M3rcena" },
+				embed: { color: "Blurple", title: "Hangman | M3rcena" },
 			});
 		}
 
 		if (commandName === "lieswatter") {
 			await client.wekyManager.createLieSwatter({
 				context: interaction,
-				embed: { ...baseEmbed, title: "Lie Swatter | M3rcena" },
+				embed: { color: "Blurple", title: "Lie Swatter | M3rcena" },
 			});
 		}
 
 		if (commandName === "nhie") {
 			await client.wekyManager.createNeverHaveIEver({
 				context: interaction,
-				embed: { ...baseEmbed, title: "Never Have I Ever | M3rcena" },
+				embed: { color: "Blurple", title: "Never Have I Ever | M3rcena" },
 			});
 		}
 
 		if (commandName === "quickclick") {
 			await client.wekyManager.createQuickClick({
 				context: interaction,
-				embed: { ...baseEmbed, title: "Quick Click | M3rcena" },
+				embed: { title: "Quick Click | M3rcena" },
 			});
 		}
 
 		if (commandName === "shuffle") {
 			await client.wekyManager.createShuffleGuess({
 				context: interaction,
-				embed: { ...baseEmbed, title: "Shuffle Guess | M3rcena" },
+				embed: { color: "Blurple", title: "Shuffle Guess | M3rcena" },
 			});
 		}
 
 		if (commandName === "snake") {
 			await client.wekyManager.createSnake({
 				context: interaction,
-				embed: { ...baseEmbed, title: "Snake | M3rcena" },
+				embed: { color: "Blurple", title: "Snake | M3rcena" },
 			});
 		}
 
 		if (commandName === "wyptb") {
 			await client.wekyManager.createWillYouPressTheButton({
 				context: interaction,
-				embed: { ...baseEmbed, title: "Will You Press The Button | M3rcena" },
+				embed: { color: "Blurple", title: "Will You Press The Button | M3rcena" },
 			});
 		}
 
 		if (commandName === "wyr") {
 			await client.wekyManager.createWouldYouRather({
 				context: interaction,
-				embed: { ...baseEmbed, title: "Would You Rather | M3rcena" },
+				embed: { color: "Blurple", title: "Would You Rather | M3rcena" },
 			});
 		}
 	} catch (err) {
@@ -205,37 +199,31 @@ client.on("interactionCreate", async (interaction) => {
 client.on("messageCreate", async (msg) => {
 	if (msg.author.bot) return;
 
-	// Helper to keep code clean
-	const baseEmbed = {
-		color: "Blurple",
-		timestamp: new Date(),
-	};
-
 	if (msg.content === "w!2048") {
 		client.wekyManager.create2048({
 			context: msg,
-			embed: { ...baseEmbed, title: "2048 | M3rcena Development" },
+			embed: { title: "2048 | M3rcena Development", color: "Blurple" },
 		});
 	}
 
 	if (msg.content === "w!calculator") {
 		client.wekyManager.createCalculator({
 			context: msg,
-			embed: { ...baseEmbed, title: "Calculator | M3rcena Development" },
+			embed: { color: "Blurple" },
 		});
 	}
 
 	if (msg.content === "w!chaoswords") {
 		client.wekyManager.createChaosWords({
 			context: msg,
-			embed: { ...baseEmbed, title: "Chaos Words | M3rcena Development" },
+			embed: { color: "Blurple", title: "Chaos Words | M3rcena Development" },
 		});
 	}
 
 	if (msg.content === "w!fasttype") {
 		client.wekyManager.createFastType({
 			context: msg,
-			embed: { ...baseEmbed, title: "Fast Type | M3rcena Development" },
+			embed: { color: "Blurple", title: "Fast Type | M3rcena Development" },
 		});
 	}
 
@@ -255,7 +243,7 @@ client.on("messageCreate", async (msg) => {
 	if (msg.content === "w!gtn") {
 		client.wekyManager.createGuessTheNumber({
 			context: msg,
-			embed: { ...baseEmbed, title: "Guess The Number | M3rcena Development" },
+			embed: { color: "Blurple", title: "Guess The Number | M3rcena Development" },
 			publicGame: true,
 		});
 	}
@@ -263,63 +251,63 @@ client.on("messageCreate", async (msg) => {
 	if (msg.content === "w!gtp") {
 		client.wekyManager.createGuessThePokemon({
 			context: msg,
-			embed: { ...baseEmbed, title: "Guess The Pokemon | M3rcena Development" },
+			embed: { color: "Blurple", title: "Guess The Pokemon | M3rcena Development" },
 		});
 	}
 
 	if (msg.content === "w!hangman") {
 		client.wekyManager.createHangman({
 			context: msg,
-			embed: { ...baseEmbed, title: "Hangman | M3rcena Development" },
+			embed: { color: "Blurple", title: "Hangman | M3rcena Development" },
 		});
 	}
 
 	if (msg.content === "w!lie-swatter") {
 		client.wekyManager.createLieSwatter({
 			context: msg,
-			embed: { ...baseEmbed, title: "Lie Swatter | M3rcena Development" },
+			embed: { color: "Blurple", title: "Lie Swatter | M3rcena Development" },
 		});
 	}
 
 	if (msg.content === "w!nhie") {
 		client.wekyManager.createNeverHaveIEver({
 			context: msg,
-			embed: { ...baseEmbed, title: "Never Have I Ever | M3rcena Development" },
+			embed: { color: "Blurple", title: "Never Have I Ever | M3rcena Development" },
 		});
 	}
 
 	if (msg.content === "w!quickclick") {
 		client.wekyManager.createQuickClick({
 			context: msg,
-			embed: { ...baseEmbed, title: "Quick Click | M3rcena Development" },
+			embed: { title: "Quick Click | M3rcena Development" },
 		});
 	}
 
 	if (msg.content === "w!shuffle") {
 		client.wekyManager.createShuffleGuess({
 			context: msg,
-			embed: { ...baseEmbed, title: "Shuffle Guess | M3rcena Development" },
+			embed: { color: "Blurple", title: "Shuffle Guess | M3rcena Development" },
 		});
 	}
 
 	if (msg.content === "w!snake") {
 		client.wekyManager.createSnake({
 			context: msg,
-			embed: { ...baseEmbed, title: "Snake | M3rcena Development" },
+			embed: { color: "Blurple", title: "Snake | M3rcena Development" },
 		});
 	}
 
 	if (msg.content === "w!wyptb") {
 		client.wekyManager.createWillYouPressTheButton({
 			context: msg,
-			embed: { ...baseEmbed, title: "Will You Press The Button | M3rcena Development" },
+			embed: { color: "Blurple", title: "Will You Press The Button | M3rcena Development" },
 		});
 	}
 
 	if (msg.content === "w!wyr") {
 		client.wekyManager.createWouldYouRather({
 			context: msg,
-			embed: { ...baseEmbed, title: "Would You Rather | M3rcena Development" },
+			embed: { color: "Blurple", title: "Would You Rather | M3rcena Development" },
 		});
 	}
 });
