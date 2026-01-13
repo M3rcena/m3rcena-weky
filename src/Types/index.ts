@@ -7,14 +7,12 @@ import type {
 	GuildTextBasedChannel,
 } from "discord.js";
 
-// TODO: TRY TO MAKE THE PICK<EMBEDS> OPTIONAL
-
 /**
  * 2048 TYPES
  */
 export interface Types2048 {
 	context: Context;
-	embed: Pick<Embeds, "title" | "color">;
+	embed?: Partial<Pick<Embeds, "title" | "color">>;
 
 	emojis?: {
 		up: string;
@@ -39,7 +37,7 @@ export interface Types2048 {
  */
 export interface CalcTypes {
 	context: Context;
-	embed: Pick<Embeds, "color">;
+	embed: Partial<Pick<Embeds, "color">>;
 
 	operationTitles?: {
 		logarithm?: string;
@@ -86,7 +84,7 @@ export interface CalcTypes {
  */
 export interface ChaosTypes {
 	context: Context;
-	embed: Pick<Embeds, "title" | "color">;
+	embed: Partial<Pick<Embeds, "title" | "color">>;
 
 	failedFetchMessage?: string;
 
@@ -133,7 +131,7 @@ export interface ChaosTypes {
  */
 export interface FastTypeTypes {
 	context: Context;
-	embed: Pick<Embeds, "title" | "color">;
+	embed: Partial<Pick<Embeds, "title" | "color">>;
 
 	sentence?: string;
 	difficulty?: "easy" | "medium" | "hard";
@@ -169,7 +167,7 @@ export interface FastTypeTypes {
 export interface FightTypes {
 	context: Context;
 	opponent: GuildMember;
-	embed?: Pick<Embeds, "color">;
+	embed?: Partial<Pick<Embeds, "color">>;
 	time?: number;
 
 	powerups?: {
@@ -244,7 +242,7 @@ export interface PlayerData {
  */
 export interface GuessTheNumberTypes {
 	context: Context;
-	embed: Pick<Embeds, "title" | "color">;
+	embed: Partial<Pick<Embeds, "title" | "color">>;
 
 	publicGame?: boolean;
 	time?: number;
@@ -274,7 +272,7 @@ export interface GuessTheNumberTypes {
  */
 export interface GuessThePokemonTypes {
 	context: Context;
-	embed: Pick<Embeds, "title" | "color">;
+	embed: Partial<Pick<Embeds, "title" | "color">>;
 	time?: number;
 
 	states?: {
@@ -330,7 +328,7 @@ export interface GuessThePokemonData {
  */
 export interface HangmanTypes {
 	context: Context;
-	embed?: Pick<Embeds, "title" | "color">;
+	embed?: Partial<Pick<Embeds, "title" | "color">>;
 	time?: number;
 
 	states?: {
@@ -360,7 +358,7 @@ export interface HangmanTypes {
  */
 export interface LieSwatterTypes {
 	context: Context;
-	embed: Pick<Embeds, "title" | "color">;
+	embed: Partial<Pick<Embeds, "title" | "color">>;
 
 	winMessage?: string;
 	loseMessage?: string;
@@ -394,7 +392,7 @@ export interface LieSwatterTypes {
  */
 export interface NeverHaveIEverTypes {
 	context: Context;
-	embed: Pick<Embeds, "title" | "color">;
+	embed: Partial<Pick<Embeds, "title" | "color">>;
 
 	thinkMessage?: string;
 	othersMessage?: string;
@@ -426,7 +424,7 @@ export interface NeverHaveIEverTypes {
  */
 export interface QuickClickTypes {
 	context: Context;
-	embed: Pick<Embeds, "title">;
+	embed: Partial<Pick<Embeds, "title">>;
 
 	waitMessage?: string;
 	startMessage?: string;
@@ -455,7 +453,7 @@ export interface QuickClickTypes {
  */
 export interface ShuffleGuessTypes {
 	context: Context;
-	embed: Pick<Embeds, "title" | "color">;
+	embed: Partial<Pick<Embeds, "title" | "color">>;
 
 	buttons?: {
 		cancel?: string;
@@ -479,7 +477,7 @@ export interface ShuffleGuessTypes {
  */
 export interface SnakeTypes {
 	context: Context;
-	embed: Pick<Embeds, "title" | "color">;
+	embed: Partial<Pick<Embeds, "title" | "color">>;
 
 	emojis?: {
 		up: string;
@@ -532,7 +530,7 @@ export interface SnakeGameTypes {
  */
 export interface WillYouPressTheButtonTypes {
 	context: Context;
-	embed: Pick<Embeds, "title" | "color">;
+	embed: Partial<Pick<Embeds, "title" | "color">>;
 
 	states?: {
 		loading?: string;
@@ -572,7 +570,7 @@ export interface DilemmaData {
  */
 export interface WouldYouRatherTypes {
 	context: Context;
-	embed: Pick<Embeds, "title" | "color">;
+	embed: Partial<Pick<Embeds, "title" | "color">>;
 
 	othersMessage?: string;
 	thinkMessage?: string;
