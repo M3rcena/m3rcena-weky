@@ -1,203 +1,264 @@
-import { ButtonBuilder, ButtonStyle, ComponentType, ContainerBuilder, MessageFlags } from "discord.js";
+import { ButtonBuilder, ButtonStyle, ContainerBuilder, MessageFlags } from "discord.js";
 const activePlayers = new Set();
-const FastType = async (weky, options) => {
-    const context = options.context;
-    const userId = weky._getContextUserID(context);
-    if (activePlayers.has(userId))
-        return;
-    activePlayers.add(userId);
-    const cancelId = `ft_cancel_${weky.getRandomString(10)}`;
-    const gameTitle = options.embed.title || "Fast Type";
-    const defaultColor = typeof options.embed.color === "number" ? options.embed.color : 0x5865f2;
-    const btnText = options.cancelButton || "Cancel";
-    const msgWin = options.winMessage || "You typed it in **{{time}}** with **{{wpm}} WPM**!";
-    const msgLose = options.loseMessage || "You made a typo! Better luck next time.";
-    const msgTimeout = options.timeoutMessage || "You ran out of time!";
-    const msgCheat = options.cheatMessage || "⚠️ **Anti-Cheat:** You didn't type! Copy-pasting is not allowed.";
-    let hasStartedTyping = false;
-    const createGameContainer = (state, data) => {
-        const container = new ContainerBuilder();
-        let content = "";
-        switch (state) {
-            case "loading":
-                container.setAccentColor(defaultColor);
-                content = options.states?.loading
-                    ? options.states.loading.replace("{{gameTitle", gameTitle)
-                    : `## ${gameTitle}\n> 🔄 Preparing sentence...`;
-                break;
-            case "active":
-                container.setAccentColor(defaultColor);
-                content = options.states?.active
-                    ? options.states.active.replace("{{gameTitle}}", gameTitle).replace("{{sentence}}", data.sentence)
-                    : `## ${gameTitle}\n> Type the sentence below as fast as you can!\n\n\`\`\`text\n${data.sentence}\n\`\`\``;
-                break;
-            case "won":
-                container.setAccentColor(0x57f287); // Green
-                const winText = msgWin.replace("{{time}}", data.timeTaken || "0s").replace("{{wpm}}", data.wpm || "0");
-                content = options.states?.won
-                    ? options.states.won.replace("{{winText}}", winText).replace("{{sentence}}", data.sentence)
-                    : `## 🏆 Fast Fingers!\n> ${winText}\n\n**Sentence:**\n\`\`\`text\n${data.sentence}\n\`\`\``;
-                break;
-            case "lost":
-                container.setAccentColor(0xed4245); // Red
-                content = options.states?.lost
-                    ? options.states.lost.replace("{{msgLose}}", msgLose).replace("{{sentence}}", data.sentence)
-                    : `## ❌ Incorrect\n> ${msgLose}\n\n` + `**Correct Sentence:**\n\`\`\`text\n${data.sentence}\n\`\`\``;
-                break;
-            case "cheat":
-                container.setAccentColor(0xed4245); // Red
-                content = options.states?.cheat
-                    ? options.states.cheat.replace("{{msgCheat}}", msgCheat).replace("{{sentence}}", data.sentence)
-                    : `## ⚠️ Cheat Detected\n> ${msgCheat}\n\n` + `**Sentence:**\n\`\`\`text\n${data.sentence}\n\`\`\``;
-                break;
-            case "timeout":
-                container.setAccentColor(0xed4245); // Red
-                content = options.states?.timeout
-                    ? options.states.timeout.replace("{{msgTimeout}}", msgTimeout).replace("{{sentence}}", data.sentence)
-                    : `## ⏱️ Time's Up\n> ${msgTimeout}\n\n` + `**Sentence:**\n\`\`\`text\n${data.sentence}\n\`\`\``;
-                break;
-            case "cancelled":
-                container.setAccentColor(0xed4245); // Red
-                content = options.states?.cancelled
-                    ? options.states.cancelled.replace("{{sentence}}", data.sentence)
-                    : `## 🚫 Game Cancelled\n> You ended the game.`;
-                break;
-            case "error":
-                container.setAccentColor(0xff0000);
-                content = options.states?.error?.main
-                    ? options.states.error?.main.replace("{{error}}", data.errorDetails || options.states?.error?.details
-                        ? options.states.error.details
-                        : "Something went wrong.")
-                    : `## ❌ Error\n> ${data.errorDetails || options.states?.error?.details
-                        ? options.states.error.details
-                        : "Something went wrong."}`;
-                break;
-        }
-        container.addTextDisplayComponents((t) => t.setContent(content));
-        if (state === "active") {
-            const btnCancel = new ButtonBuilder().setStyle(ButtonStyle.Danger).setLabel(btnText).setCustomId(cancelId);
-            container.addActionRowComponents((row) => row.setComponents(btnCancel));
-        }
-        return container;
-    };
-    const msg = await context.channel.send({
-        components: [createGameContainer("loading", {})],
-        flags: MessageFlags.IsComponentsV2,
-        allowedMentions: { repliedUser: false },
-    });
-    let sentence = options.sentence;
-    if (!sentence) {
-        try {
-            sentence = await weky.NetworkManager.getText(options.difficulty ? options.difficulty.toLowerCase() : "medium");
-        }
-        catch (e) {
-            activePlayers.delete(userId);
-            return await msg.edit({
-                components: [
-                    createGameContainer("error", {
-                        errorDetails: options.failedFetchError ? options.failedFetchError : "Failed to fetch sentence.",
-                    }),
-                ],
-                flags: MessageFlags.IsComponentsV2,
-            });
-        }
+/**
+ * FastType Minigame.
+ * A competitive speed-typing test where players must transcribe a sentence accurately
+ * to calculate their Words Per Minute (WPM). Includes an anti-cheat mechanism based on typing events.
+ * @implements {IMinigame}
+ */
+export default class FastType {
+    id;
+    weky;
+    options;
+    context;
+    // Game State
+    gameMessage = null;
+    sentence = "";
+    hasStartedTyping = false;
+    gameCreatedAt = 0;
+    cancelId;
+    timeoutTimer = null;
+    isGameActive = false;
+    // Configuration constants
+    gameTitle;
+    defaultColor;
+    btnText;
+    msgWin;
+    msgLose;
+    msgTimeout;
+    msgCheat;
+    /**
+     * Initializes the FastType game instance.
+     * Sets up configuration for difficulty, custom sentences, anti-cheat messages, and UI styling.
+     * @param weky - The WekyManager instance.
+     * @param options - Configuration including difficulty ('easy', 'medium', 'hard') or custom sentence.
+     */
+    constructor(weky, options) {
+        this.weky = weky;
+        this.options = options;
+        this.context = options.context;
+        this.id = weky._getContextUserID(this.context);
+        this.cancelId = `ft_cancel_${weky.getRandomString(10)}`;
+        // Initialize Configs
+        this.gameTitle = options.embed?.title || "Fast Type";
+        this.defaultColor = typeof options.embed?.color === "number" ? options.embed.color : 0x5865f2;
+        this.btnText = options.cancelButton || "Cancel";
+        this.msgWin = options.winMessage || "You typed it in **{{time}}** with **{{wpm}} WPM**!";
+        this.msgLose = options.loseMessage || "You made a typo! Better luck next time.";
+        this.msgTimeout = options.timeoutMessage || "You ran out of time!";
+        this.msgCheat = options.cheatMessage || "⚠️ **Anti-Cheat:** You didn't type! Copy-pasting is not allowed.";
     }
-    if (sentence.includes("Please try again!")) {
-        activePlayers.delete(userId);
-        return await msg.edit({
-            components: [createGameContainer("error", { errorDetails: sentence })],
+    /**
+     * Begins the game session.
+     * Fetches the challenge sentence (locally or via API), initializes the anti-cheat flag,
+     * sends the initial game interface, and starts the countdown timer.
+     */
+    async start() {
+        if (activePlayers.has(this.id))
+            return;
+        activePlayers.add(this.id);
+        this.isGameActive = true;
+        this.gameMessage = await this.context.channel.send({
+            components: [this.createGameContainer("loading", {})],
+            flags: MessageFlags.IsComponentsV2,
+            allowedMentions: { repliedUser: false },
+        });
+        this.sentence = this.options.sentence || "";
+        if (this.sentence === "") {
+            try {
+                this.sentence = await this.weky.NetworkManager.getText(this.options.difficulty ? this.options.difficulty.toLowerCase() : "medium");
+            }
+            catch (e) {
+                return this.endGame("error", {
+                    errorDetails: this.options.failedFetchError ? this.options.failedFetchError : "Failed to fetch sentence.",
+                });
+            }
+        }
+        if (this.sentence.includes("Please try again!")) {
+            return this.endGame("error", { errorDetails: this.sentence });
+        }
+        this.weky._EventManager.register(this);
+        await this.gameMessage.edit({
+            components: [this.createGameContainer("active", { sentence: this.sentence })],
             flags: MessageFlags.IsComponentsV2,
         });
+        this.gameCreatedAt = Date.now();
+        const timeLimit = this.options.time || 60000;
+        this.timeoutTimer = setTimeout(() => {
+            if (this.isGameActive) {
+                this.endGame("timeout", { sentence: this.sentence });
+            }
+        }, timeLimit);
     }
-    const typingHandler = (typing) => {
-        if (typing.channel.id === context.channel.id && typing.user.id === userId) {
-            hasStartedTyping = true;
+    // =========================================================================
+    // EVENT MANAGER HANDLERS (Router Pattern)
+    // =========================================================================
+    /**
+     * Event handler for Discord typing indicators.
+     * **Anti-Cheat Mechanism:** Verifies that the user actually triggered a typing event
+     * before sending the message, preventing instant copy-paste or bot automation.
+     * @param typing - The Discord Typing state.
+     */
+    onTypingStart(typing) {
+        if (typing.channel.id === this.context.channel.id && typing.user.id === this.id) {
+            this.hasStartedTyping = true;
         }
-    };
-    weky._client.on("typingStart", typingHandler);
-    await msg.edit({
-        components: [createGameContainer("active", { sentence })],
-        flags: MessageFlags.IsComponentsV2,
-    });
-    const gameCreatedAt = Date.now();
-    const timeLimit = options.time || 60000;
-    const msgCollector = context.channel.createMessageCollector({
-        filter: (m) => !m.author.bot && m.author.id === userId,
-        time: timeLimit,
-    });
-    const btnCollector = msg.createMessageComponentCollector({
-        componentType: ComponentType.Button,
-        filter: (i) => i.user.id === userId,
-        time: timeLimit,
-    });
-    const cleanupGame = () => {
-        activePlayers.delete(userId);
-        weky._client.off("typingStart", typingHandler);
-        btnCollector.stop();
-    };
-    msgCollector.on("collect", async (mes) => {
-        const input = mes.content.toLowerCase().trim();
-        const target = sentence.toLowerCase().trim();
-        if (!hasStartedTyping) {
-            msgCollector.stop("cheat");
-            cleanupGame();
-            await msg.edit({
-                components: [createGameContainer("cheat", { sentence })],
-                flags: MessageFlags.IsComponentsV2,
-            });
+    }
+    /**
+     * Event handler for incoming messages.
+     * Compares the user's input against the target sentence.
+     * Calculates WPM (assuming 5 characters per word) and time taken upon success.
+     * @param message - The Discord Message object.
+     */
+    onMessage(message) {
+        if (message.channelId !== this.context.channel.id)
+            return;
+        if (message.author.id !== this.id)
+            return;
+        if (message.author.bot)
+            return;
+        const input = message.content.toLowerCase().trim();
+        const target = this.sentence.toLowerCase().trim();
+        if (!this.hasStartedTyping) {
+            this.endGame("cheat", { sentence: this.sentence });
             return;
         }
-        // 2. CHECK ACCURACY
         if (input === target) {
-            msgCollector.stop("won");
-            cleanupGame();
-            const timeMs = Date.now() - gameCreatedAt;
-            const timeTaken = weky.convertTime(timeMs);
+            const timeMs = Date.now() - this.gameCreatedAt;
+            const timeTaken = this.weky.convertTime(timeMs);
             const minutes = timeMs / 1000 / 60;
-            const wpm = sentence.length / 5 / minutes;
-            await msg.edit({
-                components: [
-                    createGameContainer("won", {
-                        sentence,
-                        timeTaken,
-                        wpm: wpm.toFixed(2),
-                    }),
-                ],
-                flags: MessageFlags.IsComponentsV2,
+            const wpm = this.sentence.length / 5 / minutes;
+            this.endGame("won", {
+                sentence: this.sentence,
+                timeTaken,
+                wpm: wpm.toFixed(2),
             });
         }
         else {
-            msgCollector.stop("lost");
-            cleanupGame();
-            await msg.edit({
-                components: [createGameContainer("lost", { sentence })],
-                flags: MessageFlags.IsComponentsV2,
-            });
+            this.endGame("lost", { sentence: this.sentence });
         }
-    });
-    btnCollector.on("collect", async (btn) => {
-        if (btn.customId === cancelId) {
-            await btn.deferUpdate();
-            msgCollector.stop("cancelled");
-            cleanupGame();
-            await msg.edit({
-                components: [createGameContainer("cancelled", {})],
-                flags: MessageFlags.IsComponentsV2,
-            });
+    }
+    /**
+     * Event handler for button interactions.
+     * Manages the 'Cancel' button logic to safely abort the active session.
+     * @param interaction - The Discord Interaction object.
+     */
+    onInteraction(interaction) {
+        if (!interaction.isButton())
+            return;
+        if (interaction.user.id !== this.id)
+            return;
+        if (interaction.customId === this.cancelId) {
+            interaction.deferUpdate().catch(() => { });
+            this.endGame("cancelled", {});
         }
-    });
-    msgCollector.on("end", async (_collected, reason) => {
-        if (reason === "time") {
-            cleanupGame();
+    }
+    // =========================================================================
+    // UI & HELPERS
+    // =========================================================================
+    /**
+     * Concludes the game session.
+     * Unregisters listeners, clears timeouts, removes the player from the active set,
+     * and updates the UI with the final results or error state.
+     * @param state - The reason for game termination.
+     * @param data - Dynamic data for the results (WPM, time taken, sentence).
+     * @private
+     */
+    async endGame(state, data) {
+        if (!this.isGameActive)
+            return;
+        this.isGameActive = false;
+        if (this.timeoutTimer)
+            clearTimeout(this.timeoutTimer);
+        activePlayers.delete(this.id);
+        this.weky._EventManager.unregister(this.id);
+        if (this.gameMessage) {
             try {
-                await msg.edit({
-                    components: [createGameContainer("timeout", { sentence })],
+                await this.gameMessage.edit({
+                    components: [this.createGameContainer(state, data)],
                     flags: MessageFlags.IsComponentsV2,
                 });
             }
             catch (e) { }
         }
-        weky._client.off("typingStart", typingHandler);
-    });
-};
-export default FastType;
+    }
+    /**
+     * Constructs the visual game interface.
+     * Generates Embeds and Buttons dynamically based on the current game state
+     * (e.g., displaying the sentence during 'Active', or stats during 'Won').
+     * @param state - The current game state.
+     * @param data - Data required to populate the embed fields.
+     * @returns {ContainerBuilder} The constructed container.
+     * @private
+     */
+    createGameContainer(state, data) {
+        const container = new ContainerBuilder();
+        let content = "";
+        switch (state) {
+            case "loading":
+                container.setAccentColor(this.defaultColor);
+                content = this.options.states?.loading
+                    ? this.options.states.loading.replace("{{gameTitle", this.gameTitle)
+                    : `## ${this.gameTitle}\n> 🔄 Preparing sentence...`;
+                break;
+            case "active":
+                container.setAccentColor(this.defaultColor);
+                content = this.options.states?.active
+                    ? this.options.states.active.replace("{{gameTitle}}", this.gameTitle).replace("{{sentence}}", data.sentence)
+                    : `## ${this.gameTitle}\n> Type the sentence below as fast as you can!\n\n\`\`\`text\n${data.sentence}\n\`\`\``;
+                break;
+            case "won":
+                container.setAccentColor(0x57f287); // Green
+                const winText = this.msgWin.replace("{{time}}", data.timeTaken || "0s").replace("{{wpm}}", data.wpm || "0");
+                content = this.options.states?.won
+                    ? this.options.states.won.replace("{{winText}}", winText).replace("{{sentence}}", data.sentence)
+                    : `## 🏆 Fast Fingers!\n> ${winText}\n\n**Sentence:**\n\`\`\`text\n${data.sentence}\n\`\`\``;
+                break;
+            case "lost":
+                container.setAccentColor(0xed4245); // Red
+                content = this.options.states?.lost
+                    ? this.options.states.lost.replace("{{msgLose}}", this.msgLose).replace("{{sentence}}", data.sentence)
+                    : `## ❌ Incorrect\n> ${this.msgLose}\n\n` + `**Correct Sentence:**\n\`\`\`text\n${data.sentence}\n\`\`\``;
+                break;
+            case "cheat":
+                container.setAccentColor(0xed4245); // Red
+                content = this.options.states?.cheat
+                    ? this.options.states.cheat.replace("{{msgCheat}}", this.msgCheat).replace("{{sentence}}", data.sentence)
+                    : `## ⚠️ Cheat Detected\n> ${this.msgCheat}\n\n` + `**Sentence:**\n\`\`\`text\n${data.sentence}\n\`\`\``;
+                break;
+            case "timeout":
+                container.setAccentColor(0xed4245); // Red
+                content = this.options.states?.timeout
+                    ? this.options.states.timeout
+                        .replace("{{msgTimeout}}", this.msgTimeout)
+                        .replace("{{sentence}}", data.sentence)
+                    : `## ⏱️ Time's Up\n> ${this.msgTimeout}\n\n` + `**Sentence:**\n\`\`\`text\n${data.sentence}\n\`\`\``;
+                break;
+            case "cancelled":
+                container.setAccentColor(0xed4245); // Red
+                content = this.options.states?.cancelled
+                    ? this.options.states.cancelled.replace("{{sentence}}", data.sentence)
+                    : `## 🚫 Game Cancelled\n> You ended the game.`;
+                break;
+            case "error":
+                container.setAccentColor(0xff0000);
+                content = this.options.states?.error?.main
+                    ? this.options.states.error?.main.replace("{{error}}", data.errorDetails || this.options.states?.error?.details
+                        ? this.options.states.error.details
+                        : "Something went wrong.")
+                    : `## ❌ Error\n> ${data.errorDetails || this.options.states?.error?.details
+                        ? this.options.states.error.details
+                        : "Something went wrong."}`;
+                break;
+        }
+        container.addTextDisplayComponents((t) => t.setContent(content));
+        if (state === "active") {
+            const btnCancel = new ButtonBuilder()
+                .setStyle(ButtonStyle.Danger)
+                .setLabel(this.btnText)
+                .setCustomId(this.cancelId);
+            container.addActionRowComponents((row) => row.setComponents(btnCancel));
+        }
+        return container;
+    }
+}

@@ -1,74 +1,231 @@
-import { ButtonBuilder, ButtonStyle, ComponentType, ContainerBuilder, MessageFlags } from "discord.js";
-const WillYouPressTheButton = async (weky, options) => {
-    const context = options.context;
-    const userId = weky._getContextUserID(context);
-    if (!options.button)
-        options.button = {};
-    const labelYes = options.button.yes || "Yes";
-    const labelNo = options.button.no || "No";
-    const thinkMessage = options.thinkMessage || "Thinking...";
-    const othersMessage = options.othersMessage || "Only <@{{author}}> can use the buttons!";
-    const gameTitle = options.embed.title || "Will You Press The Button?";
-    const defaultColor = typeof options.embed.color === "number" ? options.embed.color : 0xed4245;
-    const idYes = `wyptb_yes_${weky.getRandomString(10)}`;
-    const idNo = `wyptb_no_${weky.getRandomString(10)}`;
-    const createGameContainer = (state, data) => {
+import { ButtonBuilder, ButtonStyle, ContainerBuilder, MessageFlags } from "discord.js";
+const activePlayers = new Set();
+/**
+ * WillYouPressTheButton Minigame.
+ * A dilemma-based social game where users are presented with a scenario (a benefit)
+ * and a caveat (a consequence). Users must decide whether to "press the button"
+ * and see how their choice compares to global statistics.
+ * @implements {IMinigame}
+ */
+export default class WillYouPressTheButton {
+    id;
+    weky;
+    options;
+    context;
+    // Game Objects
+    gameMessage = null;
+    timeoutTimer = null;
+    // Game State
+    isGameActive = false;
+    apiData = null;
+    // Configs
+    gameTitle;
+    defaultColor;
+    labelYes;
+    labelNo;
+    idYes;
+    idNo;
+    msgThink;
+    msgOthers;
+    /**
+     * Initializes the game instance.
+     * Configures unique button IDs, theme settings, and custom messages for the dilemma interface.
+     * @param weky - The WekyManager instance.
+     * @param options - Configuration including button labels and response text.
+     */
+    constructor(weky, options) {
+        this.weky = weky;
+        this.options = options;
+        this.context = options.context;
+        this.id = weky._getContextUserID(this.context);
+        // Generate IDs
+        this.idYes = `wyptb_yes_${weky.getRandomString(10)}`;
+        this.idNo = `wyptb_no_${weky.getRandomString(10)}`;
+        // Config Init
+        this.gameTitle = options.embed?.title || "Will You Press The Button?";
+        this.defaultColor = typeof options.embed?.color === "number" ? options.embed.color : 0xed4245;
+        if (!options.button)
+            options.button = {};
+        this.labelYes = options.button.yes || "Yes";
+        this.labelNo = options.button.no || "No";
+        this.msgThink = options.thinkMessage || "Thinking...";
+        this.msgOthers = options.othersMessage || "Only <@{{author}}> can use the buttons!";
+    }
+    /**
+     * Begins the game session.
+     * Fetches a new dilemma from the Weky NetworkManager, parses the question and stats,
+     * and displays the interactive prompt to the user.
+     */
+    async start() {
+        if (activePlayers.has(this.id))
+            return;
+        activePlayers.add(this.id);
+        this.isGameActive = true;
+        this.gameMessage = await this.context.channel.send({
+            components: [this.createGameContainer("loading", {})],
+            flags: MessageFlags.IsComponentsV2,
+            allowedMentions: { repliedUser: false },
+        });
+        try {
+            this.apiData = await this.weky.NetworkManager.getWillYouPressTheButton();
+            if (!this.apiData) {
+                return this.endGame("error");
+            }
+        }
+        catch (e) {
+            return this.endGame("error");
+        }
+        this.weky._EventManager.register(this);
+        const qText = this.apiData.question.charAt(0).toUpperCase() + this.apiData.question.slice(1);
+        const rText = this.apiData.result.charAt(0).toUpperCase() + this.apiData.result.slice(1);
+        this.apiData.question = qText;
+        this.apiData.result = rText;
+        await this.gameMessage.edit({
+            components: [this.createGameContainer("active", { question: qText, result: rText })],
+            flags: MessageFlags.IsComponentsV2,
+        });
+        const timeLimit = this.options.time || 60000;
+        this.timeoutTimer = setTimeout(() => {
+            if (this.isGameActive)
+                this.endGame("timeout");
+        }, timeLimit);
+    }
+    // =========================================================================
+    // EVENT ROUTER METHODS
+    // =========================================================================
+    /**
+     * Event handler for button interactions.
+     * Captures the user's decision (Yes/No), validates the user identity,
+     * and proceeds to display the results comparison.
+     * @param interaction - The Discord Interaction object.
+     */
+    async onInteraction(interaction) {
+        if (!interaction.isButton())
+            return;
+        if (interaction.user.id !== this.id) {
+            if (interaction.message.id === this.gameMessage?.id) {
+                return interaction.reply({
+                    content: this.msgOthers.replace("{{author}}", this.id),
+                    flags: [MessageFlags.Ephemeral],
+                });
+            }
+            return;
+        }
+        if (interaction.message.id !== this.gameMessage?.id)
+            return;
+        await interaction.deferUpdate();
+        const choice = interaction.customId === this.idYes ? "yes" : "no";
+        return this.endGame("result", { userChoice: choice });
+    }
+    // =========================================================================
+    // UI & HELPERS
+    // =========================================================================
+    /**
+     * Concludes the game session.
+     * Cleans up event listeners and timers.
+     * Updates the UI to show the global statistics (percentage of people who agreed/disagreed)
+     * alongside the user's choice.
+     * @param state - The outcome of the session.
+     * @param data - The user's selection (Yes/No).
+     * @private
+     */
+    async endGame(state, data) {
+        if (!this.isGameActive && state !== "error")
+            return;
+        this.isGameActive = false;
+        if (this.timeoutTimer)
+            clearTimeout(this.timeoutTimer);
+        activePlayers.delete(this.id);
+        this.weky._EventManager.unregister(this.id);
+        if (this.gameMessage) {
+            try {
+                const containerData = {
+                    question: this.apiData?.question,
+                    result: this.apiData?.result,
+                    stats: this.apiData
+                        ? {
+                            yes: this.apiData.stats.yes.percentage,
+                            no: this.apiData.stats.no.percentage,
+                        }
+                        : undefined,
+                    userChoice: data?.userChoice,
+                };
+                await this.gameMessage.edit({
+                    components: [this.createGameContainer(state, containerData)],
+                    flags: MessageFlags.IsComponentsV2,
+                });
+            }
+            catch (e) { }
+        }
+    }
+    /**
+     * Constructs the visual interface.
+     * Generates the Embed displaying the Dilemma (Question + Result) and the decision buttons.
+     * Handles the visual transition from "Active" (choosing) to "Result" (showing statistics).
+     * @param state - The current game state.
+     * @param data - Dynamic data including the dilemma text and global stats.
+     * @returns {ContainerBuilder} The constructed container.
+     * @private
+     */
+    createGameContainer(state, data) {
         const container = new ContainerBuilder();
         let content = "";
         switch (state) {
             case "loading":
-                container.setAccentColor(defaultColor);
-                content = options.states?.loading
-                    ? options.states.loading.replace("{{gameTitle}}", gameTitle).replace("{{thinkMessage}}", thinkMessage)
-                    : `## ${gameTitle}\n> 🔄 ${thinkMessage}`;
+                container.setAccentColor(this.defaultColor);
+                content = this.options.states?.loading
+                    ? this.options.states.loading
+                        .replace("{{gameTitle}}", this.gameTitle)
+                        .replace("{{thinkMessage}}", this.msgThink)
+                    : `## ${this.gameTitle}\n> 🔄 ${this.msgThink}`;
                 break;
             case "active":
-                container.setAccentColor(defaultColor);
-                content = options.states?.active
-                    ? options.states.active
-                        .replace("{{gameTitle}}", gameTitle)
+                container.setAccentColor(this.defaultColor);
+                content = this.options.states?.active
+                    ? this.options.states.active
+                        .replace("{{gameTitle}}", this.gameTitle)
                         .replace("{{question}}", data.question)
                         .replace("{{result}}", data.result)
-                    : `## ${gameTitle}\n` + `> ${data.question}\n\n` + `**BUT**\n\n` + `> ${data.result}`;
+                    : `## ${this.gameTitle}\n` + `> ${data.question}\n\n` + `**BUT**\n\n` + `> ${data.result}`;
                 break;
             case "result":
                 container.setAccentColor(data.userChoice === "yes" ? 0x57f287 : 0xed4245);
-                content = options.states?.result
-                    ? options.states.result
-                        .replace("{{gameTitle}}", gameTitle)
+                content = this.options.states?.result
+                    ? this.options.states.result
+                        .replace("{{gameTitle}}", this.gameTitle)
                         .replace("{{question}}", data.question)
                         .replace("{{result}}", data.result)
                         .replace("{{chose}}", data.userChoice === "yes"
-                        ? options.yesPress
-                            ? options.yesPress
+                        ? this.options.yesPress
+                            ? this.options.yesPress
                             : "Yes! Press it!"
-                        : options.noPress
-                            ? options.noPress
+                        : this.options.noPress
+                            ? this.options.noPress
                             : "No! Don't press!")
-                    : `## ${gameTitle}\n> ${data.question}\n\n**BUT**\n\n> ${data.result}\n\n**You chose:** ${data.userChoice === "yes"
-                        ? options.yesPress
-                            ? options.yesPress
+                    : `## ${this.gameTitle}\n> ${data.question}\n\n**BUT**\n\n> ${data.result}\n\n**You chose:** ${data.userChoice === "yes"
+                        ? this.options.yesPress
+                            ? this.options.yesPress
                             : "Yes! Press it!"
-                        : options.noPress
-                            ? options.noPress
+                        : this.options.noPress
+                            ? this.options.noPress
                             : "No! Don't press!"}`;
                 break;
             case "timeout":
                 container.setAccentColor(0x99aab5);
-                content = options.states?.timeout
-                    ? options.states.timeout.replace("{{gameTitle}}", gameTitle)
-                    : `## ${gameTitle}\n> ⏳ Time's up! You didn't decide.`;
+                content = this.options.states?.timeout
+                    ? this.options.states.timeout.replace("{{gameTitle}}", this.gameTitle)
+                    : `## ${this.gameTitle}\n> ⏳ Time's up! You didn't decide.`;
                 break;
             case "error":
                 container.setAccentColor(0xff0000);
-                content = options.states?.error ? options.states.error : `## ❌ Error\n> Failed to fetch a dilemma.`;
+                content = this.options.states?.error ? this.options.states.error : `## ❌ Error\n> Failed to fetch a dilemma.`;
                 break;
         }
         container.addTextDisplayComponents((t) => t.setContent(content));
         if (state === "active" || state === "result") {
             const isResult = state === "result";
-            const txtYes = isResult ? `${labelYes} (${data.stats?.yes})` : labelYes;
-            const txtNo = isResult ? `${labelNo} (${data.stats?.no})` : labelNo;
+            const txtYes = isResult ? `${this.labelYes} (${data.stats?.yes})` : this.labelYes;
+            const txtNo = isResult ? `${this.labelNo} (${data.stats?.no})` : this.labelNo;
             let styleYes = ButtonStyle.Success;
             let styleNo = ButtonStyle.Danger;
             if (isResult) {
@@ -77,69 +234,14 @@ const WillYouPressTheButton = async (weky, options) => {
                 if (data.userChoice === "no")
                     styleYes = ButtonStyle.Secondary;
             }
-            const btnYes = new ButtonBuilder().setStyle(styleYes).setLabel(txtYes).setCustomId(idYes).setDisabled(isResult);
-            const btnNo = new ButtonBuilder().setStyle(styleNo).setLabel(txtNo).setCustomId(idNo).setDisabled(isResult);
+            const btnYes = new ButtonBuilder()
+                .setStyle(styleYes)
+                .setLabel(txtYes)
+                .setCustomId(this.idYes)
+                .setDisabled(isResult);
+            const btnNo = new ButtonBuilder().setStyle(styleNo).setLabel(txtNo).setCustomId(this.idNo).setDisabled(isResult);
             container.addActionRowComponents((row) => row.setComponents(btnYes, btnNo));
         }
         return container;
-    };
-    const msg = await context.channel.send({
-        components: [createGameContainer("loading", {})],
-        flags: MessageFlags.IsComponentsV2,
-        allowedMentions: { repliedUser: false },
-    });
-    const apiData = await weky.NetworkManager.getWillYouPressTheButton();
-    if (!apiData) {
-        return await msg.edit({
-            components: [createGameContainer("error", {})],
-            flags: MessageFlags.IsComponentsV2,
-        });
     }
-    const qText = apiData.question.charAt(0).toUpperCase() + apiData.question.slice(1);
-    const rText = apiData.result.charAt(0).toUpperCase() + apiData.result.slice(1);
-    await msg.edit({
-        components: [createGameContainer("active", { question: qText, result: rText })],
-        flags: MessageFlags.IsComponentsV2,
-    });
-    const collector = msg.createMessageComponentCollector({
-        componentType: ComponentType.Button,
-        time: options.time || 60000,
-    });
-    collector.on("collect", async (interaction) => {
-        if (interaction.user.id !== userId) {
-            return interaction.reply({
-                content: othersMessage.replace("{{author}}", userId),
-                flags: [MessageFlags.Ephemeral],
-            });
-        }
-        await interaction.deferUpdate();
-        const choice = interaction.customId === idYes ? "yes" : "no";
-        collector.stop("answered");
-        await msg.edit({
-            components: [
-                createGameContainer("result", {
-                    question: qText,
-                    result: rText,
-                    stats: {
-                        yes: apiData.stats.yes.percentage,
-                        no: apiData.stats.no.percentage,
-                    },
-                    userChoice: choice,
-                }),
-            ],
-            flags: MessageFlags.IsComponentsV2,
-        });
-    });
-    collector.on("end", async (_collected, reason) => {
-        if (reason === "time") {
-            try {
-                await msg.edit({
-                    components: [createGameContainer("timeout", {})],
-                    flags: MessageFlags.IsComponentsV2,
-                });
-            }
-            catch (e) { }
-        }
-    });
-};
-export default WillYouPressTheButton;
+}

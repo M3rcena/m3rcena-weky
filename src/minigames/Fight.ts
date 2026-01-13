@@ -1,152 +1,563 @@
 import {
 	ActionRowBuilder,
+	AttachmentBuilder,
 	ButtonBuilder,
 	ButtonInteraction,
 	ButtonStyle,
-	ComponentType,
 	ContainerBuilder,
 	GuildMember,
+	Interaction,
 	MediaGalleryBuilder,
+	Message,
 	MessageFlags,
 } from "discord.js";
 
-import type { CustomOptions, FightTypes, PowerUp } from "../Types/index.js";
+import type { CustomOptions, FightTypes, PowerUp, IMinigame } from "../Types/index.js";
 import type { WekyManager } from "../index.js";
 
-const Fight = async (weky: WekyManager, options: CustomOptions<FightTypes>) => {
-	const context = options.context;
-	const userId = weky._getContextUserID(context);
+const activePlayers = new Set<string>();
 
-	const POWERUPS: PowerUp[] = [
-		{
-			id: "double-damage",
-			label: options.powerups?.doubleDamage?.label ? options.powerups.doubleDamage.label : "2x Damage",
-			style: ButtonStyle.Danger,
-			cost: 30,
-			effect: (player, playerUsername) => {
-				player.activeEffects.push(
-					options.powerups?.doubleDamage?.effectMessage
-						? options.powerups?.doubleDamage?.effectMessage
-						: "Double Damage (Next Attack)"
-				);
-				return options.powerups?.doubleDamage?.replyMessage
-					? options.powerups.doubleDamage.replyMessage.replace("{{username}}", playerUsername)
-					: `${playerUsername} will deal double damage on their next attack!`;
+/**
+ * Turn-based Combat Minigame.
+ * Features a challenge system, real-time HP/Coin tracking, and an in-game shop for powerups (Shields, Damage Boosts).
+ * Relies heavily on the NetworkManager for state persistence and image generation.
+ * @implements {IMinigame}
+ */
+export default class Fight implements IMinigame {
+	public id: string; // Challenger ID
+	private weky: WekyManager;
+	private options: CustomOptions<FightTypes>;
+	private context: CustomOptions<FightTypes>["context"];
+
+	// Game Objects
+	private gameMessage: Message | null = null;
+	private opponent: GuildMember;
+	private challenger: GuildMember | null = null;
+	private gameId: string | null = null;
+	private timeoutTimer: NodeJS.Timeout | null = null;
+
+	// State
+	private isGameActive: boolean = false;
+	private phase: "REQUEST" | "FIGHT" = "REQUEST";
+	private POWERUPS: PowerUp[];
+
+	// Configs
+	private btnHit: string;
+	private btnHeal: string;
+	private btnCancel: string;
+	private btnAccept: string;
+	private btnDeny: string;
+	private msgWrongUser: string;
+	private msgOpponentTurn: string;
+	private msgHighHp: string;
+	private msgLowHp: string;
+	private defaultColor: number;
+
+	/**
+	 * Initializes the Fight game instance.
+	 * Configures game mechanics, button labels, custom messages, and defines the available powerups.
+	 * @param weky - The WekyManager instance.
+	 * @param options - Configuration including opponent data, UI colors, and custom text.
+	 */
+	constructor(weky: WekyManager, options: CustomOptions<FightTypes>) {
+		this.weky = weky;
+		this.options = options;
+		this.context = options.context;
+		this.id = weky._getContextUserID(this.context);
+		this.opponent = options.opponent as GuildMember;
+
+		this.btnHit = options.buttons?.hit || "Hit";
+		this.btnHeal = options.buttons?.heal || "Heal";
+		this.btnCancel = options.buttons?.cancel || "Surrender";
+		this.btnAccept = options.buttons?.accept || "Accept";
+		this.btnDeny = options.buttons?.deny || "Deny";
+
+		this.msgWrongUser = options.wrongUserFight || "**This is not your Game!**";
+		this.msgOpponentTurn = options.opponentsTurnMessage || "**Please wait for your opponents move!**";
+		this.msgHighHp = options.highHealthMessage || "You cannot heal if your HP is above 80!";
+		this.msgLowHp = options.lowHealthMessage || "You cannot cancel the fight if your HP is below 50!";
+		this.defaultColor = typeof options.embed?.color === "number" ? options.embed.color : 0xed4245;
+
+		this.POWERUPS = [
+			{
+				id: "double-damage",
+				label: options.powerups?.doubleDamage?.label ? options.powerups.doubleDamage.label : "2x Damage",
+				style: ButtonStyle.Danger,
+				cost: 30,
+				effect: (player, playerUsername) => {
+					player.activeEffects.push(
+						options.powerups?.doubleDamage?.effectMessage
+							? options.powerups?.doubleDamage?.effectMessage
+							: "Double Damage (Next Attack)"
+					);
+					return options.powerups?.doubleDamage?.replyMessage
+						? options.powerups.doubleDamage.replyMessage.replace("{{username}}", playerUsername)
+						: `${playerUsername} will deal double damage on their next attack!`;
+				},
 			},
-		},
-		{
-			id: "shield",
-			label: options.powerups?.shield?.label ? options.powerups.shield.label : "Shield",
-			style: ButtonStyle.Secondary,
-			cost: 25,
-			effect: (player, playerUsername) => {
-				player.activeEffects.push(
-					options.powerups?.shield?.effectMessage ? options.powerups.shield.effectMessage : "Shield (Next Attack)"
-				);
-				return options.powerups?.shield?.replyMessage
-					? options.powerups.shield.replyMessage.replace("{{username}}", playerUsername)
-					: `${playerUsername} will take half damage from the next attack!`;
+			{
+				id: "shield",
+				label: options.powerups?.shield?.label ? options.powerups.shield.label : "Shield",
+				style: ButtonStyle.Secondary,
+				cost: 25,
+				effect: (player, playerUsername) => {
+					player.activeEffects.push(
+						options.powerups?.shield?.effectMessage ? options.powerups.shield.effectMessage : "Shield (Next Attack)"
+					);
+					return options.powerups?.shield?.replyMessage
+						? options.powerups.shield.replyMessage.replace("{{username}}", playerUsername)
+						: `${playerUsername} will take half damage from the next attack!`;
+				},
 			},
-		},
-		{
-			id: "heal-boost",
-			label: options.powerups?.healBoost?.label ? options.powerups.healBoost.label : "Heal Boost",
-			style: ButtonStyle.Success,
-			cost: 20,
-			effect: (player, playerUsername) => {
-				player.health += 30;
-				if (player.health > 100) player.health = 100;
-				return options.powerups?.healBoost?.replyMessage
-					? options.powerups.healBoost.replyMessage.replace("{{username}}", playerUsername)
-					: `${playerUsername} received a 30 HP healing boost!`;
+			{
+				id: "heal-boost",
+				label: options.powerups?.healBoost?.label ? options.powerups.healBoost.label : "Heal Boost",
+				style: ButtonStyle.Success,
+				cost: 20,
+				effect: (player, playerUsername) => {
+					player.health += 30;
+					if (player.health > 100) player.health = 100;
+					return options.powerups?.healBoost?.replyMessage
+						? options.powerups.healBoost.replyMessage.replace("{{username}}", playerUsername)
+						: `${playerUsername} received a 30 HP healing boost!`;
+				},
 			},
-		},
-	];
-
-	if (!options.buttons) options.buttons = {};
-	const btnHit = options.buttons.hit || "Hit";
-	const btnHeal = options.buttons.heal || "Heal";
-	const btnCancel = options.buttons.cancel || "Surrender";
-	const btnAccept = options.buttons.accept || "Accept";
-	const btnDeny = options.buttons.deny || "Deny";
-
-	const msgWrongUser = options.wrongUserFight || "**This is not your Game!**";
-	const msgOpponentTurn = options.opponentsTurnMessage || "**Please wait for your opponents move!**";
-	const msgHighHp = options.highHealthMessage || "You cannot heal if your HP is above 80!";
-	const msgLowHp = options.lowHealthMessage || "You cannot cancel the fight if your HP is below 50!";
-
-	const defaultColor = typeof options.embed?.color === "number" ? options.embed.color : 0xed4245;
-
-	if (!options.opponent || !(options.opponent as GuildMember).user) {
-		return weky._LoggerManager.createError("Fight", "Opponent must be a valid GuildMember.");
+		];
 	}
-	if (userId === options.opponent.id) {
-		return context.channel.send("You cannot fight yourself!");
-	}
 
-	const challenger = await context.guild?.members.fetch(userId);
-	const opponent = options.opponent as GuildMember;
+	/**
+	 * Initiates the challenge sequence.
+	 * Validates opponent availability, generates the visual challenge card, and prompts
+	 * the target user to accept or deny the duel.
+	 */
+	public async start() {
+		if (activePlayers.has(this.id)) return;
 
-	if (!challenger) return;
+		if (!this.opponent || !this.opponent.user) {
+			return this.weky._LoggerManager.createError("Fight", "Opponent must be a valid GuildMember.");
+		}
+		if (this.id === this.opponent.id) {
+			return this.context.channel.send("You cannot fight yourself!");
+		}
 
-	if (
-		(await weky.NetworkManager.checkPlayerFightStatus(challenger.id)) ||
-		(await weky.NetworkManager.checkPlayerFightStatus(opponent.id))
-	) {
-		return context.channel.send(
-			options.playerAlreadyInFight ? options.playerAlreadyInFight : "One of the players is already in a fight!"
+		this.challenger = (await this.context.guild?.members.fetch(this.id)) || null;
+		if (!this.challenger) return;
+
+		if (
+			(await this.weky.NetworkManager.checkPlayerFightStatus(this.challenger.id)) ||
+			(await this.weky.NetworkManager.checkPlayerFightStatus(this.opponent.id))
+		) {
+			return this.context.channel.send(
+				this.options.playerAlreadyInFight
+					? this.options.playerAlreadyInFight
+					: "One of the players is already in a fight!"
+			);
+		}
+
+		activePlayers.add(this.id);
+		this.isGameActive = true;
+
+		const requestCard = await this.weky.NetworkManager.makeRequestCard(
+			this.challenger.user.username,
+			this.challenger.displayAvatarURL({ extension: "png", size: 256 }),
+			this.opponent.user.username,
+			this.opponent.displayAvatarURL({ extension: "png", size: 256 })
 		);
+
+		if (!requestCard) {
+			activePlayers.delete(this.id);
+			return this.context.channel.send(
+				this.options.failedRequestCardGeneration
+					? this.options.failedRequestCardGeneration
+					: "Failed to generate request card."
+			);
+		}
+
+		this.gameMessage = await this.context.channel.send({
+			components: [this.createGameContainer("request", { image: "fight-request.png" })],
+			files: [requestCard],
+			flags: MessageFlags.IsComponentsV2,
+			allowedMentions: { repliedUser: false },
+		});
+
+		this.gameId = await this.weky.NetworkManager.createGame(
+			this.challenger.id,
+			this.challenger.user.username,
+			this.opponent.id,
+			this.opponent.user.username
+		);
+
+		this.weky._EventManager.register(this);
+
+		this.resetTimeout();
 	}
 
-	const createGameContainer = (
+	// =========================================================================
+	// EVENT ROUTER METHOD
+	// =========================================================================
+
+	/**
+	 * Central event handler for game interactions.
+	 * Routes actions based on the current game phase (Challenge vs Combat) and enforces
+	 * turn-based order to prevent out-of-turn actions.
+	 * @param interaction - The Discord Interaction object.
+	 */
+	public async onInteraction(interaction: Interaction) {
+		if (!interaction.isButton()) return;
+		if (interaction.message.id !== this.gameMessage?.id) return;
+
+		if (this.phase === "REQUEST") {
+			if (interaction.user.id !== this.opponent.id) {
+				return interaction.reply({ content: this.msgWrongUser, flags: [MessageFlags.Ephemeral] });
+			}
+
+			if (interaction.customId === "fight_deny") {
+				await interaction.deferUpdate();
+				return this.handleDeny();
+			}
+
+			if (interaction.customId === "fight_accept") {
+				await interaction.deferUpdate();
+				this.phase = "FIGHT";
+				this.resetTimeout();
+				return this.startFightLoop();
+			}
+		}
+
+		if (this.phase === "FIGHT") {
+			if (interaction.user.id !== this.challenger!.id && interaction.user.id !== this.opponent.id) {
+				return interaction.reply({ content: this.msgWrongUser, flags: [MessageFlags.Ephemeral] });
+			}
+
+			const turn = await this.weky.NetworkManager.getTurn(this.gameId!);
+			if (interaction.user.id !== turn.userID) {
+				return interaction.reply({ content: this.msgOpponentTurn, flags: [MessageFlags.Ephemeral] });
+			}
+
+			this.resetTimeout();
+
+			if (interaction.customId === "fight_hit") return this.handleHit(interaction);
+			if (interaction.customId === "fight_heal") return this.handleHeal(interaction);
+			if (interaction.customId === "fight_surrender") return this.handleSurrender(interaction);
+			if (interaction.customId.startsWith("powerup_")) return this.handlePowerup(interaction);
+		}
+	}
+
+	// =========================================================================
+	// GAME LOGIC HANDLERS
+	// =========================================================================
+
+	/**
+	 * Transitions the game from the 'Challenge' phase to the active 'Combat' phase.
+	 * Generates the initial battle status card and updates the UI controls.
+	 * @private
+	 */
+	private async startFightLoop() {
+		const gameCard = await this.weky.NetworkManager.makeMainCard(
+			this.gameId!,
+			this.challenger!.displayAvatarURL({ extension: "png", size: 256 }),
+			this.opponent.displayAvatarURL({ extension: "png", size: 256 })
+		);
+
+		await this.gameMessage!.edit({
+			components: [this.createGameContainer("active", { image: "fight-card.png" })],
+			files: [gameCard],
+			flags: MessageFlags.IsComponentsV2,
+		});
+	}
+
+	/**
+	 * Executes the 'Attack' action.
+	 * Calculates damage based on RNG and active powerups (e.g., Double Damage, Shields),
+	 * updates player stats, and checks for win conditions.
+	 * @param interaction - The button interaction.
+	 * @private
+	 */
+	private async handleHit(interaction: ButtonInteraction) {
+		await interaction.deferUpdate();
+
+		const player = await this.weky.NetworkManager.getPlayer(this.gameId!, false);
+		const enemy = await this.weky.NetworkManager.getPlayer(this.gameId!, true);
+
+		let damage = Math.floor(Math.random() * 20) + 10;
+		const doubleDmgMsg = this.options.powerups?.doubleDamage?.effectMessage || "Double Damage (Next Attack)";
+		const shieldMsg = this.options.powerups?.shield?.effectMessage || "Shield (Next Attack)";
+
+		if (player.activeEffects.includes(doubleDmgMsg)) {
+			damage *= 2;
+			player.activeEffects = player.activeEffects.filter((e) => e !== doubleDmgMsg);
+		}
+
+		if (enemy.activeEffects.includes(shieldMsg)) {
+			damage = Math.floor(damage / 2);
+			enemy.activeEffects = enemy.activeEffects.filter((e) => e !== shieldMsg);
+		}
+
+		enemy.health -= damage;
+		player.coins += 10;
+
+		const updated = await this.weky.NetworkManager.updatePlayers(this.gameId!, player, enemy);
+		if (!updated) return interaction.followUp({ content: "API Error", flags: [MessageFlags.Ephemeral] });
+
+		if (enemy.health <= 0) {
+			const winner = interaction.guild?.members.cache.get(player.memberId);
+			const loser = interaction.guild?.members.cache.get(enemy.memberId);
+
+			const winCard = await this.weky.NetworkManager.makeWinCard(
+				winner?.user.username || "Winner",
+				winner?.displayAvatarURL({ extension: "png", size: 256 }) || "",
+				loser?.user.username || "Loser",
+				loser?.displayAvatarURL({ extension: "png", size: 256 }) || ""
+			);
+
+			return this.endGame("won", { image: "fight-winner.png" }, winCard);
+		}
+
+		await this.nextTurn();
+	}
+
+	/**
+	 * Executes the 'Heal' action.
+	 * Restores health to the current player, respecting the maximum HP cap (100) and
+	 * the minimum HP requirement logic.
+	 * @param interaction - The button interaction.
+	 * @private
+	 */
+	private async handleHeal(interaction: ButtonInteraction) {
+		const player = await this.weky.NetworkManager.getPlayer(this.gameId!, false);
+
+		if (player.health >= 80) {
+			return interaction.reply({ content: this.msgHighHp, flags: [MessageFlags.Ephemeral] });
+		}
+
+		await interaction.deferUpdate();
+		const healAmt = Math.floor(Math.random() * 20) + 10;
+		player.health = Math.min(100, player.health + healAmt);
+
+		const enemy = await this.weky.NetworkManager.getPlayer(this.gameId!, true);
+
+		await this.weky.NetworkManager.updatePlayers(this.gameId!, player, enemy);
+		await this.nextTurn();
+	}
+
+	/**
+	 * Processes the 'Surrender' action.
+	 * Allows a player to forfeit the match, provided their HP is above the specific threshold (anti-ragequit).
+	 * @param interaction - The button interaction.
+	 * @private
+	 */
+	private async handleSurrender(interaction: ButtonInteraction) {
+		const player = await this.weky.NetworkManager.getPlayer(this.gameId!, false);
+
+		if (player.health < 50) {
+			return interaction.reply({ content: this.msgLowHp, flags: [MessageFlags.Ephemeral] });
+		}
+
+		await interaction.deferUpdate();
+
+		const playerMember = await interaction.guild?.members.fetch(player.memberId);
+		const enemy = await this.weky.NetworkManager.getPlayer(this.gameId!, true);
+		const enemyMember = await interaction.guild?.members.fetch(enemy.memberId);
+
+		const surrenderCard = await this.weky.NetworkManager.makeSurrenderCard(
+			enemyMember?.user.username || "Winner",
+			enemyMember?.displayAvatarURL({ extension: "png", size: 256 }) || "",
+			playerMember?.user.username || "Surrenderer",
+			playerMember?.displayAvatarURL({ extension: "png", size: 256 }) || ""
+		);
+
+		return this.endGame("surrender", { image: "fight-surrender.png" }, surrenderCard);
+	}
+
+	/**
+	 * Processes shop interactions.
+	 * Deducts coins and applies the selected status effect (Shield, Damage Boost, or Heal) to the player.
+	 * @param interaction - The button interaction.
+	 * @private
+	 */
+	private async handlePowerup(interaction: ButtonInteraction) {
+		const pId = interaction.customId.split("_")[1];
+		const powerup = this.POWERUPS.find((p) => p.id === pId);
+
+		const player = await this.weky.NetworkManager.getPlayer(this.gameId!, false);
+		const enemy = await this.weky.NetworkManager.getPlayer(this.gameId!, true);
+		const playerMember = await interaction.guild?.members.fetch(player.memberId);
+
+		if (powerup && player.coins >= powerup.cost) {
+			player.coins -= powerup.cost;
+			const msg = powerup.effect(player, playerMember?.user.username || "Player");
+
+			await this.weky.NetworkManager.updatePlayers(this.gameId!, player, enemy);
+			await interaction.reply({ content: msg, flags: [MessageFlags.Ephemeral] });
+
+			await this.nextTurn();
+		} else {
+			return interaction.reply({
+				content: this.options.notEnoughtCoins ? this.options.notEnoughtCoins : "Not enough coins!",
+				flags: [MessageFlags.Ephemeral],
+			});
+		}
+	}
+
+	private async handleDeny() {
+		const denyCard = await this.weky.NetworkManager.makeDenyCard(
+			this.challenger!.user.username,
+			this.challenger!.displayAvatarURL({ extension: "png", size: 256 }),
+			this.opponent.user.username,
+			this.opponent.displayAvatarURL({ extension: "png", size: 256 })
+		);
+		return this.endGame("deny", { image: "fight-deny.png" }, denyCard);
+	}
+
+	/**
+	 * Advances the game state to the next round.
+	 * Updates the database turn pointer, regenerates the battle interface image, and refreshes the message.
+	 * @private
+	 */
+	private async nextTurn() {
+		await this.weky.NetworkManager.changeTurn(this.gameId!);
+
+		const newCard = await this.weky.NetworkManager.makeMainCard(
+			this.gameId!,
+			this.challenger!.displayAvatarURL({ extension: "png", size: 256 }),
+			this.opponent.displayAvatarURL({ extension: "png", size: 256 })
+		);
+
+		await this.gameMessage!.edit({
+			components: [this.createGameContainer("active", { image: "fight-card.png" })],
+			files: [newCard],
+			flags: MessageFlags.IsComponentsV2,
+		});
+	}
+
+	// =========================================================================
+	// LIFECYCLE HELPERS
+	// =========================================================================
+
+	/**
+	 * Resets the game inactivity timer.
+	 * Triggers 'timeout' end state if expired.
+	 * @private
+	 */
+	private resetTimeout() {
+		if (this.timeoutTimer) clearTimeout(this.timeoutTimer);
+		const time = this.phase === "REQUEST" ? this.options.time || 60000 : 300000; // 5 min for fight interactions
+
+		this.timeoutTimer = setTimeout(() => {
+			if (this.isGameActive) this.handleTimeout();
+		}, time);
+	}
+
+	/**
+	 * Handles game expiration logic.
+	 * Triggered when a player fails to act within the time limit, resulting in a timeout card generation.
+	 * @private
+	 */
+	private async handleTimeout() {
+		const timeoutCard = await this.weky.NetworkManager.makeTimeOutCard(
+			this.challenger!.user.username,
+			this.challenger!.displayAvatarURL({ extension: "png", size: 256 }),
+			this.opponent.user.username,
+			this.opponent.displayAvatarURL({ extension: "png", size: 256 })
+		);
+		this.endGame("timeout", { image: "fight-timeout.png" }, timeoutCard);
+	}
+
+	/**
+	 * Concludes the game session.
+	 * Cleans up database records, removes listeners, and displays the final result (Win/Loss/Timeout)
+	 * with the appropriate generated image.
+	 * @private
+	 */
+	private async endGame(
+		state: "won" | "surrender" | "deny" | "timeout" | "error",
+		details?: { image?: string; error?: string },
+		cardFile?: AttachmentBuilder | Buffer | null
+	) {
+		this.isGameActive = false;
+		activePlayers.delete(this.id);
+		this.weky._EventManager.unregister(this.id);
+		if (this.timeoutTimer) clearTimeout(this.timeoutTimer);
+
+		if (this.gameId) {
+			await this.weky.NetworkManager.removeGame(this.gameId);
+		}
+
+		if (this.gameMessage) {
+			try {
+				await this.gameMessage.edit({
+					components: [this.createGameContainer(state, details)],
+					files: cardFile ? [cardFile] : [],
+					flags: MessageFlags.IsComponentsV2,
+				});
+			} catch (e) {}
+		}
+	}
+
+	/**
+	 * Constructs the dynamic UI container.
+	 * Generates ActionRows based on the current game state (e.g., showing 'Accept/Deny' in request phase,
+	 * or 'Hit/Heal/Shop' in active phase).
+	 * @param state - The current game state.
+	 * @param details - Optional details for error messages or image attachments.
+	 * @returns {ContainerBuilder} The constructed container.
+	 * @private
+	 */
+	private createGameContainer(
 		state: "request" | "active" | "won" | "surrender" | "deny" | "timeout" | "error",
 		details?: { image?: string; error?: string }
-	) => {
+	) {
 		const container = new ContainerBuilder();
 		let content = "";
 
 		switch (state) {
 			case "request":
 				container.setAccentColor(0xfee75c); // Yellow
-				content = options.states?.request
-					? options.states.request
-							.replace("{{challengerMention}}", `<@${challenger.id}>`)
-							.replace("{{opponentMention}}", `<@${opponent.id}>`)
-					: `## ⚔️ Challenge!\n> <@${challenger.id}> challenged <@${opponent.id}> to a fight!`;
+				content = this.options.states?.request
+					? this.options.states.request
+							.replace("{{challengerMention}}", `<@${this.challenger!.id}>`)
+							.replace("{{opponentMention}}", `<@${this.opponent.id}>`)
+					: `## ⚔️ Challenge!\n> <@${this.challenger!.id}> challenged <@${this.opponent.id}> to a fight!`;
 				break;
 			case "active":
-				container.setAccentColor(defaultColor);
-				content = options.states?.active
-					? options.states.active
+				container.setAccentColor(this.defaultColor);
+				content = this.options.states?.active
+					? this.options.states.active
 					: `## ⚔️ Fighting...\n> Use buttons to fight or buy powerups!`;
 				break;
 			case "won":
 				container.setAccentColor(0x57f287); // Green
-				content = options.states?.won ? options.states.won : `## 🏆 Fight Ended\n> We have a winner!`;
+				content = this.options.states?.won ? this.options.states.won : `## 🏆 Fight Ended\n> We have a winner!`;
 				break;
 			case "surrender":
 				container.setAccentColor(0xed4245); // Red
-				content = options.states?.surrender
-					? options.states.surrender
+				content = this.options.states?.surrender
+					? this.options.states.surrender
 					: `## 🏳️ Surrendered\n> The fight was forfeited.`;
 				break;
 			case "deny":
 				container.setAccentColor(0xed4245); // Red
-				content = options.states?.deny ? options.states.deny : `## 🚫 Denied\n> The challenge was rejected.`;
+				content = this.options.states?.deny ? this.options.states.deny : `## 🚫 Denied\n> The challenge was rejected.`;
 				break;
 			case "timeout":
 				container.setAccentColor(0x99aab5); // Grey
-				content = options.states?.timeout ? options.states.timeout : `## ⏱️ Time's Up\n> The session expired.`;
+				content = this.options.states?.timeout
+					? this.options.states.timeout
+					: `## ⏱️ Time's Up\n> The session expired.`;
 				break;
 			case "error":
 				container.setAccentColor(0xff0000);
-				content = options.states?.error?.main
-					? options.states.error.main.replace(
+				content = this.options.states?.error?.main
+					? this.options.states.error.main.replace(
 							"{{error}}",
-							details?.error || options.states?.error?.uknownError ? options.states.error.uknownError : "Unknown error."
+							details?.error || this.options.states?.error?.uknownError
+								? this.options.states.error.uknownError!
+								: "Unknown error."
 					  )
 					: `## ❌ Error\n> ${
-							details?.error || options.states?.error?.uknownError ? options.states.error.uknownError : "Unknown error."
+							details?.error || this.options.states?.error?.uknownError
+								? this.options.states.error.uknownError
+								: "Unknown error."
 					  }`;
 				break;
 		}
@@ -160,20 +571,20 @@ const Fight = async (weky: WekyManager, options: CustomOptions<FightTypes>) => {
 
 		if (state === "request") {
 			const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-				new ButtonBuilder().setLabel(btnAccept).setStyle(ButtonStyle.Success).setCustomId("fight_accept"),
-				new ButtonBuilder().setLabel(btnDeny).setStyle(ButtonStyle.Danger).setCustomId("fight_deny")
+				new ButtonBuilder().setLabel(this.btnAccept).setStyle(ButtonStyle.Success).setCustomId("fight_accept"),
+				new ButtonBuilder().setLabel(this.btnDeny).setStyle(ButtonStyle.Danger).setCustomId("fight_deny")
 			);
 			container.addActionRowComponents(row);
 		} else if (state === "active") {
 			const mainRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
-				new ButtonBuilder().setLabel(btnHit).setStyle(ButtonStyle.Danger).setCustomId("fight_hit"),
-				new ButtonBuilder().setLabel(btnHeal).setStyle(ButtonStyle.Success).setCustomId("fight_heal"),
-				new ButtonBuilder().setLabel(btnCancel).setStyle(ButtonStyle.Secondary).setCustomId("fight_surrender")
+				new ButtonBuilder().setLabel(this.btnHit).setStyle(ButtonStyle.Danger).setCustomId("fight_hit"),
+				new ButtonBuilder().setLabel(this.btnHeal).setStyle(ButtonStyle.Success).setCustomId("fight_heal"),
+				new ButtonBuilder().setLabel(this.btnCancel).setStyle(ButtonStyle.Secondary).setCustomId("fight_surrender")
 			);
 			container.addActionRowComponents(mainRow);
 
 			const powerupRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
-				POWERUPS.map((p) =>
+				this.POWERUPS.map((p) =>
 					new ButtonBuilder().setLabel(`${p.label} (${p.cost}🪙)`).setStyle(p.style).setCustomId(`powerup_${p.id}`)
 				)
 			);
@@ -181,236 +592,5 @@ const Fight = async (weky: WekyManager, options: CustomOptions<FightTypes>) => {
 		}
 
 		return container;
-	};
-
-	const requestCard = await weky.NetworkManager.makeRequestCard(
-		challenger.user.username,
-		challenger.displayAvatarURL({ extension: "png", size: 256 }),
-		opponent.user.username,
-		opponent.displayAvatarURL({ extension: "png", size: 256 })
-	);
-
-	if (!requestCard)
-		return context.channel.send(
-			options.failedRequestCardGeneration ? options.failedRequestCardGeneration : "Failed to generate request card."
-		);
-
-	const msg = await context.channel.send({
-		components: [createGameContainer("request", { image: "fight-request.png" })],
-		files: [requestCard],
-		flags: MessageFlags.IsComponentsV2,
-	});
-
-	const gameId = await weky.NetworkManager.createGame(
-		challenger.id,
-		challenger.user.username,
-		opponent.id,
-		opponent.user.username
-	);
-
-	const reqCollector = msg.createMessageComponentCollector({
-		componentType: ComponentType.Button,
-		time: options.time || 60000,
-	});
-
-	reqCollector.on("collect", async (interaction) => {
-		if (interaction.user.id !== opponent.id) {
-			return interaction.reply({ content: msgWrongUser, flags: [MessageFlags.Ephemeral] });
-		}
-
-		if (interaction.customId === "fight_deny") {
-			await interaction.deferUpdate();
-			reqCollector.stop("deny");
-
-			const denyCard = await weky.NetworkManager.makeDenyCard(
-				challenger.user.username,
-				challenger.displayAvatarURL({ extension: "png", size: 256 }),
-				opponent.user.username,
-				opponent.displayAvatarURL({ extension: "png", size: 256 })
-			);
-			await weky.NetworkManager.removeGame(gameId);
-
-			await msg.edit({
-				components: [createGameContainer("deny", { image: "fight-deny.png" })],
-				files: denyCard ? [denyCard] : [],
-				flags: MessageFlags.IsComponentsV2,
-			});
-			return;
-		}
-
-		if (interaction.customId === "fight_accept") {
-			await interaction.deferUpdate();
-			reqCollector.stop("accept");
-			await startFight(msg, gameId);
-		}
-	});
-
-	reqCollector.on("end", async (collected, reason) => {
-		if (reason === "time" && collected.size === 0) {
-			const timeoutCard = await weky.NetworkManager.makeTimeOutCard(
-				challenger.user.username,
-				challenger.displayAvatarURL({ extension: "png", size: 256 }),
-				opponent.user.username,
-				opponent.displayAvatarURL({ extension: "png", size: 256 })
-			);
-			await weky.NetworkManager.removeGame(gameId);
-
-			await msg
-				.edit({
-					components: [createGameContainer("timeout", { image: "fight-timeout.png" })],
-					files: timeoutCard ? [timeoutCard] : [],
-					flags: MessageFlags.IsComponentsV2,
-				})
-				.catch(() => {});
-		}
-	});
-
-	async function startFight(message: any, gameID: string) {
-		const gameCard = await weky.NetworkManager.makeMainCard(
-			gameID,
-			challenger!.displayAvatarURL({ extension: "png", size: 256 }),
-			opponent.displayAvatarURL({ extension: "png", size: 256 })
-		);
-
-		await message.edit({
-			components: [createGameContainer("active", { image: "fight-card.png" })],
-			files: [gameCard],
-			flags: MessageFlags.IsComponentsV2,
-		});
-
-		const collector = message.createMessageComponentCollector({
-			componentType: ComponentType.Button,
-			time: 300000,
-		});
-
-		collector.on("collect", async (i: ButtonInteraction) => {
-			if (i.user.id !== challenger!.id && i.user.id !== opponent.id) {
-				return i.reply({ content: msgWrongUser, flags: [MessageFlags.Ephemeral] });
-			}
-
-			const turn = await weky.NetworkManager.getTurn(gameID);
-			if (i.user.id !== turn.userID) {
-				return i.reply({ content: msgOpponentTurn, flags: [MessageFlags.Ephemeral] });
-			}
-
-			await i.deferUpdate();
-
-			const player = await weky.NetworkManager.getPlayer(gameID, false);
-			const enemy = await weky.NetworkManager.getPlayer(gameID, true);
-
-			const playerMember = await i.guild?.members.fetch(player.memberId);
-			const enemyMember = await i.guild?.members.fetch(enemy.memberId);
-
-			if (!playerMember || !enemyMember) return;
-
-			if (i.customId === "fight_hit") {
-				let damage = Math.floor(Math.random() * 20) + 10;
-
-				if (
-					player.activeEffects.includes(
-						options.powerups?.doubleDamage?.effectMessage
-							? options.powerups?.doubleDamage?.effectMessage
-							: "Double Damage (Next Attack)"
-					)
-				) {
-					damage *= 2;
-					player.activeEffects = player.activeEffects.filter((e) =>
-						e !== options.powerups?.doubleDamage?.effectMessage
-							? options.powerups?.doubleDamage?.effectMessage
-							: "Double Damage (Next Attack)"
-					);
-				}
-				if (
-					enemy.activeEffects.includes(
-						options.powerups?.shield?.effectMessage ? options.powerups.shield.effectMessage : "Shield (Next Attack)"
-					)
-				) {
-					damage = Math.floor(damage / 2);
-					enemy.activeEffects = enemy.activeEffects.filter((e) =>
-						e !== options.powerups?.shield?.effectMessage
-							? options.powerups.shield.effectMessage
-							: "Shield (Next Attack)"
-					);
-				}
-
-				enemy.health -= damage;
-				player.coins += 10;
-
-				const updated = await weky.NetworkManager.updatePlayers(gameID, player, enemy);
-				if (!updated) return i.followUp({ content: "API Error", flags: [MessageFlags.Ephemeral] });
-
-				if (enemy.health <= 0) {
-					collector.stop("won");
-					const winCard = await weky.NetworkManager.makeWinCard(
-						playerMember.user.username,
-						playerMember.displayAvatarURL({ extension: "png", size: 256 }),
-						enemyMember.user.username,
-						enemyMember.displayAvatarURL({ extension: "png", size: 256 })
-					);
-					await weky.NetworkManager.removeGame(gameID);
-
-					return message.edit({
-						components: [createGameContainer("won", { image: "fight-winner.png" })],
-						files: [winCard],
-						flags: MessageFlags.IsComponentsV2,
-					});
-				}
-			} else if (i.customId === "fight_heal") {
-				if (player.health >= 80) {
-					return i.followUp({ content: msgHighHp, flags: [MessageFlags.Ephemeral] });
-				}
-				const healAmt = Math.floor(Math.random() * 20) + 10;
-				player.health = Math.min(100, player.health + healAmt);
-				await weky.NetworkManager.updatePlayers(gameID, player, enemy);
-			} else if (i.customId === "fight_surrender") {
-				if (player.health < 50) {
-					return i.followUp({ content: msgLowHp, flags: [MessageFlags.Ephemeral] });
-				}
-				collector.stop("surrender");
-				const surrenderCard = await weky.NetworkManager.makeSurrenderCard(
-					enemyMember.user.username,
-					enemyMember.displayAvatarURL({ extension: "png", size: 256 }),
-					playerMember.user.username,
-					playerMember.displayAvatarURL({ extension: "png", size: 256 })
-				);
-				await weky.NetworkManager.removeGame(gameID);
-				return message.edit({
-					components: [createGameContainer("surrender", { image: "fight-surrender.png" })],
-					files: [surrenderCard],
-					flags: MessageFlags.IsComponentsV2,
-				});
-			} else if (i.customId.startsWith("powerup_")) {
-				const pId = i.customId.split("_")[1];
-				const powerup = POWERUPS.find((p) => p.id === pId);
-
-				if (powerup && player.coins >= powerup.cost) {
-					player.coins -= powerup.cost;
-					const msg = powerup.effect(player, playerMember.user.username);
-					await weky.NetworkManager.updatePlayers(gameID, player, enemy);
-					await i.followUp({ content: msg, flags: [MessageFlags.Ephemeral] });
-				} else {
-					return i.followUp({
-						content: options.notEnoughtCoins ? options.notEnoughtCoins : "Not enough coins!",
-						flags: [MessageFlags.Ephemeral],
-					});
-				}
-			}
-
-			await weky.NetworkManager.changeTurn(gameID);
-
-			const newCard = await weky.NetworkManager.makeMainCard(
-				gameID,
-				challenger!.displayAvatarURL({ extension: "png", size: 256 }),
-				opponent.displayAvatarURL({ extension: "png", size: 256 })
-			);
-
-			await message.edit({
-				components: [createGameContainer("active", { image: "fight-card.png" })],
-				files: [newCard],
-				flags: MessageFlags.IsComponentsV2,
-			});
-		});
 	}
-};
-
-export default Fight;
+}

@@ -1,6 +1,7 @@
 import DiscordJS from "discord.js";
 import { NetworkManager } from "./handlers/NetworkManager.js";
 import { LoggerManager } from "./handlers/LoggerManager.js";
+import { EventManager } from "./handlers/EventManager.js";
 import type { Types2048, CalcTypes, ChaosTypes, FastTypeTypes, FightTypes, GuessTheNumberTypes, HangmanTypes, LieSwatterTypes, NeverHaveIEverTypes, QuickClickTypes, WillYouPressTheButtonTypes, WouldYouRatherTypes, ShuffleGuessTypes, SnakeTypes, GuessThePokemonTypes, BotDataTypes, Embeds } from "./Types/index.js";
 /**
  * The main manager class for the `@m3rcena/weky` package.
@@ -29,6 +30,11 @@ export declare class WekyManager {
      */
     _LoggerManager: LoggerManager;
     /**
+     * Handles DiscordJS Events used in the minigames.
+     * @internal
+     */
+    _EventManager: EventManager;
+    /**
      * Initialize the WekyManager.
      * @param {DiscordJS.Client} client The Discord.js Client instance.
      * @param {string} apiKey Your Weky API Key.
@@ -43,12 +49,12 @@ export declare class WekyManager {
      * @example
      * ```js
      * weky.create2048({
-     * context: interaction,
-     * embed: { title: '2048', color: 'Blurple' }
+     * 	context: interaction,
+     * 	embed: { title: '2048', color: 'Blurple' }
      * });
      * ```
      */
-    create2048(options: Types2048): Promise<DiscordJS.OmitPartialGroupDMChannel<DiscordJS.Message<true>>>;
+    create2048(options: Types2048): Promise<void>;
     /**
      * Creates a new instance of the **Calculator** utility.
      * Provides a fully functional calculator using Discord Buttons.
@@ -57,8 +63,8 @@ export declare class WekyManager {
      * @example
      * ```js
      * weky.createCalculator({
-     * context: interaction,
-     * embed: { title: 'Calculator', color: 'Blue' }
+     * 	context: interaction,
+     * 	embed: { title: 'Calculator', color: 'Blue' }
      * });
      * ```
      */
@@ -71,9 +77,9 @@ export declare class WekyManager {
      * @example
      * ```js
      * weky.createChaosWords({
-     * context: interaction,
-     * words: ["hello", "world"], // Optional custom words
-     * maxTries: 3
+     * 	context: interaction,
+     * 	words: ["hello", "world"], // Optional custom words
+     * 	maxTries: 3
      * });
      * ```
      */
@@ -87,13 +93,13 @@ export declare class WekyManager {
      * @example
      * ```js
      * weky.createFastType({
-     * context: interaction,
-     * sentence: "Type this fast!",
-     * time: 60000
+     * 	context: interaction,
+     * 	sentence: "Type this fast!",
+     * 	time: 60000
      * });
      * ```
      */
-    createFastType(options: FastTypeTypes): Promise<DiscordJS.Message<true>>;
+    createFastType(options: FastTypeTypes): Promise<void | DiscordJS.Message<true>>;
     /**
      * Creates a new instance of the **Fight** game.
      * A turn-based battle system between two users.
@@ -102,9 +108,9 @@ export declare class WekyManager {
      * @example
      * ```js
      * weky.createFight({
-     * context: interaction,
-     * opponent: targetUser,
-     * embed: { title: 'Fight Arena' }
+     * 	context: interaction,
+     * 	opponent: targetUser,
+     * 	embed: { title: 'Fight Arena' }
      * });
      * ```
      */
@@ -117,9 +123,9 @@ export declare class WekyManager {
      * @example
      * ```js
      * weky.createGuessTheNumber({
-     * context: interaction,
-     * number: 55, // Optional, randomized if not provided
-     * embed: { title: 'Guess The Number' }
+     * 	context: interaction,
+     * 	number: 55, // Optional, randomized if not provided
+     * 	embed: { title: 'Guess The Number' }
      * });
      * ```
      */
@@ -132,12 +138,12 @@ export declare class WekyManager {
      * @example
      * ```js
      * weky.createGuessThePokemon({
-     * context: interaction,
-     * time: 60000
+     * 	context: interaction,
+     * 	time: 60000
      * });
      * ```
      */
-    createGuessThePokemon(options: GuessThePokemonTypes): Promise<boolean | DiscordJS.OmitPartialGroupDMChannel<DiscordJS.Message<true>>>;
+    createGuessThePokemon(options: GuessThePokemonTypes): Promise<void>;
     /**
      * Creates a new instance of the **Hangman** game.
      * Users guess letters to reveal a hidden word before the hangman is drawn.
@@ -146,13 +152,12 @@ export declare class WekyManager {
      * @example
      * ```js
      * weky.createHangman({
-     * context: interaction,
-     * theme: 'nature',
-     * time: 60000
+     * 	context: interaction,
+     * 	time: 60000
      * });
      * ```
      */
-    createHangman(options: HangmanTypes): Promise<DiscordJS.OmitPartialGroupDMChannel<DiscordJS.Message<true>>>;
+    createHangman(options: HangmanTypes): Promise<void>;
     /**
      * Creates a new instance of the **Lie Swatter** game.
      * Users determine if a statement is True or False.
@@ -161,13 +166,13 @@ export declare class WekyManager {
      * @example
      * ```js
      * weky.createLieSwatter({
-     * context: interaction,
-     * winMessage: "You won!",
-     * loseMessage: "You lost!"
+     * 	context: interaction,
+     * 	winMessage: "You won!",
+     * 	loseMessage: "You lost!"
      * });
      * ```
      */
-    createLieSwatter(options: LieSwatterTypes): Promise<boolean | DiscordJS.OmitPartialGroupDMChannel<DiscordJS.Message<true>>>;
+    createLieSwatter(options: LieSwatterTypes): Promise<void>;
     /**
      * Creates a new instance of the **Never Have I Ever** game.
      * Displays a "Never Have I Ever" statement for users to vote on.
@@ -176,12 +181,12 @@ export declare class WekyManager {
      * @example
      * ```js
      * weky.createNeverHaveIEver({
-     * context: interaction,
-     * embed: { color: 'Red' }
+     * 	context: interaction,
+     * 	embed: { color: 'Red' }
      * });
      * ```
      */
-    createNeverHaveIEver(options: NeverHaveIEverTypes): Promise<boolean | DiscordJS.OmitPartialGroupDMChannel<DiscordJS.Message<true>>>;
+    createNeverHaveIEver(options: NeverHaveIEverTypes): Promise<void>;
     /**
      * Creates a new instance of the **Quick Click** game.
      * Users must click the correct button faster than their opponents.
@@ -190,8 +195,8 @@ export declare class WekyManager {
      * @example
      * ```js
      * weky.createQuickClick({
-     * context: interaction,
-     * time: 10000
+     * 	context: interaction,
+     * 	time: 10000
      * });
      * ```
      */
@@ -204,8 +209,8 @@ export declare class WekyManager {
      * @example
      * ```js
      * weky.createShuffleGuess({
-     * context: interaction,
-     * word: "Discord"
+     * 	context: interaction,
+     * 	word: "Discord"
      * });
      * ```
      */
@@ -218,12 +223,12 @@ export declare class WekyManager {
      * @example
      * ```js
      * weky.createSnake({
-     * context: interaction,
-     * emojis: { up: '🔼', down: '🔽', left: '◀️', right: '▶️' }
+     * 	context: interaction,
+     * 	emojis: { up: '🔼', down: '🔽', left: '◀️', right: '▶️' }
      * });
      * ```
      */
-    createSnake(options: SnakeTypes): Promise<DiscordJS.OmitPartialGroupDMChannel<DiscordJS.Message<true>>>;
+    createSnake(options: SnakeTypes): Promise<void>;
     /**
      * Creates a new instance of the **Will You Press The Button** game.
      * Users are presented with a dilemma and must choose to press or not.
@@ -232,12 +237,12 @@ export declare class WekyManager {
      * @example
      * ```js
      * weky.createWillYouPressTheButton({
-     * context: interaction,
-     * embed: { title: 'Press the button?' }
+     * 	context: interaction,
+     * 	embed: { title: 'Press the button?' }
      * });
      * ```
      */
-    createWillYouPressTheButton(options: WillYouPressTheButtonTypes): Promise<DiscordJS.OmitPartialGroupDMChannel<DiscordJS.Message<true>>>;
+    createWillYouPressTheButton(options: WillYouPressTheButtonTypes): Promise<void>;
     /**
      * Creates a new instance of the **Would You Rather** game.
      * Users vote between two difficult options.
@@ -246,12 +251,12 @@ export declare class WekyManager {
      * @example
      * ```js
      * weky.createWouldYouRather({
-     * context: interaction,
-     * embed: { title: 'Would You Rather...' }
+     * 	context: interaction,
+     * 	embed: { title: 'Would You Rather...' }
      * });
      * ```
      */
-    createWouldYouRather(options: WouldYouRatherTypes): Promise<DiscordJS.OmitPartialGroupDMChannel<DiscordJS.Message<true>>>;
+    createWouldYouRather(options: WouldYouRatherTypes): Promise<void>;
     /**
      * Retrieves the bot's usage statistics from the API.
      * Includes data on minigames played and API requests made.

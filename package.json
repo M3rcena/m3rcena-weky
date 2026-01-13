@@ -6,8 +6,8 @@
 	"module": "dist/esm/index.js",
 	"types": "dist/types/index.d.ts",
 	"scripts": {
-		"release:prep": "npx copyfiles --flat ./package.json ./dist",
-		"build:all": "npm run build:cjs && npm run build:esm && npm run build:types",
+		"release:prep": "npx tsx --tsconfig ./tsconfig.json ./tools/scripts/gen-version.ts",
+		"build:all": "npm run release:prep && npm run build:cjs && npm run build:esm && npm run build:types",
 		"build:cjs": "tsc -p tools/config/tsconfig.cjs.json && tsc-alias -p tools/config/tsconfig.cjs.json",
 		"build:esm": "tsc -p tools/config/tsconfig.esm.json && tsc-alias -p tools/config/tsconfig.esm.json",
 		"build:types": "tsc -p tools/config/tsconfig.types.json && tsc-alias -p tools/config/tsconfig.types.json",

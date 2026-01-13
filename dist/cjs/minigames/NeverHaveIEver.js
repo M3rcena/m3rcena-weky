@@ -1,157 +1,228 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const discord_js_1 = require("discord.js");
-const NeverHaveIEver = async (weky, options) => {
-    const context = options.context;
-    const userId = weky._getContextUserID(context);
-    if (!options.thinkMessage)
-        options.thinkMessage = "I am thinking...";
-    if (typeof options.thinkMessage !== "string") {
-        return weky._LoggerManager.createTypeError("NeverHaveIEver", "thinkMessage must be a string.");
+const activePlayers = new Set();
+/**
+ * NeverHaveIEver Minigame.
+ * A social party game where the bot presents a random "Never Have I Ever" statement
+ * fetched from an external API. Players respond using buttons to admit or deny the statement.
+ * @implements {IMinigame}
+ */
+class NeverHaveIEver {
+    id;
+    weky;
+    options;
+    context;
+    // Game Objects
+    gameMessage = null;
+    timeoutTimer = null;
+    // Game State
+    isGameActive = false;
+    statement = "";
+    // Configs
+    gameTitle;
+    defaultColor;
+    labelYes;
+    labelNo;
+    idYes;
+    idNo;
+    msgThink;
+    msgOthers;
+    /**
+     * Initializes the game instance.
+     * Generates unique interaction IDs for buttons to prevent conflicts and applies custom configuration
+     * for embeds, buttons labels, and text.
+     * @param weky - The WekyManager instance.
+     * @param options - Configuration including button labels and custom messages.
+     */
+    constructor(weky, options) {
+        this.weky = weky;
+        this.options = options;
+        this.context = options.context;
+        this.id = weky._getContextUserID(this.context);
+        // Generate IDs
+        this.idYes = `nhie_yes_${weky.getRandomString(10)}`;
+        this.idNo = `nhie_no_${weky.getRandomString(10)}`;
+        // Config Init
+        this.gameTitle = options.embed?.title || "Never Have I Ever";
+        this.defaultColor = typeof options.embed?.color === "number" ? options.embed.color : 0x5865f2;
+        if (!options.buttons)
+            options.buttons = {};
+        this.labelYes = options.buttons.optionA || "Yes";
+        this.labelNo = options.buttons.optionB || "No";
+        this.msgThink = typeof options.thinkMessage === "string" ? options.thinkMessage : "I am thinking...";
+        this.msgOthers =
+            typeof options.othersMessage === "string" ? options.othersMessage : "Only <@{{author}}> can use the buttons!";
     }
-    if (!options.othersMessage)
-        options.othersMessage = "Only <@{{author}}> can use the buttons!";
-    if (typeof options.othersMessage !== "string") {
-        return weky._LoggerManager.createTypeError("NeverHaveIEver", "othersMessage must be a string.");
+    /**
+     * Begins the game session.
+     * Fetches a random statement from the API (category: harmless), handles potential API errors,
+     * and displays the interactive game message to the user.
+     */
+    async start() {
+        if (activePlayers.has(this.id))
+            return;
+        activePlayers.add(this.id);
+        this.isGameActive = true;
+        this.gameMessage = await this.context.channel.send({
+            components: [this.createGameContainer("loading", "")],
+            flags: discord_js_1.MessageFlags.IsComponentsV2,
+            allowedMentions: { repliedUser: false },
+        });
+        try {
+            const res = await fetch("https://api.nhie.io/v2/statements/next?language=en&category=harmless");
+            const data = (await res.json());
+            this.statement = data.statement ? data.statement.trim() : "";
+            if (!this.statement) {
+                return this.endGame("error", this.options.errors?.noResult || "API returned no statement.");
+            }
+        }
+        catch (e) {
+            return this.endGame("error", this.options.errors?.failedFetch || "Failed to fetch statement from API.");
+        }
+        this.weky._EventManager.register(this);
+        await this.gameMessage.edit({
+            components: [this.createGameContainer("active", this.statement)],
+            flags: discord_js_1.MessageFlags.IsComponentsV2,
+        });
+        const timeLimit = this.options.time || 60000;
+        this.timeoutTimer = setTimeout(() => {
+            if (this.isGameActive)
+                this.endGame("timeout");
+        }, timeLimit);
     }
-    if (!options.buttons)
-        options.buttons = {};
-    if (typeof options.buttons !== "object") {
-        return weky._LoggerManager.createTypeError("NeverHaveIEver", "buttons must be an object.");
+    // =========================================================================
+    // EVENT ROUTER METHODS
+    // =========================================================================
+    /**
+     * Event handler for button interactions.
+     * Routes the "Yes" (I have done this) and "No" (I have never done this) inputs
+     * to the end game logic.
+     * @param interaction - The Discord Interaction object.
+     */
+    async onInteraction(interaction) {
+        if (!interaction.isButton())
+            return;
+        if (interaction.user.id !== this.id) {
+            if (interaction.message.id === this.gameMessage?.id) {
+                return interaction.reply({
+                    content: this.msgOthers.replace("{{author}}", this.id),
+                    flags: [discord_js_1.MessageFlags.Ephemeral],
+                });
+            }
+            return;
+        }
+        if (interaction.message.id !== this.gameMessage?.id)
+            return;
+        await interaction.deferUpdate();
+        if (interaction.customId === this.idYes) {
+            return this.endGame("yes");
+        }
+        else if (interaction.customId === this.idNo) {
+            return this.endGame("no");
+        }
     }
-    const labelYes = options.buttons.optionA || "Yes";
-    const labelNo = options.buttons.optionB || "No";
-    const gameTitle = options.embed.title || "Never Have I Ever";
-    const defaultColor = typeof options.embed.color === "number" ? options.embed.color : 0x5865f2;
-    const idYes = `nhie_yes_${weky.getRandomString(10)}`;
-    const idNo = `nhie_no_${weky.getRandomString(10)}`;
-    const createGameContainer = (state, statementText) => {
+    // =========================================================================
+    // UI & HELPERS
+    // =========================================================================
+    /**
+     * Concludes the game session.
+     * Cleans up event listeners, stops the timeout timer, and updates the UI
+     * to reflect the user's choice (or error/timeout state).
+     * @param state - The final outcome of the game.
+     * @param errorMsg - Optional detail string if an error occurred.
+     * @private
+     */
+    async endGame(state, errorMsg) {
+        if (!this.isGameActive && state !== "error")
+            return;
+        this.isGameActive = false;
+        if (this.timeoutTimer)
+            clearTimeout(this.timeoutTimer);
+        activePlayers.delete(this.id);
+        this.weky._EventManager.unregister(this.id);
+        const textToShow = state === "error" ? errorMsg || "Unknown Error" : this.statement;
+        if (this.gameMessage) {
+            try {
+                await this.gameMessage.edit({
+                    components: [this.createGameContainer(state, textToShow)],
+                    flags: discord_js_1.MessageFlags.IsComponentsV2,
+                });
+            }
+            catch (e) { }
+        }
+    }
+    /**
+     * Constructs the visual interface.
+     * Generates the Embed displaying the statement and the ActionRow containing the
+     * "Yes" and "No" buttons. dynamic styling is applied based on the final selection.
+     * @param state - The current game state.
+     * @param statementText - The "Never Have I Ever" statement to display.
+     * @returns {ContainerBuilder} The constructed container.
+     * @private
+     */
+    createGameContainer(state, statementText) {
         const container = new discord_js_1.ContainerBuilder();
         let content = "";
         switch (state) {
             case "loading":
-                container.setAccentColor(defaultColor);
-                content = options.states?.loading
-                    ? options.states.loading.replace("{{gameTitle}}", gameTitle).replace("{{thinkMessage}}", options.thinkMessage)
-                    : `## ${gameTitle}\n> 🔄 ${options.thinkMessage}`;
+                container.setAccentColor(this.defaultColor);
+                content = this.options.states?.loading
+                    ? this.options.states.loading
+                        .replace("{{gameTitle}}", this.gameTitle)
+                        .replace("{{thinkMessage}}", this.msgThink)
+                    : `## ${this.gameTitle}\n> 🔄 ${this.msgThink}`;
                 break;
             case "active":
-                container.setAccentColor(defaultColor);
-                content = options.states?.active
-                    ? options.states.active.replace("{{gameTitle}}", gameTitle).replace("{{statementText}}", statementText)
-                    : `## ${gameTitle}\n> ${statementText}`;
+                container.setAccentColor(this.defaultColor);
+                content = this.options.states?.active
+                    ? this.options.states.active
+                        .replace("{{gameTitle}}", this.gameTitle)
+                        .replace("{{statementText}}", statementText)
+                    : `## ${this.gameTitle}\n> ${statementText}`;
                 break;
             case "yes":
                 container.setAccentColor(0x57f287);
-                content = options.states?.yes
-                    ? options.states.yes.replace("{{gameTitle}}", gameTitle).replace("{{statementText}}", statementText)
-                    : `## ${gameTitle}\n> ${statementText}\n\n✅ **I have done this.**`;
+                content = this.options.states?.yes
+                    ? this.options.states.yes.replace("{{gameTitle}}", this.gameTitle).replace("{{statementText}}", statementText)
+                    : `## ${this.gameTitle}\n> ${statementText}\n\n✅ **I have done this.**`;
                 break;
             case "no":
                 container.setAccentColor(0xed4245);
-                content = options.states?.no
-                    ? options.states.no.replace("{{gameTitle}}", gameTitle).replace("{{statementText}}", statementText)
-                    : `## ${gameTitle}\n> ${statementText}\n\n❌ **I have never done this.**`;
+                content = this.options.states?.no
+                    ? this.options.states.no.replace("{{gameTitle}}", this.gameTitle).replace("{{statementText}}", statementText)
+                    : `## ${this.gameTitle}\n> ${statementText}\n\n❌ **I have never done this.**`;
                 break;
             case "timeout":
                 container.setAccentColor(0x99aab5);
-                content = options.states?.timeout
-                    ? options.states.timeout.replace("{{gameTitle}}", gameTitle).replace("{{statementText}}", statementText)
-                    : `## ${gameTitle}\n> ${statementText}\n\n⏳ **Time's up!**`;
+                content = this.options.states?.timeout
+                    ? this.options.states.timeout
+                        .replace("{{gameTitle}}", this.gameTitle)
+                        .replace("{{statementText}}", statementText)
+                    : `## ${this.gameTitle}\n> ${statementText}\n\n⏳ **Time's up!**`;
                 break;
             case "error":
                 container.setAccentColor(0xff0000);
-                content = options.states?.error
-                    ? options.states.error.replace("{{statementText}}", statementText)
+                content = this.options.states?.error
+                    ? this.options.states.error.replace("{{statementText}}", statementText)
                     : `## ❌ Error\n> ${statementText}`;
                 break;
         }
         container.addTextDisplayComponents((text) => text.setContent(content));
         if (state !== "loading" && state !== "error") {
             const btnYes = new discord_js_1.ButtonBuilder()
-                .setLabel(labelYes)
+                .setLabel(this.labelYes)
                 .setStyle(state === "yes" ? discord_js_1.ButtonStyle.Success : discord_js_1.ButtonStyle.Primary)
-                .setCustomId(idYes)
+                .setCustomId(this.idYes)
                 .setDisabled(state !== "active");
             const btnNo = new discord_js_1.ButtonBuilder()
-                .setLabel(labelNo)
+                .setLabel(this.labelNo)
                 .setStyle(state === "no" ? discord_js_1.ButtonStyle.Danger : discord_js_1.ButtonStyle.Secondary)
-                .setCustomId(idNo)
+                .setCustomId(this.idNo)
                 .setDisabled(state !== "active");
             container.addActionRowComponents((row) => row.setComponents(btnYes, btnNo));
         }
         return container;
-    };
-    const msg = await context.channel.send({
-        components: [createGameContainer("loading", "")],
-        flags: discord_js_1.MessageFlags.IsComponentsV2,
-        allowedMentions: { repliedUser: false },
-    });
-    let statement = "";
-    try {
-        const res = await fetch("https://api.nhie.io/v2/statements/next?language=en&category=harmless");
-        const data = (await res.json());
-        statement = data.statement ? data.statement.trim() : "";
     }
-    catch (e) {
-        return await msg.edit({
-            components: [
-                createGameContainer("error", options.errors?.failedFetch ? options.errors.failedFetch : "Failed to fetch statement from API."),
-            ],
-            flags: discord_js_1.MessageFlags.IsComponentsV2,
-        });
-    }
-    if (!statement) {
-        return await msg.edit({
-            components: [
-                createGameContainer("error", options.errors?.noResult ? options.errors.noResult : "API returned no statement."),
-            ],
-            flags: discord_js_1.MessageFlags.IsComponentsV2,
-        });
-    }
-    await msg.edit({
-        components: [createGameContainer("active", statement)],
-        flags: discord_js_1.MessageFlags.IsComponentsV2,
-    });
-    const collector = msg.createMessageComponentCollector({
-        componentType: discord_js_1.ComponentType.Button,
-        time: options.time || 60000,
-    });
-    collector.on("collect", async (interaction) => {
-        if (interaction.user.id !== userId) {
-            return interaction.reply({
-                content: options.othersMessage
-                    ? options.othersMessage.replace("{{author}}", userId)
-                    : `Only <@${userId}> can use the buttons!`,
-                flags: [discord_js_1.MessageFlags.Ephemeral],
-            });
-        }
-        await interaction.deferUpdate();
-        if (interaction.customId === idYes) {
-            collector.stop("yes");
-            await msg.edit({
-                components: [createGameContainer("yes", statement)],
-                flags: discord_js_1.MessageFlags.IsComponentsV2,
-            });
-        }
-        else if (interaction.customId === idNo) {
-            collector.stop("no");
-            await msg.edit({
-                components: [createGameContainer("no", statement)],
-                flags: discord_js_1.MessageFlags.IsComponentsV2,
-            });
-        }
-    });
-    collector.on("end", async (_collected, reason) => {
-        if (reason === "time") {
-            try {
-                await msg.edit({
-                    components: [createGameContainer("timeout", statement)],
-                    flags: discord_js_1.MessageFlags.IsComponentsV2,
-                });
-            }
-            catch (e) { }
-        }
-    });
-};
+}
 exports.default = NeverHaveIEver;

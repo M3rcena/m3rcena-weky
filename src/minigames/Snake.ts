@@ -1,100 +1,326 @@
 import {
 	ButtonBuilder,
 	ButtonStyle,
-	ComponentType,
 	ContainerBuilder,
+	Interaction,
 	MediaGalleryBuilder,
+	Message,
 	MessageFlags,
 } from "discord.js";
 
-import type { CustomOptions, SnakeTypes } from "../Types/index.js";
+import type { CustomOptions, SnakeTypes, IMinigame } from "../Types/index.js";
 import type { WekyManager } from "../index.js";
 
-const activePlayers = new Set();
+const activePlayers = new Set<string>();
 
-const mapDirection = (customId: string): "UP" | "DOWN" | "LEFT" | "RIGHT" | "" => {
-	switch (customId) {
-		case "weky_snake_up":
-			return "UP";
-		case "weky_snake_down":
-			return "DOWN";
-		case "weky_snake_left":
-			return "LEFT";
-		case "weky_snake_right":
-			return "RIGHT";
-		default:
-			return "";
+/**
+ * Snake Minigame.
+ * A Discord-based implementation of the classic arcade game.
+ * Uses an external NetworkManager to handle game state logic (movement, collisions, food)
+ * and generates a dynamic image of the board for every turn.
+ * [Image of snake game retro grid interface]
+ * @implements {IMinigame}
+ */
+export default class Snake implements IMinigame {
+	public id: string;
+	private weky: WekyManager;
+	private options: CustomOptions<SnakeTypes>;
+	private context: CustomOptions<SnakeTypes>["context"];
+
+	// Game Objects
+	private gameMessage: Message | null = null;
+	private timeoutTimer: NodeJS.Timeout | null = null;
+	private timeLimit: number;
+
+	// Game State
+	private isGameActive: boolean = false;
+	private gameID: string = "-1";
+	private userIcon: string = "";
+
+	// Configs
+	private gameTitle: string;
+	private defaultColor: number;
+	private emojiUp: string;
+	private emojiDown: string;
+	private emojiLeft: string;
+	private emojiRight: string;
+
+	/**
+	 * Initializes the Snake game instance.
+	 * Configures the game title, theme colors, and directional emojis for the controller.
+	 * @param weky - The WekyManager instance.
+	 * @param options - Configuration including button emojis and custom colors.
+	 */
+	constructor(weky: WekyManager, options: CustomOptions<SnakeTypes>) {
+		this.weky = weky;
+		this.options = options;
+		this.context = options.context;
+		this.id = weky._getContextUserID(this.context);
+
+		this.gameTitle = options.embed?.title || "Snake";
+		this.defaultColor = typeof options.embed?.color === "number" ? options.embed.color : 0x5865f2;
+		this.emojiUp = options.emojis?.up || "⬆️";
+		this.emojiDown = options.emojis?.down || "⬇️";
+		this.emojiLeft = options.emojis?.left || "⬅️";
+		this.emojiRight = options.emojis?.right || "➡️";
 	}
-};
 
-const Snake = async (weky: WekyManager, options: CustomOptions<SnakeTypes>) => {
-	const context = options.context;
-	const userId = weky._getContextUserID(context);
+	/**
+	 * Begins the game session.
+	 * 1. Checks for active sessions.
+	 * 2. Calls the API to initialize a new Snake game state.
+	 * 3. Fetches the initial board image.
+	 * 4. Sends the game interface to the channel.
+	 *
+	 */
+	public async start() {
+		if (activePlayers.has(this.id)) return;
+		activePlayers.add(this.id);
+		this.isGameActive = true;
 
-	if (activePlayers.has(userId)) return;
-	activePlayers.add(userId);
+		const member = await this.context.guild?.members.fetch(this.id).catch(null);
+		const username = member?.user.username || "Player";
+		this.userIcon = member?.user.displayAvatarURL({ extension: "png" }) || "";
 
-	const member = await context.guild?.members.fetch(userId);
-	const username = member?.user.username || "Player";
-	const userIcon = member?.user.displayAvatarURL({ extension: "png" }) || "";
+		this.gameMessage = await this.context.channel.send({
+			components: [this.createGameContainer("loading")],
+			flags: MessageFlags.IsComponentsV2,
+			allowedMentions: { repliedUser: false },
+		});
 
-	const gameTitle = options.embed.title || "Snake";
-	const defaultColor = typeof options.embed.color === "number" ? options.embed.color : 0x5865f2;
+		this.gameID = await this.weky.NetworkManager.createSnakeGame(this.id, username);
 
-	const emojiUp = options.emojis?.up || "⬆️";
-	const emojiDown = options.emojis?.down || "⬇️";
-	const emojiLeft = options.emojis?.left || "⬅️";
-	const emojiRight = options.emojis?.right || "➡️";
+		if (this.gameID === "-1") {
+			return this.endGame("error", {
+				error: this.options.errors?.couldNotCreateGame
+					? this.options.errors.couldNotCreateGame
+					: "Could not create game.",
+			});
+		}
 
-	const createGameContainer = (
+		const initialImg = await this.weky.NetworkManager.getSnakeBoardImage(this.gameID, this.userIcon);
+		if (!initialImg) {
+			return this.endGame("error", {
+				error: this.options.errors?.failedToGenerateBoard
+					? this.options.errors.failedToGenerateBoard
+					: "Failed to generate board.",
+			});
+		}
+
+		this.weky._EventManager.register(this);
+
+		await this.gameMessage!.edit({
+			components: [this.createGameContainer("active", { image: "snake-board.png" })],
+			files: [initialImg],
+			flags: MessageFlags.IsComponentsV2,
+		});
+
+		this.timeLimit = this.options.time || 600_000;
+		this.resetTimeout();
+	}
+
+	// =========================================================================
+	// EVENT ROUTER METHODS
+	// =========================================================================
+
+	/**
+	 * Central event handler for the game loop.
+	 * Processes directional inputs (Up/Down/Left/Right), sends the move to the API,
+	 * checks for Game Over/Win conditions, and updates the board image.
+	 *
+	 * @param interaction - The Discord Interaction object.
+	 */
+	public async onInteraction(interaction: Interaction) {
+		if (!interaction.isButton()) return;
+
+		if (interaction.user.id !== this.id) {
+			if (interaction.message.id === this.gameMessage?.id) {
+				return interaction.reply({
+					content: this.options.othersMessage ? this.options.othersMessage : "This is not your game!",
+					flags: [MessageFlags.Ephemeral],
+				});
+			}
+			return;
+		}
+
+		if (interaction.message.id !== this.gameMessage?.id) return;
+
+		if (interaction.customId === "weky_snake_quit") {
+			await interaction.deferUpdate();
+			return this.endGame("quit");
+		}
+
+		const direction = this.mapDirection(interaction.customId);
+		if (!direction) return;
+
+		await interaction.deferUpdate();
+
+		this.resetTimeout();
+
+		const moveResult = await this.weky.NetworkManager.moveSnake(this.gameID, direction);
+
+		if (!moveResult) {
+			return interaction.followUp({
+				content: this.options.errors?.connectionError ? this.options.errors.connectionError : "Connection error!",
+				flags: [MessageFlags.Ephemeral],
+			});
+		}
+
+		if (moveResult.gameOver || moveResult.won) {
+			return this.endGame("gameover");
+		}
+
+		const newImg = await this.weky.NetworkManager.getSnakeBoardImage(this.gameID, this.userIcon);
+		if (newImg) {
+			try {
+				await this.gameMessage!.edit({
+					files: [newImg],
+					components: [this.createGameContainer("active", { image: "snake-board.png" })],
+					flags: MessageFlags.IsComponentsV2,
+				});
+			} catch (e) {}
+		}
+	}
+
+	// =========================================================================
+	// UI & HELPERS
+	// =========================================================================
+
+	/**
+	 * Resets the inactivity timer.
+	 * Called after every valid interaction to ensure the game stays active
+	 * as long as the player is playing.
+	 * @private
+	 */
+	private resetTimeout() {
+		if (this.timeoutTimer) clearTimeout(this.timeoutTimer);
+		this.timeoutTimer = setTimeout(() => {
+			this.endGame("timeout");
+		}, this.timeLimit);
+	}
+
+	/**
+	 * Concludes the game session.
+	 * Cleans up the database session via API, removes listeners, and displays
+	 * the final board state (showing where the collision occurred).
+	 * @param state - The reason for game termination.
+	 * @param details - Optional error details.
+	 * @private
+	 */
+	private async endGame(state: "gameover" | "quit" | "timeout" | "error", details?: { error?: string }) {
+		if (!this.isGameActive && state !== "error") return;
+		this.isGameActive = false;
+
+		if (this.timeoutTimer) clearTimeout(this.timeoutTimer);
+		activePlayers.delete(this.id);
+		this.weky._EventManager.unregister(this.id);
+
+		let finalImg = null;
+		if (state !== "error" && this.gameID !== "-1") {
+			finalImg = await this.weky.NetworkManager.getSnakeBoardImage(this.gameID, this.userIcon);
+		}
+
+		if (this.gameID !== "-1") {
+			await this.weky.NetworkManager.endSnakeGame(this.gameID);
+		}
+
+		if (this.gameMessage) {
+			try {
+				await this.gameMessage.edit({
+					components: [
+						this.createGameContainer(state, { image: finalImg ? "snake-board.png" : undefined, ...details }),
+					],
+					files: finalImg ? [finalImg] : [],
+					flags: MessageFlags.IsComponentsV2,
+				});
+			} catch (e) {}
+		}
+	}
+
+	/**
+	 * Maps the button custom IDs to API-compatible direction strings.
+	 * @param customId - The ID of the clicked button.
+	 * @returns The direction string or empty string if invalid.
+	 * @private
+	 */
+	private mapDirection(customId: string): "UP" | "DOWN" | "LEFT" | "RIGHT" | "" {
+		switch (customId) {
+			case "weky_snake_up":
+				return "UP";
+			case "weky_snake_down":
+				return "DOWN";
+			case "weky_snake_left":
+				return "LEFT";
+			case "weky_snake_right":
+				return "RIGHT";
+			default:
+				return "";
+		}
+	}
+
+	/**
+	 * Constructs the visual interface.
+	 * Arranges the buttons in a specific layout to mimic a D-Pad (Directional Pad)
+	 * using Discord ActionRows.
+	 *
+	 * @param state - The current game state.
+	 * @param details - Dynamic data for the embed or image.
+	 * @returns {ContainerBuilder} The constructed container.
+	 * @private
+	 */
+	private createGameContainer(
 		state: "loading" | "active" | "gameover" | "quit" | "timeout" | "error",
 		details?: { error?: string; image?: string }
-	) => {
+	): ContainerBuilder {
 		const container = new ContainerBuilder();
 		let content = "";
 
 		switch (state) {
 			case "loading":
-				container.setAccentColor(defaultColor);
-				content = options.states?.loading
-					? options.states.loading.replace("{{gameTitle}}", gameTitle)
-					: `## ${gameTitle}\n> 🔄 Starting game...`;
+				container.setAccentColor(this.defaultColor);
+				content = this.options.states?.loading
+					? this.options.states.loading.replace("{{gameTitle}}", this.gameTitle)
+					: `## ${this.gameTitle}\n> 🔄 Starting game...`;
 				break;
 
 			case "active":
-				container.setAccentColor(defaultColor);
-				content = options.states?.active
-					? options.states.active.replace("{{gameTitle}}", gameTitle)
-					: `## ${gameTitle}\n> Use the buttons below to control the snake!`;
+				container.setAccentColor(this.defaultColor);
+				content = this.options.states?.active
+					? this.options.states.active.replace("{{gameTitle}}", this.gameTitle)
+					: `## ${this.gameTitle}\n> Use the buttons below to control the snake!`;
 				break;
 
 			case "gameover":
 				container.setAccentColor(0xed4245); // Red
-				content = options.states?.gameover ? options.states.gameover : `## 💀 Game Over\n> You hit a wall or yourself!`;
+				content = this.options.states?.gameover
+					? this.options.states.gameover
+					: `## 💀 Game Over\n> You hit a wall or yourself!`;
 				break;
 
 			case "quit":
 				container.setAccentColor(0xed4245); // Red
-				content = options.states?.quit ? options.states.quit : `## 🛑 Game Stopped\n> You quit the game.`;
+				content = this.options.states?.quit ? this.options.states.quit : `## 🛑 Game Stopped\n> You quit the game.`;
 				break;
 
 			case "timeout":
 				container.setAccentColor(0xed4245); // Red
-				content = options.states?.timeout ? options.states.timeout : `## ⏱️ Time's Up\n> Game session expired.`;
+				content = this.options.states?.timeout
+					? this.options.states.timeout
+					: `## ⏱️ Time's Up\n> Game session expired.`;
 				break;
 
 			case "error":
 				container.setAccentColor(0xff0000);
-				content = options.states?.error?.main
-					? options.states.error.main.replace(
+				content = this.options.states?.error?.main
+					? this.options.states.error.main.replace(
 							"{{error}}",
-							details?.error || options.states?.error?.unknownError
-								? options.states.error.unknownError
+							details?.error || this.options.states?.error?.unknownError
+								? this.options.states.error.unknownError!
 								: "Unknown error occurred."
 					  )
 					: `## ❌ Error\n> ${
-							details?.error || options.states?.error?.unknownError
-								? options.states.error.unknownError
+							details?.error || this.options.states?.error?.unknownError
+								? this.options.states.error.unknownError
 								: "Unknown error occurred."
 					  }`;
 				break;
@@ -108,17 +334,23 @@ const Snake = async (weky: WekyManager, options: CustomOptions<SnakeTypes>) => {
 		}
 
 		if (state === "active") {
-			const up = new ButtonBuilder().setStyle(ButtonStyle.Primary).setLabel(emojiUp).setCustomId("weky_snake_up");
-			const down = new ButtonBuilder().setStyle(ButtonStyle.Primary).setLabel(emojiDown).setCustomId("weky_snake_down");
-			const left = new ButtonBuilder().setStyle(ButtonStyle.Primary).setLabel(emojiLeft).setCustomId("weky_snake_left");
+			const up = new ButtonBuilder().setStyle(ButtonStyle.Primary).setLabel(this.emojiUp).setCustomId("weky_snake_up");
+			const down = new ButtonBuilder()
+				.setStyle(ButtonStyle.Primary)
+				.setLabel(this.emojiDown)
+				.setCustomId("weky_snake_down");
+			const left = new ButtonBuilder()
+				.setStyle(ButtonStyle.Primary)
+				.setLabel(this.emojiLeft)
+				.setCustomId("weky_snake_left");
 			const right = new ButtonBuilder()
 				.setStyle(ButtonStyle.Primary)
-				.setLabel(emojiRight)
+				.setLabel(this.emojiRight)
 				.setCustomId("weky_snake_right");
 
 			const stop = new ButtonBuilder()
 				.setStyle(ButtonStyle.Danger)
-				.setLabel("Quit")
+				.setLabel(this.options.quitButton ? this.options.quitButton : "Quit")
 				.setCustomId("weky_snake_quit")
 				.setEmoji("🛑");
 
@@ -134,120 +366,9 @@ const Snake = async (weky: WekyManager, options: CustomOptions<SnakeTypes>) => {
 				.setDisabled(true);
 
 			container.addActionRowComponents((row) => row.setComponents(dis1, up, dis2, stop));
-
 			container.addActionRowComponents((row) => row.setComponents(left, down, right));
 		}
 
 		return container;
-	};
-
-	const msg = await context.channel.send({
-		components: [createGameContainer("loading")],
-		flags: MessageFlags.IsComponentsV2,
-		allowedMentions: { repliedUser: false },
-	});
-
-	const gameID = await weky.NetworkManager.createSnakeGame(userId, username);
-
-	if (gameID === "-1") {
-		activePlayers.delete(userId);
-		return await msg.edit({
-			components: [
-				createGameContainer("error", {
-					error: options.errors?.couldNotCreateGame ? options.errors.couldNotCreateGame : "Could not create game.",
-				}),
-			],
-			flags: MessageFlags.IsComponentsV2,
-		});
 	}
-
-	const initialImg = await weky.NetworkManager.getSnakeBoardImage(gameID, userIcon);
-	if (!initialImg) {
-		await weky.NetworkManager.endSnakeGame(gameID);
-		activePlayers.delete(userId);
-		return await msg.edit({
-			components: [
-				createGameContainer("error", {
-					error: options.errors?.failedToGenerateBoard
-						? options.errors.failedToGenerateBoard
-						: "Failed to generate board.",
-				}),
-			],
-			flags: MessageFlags.IsComponentsV2,
-		});
-	}
-
-	await msg.edit({
-		components: [createGameContainer("active", { image: "snake-board.png" })],
-		files: [initialImg],
-		flags: MessageFlags.IsComponentsV2,
-	});
-
-	const collector = msg.createMessageComponentCollector({
-		time: options.time || 600_000,
-		componentType: ComponentType.Button,
-	});
-
-	collector.on("collect", async (btn) => {
-		if (btn.user.id !== userId) {
-			return btn.reply({
-				content: options.othersMessage ? options.othersMessage : "This is not your game!",
-				flags: [MessageFlags.Ephemeral],
-			});
-		}
-
-		if (btn.customId === "weky_snake_quit") {
-			await btn.deferUpdate();
-			return collector.stop("quit");
-		}
-
-		const direction = mapDirection(btn.customId);
-		if (!direction) return;
-
-		await btn.deferUpdate();
-
-		const moveResult = await weky.NetworkManager.moveSnake(gameID, direction);
-		if (!moveResult) {
-			return btn.followUp({
-				content: options.errors?.connectionError ? options.errors?.connectionError : "Connection error!",
-				flags: [MessageFlags.Ephemeral],
-			});
-		}
-
-		if (moveResult.gameOver || moveResult.won) {
-			return collector.stop("gameover");
-		}
-
-		const newImg = await weky.NetworkManager.getSnakeBoardImage(gameID, userIcon);
-		if (newImg) {
-			await msg
-				.edit({
-					files: [newImg],
-					components: [createGameContainer("active", { image: "snake-board.png" })],
-					flags: MessageFlags.IsComponentsV2,
-				})
-				.catch(() => {});
-		}
-	});
-
-	collector.on("end", async (_, reason) => {
-		const finalImg = await weky.NetworkManager.getSnakeBoardImage(gameID, userIcon);
-
-		await weky.NetworkManager.endSnakeGame(gameID);
-		activePlayers.delete(userId);
-
-		let endState: "gameover" | "quit" | "timeout" = "gameover";
-		if (reason === "quit") endState = "quit";
-		else if (reason === "time") endState = "timeout";
-
-		await msg
-			.edit({
-				components: [createGameContainer(endState, { image: finalImg ? "snake-board.png" : undefined })],
-				files: finalImg ? [finalImg] : [],
-				flags: MessageFlags.IsComponentsV2,
-			})
-			.catch(() => {});
-	});
-};
-
-export default Snake;
+}

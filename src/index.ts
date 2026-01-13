@@ -7,7 +7,9 @@ import { randomBytes } from "crypto";
 
 import { NetworkManager } from "./handlers/NetworkManager.js";
 import { LoggerManager } from "./handlers/LoggerManager.js";
-import weky_package from "../package.json";
+import { EventManager } from "./handlers/EventManager.js";
+
+import { version } from "./version.js";
 
 /**
  *
@@ -121,21 +123,27 @@ export class WekyManager {
 	public _LoggerManager: LoggerManager;
 
 	/**
+	 * Handles DiscordJS Events used in the minigames.
+	 * @internal
+	 */
+	public _EventManager: EventManager;
+
+	/**
 	 * Initialize the WekyManager.
 	 * @param {DiscordJS.Client} client The Discord.js Client instance.
 	 * @param {string} apiKey Your Weky API Key.
 	 * @param {boolean} notifyUpdates Whether to log a message in the console if a new version of the package is available.
 	 */
 	constructor(client: DiscordJS.Client, apiKey: string, notifyUpdates: boolean) {
-		// TODO: Enable again after finishing testing
-		// if (!(client instanceof DiscordJS.Client))
-		// 	throw new TypeError(`${chalk.red("[WekyManager]")} Invalid DiscordJS Client.`);
+		if (!(client instanceof DiscordJS.Client))
+			throw new TypeError(`${chalk.red("[WekyManager]")} Invalid DiscordJS Client.`);
 		this._client = client;
 		this.notifyUpdates = notifyUpdates;
 		this.apiKey = apiKey;
 
 		this._LoggerManager = new LoggerManager();
 		this.NetworkManager = new NetworkManager(this._client, this._LoggerManager, this.apiKey);
+		this._EventManager = new EventManager(this._client);
 	}
 
 	/**
@@ -146,8 +154,8 @@ export class WekyManager {
 	 * @example
 	 * ```js
 	 * weky.create2048({
-	 * context: interaction,
-	 * embed: { title: '2048', color: 'Blurple' }
+	 * 	context: interaction,
+	 * 	embed: { title: '2048', color: 'Blurple' }
 	 * });
 	 * ```
 	 */
@@ -155,7 +163,7 @@ export class WekyManager {
 		this.checkPackageUpdates("2048");
 		if (this.OptionsChecking(options, "2048")) return;
 
-		return await mini2048(this, options as CustomOptions<Types2048>);
+		return new mini2048(this, options as CustomOptions<Types2048>).start();
 	}
 
 	/**
@@ -166,8 +174,8 @@ export class WekyManager {
 	 * @example
 	 * ```js
 	 * weky.createCalculator({
-	 * context: interaction,
-	 * embed: { title: 'Calculator', color: 'Blue' }
+	 * 	context: interaction,
+	 * 	embed: { title: 'Calculator', color: 'Blue' }
 	 * });
 	 * ```
 	 */
@@ -176,7 +184,7 @@ export class WekyManager {
 		this.checkPackageUpdates("Calculator");
 		if (this.OptionsChecking(options, "Calculator")) return;
 
-		return await Calculator(this, options as CustomOptions<CalcTypes>);
+		return new Calculator(this, options as CustomOptions<CalcTypes>).start();
 	}
 
 	/**
@@ -187,9 +195,9 @@ export class WekyManager {
 	 * @example
 	 * ```js
 	 * weky.createChaosWords({
-	 * context: interaction,
-	 * words: ["hello", "world"], // Optional custom words
-	 * maxTries: 3
+	 * 	context: interaction,
+	 * 	words: ["hello", "world"], // Optional custom words
+	 * 	maxTries: 3
 	 * });
 	 * ```
 	 */
@@ -198,7 +206,7 @@ export class WekyManager {
 		this.checkPackageUpdates("ChaosWords");
 		if (this.OptionsChecking(options, "ChaosWords")) return;
 
-		return await ChaosWords(this, options as CustomOptions<ChaosTypes>);
+		return new ChaosWords(this, options as CustomOptions<ChaosTypes>).start();
 	}
 
 	/**
@@ -210,9 +218,9 @@ export class WekyManager {
 	 * @example
 	 * ```js
 	 * weky.createFastType({
-	 * context: interaction,
-	 * sentence: "Type this fast!",
-	 * time: 60000
+	 * 	context: interaction,
+	 * 	sentence: "Type this fast!",
+	 * 	time: 60000
 	 * });
 	 * ```
 	 */
@@ -233,7 +241,7 @@ export class WekyManager {
 			});
 		}
 
-		return await FastType(this, options as CustomOptions<FastTypeTypes>);
+		return new FastType(this, options as CustomOptions<FastTypeTypes>).start();
 	}
 
 	/**
@@ -244,9 +252,9 @@ export class WekyManager {
 	 * @example
 	 * ```js
 	 * weky.createFight({
-	 * context: interaction,
-	 * opponent: targetUser,
-	 * embed: { title: 'Fight Arena' }
+	 * 	context: interaction,
+	 * 	opponent: targetUser,
+	 * 	embed: { title: 'Fight Arena' }
 	 * });
 	 * ```
 	 */
@@ -254,7 +262,7 @@ export class WekyManager {
 		this.checkPackageUpdates("Fight");
 		if (this.OptionsChecking(options, "Fight")) return;
 
-		return await Fight(this, options as CustomOptions<FightTypes>);
+		return new Fight(this, options as CustomOptions<FightTypes>).start();
 	}
 
 	/**
@@ -265,9 +273,9 @@ export class WekyManager {
 	 * @example
 	 * ```js
 	 * weky.createGuessTheNumber({
-	 * context: interaction,
-	 * number: 55, // Optional, randomized if not provided
-	 * embed: { title: 'Guess The Number' }
+	 * 	context: interaction,
+	 * 	number: 55, // Optional, randomized if not provided
+	 * 	embed: { title: 'Guess The Number' }
 	 * });
 	 * ```
 	 */
@@ -276,7 +284,7 @@ export class WekyManager {
 		this.checkPackageUpdates("GuessTheNumber");
 		if (this.OptionsChecking(options, "GuessTheNumber")) return;
 
-		return await GuessTheNumber(this, options as CustomOptions<GuessTheNumberTypes>);
+		return new GuessTheNumber(this, options as CustomOptions<GuessTheNumberTypes>).start();
 	}
 
 	/**
@@ -287,8 +295,8 @@ export class WekyManager {
 	 * @example
 	 * ```js
 	 * weky.createGuessThePokemon({
-	 * context: interaction,
-	 * time: 60000
+	 * 	context: interaction,
+	 * 	time: 60000
 	 * });
 	 * ```
 	 */
@@ -297,7 +305,7 @@ export class WekyManager {
 		this.checkPackageUpdates("GuessThePokemon");
 		if (this.OptionsChecking(options, "GuessThePokemon")) return;
 
-		return await GuessThePokemon(this, options as CustomOptions<GuessThePokemonTypes>);
+		return new GuessThePokemon(this, options as CustomOptions<GuessThePokemonTypes>).start();
 	}
 
 	/**
@@ -308,9 +316,8 @@ export class WekyManager {
 	 * @example
 	 * ```js
 	 * weky.createHangman({
-	 * context: interaction,
-	 * theme: 'nature',
-	 * time: 60000
+	 * 	context: interaction,
+	 * 	time: 60000
 	 * });
 	 * ```
 	 */
@@ -318,7 +325,7 @@ export class WekyManager {
 		this.checkPackageUpdates("Hangman");
 		if (this.OptionsChecking(options, "Hangman")) return;
 
-		return await Hangman(this, options as CustomOptions<HangmanTypes>);
+		return new Hangman(this, options as CustomOptions<HangmanTypes>).start();
 	}
 
 	/**
@@ -329,9 +336,9 @@ export class WekyManager {
 	 * @example
 	 * ```js
 	 * weky.createLieSwatter({
-	 * context: interaction,
-	 * winMessage: "You won!",
-	 * loseMessage: "You lost!"
+	 * 	context: interaction,
+	 * 	winMessage: "You won!",
+	 * 	loseMessage: "You lost!"
 	 * });
 	 * ```
 	 */
@@ -340,7 +347,7 @@ export class WekyManager {
 		this.checkPackageUpdates("LieSwatter");
 		if (this.OptionsChecking(options, "LieSwatter")) return;
 
-		return await LieSwatter(this, options as CustomOptions<LieSwatterTypes>);
+		return new LieSwatter(this, options as CustomOptions<LieSwatterTypes>).start();
 	}
 
 	/**
@@ -351,8 +358,8 @@ export class WekyManager {
 	 * @example
 	 * ```js
 	 * weky.createNeverHaveIEver({
-	 * context: interaction,
-	 * embed: { color: 'Red' }
+	 * 	context: interaction,
+	 * 	embed: { color: 'Red' }
 	 * });
 	 * ```
 	 */
@@ -361,7 +368,7 @@ export class WekyManager {
 		this.checkPackageUpdates("NeverHaveIEver");
 		if (this.OptionsChecking(options, "NeverHaveIEver")) return;
 
-		return await NeverHaveIEver(this, options as CustomOptions<NeverHaveIEverTypes>);
+		return new NeverHaveIEver(this, options as CustomOptions<NeverHaveIEverTypes>).start();
 	}
 
 	/**
@@ -372,8 +379,8 @@ export class WekyManager {
 	 * @example
 	 * ```js
 	 * weky.createQuickClick({
-	 * context: interaction,
-	 * time: 10000
+	 * 	context: interaction,
+	 * 	time: 10000
 	 * });
 	 * ```
 	 */
@@ -382,7 +389,7 @@ export class WekyManager {
 		this.checkPackageUpdates("QuickClick");
 		if (this.OptionsChecking(options, "QuickClick")) return;
 
-		return await QuickClick(this, options as CustomOptions<QuickClickTypes>);
+		return new QuickClick(this, options as CustomOptions<QuickClickTypes>).start();
 	}
 
 	/**
@@ -393,8 +400,8 @@ export class WekyManager {
 	 * @example
 	 * ```js
 	 * weky.createShuffleGuess({
-	 * context: interaction,
-	 * word: "Discord"
+	 * 	context: interaction,
+	 * 	word: "Discord"
 	 * });
 	 * ```
 	 */
@@ -403,7 +410,7 @@ export class WekyManager {
 		this.checkPackageUpdates("ShuffleGuess");
 		if (this.OptionsChecking(options, "ShuffleGuess")) return;
 
-		return await ShuffleGuess(this, options as CustomOptions<ShuffleGuessTypes>);
+		return new ShuffleGuess(this, options as CustomOptions<ShuffleGuessTypes>).start();
 	}
 
 	/**
@@ -414,8 +421,8 @@ export class WekyManager {
 	 * @example
 	 * ```js
 	 * weky.createSnake({
-	 * context: interaction,
-	 * emojis: { up: '🔼', down: '🔽', left: '◀️', right: '▶️' }
+	 * 	context: interaction,
+	 * 	emojis: { up: '🔼', down: '🔽', left: '◀️', right: '▶️' }
 	 * });
 	 * ```
 	 */
@@ -423,7 +430,7 @@ export class WekyManager {
 		this.checkPackageUpdates("Snake");
 		if (this.OptionsChecking(options, "Snake")) return;
 
-		return await Snake(this, options as CustomOptions<SnakeTypes>);
+		return new Snake(this, options as CustomOptions<SnakeTypes>).start();
 	}
 
 	/**
@@ -434,8 +441,8 @@ export class WekyManager {
 	 * @example
 	 * ```js
 	 * weky.createWillYouPressTheButton({
-	 * context: interaction,
-	 * embed: { title: 'Press the button?' }
+	 * 	context: interaction,
+	 * 	embed: { title: 'Press the button?' }
 	 * });
 	 * ```
 	 */
@@ -444,7 +451,7 @@ export class WekyManager {
 		this.checkPackageUpdates("WillYouPressTheButton");
 		if (this.OptionsChecking(options, "WillYouPressTheButton")) return;
 
-		return await WillYouPressTheButton(this, options as CustomOptions<WillYouPressTheButtonTypes>);
+		return new WillYouPressTheButton(this, options as CustomOptions<WillYouPressTheButtonTypes>).start();
 	}
 
 	/**
@@ -455,8 +462,8 @@ export class WekyManager {
 	 * @example
 	 * ```js
 	 * weky.createWouldYouRather({
-	 * context: interaction,
-	 * embed: { title: 'Would You Rather...' }
+	 * 	context: interaction,
+	 * 	embed: { title: 'Would You Rather...' }
 	 * });
 	 * ```
 	 */
@@ -465,7 +472,7 @@ export class WekyManager {
 		this.checkPackageUpdates("WouldYouRather");
 		if (this.OptionsChecking(options, "WouldYouRather")) return;
 
-		return await WouldYouRather(this, options as CustomOptions<WouldYouRatherTypes>);
+		return new WouldYouRather(this, options as CustomOptions<WouldYouRatherTypes>).start();
 	}
 
 	/**
@@ -697,12 +704,12 @@ export class WekyManager {
 			const execPromise = promisify(exec);
 			const { stdout } = await execPromise("npm show @m3rcena/weky version");
 
-			if (stdout.trim().toString() > weky_package.version) {
+			if (stdout.trim().toString() > version) {
 				const advertise = chalk(`Are you using ${chalk.red(name)}? Don't lose out on new features!`);
 
 				const msg = chalk(`New ${chalk.green("version")} of ${chalk.yellow("@m3rcena/weky")} is available!`);
 
-				const msg2 = chalk(`${chalk.red(weky_package.version)} -> ${chalk.green(stdout.trim().toString())}`);
+				const msg2 = chalk(`${chalk.red(version)} -> ${chalk.green(stdout.trim().toString())}`);
 				const tip = chalk(`Registry: ${chalk.cyan("https://www.npmjs.com/package/@m3rcena/weky")}`);
 
 				const install = chalk(`Run ${chalk.green(`npm i @m3rcena/weky@${stdout.trim().toString()}`)} to update!`);

@@ -1,113 +1,287 @@
-import { ButtonBuilder, ButtonStyle, ComponentType, ContainerBuilder, MessageFlags } from "discord.js";
+import { ButtonBuilder, ButtonStyle, ContainerBuilder, Interaction, Message, MessageFlags } from "discord.js";
 
-import type { CustomOptions, QuickClickTypes } from "../Types/index.js";
+import type { CustomOptions, QuickClickTypes, IMinigame } from "../Types/index.js";
 import type { WekyManager } from "../index.js";
 
 const activeChannels = new Set<string>();
 const activeUsers = new Set<string>();
 
-const QuickClick = async (weky: WekyManager, options: CustomOptions<QuickClickTypes>) => {
-	const context = options.context;
+/**
+ * QuickClick Minigame.
+ * A reaction-based game where a 5x5 grid of disabled buttons is displayed.
+ * After a random interval, one button becomes active, and the first player to click it wins.
+ * @implements {IMinigame}
+ */
+export default class QuickClick implements IMinigame {
+	public id: string;
+	private weky: WekyManager;
+	private options: CustomOptions<QuickClickTypes>;
+	private context: CustomOptions<QuickClickTypes>["context"];
 
-	const userId = weky._getContextUserID(context);
-	const channelId = context.channel.id;
+	// Game Objects
+	private gameMessage: Message | null = null;
+	private waitTimer: NodeJS.Timeout | null = null;
+	private gameTimer: NodeJS.Timeout | null = null;
 
-	const messages = {
-		wait: options.waitMessage || "The buttons may appear anytime now...",
-		start: options.startMessage || "Find the **{{emoji}}** button! You have **{{time}}**!",
-		win: options.winMessage || "🏆 GG <@{{winner}}>! You pressed it in **{{time}}s**.",
-		lose: options.loseMessage || "❌ Time's up! No one pressed the button.",
-		ongoing: options.ongoingMessage || "A game is already running in <#{{channel}}>. Finish that first!",
-	};
+	// Game State
+	private isGameActive: boolean = false;
+	private buttons: ButtonBuilder[] = [];
+	private winningIndex: number = -1;
+	private gameCreatedAt: number = 0;
+	private winningButtonId: string = "weky_correct";
 
-	const emoji = options.emoji || "👆";
+	// Configs
+	private gameTitle: string;
+	private emoji: string;
+	private messages: { wait: string; start: string; win: string; lose: string; ongoing: string };
 
-	const gameTitle = options.embed.title || "Quick Click";
+	/**
+	 * Initializes the QuickClick game instance.
+	 * Sets up the game configuration, including the target emoji, time limits,
+	 * and custom victory/defeat messages.
+	 * @param weky - The WekyManager instance.
+	 * @param options - Configuration options for the game.
+	 */
+	constructor(weky: WekyManager, options: CustomOptions<QuickClickTypes>) {
+		this.weky = weky;
+		this.options = options;
+		this.context = options.context;
+		this.id = weky._getContextUserID(this.context);
 
-	if (activeChannels.has(channelId)) {
-		const errorText = messages.ongoing.replace("{{channel}}", channelId);
-		const errorContainer = new ContainerBuilder()
-			.setAccentColor(0xff0000)
-			.addTextDisplayComponents((text) =>
-				text.setContent(
-					options.errors?.main ? options.errors.main.replace("{{error}}", errorText) : `## ❌ Error\n${errorText}`
-				)
-			);
-
-		return context.channel.send({
-			components: [errorContainer],
-			flags: MessageFlags.IsComponentsV2,
-		});
+		this.gameTitle = options.embed?.title || "Quick Click";
+		this.emoji = options.emoji || "👆";
+		this.messages = {
+			wait: options.waitMessage || "The buttons may appear anytime now...",
+			start: options.startMessage || "Find the **{{emoji}}** button! You have **{{time}}**!",
+			win: options.winMessage || "🏆 GG <@{{winner}}>! You pressed it in **{{time}}s**.",
+			lose: options.loseMessage || "❌ Time's up! No one pressed the button.",
+			ongoing: options.ongoingMessage || "A game is already running in <#{{channel}}>. Finish that first!",
+		};
 	}
 
-	if (activeUsers.has(userId)) {
-		const errorContainer = new ContainerBuilder()
-			.setAccentColor(0xff0000)
-			.addTextDisplayComponents((text) =>
-				text.setContent(
-					options.errors?.gameAlreadyRunning
-						? options.errors.gameAlreadyRunning
-						: `## ❌ Error\n> You already have a game running! Finish that one first.`
-				)
-			);
+	/**
+	 * Begins the game session.
+	 * Enforces concurrency limits (one game per channel/user), generates the initial
+	 * 5x5 grid of disabled buttons, and starts the random "waiting" timer.
+	 */
+	public async start() {
+		const channelId = this.context.channel.id;
 
-		return context.channel.send({
-			components: [errorContainer],
+		if (activeChannels.has(channelId)) {
+			const errorText = this.messages.ongoing.replace("{{channel}}", channelId);
+			const errorContainer = new ContainerBuilder()
+				.setAccentColor(0xff0000)
+				.addTextDisplayComponents((text) =>
+					text.setContent(
+						this.options.errors?.main
+							? this.options.errors.main.replace("{{error}}", errorText)
+							: `## ❌ Error\n${errorText}`
+					)
+				);
+			return this.context.channel.send({ components: [errorContainer], flags: MessageFlags.IsComponentsV2 });
+		}
+
+		if (activeUsers.has(this.id)) {
+			const errorContainer = new ContainerBuilder()
+				.setAccentColor(0xff0000)
+				.addTextDisplayComponents((text) =>
+					text.setContent(
+						this.options.errors?.gameAlreadyRunning
+							? this.options.errors.gameAlreadyRunning
+							: `## ❌ Error\n> You already have a game running! Finish that one first.`
+					)
+				);
+			return this.context.channel.send({ components: [errorContainer], flags: MessageFlags.IsComponentsV2 });
+		}
+
+		activeChannels.add(channelId);
+		activeUsers.add(this.id);
+		this.isGameActive = true;
+
+		this.buttons = [];
+		for (let i = 0; i < 25; i++) {
+			this.buttons.push(
+				new ButtonBuilder()
+					.setLabel("\u200b")
+					.setStyle(ButtonStyle.Secondary)
+					.setCustomId(this.weky.getRandomString(20))
+					.setDisabled(true)
+			);
+		}
+
+		this.gameMessage = await this.context.channel.send({
+			components: [this.createGameContainer("waiting")],
 			flags: MessageFlags.IsComponentsV2,
+			allowedMentions: { repliedUser: false },
 		});
+
+		this.weky._EventManager.register(this);
+
+		const waitTime = Math.floor(Math.random() * 5000) + 1000;
+		this.waitTimer = setTimeout(() => this.activateGame(), waitTime);
 	}
 
-	activeChannels.add(channelId);
-	activeUsers.add(userId);
+	/**
+	 * Transitions the game from "Waiting" to "Active".
+	 * Selects a random button from the grid, enables it, applies the target emoji,
+	 * and starts the reaction timer.
+	 * @private
+	 */
+	private async activateGame() {
+		if (!this.gameMessage) return this.endGame("lost");
 
-	const createGameContainer = (
+		this.gameCreatedAt = Date.now();
+		this.winningIndex = Math.floor(Math.random() * this.buttons.length);
+
+		this.buttons[this.winningIndex]
+			.setStyle(ButtonStyle.Primary)
+			.setEmoji(this.emoji)
+			.setCustomId(this.winningButtonId)
+			.setDisabled(false);
+
+		const timeString = this.weky.convertTime((this.options.time as number) || 60000);
+
+		try {
+			await this.gameMessage.edit({
+				components: [this.createGameContainer("active", { timeLeft: timeString })],
+				flags: MessageFlags.IsComponentsV2,
+			});
+		} catch (e) {
+			return this.endGame("lost");
+		}
+
+		const timeLimit = this.options.time || 60000;
+		this.gameTimer = setTimeout(() => {
+			if (this.isGameActive) this.endGame("lost");
+		}, timeLimit);
+	}
+
+	// =========================================================================
+	// EVENT ROUTER METHODS
+	// =========================================================================
+
+	/**
+	 * Event handler for button interactions.
+	 * Detects if the user clicked the correct "active" button.
+	 * Calculates the reaction time and triggers the win state if correct.
+	 * @param interaction - The Discord Interaction object.
+	 */
+	public async onInteraction(interaction: Interaction) {
+		if (!interaction.isButton()) return;
+
+		if (interaction.customId === this.winningButtonId) {
+			if (interaction.message.id !== this.gameMessage?.id) return;
+
+			await interaction.deferUpdate();
+
+			const timeTaken = ((Date.now() - this.gameCreatedAt) / 1000).toFixed(2);
+			return this.endGame("won", {
+				winner: interaction.user.id,
+				timeTaken: timeTaken,
+			});
+		}
+	}
+
+	// =========================================================================
+	// UI & HELPERS
+	// =========================================================================
+
+	/**
+	 * Concludes the game session.
+	 * Cleans up timers and active status sets. Updates the grid to reflect
+	 * the outcome (highlighting the correct button in green on win).
+	 * @param state - The final game state (won/lost).
+	 * @param data - Metadata for the results (winner ID, time taken).
+	 * @private
+	 */
+	private async endGame(state: "won" | "lost", data?: { winner?: string; timeTaken?: string }) {
+		if (!this.isGameActive) return;
+		this.isGameActive = false;
+
+		if (this.waitTimer) clearTimeout(this.waitTimer);
+		if (this.gameTimer) clearTimeout(this.gameTimer);
+		activeChannels.delete(this.context.channel.id);
+		activeUsers.delete(this.id);
+		this.weky._EventManager.unregister(this.id);
+
+		if (state === "won") {
+			this.buttons[this.winningIndex].setDisabled(true).setStyle(ButtonStyle.Success);
+		} else {
+			this.buttons[this.winningIndex].setDisabled(true).setStyle(ButtonStyle.Secondary);
+		}
+
+		if (this.gameMessage) {
+			try {
+				await this.gameMessage.edit({
+					components: [this.createGameContainer(state, data)],
+					flags: MessageFlags.IsComponentsV2,
+				});
+			} catch (e) {}
+		}
+	}
+
+	/**
+	 * Constructs the visual interface.
+	 * Generates the Embed and the 5x5 ActionRow grid of buttons.
+	 * Handles the visual state changes between Waiting, Active, and Finished phases.
+	 * @param state - The current game state.
+	 * @param data - Dynamic data for the UI.
+	 * @returns {ContainerBuilder} The constructed container.
+	 * @private
+	 */
+	private createGameContainer(
 		state: "waiting" | "active" | "won" | "lost",
-		buttons: ButtonBuilder[],
 		data?: { winner?: string; timeTaken?: string; timeLeft?: string }
-	) => {
+	): ContainerBuilder {
 		const container = new ContainerBuilder();
 		let content = "";
 
 		switch (state) {
 			case "waiting":
 				container.setAccentColor(0x5865f2);
-				content = options.states?.waiting
-					? options.states.waiting.replace("{{gameTitle}}", gameTitle).replace("{{messagesWait}}", messages.wait)
-					: `## ${gameTitle}\n> ⏳ ${messages.wait}`;
+				content = this.options.states?.waiting
+					? this.options.states.waiting
+							.replace("{{gameTitle}}", this.gameTitle)
+							.replace("{{messagesWait}}", this.messages.wait)
+					: `## ${this.gameTitle}\n> ⏳ ${this.messages.wait}`;
 				break;
 
 			case "active":
 				container.setAccentColor(0x5865f2);
-				const startText = messages.start.replace("{{time}}", data?.timeLeft || "60s").replace("{{emoji}}", emoji);
-				content = options.states?.active
-					? options.states.active.replace("{{gameTitle}}", gameTitle).replace("{{startText}}", startText)
-					: `## ${gameTitle}\n${startText}`;
+				const startText = this.messages.start
+					.replace("{{time}}", data?.timeLeft || "60s")
+					.replace("{{emoji}}", this.emoji);
+				content = this.options.states?.active
+					? this.options.states.active.replace("{{gameTitle}}", this.gameTitle).replace("{{startText}}", startText)
+					: `## ${this.gameTitle}\n${startText}`;
 				break;
 
 			case "won":
 				container.setAccentColor(0x57f287);
-				const winText = messages.win
+				const winText = this.messages.win
 					.replace("{{winner}}", data?.winner || "")
 					.replace("{{time}}", data?.timeTaken || "0");
 
-				content = options.states?.won
-					? options.states.won.replace("{{gameTitle}}", gameTitle).replace("{{winText}}", winText)
-					: `## ${gameTitle}\n> ${winText}`;
+				content = this.options.states?.won
+					? this.options.states.won.replace("{{gameTitle}}", this.gameTitle).replace("{{winText}}", winText)
+					: `## ${this.gameTitle}\n> ${winText}`;
 				break;
 
 			case "lost":
 				container.setAccentColor(0xed4245); // Red
-				content = options.states?.lost
-					? options.states.lost.replace("{{gameTitle}}", gameTitle).replace("{{messagesLose}}", messages.lose)
-					: `## ${gameTitle}\n> ${messages.lose}`;
+				content = this.options.states?.lost
+					? this.options.states.lost
+							.replace("{{gameTitle}}", this.gameTitle)
+							.replace("{{messagesLose}}", this.messages.lose)
+					: `## ${this.gameTitle}\n> ${this.messages.lose}`;
 				break;
 		}
 
 		container.addTextDisplayComponents((textDisplay) => textDisplay.setContent(content));
 
-		if (buttons.length > 0) {
+		if (this.buttons.length > 0) {
 			for (let i = 0; i < 5; i++) {
-				const rowButtons = buttons.slice(i * 5, (i + 1) * 5);
+				const rowButtons = this.buttons.slice(i * 5, (i + 1) * 5);
 				if (rowButtons.length > 0) {
 					container.addActionRowComponents((actionRow) => actionRow.setComponents(...rowButtons));
 				}
@@ -115,94 +289,5 @@ const QuickClick = async (weky: WekyManager, options: CustomOptions<QuickClickTy
 		}
 
 		return container;
-	};
-
-	const buttons: ButtonBuilder[] = [];
-	for (let i = 0; i < 25; i++) {
-		buttons.push(
-			new ButtonBuilder()
-				.setLabel("\u200b")
-				.setStyle(ButtonStyle.Secondary)
-				.setCustomId(weky.getRandomString(20))
-				.setDisabled(true)
-		);
 	}
-
-	const msg = await context.channel.send({
-		components: [createGameContainer("waiting", buttons)],
-		flags: MessageFlags.IsComponentsV2,
-		allowedMentions: { repliedUser: false },
-	});
-
-	setTimeout(async function () {
-		const gameCreatedAt = Date.now();
-
-		if (!msg) {
-			activeChannels.delete(channelId);
-			activeUsers.delete(userId);
-			return;
-		}
-
-		const winningIndex = Math.floor(Math.random() * buttons.length);
-		buttons[winningIndex].setStyle(ButtonStyle.Primary).setEmoji(emoji).setCustomId("weky_correct").setDisabled(false);
-
-		const timeString = weky.convertTime(options.time as number);
-
-		try {
-			await msg.edit({
-				components: [createGameContainer("active", buttons, { timeLeft: timeString })],
-				flags: MessageFlags.IsComponentsV2,
-			});
-		} catch (e) {
-			activeChannels.delete(channelId);
-			activeUsers.delete(userId);
-			return;
-		}
-
-		const collector = msg.createMessageComponentCollector({
-			componentType: ComponentType.Button,
-			time: options.time as number,
-		});
-
-		collector.on("collect", async (interaction) => {
-			if (interaction.customId === "weky_correct") {
-				await interaction.deferUpdate();
-				collector.stop("winner");
-
-				const timeTaken = ((Date.now() - gameCreatedAt) / 1000).toFixed(2);
-
-				buttons[winningIndex].setDisabled(true).setStyle(ButtonStyle.Success);
-
-				await msg.edit({
-					components: [
-						createGameContainer("won", buttons, {
-							winner: interaction.user.id,
-							timeTaken: timeTaken,
-						}),
-					],
-					flags: MessageFlags.IsComponentsV2,
-				});
-			} else {
-				await interaction.deferUpdate();
-			}
-		});
-
-		collector.on("end", async (_collected, reason) => {
-			activeChannels.delete(channelId);
-			activeUsers.delete(userId);
-
-			if (reason !== "winner") {
-				buttons[winningIndex].setDisabled(true).setStyle(ButtonStyle.Secondary);
-
-				try {
-					await msg.edit({
-						components: [createGameContainer("lost", buttons)],
-						flags: MessageFlags.IsComponentsV2,
-					});
-				} catch (e) {}
-			}
-		});
-	}, Math.floor(Math.random() * 5000) + 1000);
-};
-
-export default QuickClick;
+}

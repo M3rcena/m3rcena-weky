@@ -10,7 +10,8 @@ const string_width_1 = tslib_1.__importDefault(require("string-width"));
 const crypto_1 = require("crypto");
 const NetworkManager_js_1 = require("./handlers/NetworkManager.js");
 const LoggerManager_js_1 = require("./handlers/LoggerManager.js");
-const package_json_1 = tslib_1.__importDefault(require("../package.json"));
+const EventManager_js_1 = require("./handlers/EventManager.js");
+const version_js_1 = require("./version.js");
 /**
  *
  * Minigames Imports
@@ -93,20 +94,25 @@ class WekyManager {
      */
     _LoggerManager;
     /**
+     * Handles DiscordJS Events used in the minigames.
+     * @internal
+     */
+    _EventManager;
+    /**
      * Initialize the WekyManager.
      * @param {DiscordJS.Client} client The Discord.js Client instance.
      * @param {string} apiKey Your Weky API Key.
      * @param {boolean} notifyUpdates Whether to log a message in the console if a new version of the package is available.
      */
     constructor(client, apiKey, notifyUpdates) {
-        // TODO: Enable again after finishing testing
-        // if (!(client instanceof DiscordJS.Client))
-        // 	throw new TypeError(`${chalk.red("[WekyManager]")} Invalid DiscordJS Client.`);
+        if (!(client instanceof discord_js_1.default.Client))
+            throw new TypeError(`${chalk_1.default.red("[WekyManager]")} Invalid DiscordJS Client.`);
         this._client = client;
         this.notifyUpdates = notifyUpdates;
         this.apiKey = apiKey;
         this._LoggerManager = new LoggerManager_js_1.LoggerManager();
         this.NetworkManager = new NetworkManager_js_1.NetworkManager(this._client, this._LoggerManager, this.apiKey);
+        this._EventManager = new EventManager_js_1.EventManager(this._client);
     }
     /**
      * Creates a new instance of the **2048** game.
@@ -116,8 +122,8 @@ class WekyManager {
      * @example
      * ```js
      * weky.create2048({
-     * context: interaction,
-     * embed: { title: '2048', color: 'Blurple' }
+     * 	context: interaction,
+     * 	embed: { title: '2048', color: 'Blurple' }
      * });
      * ```
      */
@@ -125,7 +131,7 @@ class WekyManager {
         this.checkPackageUpdates("2048");
         if (this.OptionsChecking(options, "2048"))
             return;
-        return await (0, _2024_js_1.default)(this, options);
+        return new _2024_js_1.default(this, options).start();
     }
     /**
      * Creates a new instance of the **Calculator** utility.
@@ -135,8 +141,8 @@ class WekyManager {
      * @example
      * ```js
      * weky.createCalculator({
-     * context: interaction,
-     * embed: { title: 'Calculator', color: 'Blue' }
+     * 	context: interaction,
+     * 	embed: { title: 'Calculator', color: 'Blue' }
      * });
      * ```
      */
@@ -145,7 +151,7 @@ class WekyManager {
         this.checkPackageUpdates("Calculator");
         if (this.OptionsChecking(options, "Calculator"))
             return;
-        return await (0, Calculator_js_1.default)(this, options);
+        return new Calculator_js_1.default(this, options).start();
     }
     /**
      * Creates a new instance of the **Chaos Words** game.
@@ -155,9 +161,9 @@ class WekyManager {
      * @example
      * ```js
      * weky.createChaosWords({
-     * context: interaction,
-     * words: ["hello", "world"], // Optional custom words
-     * maxTries: 3
+     * 	context: interaction,
+     * 	words: ["hello", "world"], // Optional custom words
+     * 	maxTries: 3
      * });
      * ```
      */
@@ -166,7 +172,7 @@ class WekyManager {
         this.checkPackageUpdates("ChaosWords");
         if (this.OptionsChecking(options, "ChaosWords"))
             return;
-        return await (0, ChaosWords_js_1.default)(this, options);
+        return new ChaosWords_js_1.default(this, options).start();
     }
     /**
      * Creates a new instance of the **Fast Type** game.
@@ -177,9 +183,9 @@ class WekyManager {
      * @example
      * ```js
      * weky.createFastType({
-     * context: interaction,
-     * sentence: "Type this fast!",
-     * time: 60000
+     * 	context: interaction,
+     * 	sentence: "Type this fast!",
+     * 	time: 60000
      * });
      * ```
      */
@@ -195,7 +201,7 @@ class WekyManager {
                 ],
             });
         }
-        return await (0, FastType_js_1.default)(this, options);
+        return new FastType_js_1.default(this, options).start();
     }
     /**
      * Creates a new instance of the **Fight** game.
@@ -205,9 +211,9 @@ class WekyManager {
      * @example
      * ```js
      * weky.createFight({
-     * context: interaction,
-     * opponent: targetUser,
-     * embed: { title: 'Fight Arena' }
+     * 	context: interaction,
+     * 	opponent: targetUser,
+     * 	embed: { title: 'Fight Arena' }
      * });
      * ```
      */
@@ -215,7 +221,7 @@ class WekyManager {
         this.checkPackageUpdates("Fight");
         if (this.OptionsChecking(options, "Fight"))
             return;
-        return await (0, Fight_js_1.default)(this, options);
+        return new Fight_js_1.default(this, options).start();
     }
     /**
      * Creates a new instance of the **Guess The Number** game.
@@ -225,9 +231,9 @@ class WekyManager {
      * @example
      * ```js
      * weky.createGuessTheNumber({
-     * context: interaction,
-     * number: 55, // Optional, randomized if not provided
-     * embed: { title: 'Guess The Number' }
+     * 	context: interaction,
+     * 	number: 55, // Optional, randomized if not provided
+     * 	embed: { title: 'Guess The Number' }
      * });
      * ```
      */
@@ -236,7 +242,7 @@ class WekyManager {
         this.checkPackageUpdates("GuessTheNumber");
         if (this.OptionsChecking(options, "GuessTheNumber"))
             return;
-        return await (0, GuessTheNumber_js_1.default)(this, options);
+        return new GuessTheNumber_js_1.default(this, options).start();
     }
     /**
      * Creates a new instance of the **Guess The Pokemon** game.
@@ -246,8 +252,8 @@ class WekyManager {
      * @example
      * ```js
      * weky.createGuessThePokemon({
-     * context: interaction,
-     * time: 60000
+     * 	context: interaction,
+     * 	time: 60000
      * });
      * ```
      */
@@ -256,7 +262,7 @@ class WekyManager {
         this.checkPackageUpdates("GuessThePokemon");
         if (this.OptionsChecking(options, "GuessThePokemon"))
             return;
-        return await (0, GuessThePokemon_js_1.default)(this, options);
+        return new GuessThePokemon_js_1.default(this, options).start();
     }
     /**
      * Creates a new instance of the **Hangman** game.
@@ -266,9 +272,8 @@ class WekyManager {
      * @example
      * ```js
      * weky.createHangman({
-     * context: interaction,
-     * theme: 'nature',
-     * time: 60000
+     * 	context: interaction,
+     * 	time: 60000
      * });
      * ```
      */
@@ -276,7 +281,7 @@ class WekyManager {
         this.checkPackageUpdates("Hangman");
         if (this.OptionsChecking(options, "Hangman"))
             return;
-        return await (0, Hangman_js_1.default)(this, options);
+        return new Hangman_js_1.default(this, options).start();
     }
     /**
      * Creates a new instance of the **Lie Swatter** game.
@@ -286,9 +291,9 @@ class WekyManager {
      * @example
      * ```js
      * weky.createLieSwatter({
-     * context: interaction,
-     * winMessage: "You won!",
-     * loseMessage: "You lost!"
+     * 	context: interaction,
+     * 	winMessage: "You won!",
+     * 	loseMessage: "You lost!"
      * });
      * ```
      */
@@ -297,7 +302,7 @@ class WekyManager {
         this.checkPackageUpdates("LieSwatter");
         if (this.OptionsChecking(options, "LieSwatter"))
             return;
-        return await (0, LieSwatter_js_1.default)(this, options);
+        return new LieSwatter_js_1.default(this, options).start();
     }
     /**
      * Creates a new instance of the **Never Have I Ever** game.
@@ -307,8 +312,8 @@ class WekyManager {
      * @example
      * ```js
      * weky.createNeverHaveIEver({
-     * context: interaction,
-     * embed: { color: 'Red' }
+     * 	context: interaction,
+     * 	embed: { color: 'Red' }
      * });
      * ```
      */
@@ -317,7 +322,7 @@ class WekyManager {
         this.checkPackageUpdates("NeverHaveIEver");
         if (this.OptionsChecking(options, "NeverHaveIEver"))
             return;
-        return await (0, NeverHaveIEver_js_1.default)(this, options);
+        return new NeverHaveIEver_js_1.default(this, options).start();
     }
     /**
      * Creates a new instance of the **Quick Click** game.
@@ -327,8 +332,8 @@ class WekyManager {
      * @example
      * ```js
      * weky.createQuickClick({
-     * context: interaction,
-     * time: 10000
+     * 	context: interaction,
+     * 	time: 10000
      * });
      * ```
      */
@@ -337,7 +342,7 @@ class WekyManager {
         this.checkPackageUpdates("QuickClick");
         if (this.OptionsChecking(options, "QuickClick"))
             return;
-        return await (0, QuickClick_js_1.default)(this, options);
+        return new QuickClick_js_1.default(this, options).start();
     }
     /**
      * Creates a new instance of the **Shuffle Guess** game.
@@ -347,8 +352,8 @@ class WekyManager {
      * @example
      * ```js
      * weky.createShuffleGuess({
-     * context: interaction,
-     * word: "Discord"
+     * 	context: interaction,
+     * 	word: "Discord"
      * });
      * ```
      */
@@ -357,7 +362,7 @@ class WekyManager {
         this.checkPackageUpdates("ShuffleGuess");
         if (this.OptionsChecking(options, "ShuffleGuess"))
             return;
-        return await (0, ShuffleGuess_js_1.default)(this, options);
+        return new ShuffleGuess_js_1.default(this, options).start();
     }
     /**
      * Creates a new instance of the **Snake** game.
@@ -367,8 +372,8 @@ class WekyManager {
      * @example
      * ```js
      * weky.createSnake({
-     * context: interaction,
-     * emojis: { up: '🔼', down: '🔽', left: '◀️', right: '▶️' }
+     * 	context: interaction,
+     * 	emojis: { up: '🔼', down: '🔽', left: '◀️', right: '▶️' }
      * });
      * ```
      */
@@ -376,7 +381,7 @@ class WekyManager {
         this.checkPackageUpdates("Snake");
         if (this.OptionsChecking(options, "Snake"))
             return;
-        return await (0, Snake_js_1.default)(this, options);
+        return new Snake_js_1.default(this, options).start();
     }
     /**
      * Creates a new instance of the **Will You Press The Button** game.
@@ -386,8 +391,8 @@ class WekyManager {
      * @example
      * ```js
      * weky.createWillYouPressTheButton({
-     * context: interaction,
-     * embed: { title: 'Press the button?' }
+     * 	context: interaction,
+     * 	embed: { title: 'Press the button?' }
      * });
      * ```
      */
@@ -396,7 +401,7 @@ class WekyManager {
         this.checkPackageUpdates("WillYouPressTheButton");
         if (this.OptionsChecking(options, "WillYouPressTheButton"))
             return;
-        return await (0, WillYouPressTheButton_js_1.default)(this, options);
+        return new WillYouPressTheButton_js_1.default(this, options).start();
     }
     /**
      * Creates a new instance of the **Would You Rather** game.
@@ -406,8 +411,8 @@ class WekyManager {
      * @example
      * ```js
      * weky.createWouldYouRather({
-     * context: interaction,
-     * embed: { title: 'Would You Rather...' }
+     * 	context: interaction,
+     * 	embed: { title: 'Would You Rather...' }
      * });
      * ```
      */
@@ -416,7 +421,7 @@ class WekyManager {
         this.checkPackageUpdates("WouldYouRather");
         if (this.OptionsChecking(options, "WouldYouRather"))
             return;
-        return await (0, WouldYouRather_js_1.default)(this, options);
+        return new WouldYouRather_js_1.default(this, options).start();
     }
     /**
      * Retrieves the bot's usage statistics from the API.
@@ -601,10 +606,10 @@ class WekyManager {
         try {
             const execPromise = (0, util_1.promisify)(child_process_1.exec);
             const { stdout } = await execPromise("npm show @m3rcena/weky version");
-            if (stdout.trim().toString() > package_json_1.default.version) {
+            if (stdout.trim().toString() > version_js_1.version) {
                 const advertise = (0, chalk_1.default)(`Are you using ${chalk_1.default.red(name)}? Don't lose out on new features!`);
                 const msg = (0, chalk_1.default)(`New ${chalk_1.default.green("version")} of ${chalk_1.default.yellow("@m3rcena/weky")} is available!`);
-                const msg2 = (0, chalk_1.default)(`${chalk_1.default.red(package_json_1.default.version)} -> ${chalk_1.default.green(stdout.trim().toString())}`);
+                const msg2 = (0, chalk_1.default)(`${chalk_1.default.red(version_js_1.version)} -> ${chalk_1.default.green(stdout.trim().toString())}`);
                 const tip = (0, chalk_1.default)(`Registry: ${chalk_1.default.cyan("https://www.npmjs.com/package/@m3rcena/weky")}`);
                 const install = (0, chalk_1.default)(`Run ${chalk_1.default.green(`npm i @m3rcena/weky@${stdout.trim().toString()}`)} to update!`);
                 this.boxConsole([advertise, msg, msg2, tip, install]);

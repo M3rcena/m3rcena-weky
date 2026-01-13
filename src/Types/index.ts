@@ -5,6 +5,9 @@ import type {
 	EmbedFooterData,
 	GuildMember,
 	GuildTextBasedChannel,
+	Interaction,
+	Message,
+	Typing,
 } from "discord.js";
 
 /**
@@ -28,6 +31,7 @@ export interface Types2048 {
 	quitMessage?: string;
 	timeoutMessage?: string;
 	errorMessage?: string;
+	othersMessage?: string;
 
 	time?: number;
 }
@@ -215,6 +219,7 @@ export interface FightTypes {
 	opponentsTurnMessage?: string;
 	highHealthMessage?: string;
 	lowHealthMessage?: string;
+	cannotFightYourselfMessage?: string;
 	playerAlreadyInFight?: string;
 }
 
@@ -350,6 +355,7 @@ export interface HangmanTypes {
 		noApiResponse?: string;
 	};
 
+	quitButton?: string;
 	othersMessage?: string;
 }
 
@@ -505,6 +511,7 @@ export interface SnakeTypes {
 	};
 
 	othersMessage?: string;
+	quitButton?: string;
 
 	time?: number;
 }
@@ -654,4 +661,11 @@ export interface BotDataTypes {
 		inits: number;
 		totalRequests: number;
 	};
+}
+
+export interface IMinigame {
+	id: string;
+	onTypingStart?(typing: Typing): void;
+	onMessage?(message: Message): void;
+	onInteraction?(message: Interaction): void;
 }
