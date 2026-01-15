@@ -602,8 +602,8 @@ export interface WouldYouRatherTypes {
  * CUSTOMIZABLE EMBEDS TYPES
  */
 export interface Embeds {
-	color: ColorResolvable;
-	title: string;
+	color?: ColorResolvable;
+	title?: string;
 	url?: string;
 	author?: Author;
 	footer?: EmbedFooterData;
