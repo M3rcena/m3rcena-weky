@@ -8,8 +8,8 @@ router.post("/createGame", async (req, res) => {
 	const { playerID, username }: { playerID: string; username: string } = req.body;
 	const botID = req.headers["x-bot-id"] as string;
 
-	const gameId = database.createSnake(playerID, username);
-	database.incrementUsage(botID, "minigames", 1, "snake");
+	const gameId = await database.createSnake(playerID, username);
+	await database.incrementUsage(botID, "minigames", 1, "snake");
 
 	if (gameId) {
 		return res.status(200).send({ gameID: gameId });
@@ -24,7 +24,7 @@ router.post("/move", async (req, res) => {
 	if (!gameID || !direction) return res.status(400).send({ error: "Missing data" });
 
 	try {
-		const gameState = database.moveSnake(gameID, direction);
+		const gameState = await database.moveSnake(gameID, direction);
 
 		return res.status(200).send({
 			score: gameState.score,
@@ -39,7 +39,7 @@ router.post("/move", async (req, res) => {
 router.post("/getBoardImage", async (req, res) => {
 	const { gameID, userIcon }: { gameID: string; userIcon: string } = req.body;
 
-	const gameData = database.getSnake(gameID);
+	const gameData = await database.getSnake(gameID);
 	if (!gameData) return res.status(404).send({ error: "Game not found" });
 
 	const cardBuffer = await getSnakeBoard(gameData.username, userIcon, gameData);
@@ -51,7 +51,7 @@ router.post("/getBoardImage", async (req, res) => {
 
 router.post("/endGame", async (req, res) => {
 	const { gameID } = req.body;
-	const removed = database.removeSnake(gameID);
+	const removed = await database.removeSnake(gameID);
 	return res.status(200).send({ removed });
 });
 

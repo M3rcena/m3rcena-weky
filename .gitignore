@@ -7,7 +7,3 @@ test/node_modules/
 test/package-lock.json
 test/index.ts
 test/deploy-commands.js
-
-api/node_modules
-api/package-lock.json
-api/src/db/**/enmap.*

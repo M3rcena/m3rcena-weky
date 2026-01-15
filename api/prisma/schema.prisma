@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Bot {
+  botID         String @id
+  botName       String
+  inits         Int    @default(1)
+  totalRequests Int    @default(1)
+
+  usage_mini2024              Int @default(0)
+  usage_calculator            Int @default(0)
+  usage_chaosWords            Int @default(0)
+  usage_fastType              Int @default(0)
+  usage_fight                 Int @default(0)
+  usage_guessTheNumber        Int @default(0)
+  usage_guessThePokemon       Int @default(0)
+  usage_hangman               Int @default(0)
+  usage_lieSwatter            Int @default(0)
+  usage_neverHaveIEver        Int @default(0)
+  usage_quickClick            Int @default(0)
+  usage_shuffleGuess          Int @default(0)
+  usage_snake                 Int @default(0)
+  usage_willYouPressTheButton Int @default(0)
+  usage_wouldYouRather        Int @default(0)
+}
+
+model ApiKey {
+  id         String   @id @default(uuid())
+  ownerID    String
+  botID      String   @unique
+  apiKey     String
+  apiKeyName String
+  createdAt  DateTime @default(now())
+}
+
+model FightGame {
+  gameID    String   @id
+  createdAt DateTime @default(now())
+  turn      Int      @default(0)
+  players   Json // Stores FightPlayerType[]
+}
+
+model Game2048 {
+  gameID   String  @id
+  playerID String  @unique
+  username String
+  score    Int     @default(0)
+  board    Json
+  gameOver Boolean @default(false)
+  won      Boolean @default(false)
+}
+
+model Hangman {
+  gameID         String   @id
+  playerID       String   @unique
+  username       String
+  word           String
+  displayWord    String
+  guessedLetters String[]
+  wrongGuesses   Int      @default(0)
+  gameOver       Boolean  @default(false)
+  won            Boolean  @default(false)
+}
+
+model Snake {
+  gameID    String  @id
+  playerID  String  @unique
+  username  String
+  score     Int     @default(0)
+  direction String
+  gridSize  Int
+  snake     Json
+  food      Json
+  gameOver  Boolean @default(false)
+}

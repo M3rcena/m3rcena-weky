@@ -8,7 +8,7 @@ const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
 const DISCORD_REDIRECT_URI = process.env.DISCORD_REDIRECT_URI;
 
-router.post("/createAPIKey", (req, res) => {
+router.post("/createAPIKey", async (req, res) => {
 	const { botID, apiKey, apiName, ownerID } = req.body;
 
 	if (!botID || !apiKey || !apiName || !ownerID) {
@@ -18,7 +18,7 @@ router.post("/createAPIKey", (req, res) => {
 		});
 	}
 
-	const success = database.createAPIKey(botID, apiKey, apiName, ownerID);
+	const success = await database.createAPIKey(botID, apiKey, apiName, ownerID);
 
 	if (success) {
 		return res.status(201).json({
@@ -33,38 +33,39 @@ router.post("/createAPIKey", (req, res) => {
 	}
 });
 
-router.post("/getAllAPIKeys", (req, res) => {
+router.post("/getAllAPIKeys", async (req, res) => {
 	const { ownerID } = req.body;
 
 	if (!ownerID) {
 		return res.status(400).json({ success: false, error: "Missing required field: ownerID" });
 	}
 
-	const keys = database.getAllAPIKeys(ownerID);
+	const keys = await database.getAllAPIKeys(ownerID);
 
-	const newKeys = keys.map((key) => {
-		const bot = database.get(key.botID);
-
-		if (bot) {
-			const usage = bot.usage.totalRequests;
-
-			return {
-				...key,
-				usage,
-			};
-		} else {
-			return key;
-		}
-	});
-
-	if (keys !== null) {
-		return res.status(200).json({ success: true, data: newKeys });
-	} else {
+	if (!keys || keys.length === 0) {
 		return res.status(404).json({ success: false, error: "Owner not found or no keys exist." });
 	}
+
+	const newKeys = await Promise.all(
+		keys.map(async (key) => {
+			const bot = await database.get(key.botID);
+
+			if (bot) {
+				const usage = bot.usage.totalRequests;
+				return {
+					...key,
+					usage,
+				};
+			} else {
+				return key;
+			}
+		})
+	);
+
+	return res.status(200).json({ success: true, data: newKeys });
 });
 
-router.post("/updateAPIKey", (req, res) => {
+router.post("/updateAPIKey", async (req, res) => {
 	const { ownerID, botID, newApiKey, newApiName } = req.body;
 
 	if (!ownerID || !botID) {
@@ -75,7 +76,7 @@ router.post("/updateAPIKey", (req, res) => {
 		return res.status(400).json({ success: false, error: "No update data provided." });
 	}
 
-	const success = database.updateAPIKey(ownerID, botID, newApiKey || null, newApiName || null);
+	const success = await database.updateAPIKey(ownerID, botID, newApiKey || null, newApiName || null);
 
 	if (success) {
 		return res.status(200).json({ success: true, message: "API Key updated successfully." });
@@ -84,14 +85,14 @@ router.post("/updateAPIKey", (req, res) => {
 	}
 });
 
-router.post("/removeAPIKey", (req, res) => {
+router.post("/removeAPIKey", async (req, res) => {
 	const { ownerID, botID } = req.body;
 
 	if (!ownerID || !botID) {
 		return res.status(400).json({ success: false, error: "Missing required fields: ownerID, botID" });
 	}
 
-	const success = database.removeAPIKey(ownerID, botID);
+	const success = await database.removeAPIKey(ownerID, botID);
 
 	if (success) {
 		return res.status(200).json({ success: true, message: "API Key deleted successfully." });
@@ -149,7 +150,7 @@ router.post("/discord-auth", async (req, res) => {
 			user: userData,
 		});
 	} catch (error) {
-		res.status(500).send("Internal Server Error");
+		return res.status(500).send("Internal Server Error");
 	}
 });
 

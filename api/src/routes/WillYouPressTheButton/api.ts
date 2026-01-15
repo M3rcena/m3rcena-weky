@@ -14,11 +14,11 @@ router.get("/", async (req, res) => {
 
 		const data = await fetchDilemma();
 
-		database.incrementUsage(botID, "minigames", 1, "willYouPressTheButton");
+		await database.incrementUsage(botID, "minigames", 1, "willYouPressTheButton");
 
-		res.json(data);
+		return res.json(data);
 	} catch (error: any) {
-		res.status(500).json({ error: "Failed to fetch random dilemma", details: error.message });
+		return res.status(500).json({ error: "Failed to fetch random dilemma", details: error.message });
 	}
 });
 
@@ -33,11 +33,11 @@ router.get("/:code", async (req, res) => {
 		const { code } = req.params;
 		const data = await fetchDilemma(code);
 
-		database.incrementUsage(botID, "minigames", 1, "willYouPressTheButton");
+		await database.incrementUsage(botID, "minigames", 1, "willYouPressTheButton");
 
-		res.json(data);
+		return res.json(data);
 	} catch (error: any) {
-		res.status(500).json({ error: "Failed to fetch dilemma", details: error.message });
+		return res.status(500).json({ error: "Failed to fetch dilemma", details: error.message });
 	}
 });
 

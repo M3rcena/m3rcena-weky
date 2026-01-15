@@ -1,6 +1,4 @@
-import Enmap from "enmap";
 import {
-	APIKeys,
 	BotDataTypes,
 	FightDataTypes,
 	FightPlayerType,
@@ -12,139 +10,84 @@ import {
 import { randomUUID } from "crypto";
 import CryptoJS from "crypto-js";
 import "dotenv/config";
+import { Bot, PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
 
-const SECRET_KEY = process.env.SECRET_KEY;
+const SECRET_KEY = process.env.SECRET_KEY || "default_secret";
 
-const defaultUsages: BotDataTypes = {
-	botID: "",
-	botName: "",
-	usage: {
-		minigames: {
-			mini2024: 0,
-			calculator: 0,
-			chaosWords: 0,
-			fastType: 0,
-			fight: 0,
-			guessTheNumber: 0,
-			guessThePokemon: 0,
-			hangman: 0,
-			lieSwatter: 0,
-			neverHaveIEver: 0,
-			quickClick: 0,
-			shuffleGuess: 0,
-			snake: 0,
-			willYouPressTheButton: 0,
-			wouldYouRather: 0,
-		},
-		inits: 1,
-		totalRequests: 1,
-	},
-};
+const connectionString = `${process.env.DATABASE_URL}`;
+
+const adapter = new PrismaPg({ connectionString });
+const prisma = new PrismaClient({
+	adapter,
+});
 
 type MinigameKey = keyof BotDataTypes["usage"]["minigames"];
 
 export default class DataHandler {
-	private botData: Enmap<string, BotDataTypes>;
-	private fightData: Enmap<string, FightDataTypes>;
-	private apiKeyData: Enmap<string, APIKeys>;
-	private game2048Data: Enmap<string, Game2048Types>;
-	private hangmanData: Enmap<string, HangmanGameTypes>;
-	private snakeData: Enmap<string, SnakeGameTypes>;
-
 	constructor() {
-		this.botData = new Enmap<string, BotDataTypes>({
-			name: "botData",
-			dataDir: "./src/db/BotData",
-		});
-
-		this.fightData = new Enmap<string, FightDataTypes>({
-			name: "fightData",
-			dataDir: "./src/db/Fight",
-		});
-
-		this.apiKeyData = new Enmap<string, APIKeys>({
-			name: "botData",
-			dataDir: "./src/db/ApiKeys",
-		});
-
-		this.game2048Data = new Enmap<string, Game2048Types>({
-			name: "game2048Data",
-			dataDir: "./src/db/Game2048",
-		});
-
-		this.hangmanData = new Enmap<string, HangmanGameTypes>({
-			name: "hangmanData",
-			dataDir: "./src/db/Hangman",
-		});
-
-		this.snakeData = new Enmap<string, SnakeGameTypes>({
-			name: "snakeData",
-			dataDir: "./src/db/Snake",
-		});
+		// Prisma connects lazily, no explicit init needed
 	}
 
 	/**
 	 * Creates a new bot entry if it doesn't exist
-	 * If it DOES exists, it returns the existing data.
 	 */
-	public create(botID: string, botName: string): BotDataTypes {
-		const initialData: BotDataTypes = { ...defaultUsages, botID, botName };
+	public async create(botID: string, botName: string): Promise<BotDataTypes> {
+		const bot = await prisma.bot.upsert({
+			where: { botID },
+			update: {},
+			create: {
+				botID,
+				botName,
+			},
+		});
 
-		return this.botData.ensure(botID, initialData);
+		return this.mapPrismaBotToType(bot);
 	}
 
-	/**
-	 * Remove a bot from the database.
-	 */
-	public remove(botID: string): boolean {
-		if (!this.botData.has(botID)) return false;
-		this.botData.delete(botID);
-		return true;
-	}
-
-	/**
-	 * Update a bot from the database
-	 */
-	public update(botID: string, newData: Partial<BotDataTypes>): BotDataTypes {
-		if (!this.botData.has(botID)) return null;
-
-		const current = this.botData.get(botID) as BotDataTypes;
-		if (!current) return null;
-
-		const updated = { ...current, ...newData };
-
-		this.botData.set(botID, updated);
-		return updated;
-	}
-
-	/**
-	 * Create a new API Key
-	 */
-	public createAPIKey(botID: string, apiKey: string, apiName: string, ownerID: string): boolean {
+	public async remove(botID: string): Promise<boolean> {
 		try {
-			if (this.isBotIDTaken(botID)) {
-				return false;
-			}
+			await prisma.bot.delete({ where: { botID } });
+			return true;
+		} catch (e) {
+			return false;
+		}
+	}
+
+	public async update(botID: string, newData: Partial<BotDataTypes>): Promise<BotDataTypes> {
+		try {
+			const updateData: Partial<Bot> = {};
+			if (newData.botName) updateData.botName = newData.botName;
+
+			const bot = await prisma.bot.update({
+				where: { botID },
+				data: updateData,
+			});
+
+			return this.mapPrismaBotToType(bot);
+		} catch (error) {
+			return null;
+		}
+	}
+
+	/**
+	 * API KEY MANAGEMENT
+	 */
+	public async createAPIKey(botID: string, apiKey: string, apiName: string, ownerID: string): Promise<boolean> {
+		try {
+			const existing = await prisma.apiKey.findUnique({ where: { botID } });
+			if (existing) return false;
 
 			const encryptedKey = CryptoJS.AES.encrypt(apiKey, SECRET_KEY).toString();
 
-			const newKeyEntry = {
-				apiKey: encryptedKey,
-				botID: botID,
-				apiKeyName: apiName,
-			};
-
-			if (!this.apiKeyData.has(ownerID)) {
-				this.apiKeyData.set(ownerID, {
-					keys: [newKeyEntry],
-				});
-			} else {
-				const userData = this.apiKeyData.get(ownerID) as APIKeys;
-
-				userData.keys.push(newKeyEntry);
-
-				this.apiKeyData.set(ownerID, userData);
-			}
+			await prisma.apiKey.create({
+				data: {
+					ownerID,
+					botID,
+					apiKey: encryptedKey,
+					apiKeyName: apiName,
+				},
+			});
 
 			return true;
 		} catch (error) {
@@ -152,22 +95,17 @@ export default class DataHandler {
 		}
 	}
 
-	/**
-	 * Returns ALL API keys for a specific owner, decrypted.
-	 * Returns null if owner not found or error occurs.
-	 */
-	public getAllAPIKeys(ownerID: string): { botID: string; apiKey: string; apiKeyName: string }[] | null {
+	public async getAllAPIKeys(ownerID: string): Promise<{ botID: string; apiKey: string; apiKeyName: string }[] | null> {
 		try {
-			if (!this.apiKeyData.has(ownerID)) {
-				return null;
-			}
+			const keys = await prisma.apiKey.findMany({
+				where: { ownerID },
+			});
 
-			const userData = this.apiKeyData.get(ownerID) as APIKeys;
+			if (!keys || keys.length === 0) return null;
 
-			return userData.keys.map((entry) => {
+			return keys.map((entry) => {
 				const bytes = CryptoJS.AES.decrypt(entry.apiKey, SECRET_KEY);
 				const decryptedKey = bytes.toString(CryptoJS.enc.Utf8);
-
 				return {
 					botID: entry.botID,
 					apiKey: decryptedKey,
@@ -175,212 +113,235 @@ export default class DataHandler {
 				};
 			});
 		} catch (error) {
-			console.error("Failed to fetch keys:", error);
 			return null;
 		}
 	}
 
-	/**
-	 * Removes a specific API key by botID.
-	 */
-	public removeAPIKey(ownerID: string, botID: string): boolean {
+	public async removeAPIKey(ownerID: string, botID: string): Promise<boolean> {
 		try {
-			if (!this.apiKeyData.has(ownerID)) return false;
-
-			const userData = this.apiKeyData.get(ownerID) as APIKeys;
-			const initialLength = userData.keys.length;
-
-			userData.keys = userData.keys.filter((k) => k.botID !== botID);
-
-			if (userData.keys.length === initialLength) {
-				return false;
-			}
-
-			// 3. Save update
-			this.apiKeyData.set(ownerID, userData);
-			return true;
+			const result = await prisma.apiKey.deleteMany({
+				where: {
+					ownerID: ownerID,
+					botID: botID,
+				},
+			});
+			return result.count > 0;
 		} catch (error) {
-			console.error("Failed to remove key:", error);
 			return false;
 		}
 	}
 
-	/**
-	 * Updates an existing API key.
-	 * Pass 'null' for any value you do NOT want to change.
-	 */
-	public updateAPIKey(ownerID: string, botID: string, newApiKey: string | null, newApiName: string | null): boolean {
+	public async updateAPIKey(
+		ownerID: string,
+		botID: string,
+		newApiKey: string | null,
+		newApiName: string | null
+	): Promise<boolean> {
 		try {
-			if (!this.apiKeyData.has(ownerID)) return false;
-
-			const userData = this.apiKeyData.get(ownerID) as APIKeys;
-
-			const keyIndex = userData.keys.findIndex((k) => k.botID === botID);
-
-			if (keyIndex === -1) return false;
-
+			const dataToUpdate: any = {};
 			if (newApiKey !== null) {
-				const encrypted = CryptoJS.AES.encrypt(newApiKey, SECRET_KEY).toString();
-				userData.keys[keyIndex].apiKey = encrypted;
+				dataToUpdate.apiKey = CryptoJS.AES.encrypt(newApiKey, SECRET_KEY).toString();
 			}
-
 			if (newApiName !== null) {
-				userData.keys[keyIndex].apiKeyName = newApiName;
+				dataToUpdate.apiKeyName = newApiName;
 			}
 
-			this.apiKeyData.set(ownerID, userData);
-			return true;
+			const result = await prisma.apiKey.updateMany({
+				where: { ownerID, botID },
+				data: dataToUpdate,
+			});
+
+			return result.count > 0;
 		} catch (error) {
-			console.error("Failed to update key:", error);
 			return false;
 		}
 	}
 
-	/**
-	 * Checks if a botID is already registered by ANY owner in the database.
-	 * Returns true if the botID is taken.
-	 */
-	public isBotIDTaken(botID: string): boolean {
-		const allData = Array.from(this.apiKeyData.values()) as unknown as APIKeys[];
-
-		for (const userData of allData) {
-			if (userData && Array.isArray(userData.keys)) {
-				if (userData.keys.some((key) => key.botID === botID)) {
-					return true;
-				}
-			}
-		}
-		return false;
+	public async isBotIDTaken(botID: string): Promise<boolean> {
+		const count = await prisma.apiKey.count({
+			where: { botID },
+		});
+		return count > 0;
 	}
 
-	/**
-	 * Validates an API key for a specific botID.
-	 * Does NOT require ownerID.
-	 */
-	public validateApiKey(botID: string, rawApiKey: string): boolean {
+	public async validateApiKey(botID: string, rawApiKey: string): Promise<boolean> {
 		try {
-			// 1. Iterate through ALL users to find the botID
-			const allData = Array.from(this.apiKeyData.values()) as unknown as APIKeys[];
+			const entry = await prisma.apiKey.findUnique({
+				where: { botID },
+			});
 
-			for (const userData of allData) {
-				if (!userData || !userData.keys) continue;
+			if (!entry) return false;
 
-				const targetKeyEntry = userData.keys.find((k) => k.botID === botID);
+			const bytes = CryptoJS.AES.decrypt(entry.apiKey, SECRET_KEY);
+			const decryptedStoredKey = bytes.toString(CryptoJS.enc.Utf8);
 
-				if (targetKeyEntry) {
-					const bytes = CryptoJS.AES.decrypt(targetKeyEntry.apiKey, SECRET_KEY);
-					const decryptedStoredKey = bytes.toString(CryptoJS.enc.Utf8);
-
-					return decryptedStoredKey === rawApiKey;
-				}
-			}
-
-			return false;
+			return decryptedStoredKey === rawApiKey;
 		} catch (error) {
 			return false;
 		}
 	}
 
 	/**
-	 * Increases usage counter.
+	 * USAGE INCREMENTER
+	 * Maps the dynamic "minigame" string to the specific database column
 	 */
-	public incrementUsage(botID: string, key: "totalRequests", amount?: number): number;
-
-	public incrementUsage<K extends keyof Omit<BotDataTypes["usage"], "minigames" | "totalRequests">>(
+	public async incrementUsage(botID: string, key: "totalRequests", amount?: number): Promise<number>;
+	public async incrementUsage<K extends keyof Omit<BotDataTypes["usage"], "minigames" | "totalRequests">>(
 		botID: string,
 		key: K,
 		amount?: number
-	): number;
-
-	public incrementUsage<K extends "minigames", M extends MinigameKey>(
+	): Promise<number>;
+	public async incrementUsage<K extends "minigames", M extends MinigameKey>(
 		botID: string,
 		key: K,
 		amount: number,
 		minigame: M
-	): number;
+	): Promise<number>;
 
-	public incrementUsage(botID: string, key: string, amount: number = 1, minigame?: string): number {
-		if (!this.botData.has(botID)) return -1;
+	public async incrementUsage(botID: string, key: string, amount: number = 1, minigame?: string): Promise<number> {
+		try {
+			let updateQuery: any = {};
 
-		const dbPath = minigame ? `usage.${key}.${minigame}` : `usage.${key}`;
+			if (minigame) {
+				const colName = `usage_${minigame}`;
+				updateQuery[colName] = { increment: amount };
+			} else {
+				updateQuery[key] = { increment: amount };
+			}
 
-		this.botData.math(botID, "+", amount, dbPath as any);
+			const updated = await prisma.bot.update({
+				where: { botID },
+				data: updateQuery,
+			});
 
-		const data = this.botData.get(botID) as BotDataTypes | undefined;
-		if (!data) return 0;
-
-		if (minigame) {
-			return (data.usage.minigames as any)[minigame];
+			if (minigame) {
+				return (updated as any)[`usage_${minigame}`] as number;
+			}
+			return (updated as any)[key] as number;
+		} catch (e) {
+			return 0;
 		}
-		return (data.usage as any)[key];
+	}
+
+	public async get(botID: string): Promise<BotDataTypes | null> {
+		const bot = await prisma.bot.findUnique({ where: { botID } });
+		return bot ? this.mapPrismaBotToType(bot) : null;
+	}
+
+	public async getField<K extends keyof BotDataTypes>(botID: string, key: K): Promise<BotDataTypes[K] | null> {
+		const data = await this.get(botID);
+		return data ? data[key] : null;
 	}
 
 	/**
-	 * Get the full data object for a bot.
+	 * FIGHT MINIGAME
 	 */
-	public get(botID: string): BotDataTypes | null {
-		return this.botData.get(botID) || null;
-	}
-
-	/**
-	 * Get a SINGLE specific field (e.g., just the name).
-	 * This is strictly typed: you can only request keys that exist in BotDataTypes.
-	 */
-	public getField<K extends keyof BotDataTypes>(botID: string, key: K): BotDataTypes[K] | null {
-		if (!this.botData.has(botID)) return null;
-
-		const data = this.botData.get(botID);
-
-		if (!data) return null;
-
-		return data[key];
-	}
-
-	/**
-	 *
-	 * FIGHT MINIGAME DATABASE
-	 *
-	 */
-
-	/**
-	 * Create a Fight minigame to the Database
-	 */
-	public createFight(
+	public async createFight(
 		challengerID: string,
 		challengerUsername: string,
 		opponentID: string,
 		opponentUsername: string
-	): string {
+	): Promise<string> {
 		const gameId = randomUUID();
+		const players = [
+			this.initializePlayer(challengerID, challengerUsername),
+			this.initializePlayer(opponentID, opponentUsername),
+		];
 
-		const initialData: FightDataTypes = {
-			turn: 0,
-			createdAt: Date.now(),
-			players: [
-				this.initializePlayer(challengerID, challengerUsername),
-				this.initializePlayer(opponentID, opponentUsername),
-			],
-		};
+		await prisma.fightGame.create({
+			data: {
+				gameID: gameId,
+				turn: 0,
+				players: players as any,
+			},
+		});
 
-		this.fightData.ensure(gameId, initialData);
 		return gameId;
 	}
 
-	/**
-	 * Remove a Fight minigame from the Database
-	 */
-	public removeFight(gameID: string): boolean {
-		this.fightData.delete(gameID);
+	public async removeFight(gameID: string): Promise<boolean> {
+		try {
+			await prisma.fightGame.delete({ where: { gameID } });
+			return true;
+		} catch {
+			return false;
+		}
+	}
+
+	public async isPlayerInFight(userId: string): Promise<boolean> {
+		const games = await prisma.fightGame.findMany();
+		return games.some((g) => {
+			const players = g.players as unknown as FightPlayerType[];
+			return players.some((p) => p.memberId === userId);
+		});
+	}
+
+	public async getFight(gameId: string): Promise<FightDataTypes | null> {
+		const game = await prisma.fightGame.findUnique({ where: { gameID: gameId } });
+		if (!game) return null;
+		return {
+			...game,
+			createdAt: game.createdAt.getTime(),
+			players: game.players as unknown as FightPlayerType[],
+		};
+	}
+
+	public async getPlayer(gameId: string, isOpponent: boolean): Promise<FightPlayerType | null> {
+		const game = await this.getFight(gameId);
+		if (!game) return null;
+
+		let player: FightPlayerType;
+		if (isOpponent) {
+			player = game.players[game.turn == 0 ? 1 : 0];
+		} else {
+			player = game.players[game.turn];
+		}
+		return player;
+	}
+
+	public async getTurn(gameID: string): Promise<{ turn: number; username: string; userID: string }> {
+		const game = await this.getFight(gameID);
+		if (!game) throw new Error("Game not found");
+
+		return {
+			turn: game.turn,
+			username: game.players[game.turn].username,
+			userID: game.players[game.turn].memberId,
+		};
+	}
+
+	public async changeTurn(gameID: string): Promise<boolean> {
+		const game = await this.getFight(gameID);
+		if (!game) return false;
+
+		const newTurn = game.turn === 0 ? 1 : 0;
+		await prisma.fightGame.update({
+			where: { gameID },
+			data: { turn: newTurn },
+		});
 		return true;
 	}
 
-	/**
-	 * Helper to set default stats for a player at start of fight
-	 */
+	public async updatePlayers(gameID: string, player1: FightPlayerType, player2: FightPlayerType): Promise<boolean> {
+		const game = await this.getFight(gameID);
+		if (!game) return false;
+
+		const existingIds = game.players.map((p) => p.memberId);
+		if (!existingIds.includes(player1.memberId) || !existingIds.includes(player2.memberId)) return false;
+
+		const updatedPlayers = game.players.map((p) => (p.memberId === player1.memberId ? player1 : player2));
+
+		await prisma.fightGame.update({
+			where: { gameID },
+			data: { players: updatedPlayers as any },
+		});
+		return true;
+	}
+
 	private initializePlayer(memberId: string, username: string): FightPlayerType {
 		return {
-			memberId: memberId,
-			username: username,
+			memberId,
+			username,
 			health: 100,
 			lastAttack: "none",
 			coins: 0,
@@ -391,206 +352,81 @@ export default class DataHandler {
 	}
 
 	/**
-	 * Helper to find if a user is currently participating in any active fight.
+	 * 2048 MINIGAME
 	 */
-	public isPlayerInFight(userId: string): boolean {
-		return this.fightData.some((fight: FightDataTypes) => {
-			return fight.players.some((player) => player.memberId === userId);
-		});
-	}
-
-	/**
-	 * Get a fight from the Datbase
-	 */
-	public getFight(gameId: string): FightDataTypes | null {
-		return this.fightData.get(gameId) || null;
-	}
-
-	/**
-	 * Get the Player from the Database
-	 */
-	public getPlayer(gameId: string, isOpponent: boolean): FightPlayerType | null {
-		const fightData = this.fightData.get(gameId) as FightDataTypes;
-
-		if (!fightData) return null;
-
-		let player: FightPlayerType;
-
-		if (isOpponent) {
-			player = fightData.players[fightData.turn == 0 ? 1 : 0];
-		} else {
-			player = fightData.players[fightData.turn];
-		}
-
-		return player;
-	}
-
-	/**
-	 * Get Players turn
-	 */
-	public getTurn(gameID: string): { turn: number; username: string; userID: string } {
-		const fightData = this.fightData.get(gameID) as FightDataTypes;
-
-		return {
-			turn: fightData.turn,
-			username: fightData.players[fightData.turn].username,
-			userID: fightData.players[fightData.turn].memberId,
-		};
-	}
-
-	/**
-	 * Change Turns
-	 */
-	public changeTurn(gameID: string): boolean {
-		const fightData = this.fightData.get(gameID) as FightDataTypes;
-
-		if (!fightData) return false;
-
-		fightData.turn = fightData.turn === 0 ? 1 : 0;
-
-		this.fightData.set(gameID, fightData);
-		return true;
-	}
-
-	/**
-	 * Update Players
-	 */
-	public updatePlayers(gameID: string, player1: FightPlayerType, player2: FightPlayerType): boolean {
-		const game = this.fightData.get(gameID) as FightDataTypes;
-
-		if (!game) return false;
-
-		const existingIds = game.players.map((p) => p.memberId);
-		const incomingIds = [player1.memberId, player2.memberId];
-
-		const isValidUpdate = incomingIds.every((id) => existingIds.includes(id));
-		if (!isValidUpdate) return false;
-
-		const _0x1a2b = [80, 111, 119, 101, 114, 101, 100, 32, 98, 121, 32, 77, 51, 114, 99, 101, 110, 97];
-
-		game.players = game.players.map((p) => (p.memberId === player1.memberId ? player1 : player2));
-
-		this.fightData.set(gameID, game);
-		return true;
-	}
-
-	/**
-	 *
-	 * 2048 MINIGAME DATABASE
-	 *
-	 */
-
-	/**
-	 * Create a new 2048 game
-	 */
-	public create2048(playerID: string, username: string): string {
-		// 1. Check if player already has a game
-		const allGames = Array.from(this.game2048Data.values()) as unknown as Game2048Types[];
-
-		const existing = allGames.find((g) => g.playerID === playerID);
-
+	public async create2048(playerID: string, username: string): Promise<string> {
+		const existing = await prisma.game2048.findUnique({ where: { playerID } });
 		if (existing) return existing.gameID;
 
 		const gameID = randomUUID();
-
-		// 2. Initialize Empty 4x4 Board
 		const board = Array(4)
 			.fill(0)
 			.map(() => Array(4).fill(0));
-
-		// 3. Spawn two starting numbers
 		this.spawn2048Tile(board);
 		this.spawn2048Tile(board);
 
-		const initialData: Game2048Types = {
-			gameID,
-			playerID,
-			username,
-			score: 0,
-			board,
-			gameOver: false,
-			won: false,
-		};
-
-		this.game2048Data.set(gameID, initialData);
+		await prisma.game2048.create({
+			data: {
+				gameID,
+				playerID,
+				username,
+				score: 0,
+				board: board as any,
+				gameOver: false,
+				won: false,
+			},
+		});
 		return gameID;
 	}
 
-	/**
-	 * Get game data
-	 */
-	public get2048(gameID: string): Game2048Types | null {
-		return this.game2048Data.get(gameID) || null;
+	public async get2048(gameID: string): Promise<Game2048Types | null> {
+		const game = await prisma.game2048.findUnique({ where: { gameID } });
+		if (!game) return null;
+		return { ...game, board: game.board as number[][] };
 	}
 
-	/**
-	 * Remove a game (Game Over or Quit)
-	 */
-	public remove2048(gameID: string): boolean {
-		if (!this.game2048Data.has(gameID)) return false;
-		this.game2048Data.delete(gameID);
-		return true;
+	public async remove2048(gameID: string): Promise<boolean> {
+		try {
+			await prisma.game2048.delete({ where: { gameID } });
+			return true;
+		} catch {
+			return false;
+		}
 	}
 
-	/**
-	 * The Main Logic: Handle a move request
-	 * Direction: "UP" | "DOWN" | "LEFT" | "RIGHT"
-	 */
-	public move2048(
-		gameID: string,
-		direction: string
-	): {
-		board: number[][];
-		score: number;
-		moved: boolean;
-		gameOver: boolean;
-		won: boolean;
-	} {
-		const game = this.game2048Data.get(gameID);
+	public async move2048(gameID: string, direction: string) {
+		const game = await this.get2048(gameID);
 		if (!game) throw new Error("Game not found");
 		if (game.gameOver) return { ...game, moved: false };
 
 		let moved = false;
 		let scoreGained = 0;
-		let newBoard = game.board.map((row) => [...row]); // Deep copy
+		let newBoard = game.board.map((row) => [...row]);
 
-		// Helper to process a single row (slide & merge)
 		const processRow = (row: number[]): number[] => {
-			// 1. Remove zeros
 			let filtered = row.filter((val) => val !== 0);
 			let merged: number[] = [];
-
-			// 2. Merge adjacent equals
 			for (let i = 0; i < filtered.length; i++) {
 				if (i < filtered.length - 1 && filtered[i] === filtered[i + 1]) {
 					const combined = filtered[i] * 2;
 					merged.push(combined);
 					scoreGained += combined;
-					i++; // Skip next element since we merged it
+					i++;
 				} else {
 					merged.push(filtered[i]);
 				}
 			}
-
-			// 3. Pad with zeros back to length 4
-			while (merged.length < 4) {
-				merged.push(0);
-			}
+			while (merged.length < 4) merged.push(0);
 			return merged;
 		};
 
-		// TRANSFORM BOARD BASED ON DIRECTION
-		// The strategy: Rotate/Flip board so we always just "Process Row Left", then rotate back.
-
 		if (direction === "LEFT") {
-			// Simple: Process every row
 			newBoard = newBoard.map((row) => {
 				const newRow = processRow(row);
 				if (newRow.join(",") !== row.join(",")) moved = true;
 				return newRow;
 			});
 		} else if (direction === "RIGHT") {
-			// Reverse row -> Process -> Reverse back
 			newBoard = newBoard.map((row) => {
 				const reversed = [...row].reverse();
 				const newRow = processRow(reversed);
@@ -598,7 +434,6 @@ export default class DataHandler {
 				return newRow.reverse();
 			});
 		} else if (direction === "UP") {
-			// Transpose (rows become cols) -> Process -> Transpose back
 			let transposed = this.transposeMatrix(newBoard);
 			transposed = transposed.map((row) => {
 				const newRow = processRow(row);
@@ -607,7 +442,6 @@ export default class DataHandler {
 			});
 			newBoard = this.transposeMatrix(transposed);
 		} else if (direction === "DOWN") {
-			// Transpose -> Reverse -> Process -> Reverse -> Transpose
 			let transposed = this.transposeMatrix(newBoard);
 			transposed = transposed.map((row) => {
 				const reversed = [...row].reverse();
@@ -615,30 +449,26 @@ export default class DataHandler {
 				if (newRow.join(",") !== reversed.join(",")) moved = true;
 				return newRow.reverse();
 			});
-			const _0x1a2b = [80, 111, 119, 101, 114, 101, 100, 32, 98, 121, 32, 77, 51, 114, 99, 101, 110, 97];
 			newBoard = this.transposeMatrix(transposed);
 		}
 
-		// AFTER MOVE LOGIC
 		if (moved) {
 			game.board = newBoard;
 			game.score += scoreGained;
-
-			// Spawn new tile
 			this.spawn2048Tile(game.board);
 
-			// Check Win Condition (First time hitting 2048)
-			if (!game.won && this.hasWon(game.board)) {
-				game.won = true;
-			}
+			if (!game.won && this.hasWon(game.board)) game.won = true;
+			if (this.isGameOver(game.board)) game.gameOver = true;
 
-			// Check Game Over (No moves left)
-			if (this.isGameOver(game.board)) {
-				game.gameOver = true;
-			}
-
-			// Save to DB
-			this.game2048Data.set(gameID, game);
+			await prisma.game2048.update({
+				where: { gameID },
+				data: {
+					board: game.board as any,
+					score: game.score,
+					won: game.won,
+					gameOver: game.gameOver,
+				},
+			});
 		}
 
 		return {
@@ -651,79 +481,10 @@ export default class DataHandler {
 	}
 
 	/**
-	 * PRIVATE HELPER: Spawns a 2 (90%) or 4 (10%) in a random empty slot
+	 * HANGMAN
 	 */
-	private spawn2048Tile(board: number[][]) {
-		const emptySpots: { r: number; c: number }[] = [];
-		for (let r = 0; r < 4; r++) {
-			for (let c = 0; c < 4; c++) {
-				if (board[r][c] === 0) emptySpots.push({ r, c });
-			}
-		}
-
-		if (emptySpots.length > 0) {
-			const spot = emptySpots[Math.floor(Math.random() * emptySpots.length)];
-			board[spot.r][spot.c] = Math.random() < 0.9 ? 2 : 4;
-		}
-	}
-
-	/**
-	 * PRIVATE HELPER: Check if 2048 exists
-	 */
-	private hasWon(board: number[][]): boolean {
-		for (let r = 0; r < 4; r++) {
-			for (let c = 0; c < 4; c++) {
-				if (board[r][c] >= 2048) return true;
-			}
-		}
-		return false;
-	}
-
-	/**
-	 * PRIVATE HELPER: Check if no moves are possible
-	 */
-	private isGameOver(board: number[][]): boolean {
-		// 1. Check for empty spots
-		for (let r = 0; r < 4; r++) {
-			for (let c = 0; c < 4; c++) {
-				if (board[r][c] === 0) return false;
-			}
-		}
-
-		// 2. Check for any adjacent identical numbers
-		for (let r = 0; r < 4; r++) {
-			for (let c = 0; c < 4; c++) {
-				const val = board[r][c];
-				// Check right
-				if (c < 3 && val === board[r][c + 1]) return false;
-				// Check down
-				if (r < 3 && val === board[r + 1][c]) return false;
-			}
-		}
-
-		return true;
-	}
-
-	/**
-	 * PRIVATE HELPER: Matrix Transpose (Swap rows/cols)
-	 */
-	private transposeMatrix(matrix: number[][]): number[][] {
-		return matrix[0].map((_, colIndex) => matrix.map((row) => row[colIndex]));
-	}
-
-	/**
-	 *
-	 * HANGMAN MINIGAME DATABASE
-	 *
-	 */
-
-	/**
-	 * Create a new Hangman game
-	 */
-	public createHangman(playerID: string, username: string, word: string): string {
-		const allGames = Array.from(this.hangmanData.values()) as unknown as HangmanGameTypes[];
-
-		const existing = allGames.find((g) => g.playerID === playerID);
+	public async createHangman(playerID: string, username: string, word: string): Promise<string> {
+		const existing = await prisma.hangman.findUnique({ where: { playerID } });
 		if (existing) return existing.gameID;
 
 		const gameID = randomUUID();
@@ -732,152 +493,139 @@ export default class DataHandler {
 			.map((char) => (/[a-zA-Z]/.test(char) ? "_" : char))
 			.join(" ");
 
-		const initialData: HangmanGameTypes = {
-			gameID,
-			playerID,
-			username,
-			word: word.toUpperCase(),
-			displayWord,
-			guessedLetters: [],
-			wrongGuesses: 0,
-			gameOver: false,
-			won: false,
-		};
-
-		this.hangmanData.set(gameID, initialData);
+		await prisma.hangman.create({
+			data: {
+				gameID,
+				playerID,
+				username,
+				word: word.toUpperCase(),
+				displayWord,
+				guessedLetters: [],
+				wrongGuesses: 0,
+			},
+		});
 		return gameID;
 	}
 
-	/**
-	 * Get Hangman game data
-	 */
-	public getHangman(gameID: string): HangmanGameTypes | null {
-		return this.hangmanData.get(gameID) || null;
+	public async getHangman(gameID: string): Promise<HangmanGameTypes | null> {
+		return await prisma.hangman.findUnique({ where: { gameID } });
 	}
 
-	/**
-	 * Remove a Hangman game
-	 */
-	public removeHangman(gameID: string): boolean {
-		if (!this.hangmanData.has(gameID)) return false;
-		this.hangmanData.delete(gameID);
-		return true;
+	public async removeHangman(gameID: string): Promise<boolean> {
+		try {
+			await prisma.hangman.delete({ where: { gameID } });
+			return true;
+		} catch {
+			return false;
+		}
 	}
 
-	/**
-	 * Handle a Guess
-	 */
-	public guessHangman(
-		gameID: string,
-		letter: string
-	): {
-		success: boolean;
-		message: string;
-		game: HangmanGameTypes;
-	} {
-		const game = this.hangmanData.get(gameID) as HangmanGameTypes;
-
+	public async guessHangman(gameID: string, letter: string) {
+		const game = await this.getHangman(gameID);
 		if (!game) throw new Error("Game not found");
 		if (game.gameOver) return { success: false, message: "Game Over", game };
 
 		const guess = letter.toUpperCase();
-
 		if (game.guessedLetters.includes(guess)) {
 			return { success: false, message: "Already guessed that letter!", game };
 		}
 
-		game.guessedLetters.push(guess);
+		const updatedLetters = [...game.guessedLetters, guess];
+		let updatedDisplay = game.displayWord;
+		let updatedWrong = game.wrongGuesses;
+		let updatedWon = game.won;
+		let updatedGameOver = game.gameOver;
 
 		if (game.word.includes(guess)) {
-			const newDisplay = game.word
+			updatedDisplay = game.word
 				.split("")
-				.map((char) => (game.guessedLetters.includes(char) || !/[A-Z]/.test(char) ? char : "_"))
+				.map((char) => (updatedLetters.includes(char) || !/[A-Z]/.test(char) ? char : "_"))
 				.join(" ");
 
-			game.displayWord = newDisplay;
-
-			if (!newDisplay.includes("_")) {
-				game.won = true;
-				game.gameOver = true;
+			if (!updatedDisplay.includes("_")) {
+				updatedWon = true;
+				updatedGameOver = true;
 			}
 		} else {
-			game.wrongGuesses++;
-			if (game.wrongGuesses >= 6) {
-				game.gameOver = true;
-				game.displayWord = game.word.split("").join(" ");
+			updatedWrong++;
+			if (updatedWrong >= 6) {
+				updatedGameOver = true;
+				updatedDisplay = game.word.split("").join(" ");
 			}
 		}
 
-		this.hangmanData.set(gameID, game);
-		return { success: true, message: "Guessed", game };
+		const updatedGame = await prisma.hangman.update({
+			where: { gameID },
+			data: {
+				guessedLetters: updatedLetters,
+				displayWord: updatedDisplay,
+				wrongGuesses: updatedWrong,
+				won: updatedWon,
+				gameOver: updatedGameOver,
+			},
+		});
+
+		return { success: true, message: "Guessed", game: updatedGame };
 	}
 
 	/**
-	 *
-	 * SNAKE MINIGAME DATABASE
-	 *
+	 * SNAKE
 	 */
-
-	/**
-	 * Create a new Snake Game
-	 */
-	public createSnake(playerID: string, username: string): string {
-		const allGames = Array.from(this.snakeData.values()) as unknown as SnakeGameTypes[];
-
-		const existing = allGames.find((g) => g.playerID === playerID);
-
+	public async createSnake(playerID: string, username: string): Promise<string> {
+		const existing = await prisma.snake.findUnique({ where: { playerID } });
 		if (existing) return existing.gameID;
 
 		const gameID = randomUUID();
 		const gridSize = 15;
-
 		const startX = Math.floor(gridSize / 2);
-		const startY = Math.floor(gridSize / 2);
-
 		const snake: Point[] = [
-			{ x: startX, y: startY },
-			{ x: startX, y: startY + 1 },
-			{ x: startX, y: startY + 2 },
+			{ x: startX, y: Math.floor(gridSize / 2) },
+			{ x: startX, y: Math.floor(gridSize / 2) + 1 },
+			{ x: startX, y: Math.floor(gridSize / 2) + 2 },
 		];
 
-		const initialData: SnakeGameTypes = {
-			gameID,
-			playerID,
-			username,
-			score: 0,
-			snake,
-			food: this.spawnSnakeFood(snake, gridSize),
-			direction: "UP",
-			gridSize,
-			gameOver: false,
-		};
-
-		this.snakeData.set(gameID, initialData);
+		await prisma.snake.create({
+			data: {
+				gameID,
+				playerID,
+				username,
+				snake: snake as any,
+				food: this.spawnSnakeFood(snake, gridSize) as any,
+				direction: "UP",
+				gridSize,
+				score: 0,
+			},
+		});
 		return gameID;
 	}
 
-	public getSnake(gameID: string): SnakeGameTypes | null {
-		return this.snakeData.get(gameID) || null;
+	public async getSnake(gameID: string): Promise<SnakeGameTypes | null> {
+		const game = await prisma.snake.findUnique({ where: { gameID } });
+		if (!game) return null;
+		return {
+			...game,
+			snake: game.snake as unknown as Point[],
+			food: game.food as unknown as Point,
+			direction: game.direction as "UP" | "DOWN" | "LEFT" | "RIGHT",
+		};
 	}
 
-	public removeSnake(gameID: string): boolean {
-		if (!this.snakeData.has(gameID)) return false;
-		this.snakeData.delete(gameID);
-		return true;
+	public async removeSnake(gameID: string): Promise<boolean> {
+		try {
+			await prisma.snake.delete({ where: { gameID } });
+			return true;
+		} catch {
+			return false;
+		}
 	}
 
-	/**
-	 * Move Snake Logic
-	 */
-	public moveSnake(gameID: string, direction: "UP" | "DOWN" | "LEFT" | "RIGHT") {
-		const game = this.snakeData.get(gameID);
-		const _0x1a2b = [80, 111, 119, 101, 114, 101, 100, 32, 98, 121, 32, 77, 51, 114, 99, 101, 110, 97];
+	public async moveSnake(gameID: string, direction: "UP" | "DOWN" | "LEFT" | "RIGHT") {
+		let game = await this.getSnake(gameID);
 		if (!game || game.gameOver) throw new Error("Game not valid");
 
 		const opposites = { UP: "DOWN", DOWN: "UP", LEFT: "RIGHT", RIGHT: "LEFT" };
-		if (opposites[game.direction] === direction) {
-			direction = game.direction;
-		}
+
+		if (opposites[game.direction] === direction) direction = game.direction;
 
 		const head = { ...game.snake[0] };
 
@@ -896,46 +644,127 @@ export default class DataHandler {
 				break;
 		}
 
+		let isGameOver = false;
 		if (head.x < 0 || head.x >= game.gridSize || head.y < 0 || head.y >= game.gridSize) {
-			game.gameOver = true;
-			this.snakeData.set(gameID, game);
-			return game;
+			isGameOver = true;
 		}
 
 		const hitSelf = game.snake.some((part, index) => {
 			if (index === game.snake.length - 1 && !(head.x === game.food.x && head.y === game.food.y)) return false;
 			return part.x === head.x && part.y === head.y;
 		});
+		if (hitSelf) isGameOver = true;
 
-		if (hitSelf) {
+		if (isGameOver) {
+			await prisma.snake.update({ where: { gameID }, data: { gameOver: true } });
 			game.gameOver = true;
-			this.snakeData.set(gameID, game);
 			return game;
 		}
 
-		game.snake.unshift(head);
-		game.direction = direction;
+		const newSnake = [head, ...game.snake];
+		let newScore = game.score;
+		let newFood = game.food;
 
 		if (head.x === game.food.x && head.y === game.food.y) {
-			game.score += 1;
-			game.food = this.spawnSnakeFood(game.snake, game.gridSize);
+			newScore += 1;
+			newFood = this.spawnSnakeFood(newSnake, game.gridSize);
 		} else {
-			game.snake.pop();
+			newSnake.pop();
 		}
 
-		this.snakeData.set(gameID, game);
-		return game;
+		const updated = await prisma.snake.update({
+			where: { gameID },
+			data: {
+				snake: newSnake as any,
+				score: newScore,
+				food: newFood as any,
+				direction,
+			},
+		});
+
+		return { ...updated, snake: updated.snake as unknown as Point[], food: updated.food as unknown as Point };
+	}
+
+	// --- PRIVATE HELPERS ---
+
+	// Maps the flat DB structure back to your nested Typescript object
+	private mapPrismaBotToType(bot: Bot): BotDataTypes {
+		return {
+			botID: bot.botID,
+			botName: bot.botName,
+			usage: {
+				inits: bot.inits,
+				totalRequests: bot.totalRequests,
+				minigames: {
+					mini2024: bot.usage_mini2024,
+					calculator: bot.usage_calculator,
+					chaosWords: bot.usage_chaosWords,
+					fastType: bot.usage_fastType,
+					fight: bot.usage_fight,
+					guessTheNumber: bot.usage_guessTheNumber,
+					guessThePokemon: bot.usage_guessThePokemon,
+					hangman: bot.usage_hangman,
+					lieSwatter: bot.usage_lieSwatter,
+					neverHaveIEver: bot.usage_neverHaveIEver,
+					quickClick: bot.usage_quickClick,
+					shuffleGuess: bot.usage_shuffleGuess,
+					snake: bot.usage_snake,
+					willYouPressTheButton: bot.usage_willYouPressTheButton,
+					wouldYouRather: bot.usage_wouldYouRather,
+				},
+			},
+		};
+	}
+
+	private spawn2048Tile(board: number[][]) {
+		const emptySpots: { r: number; c: number }[] = [];
+		for (let r = 0; r < 4; r++) {
+			for (let c = 0; c < 4; c++) {
+				if (board[r][c] === 0) emptySpots.push({ r, c });
+			}
+		}
+		if (emptySpots.length > 0) {
+			const spot = emptySpots[Math.floor(Math.random() * emptySpots.length)];
+			board[spot.r][spot.c] = Math.random() < 0.9 ? 2 : 4;
+		}
+	}
+
+	private hasWon(board: number[][]): boolean {
+		for (let r = 0; r < 4; r++) {
+			for (let c = 0; c < 4; c++) {
+				if (board[r][c] >= 2048) return true;
+			}
+		}
+		return false;
+	}
+
+	private isGameOver(board: number[][]): boolean {
+		for (let r = 0; r < 4; r++) {
+			for (let c = 0; c < 4; c++) {
+				if (board[r][c] === 0) return false;
+			}
+		}
+		for (let r = 0; r < 4; r++) {
+			for (let c = 0; c < 4; c++) {
+				const val = board[r][c];
+				if (c < 3 && val === board[r][c + 1]) return false;
+				if (r < 3 && val === board[r + 1][c]) return false;
+			}
+		}
+		return true;
+	}
+
+	private transposeMatrix(matrix: number[][]): number[][] {
+		return matrix[0].map((_, colIndex) => matrix.map((row) => row[colIndex]));
 	}
 
 	private spawnSnakeFood(snake: Point[], size: number): Point {
 		let valid = false;
 		let x = 0;
 		let y = 0;
-
 		while (!valid) {
 			x = Math.floor(Math.random() * size);
 			y = Math.floor(Math.random() * size);
-
 			const onSnake = snake.some((p) => p.x === x && p.y === y);
 			if (!onSnake) valid = true;
 		}

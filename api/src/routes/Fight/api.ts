@@ -21,9 +21,9 @@ router.post("/createGame", async (req, res) => {
 	}: { challengerID: string; challengerUsername: string; opponentID: string; opponentUsername: string } = req.body;
 	const botID = req.headers["x-bot-id"] as string;
 
-	const gameId = database.createFight(challengerID, challengerUsername, opponentID, opponentUsername);
+	const gameId = await database.createFight(challengerID, challengerUsername, opponentID, opponentUsername);
 
-	database.incrementUsage(botID, "minigames", 1, "fight");
+	await database.incrementUsage(botID, "minigames", 1, "fight");
 
 	if (gameId) {
 		return res.status(200).send({
@@ -39,7 +39,7 @@ router.post("/createGame", async (req, res) => {
 router.get("/removeGame", async (req, res) => {
 	const gameID = req.query.gameID as string;
 
-	const removed = database.removeFight(gameID);
+	const removed = await database.removeFight(gameID);
 
 	return res.status(200).send({
 		removed,
@@ -50,7 +50,7 @@ router.post("/isInGame", async (req, res) => {
 	const { playerID }: { playerID: string } = req.body;
 
 	return res.status(200).send({
-		isInGame: database.isPlayerInFight(playerID),
+		isInGame: await database.isPlayerInFight(playerID),
 	});
 });
 
@@ -60,7 +60,7 @@ router.post("/makeMainCard", async (req, res) => {
 
 	if (!gameID || !challengerIcon || !opponentIcon) return;
 
-	const gameData = database.getFight(gameID);
+	const gameData = await database.getFight(gameID);
 
 	const cardBuffer = await getMainCard(
 		gameData.players[0],
@@ -163,7 +163,7 @@ router.post("/makeTimeOutCard", async (req, res) => {
 router.get("/getTurn", async (req, res) => {
 	const gameID = req.query.gameID as string;
 
-	const { username, userID } = database.getTurn(gameID);
+	const { username, userID } = await database.getTurn(gameID);
 
 	return res.status(200).send({
 		username,
@@ -174,7 +174,7 @@ router.get("/getTurn", async (req, res) => {
 router.get("/changeTurn", async (req, res) => {
 	const gameID = req.query.gameID as string;
 
-	const changed = database.changeTurn(gameID);
+	const changed = await database.changeTurn(gameID);
 
 	return res.status(200).send({
 		changed,
@@ -184,7 +184,7 @@ router.get("/changeTurn", async (req, res) => {
 router.post("/getPlayer", async (req, res) => {
 	const { gameID, isOpponent }: { gameID: string; isOpponent: boolean } = req.body;
 
-	const player = database.getPlayer(gameID, isOpponent);
+	const player = await database.getPlayer(gameID, isOpponent);
 
 	return res.status(200).send({
 		player,
@@ -194,7 +194,7 @@ router.post("/getPlayer", async (req, res) => {
 router.post("/updatePlayers", async (req, res) => {
 	const { gameID, player1, player2 }: { gameID: string; player1: FightPlayerType; player2: FightPlayerType } = req.body;
 
-	const updated = database.updatePlayers(gameID, player1, player2);
+	const updated = await database.updatePlayers(gameID, player1, player2);
 
 	return res.status(200).send({
 		updated,

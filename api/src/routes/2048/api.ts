@@ -8,8 +8,8 @@ router.post("/createGame", async (req, res) => {
 	const { playerID, username }: { playerID: string; username: string } = req.body;
 	const botID = req.headers["x-bot-id"] as string;
 
-	const gameId = database.create2048(playerID, username);
-	database.incrementUsage(botID, "minigames", 1, "mini2024");
+	const gameId = await database.create2048(playerID, username);
+	await database.incrementUsage(botID, "minigames", 1, "mini2024");
 
 	if (gameId) {
 		return res.status(200).send({ gameID: gameId });
@@ -23,7 +23,7 @@ router.post("/move", async (req, res) => {
 
 	if (!gameID || !direction) return res.status(400).send({ error: "Missing data" });
 
-	const moveResult = database.move2048(gameID, direction);
+	const moveResult = await database.move2048(gameID, direction);
 
 	return res.status(200).send({
 		board: moveResult.board,
@@ -37,10 +37,10 @@ router.post("/move", async (req, res) => {
 router.post("/getBoardImage", async (req, res) => {
 	const { gameID, userIcon }: { gameID: string; userIcon: string } = req.body;
 
-	const gameData = database.get2048(gameID);
+	const gameData = await database.get2048(gameID);
 	if (!gameData) return res.status(404).send({ error: "Game not found" });
 
-	let cardBuffer;
+	let cardBuffer: string;
 
 	if (gameData.gameOver) {
 		cardBuffer = await getGameOverCard(gameData.username, userIcon, gameData.score, gameData.board);
@@ -55,7 +55,7 @@ router.post("/getBoardImage", async (req, res) => {
 
 router.post("/endGame", async (req, res) => {
 	const { gameID } = req.body;
-	const removed = database.remove2048(gameID);
+	const removed = await database.remove2048(gameID);
 	return res.status(200).send({ removed });
 });
 

@@ -33,7 +33,7 @@ router.get("/getText", async (req, res) => {
 		const randomIndex = Math.floor(Math.random() * sentences.length);
 		const randomSentence = sentences[randomIndex];
 
-		database.incrementUsage(botID, "minigames", 1, "fastType");
+		await database.incrementUsage(botID, "minigames", 1, "fastType");
 
 		return res.status(200).json({
 			sentence: randomSentence,

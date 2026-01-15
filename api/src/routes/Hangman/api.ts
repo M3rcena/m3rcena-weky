@@ -10,9 +10,9 @@ router.post("/createGame", async (req, res) => {
 	const botID = req.headers["x-bot-id"] as string;
 
 	const word = words[Math.floor(Math.random() * words.length)];
-	const gameId = database.createHangman(playerID, username, word);
+	const gameId = await database.createHangman(playerID, username, word);
 
-	database.incrementUsage(botID, "minigames", 1, "hangman");
+	await database.incrementUsage(botID, "minigames", 1, "hangman");
 
 	return res.status(200).send({ gameID: gameId });
 });
@@ -23,7 +23,7 @@ router.post("/guess", async (req, res) => {
 	if (!gameID || !letter) return res.status(400).send({ error: "Missing data" });
 
 	try {
-		const result = database.guessHangman(gameID, letter);
+		const result = await database.guessHangman(gameID, letter);
 		return res.status(200).send(result);
 	} catch (e) {
 		return res.status(404).send({ error: "Game not found" });
@@ -33,7 +33,7 @@ router.post("/guess", async (req, res) => {
 router.post("/getBoardImage", async (req, res) => {
 	const { gameID, userIcon } = req.body;
 
-	const game = database.getHangman(gameID);
+	const game = await database.getHangman(gameID);
 	if (!game) return res.status(404).send({ error: "Game not found" });
 
 	const buffer = await getHangmanCard(
@@ -51,7 +51,7 @@ router.post("/getBoardImage", async (req, res) => {
 
 router.post("/endGame", async (req, res) => {
 	const { gameID } = req.body;
-	database.removeHangman(gameID);
+	await database.removeHangman(gameID);
 	return res.status(200).send({ success: true });
 });
 
