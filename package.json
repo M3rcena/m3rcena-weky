@@ -1,86 +1,71 @@
 {
-	"name": "@m3rcena/weky",
-	"version": "14.25.1",
-	"description": "A fun npm package to play games within Discord with buttons!",
-	"main": "dist/cjs/index.js",
-	"module": "dist/esm/index.js",
-	"types": "dist/types/index.d.ts",
-	"scripts": {
-		"release:prep": "npx tsx --tsconfig ./tsconfig.json ./tools/scripts/gen-version.ts",
-		"build:all": "npm run release:prep && npm run build:cjs && npm run build:esm && npm run build:types",
-		"build:cjs": "tsc -p tools/config/tsconfig.cjs.json && tsc-alias -p tools/config/tsconfig.cjs.json",
-		"build:esm": "tsc -p tools/config/tsconfig.esm.json && tsc-alias -p tools/config/tsconfig.esm.json",
-		"build:types": "tsc -p tools/config/tsconfig.types.json && tsc-alias -p tools/config/tsconfig.types.json",
-		"typecheck": "npx tsc --noEmit"
-	},
-	"keywords": [
-		"weky",
-		"m3rcena",
-		"discord-games",
-		"discord-minigames",
-		"discord.js",
-		"discord.js-v14",
-		"djs",
-		"discord-buttons",
-		"discord-ui",
-		"discord-calculator",
-		"discord-snake",
-		"discord-2048",
-		"discord-fight",
-		"discord-entertainment",
-		"discord-interaction",
-		"typescript",
-		"slash-commands",
-		"game-engine"
-	],
-	"homepage": "https://github.com/M3rcena/m3rcena-weky#readme",
-	"bugs": {
-		"url": "https://github.com/M3rcena/m3rcena-weky/issues"
-	},
-	"author": {
-		"name": "M3rcena",
-		"url": "https://github.com/M3rcena"
-	},
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/M3rcena/m3rcena-weky.git"
-	},
-	"dependencies": {
-		"chalk": "^5.6.2",
-		"discord.js": "^14.25.1",
-		"html-entities": "^2.6.0",
-		"mathjs": "^14.9.1",
-		"node-fetch": "^3.3.2",
-		"ofetch": "^1.5.1",
-		"string-width": "^8.1.0",
-		"util": "^0.12.5"
-	},
-	"devDependencies": {
-		"@types/node-fetch": "^2.6.13",
-		"@typescript-eslint/eslint-plugin": "^8.52.0",
-		"@typescript-eslint/parser": "^8.52.0",
-		"copyfiles": "^2.4.1",
-		"eslint-plugin-unused-imports": "^4.3.0",
-		"tsc-alias": "^1.8.16",
-		"typescript": "^5.9.3"
-	},
-	"directories": {
-		"test": "test"
-	},
-	"license": "Apache-2.0",
-	"exports": {
-		"require": "./dist/cjs/index.js",
-		"import": "./dist/esm/index.js",
-		"types": "./dist/types/index.d.ts",
-		"default": "./dist/cjs/index.js"
-	},
-	"files": [
-		"dist"
-	],
-	"publishConfig": {
-		"provenance": true
-	},
-	"engines": {
-		"node": ">=20.0.0"
-	}
+  "name": "@m3rcena/weky",
+  "version": "14.27.0",
+  "description": "The ultimate Discord minigames engine with blazingly fast @napi-rs/canvas graphics, hybrid Slash/Message support, and zero external dependencies.",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "assets",
+    "DOCUMENTATION.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx test/verify.ts && tsx test/componentsV2.test.ts && tsx test/dashboard.test.ts",
+    "test:bot": "tsx test/index.ts"
+  },
+  "keywords": [
+    "weky",
+    "m3rcena",
+    "discord-games",
+    "discord-minigames",
+    "discord.js",
+    "discord.js-v14",
+    "canvas",
+    "napi-rs-canvas",
+    "game-engine",
+    "slash-commands",
+    "discord-bot"
+  ],
+  "author": "M3rcena <https://github.com/M3rcena>",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/M3rcena/m3rcena-weky.git"
+  },
+  "bugs": {
+    "url": "https://github.com/M3rcena/m3rcena-weky/issues"
+  },
+  "homepage": "https://github.com/M3rcena/m3rcena-weky#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@napi-rs/canvas": "^1.0.11",
+    "chalk": "^4.1.2",
+    "discord.js": "^14.27.0",
+    "html-entities": "^2.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "dotenv": "^16.6.1",
+    "tsup": "^8.5.1",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3"
+  }
 }

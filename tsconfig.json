@@ -1,27 +1,31 @@
 {
-	"compilerOptions": {
-		"target": "ESNext",
-		"module": "CommonJS",
-		"declaration": true,
-		"outDir": "./dist",
-		"rootDir": "./src",
-		"skipLibCheck": true,
-		"importHelpers": true,
-		"moduleResolution": "Node",
-		"baseUrl": ".",
-		"esModuleInterop": true,
-		"allowSyntheticDefaultImports": true,
-		"forceConsistentCasingInFileNames": true,
-		"resolveJsonModule": true,
-		"removeComments": false,
-		"noUnusedLocals": true,
-		"noUnusedParameters": true,
-		"noImplicitAny": true
-	},
-	"include": ["src/**/*.ts", "package.json"],
-	"exclude": ["node_modules", "dist", "old", "test", "config", "test", "api"],
-	"tsc-alias": {
-		"verbose": false,
-		"resolveFullPaths": true
-	}
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2022"],
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": false,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "old", "test"]
 }

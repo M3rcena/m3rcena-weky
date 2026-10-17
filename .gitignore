@@ -1,9 +1,6 @@
 node_modules/
 package-lock.json
 .env
+*.log
+.DS_Store
 old/
-
-test/node_modules/
-test/package-lock.json
-test/index.ts
-test/deploy-commands.js

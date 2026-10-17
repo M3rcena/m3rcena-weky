@@ -2,14 +2,15 @@
 
 ## Supported Versions
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 14.x.x  | :white_check_mark: |
-| 11.x.x  | :x:                |
-| 10.x.x  | :x:                |
-| 9.x.x   | :x:                |
-| 8.x.x   | :x:                |
-| < 8.0   | :x:                |
+| Version  | Supported          |
+| -------- | ------------------ |
+| ^14.27.0 | :white_check_mark: |
+| 14.x.x   | :x:                |
+| 11.x.x   | :x:                |
+| 10.x.x   | :x:                |
+| 9.x.x    | :x:                |
+| 8.x.x    | :x:                |
+| < 8.0    | :x:                |
 
 ## Reporting a Vulnerability
 
