@@ -60,14 +60,14 @@
   },
   "dependencies": {
     "@napi-rs/canvas": "^1.0.11",
-    "chalk": "^4.1.2",
+    "chalk": "^6.0.1",
     "discord.js": "^14.27.0",
     "html-entities": "^2.6.0"
   },
   "devDependencies": {
-    "@types/node": "^22.20.5",
-    "dotenv": "^16.6.1",
-    "tsup": "^8.5.1",
+    "@types/node": "^26.6.5",
+    "dotenv": "^18.0.8",
+    "tsup": "^9.0.0",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3"
   }
