@@ -4,9 +4,6 @@ on:
   push:
     tags:
       - "v*"
-  release:
-    types: [published]
-  workflow_dispatch:
 
 permissions:
   id-token: write # Required for OIDC
@@ -27,4 +24,4 @@ jobs:
       - run: npm ci
       - run: npm run build --if-present
       - run: npm test
-      - run: npm publish --provenance --access public
+      - run: npm publish --provenance --access public --tag latest
