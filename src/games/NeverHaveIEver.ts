@@ -2,7 +2,7 @@ import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ContainerBuilder, Interac
 import { BaseGame } from "../core/BaseGame.js";
 import { NeverHaveIEverTypes } from "../core/Types.js";
 import { getRandomNHIE } from "../data/trivia.js";
-import { getRandomString, safeResolveColor } from "../utils/Helpers.js";
+import { getRandomString } from "../utils/Helpers.js";
 
 export class NeverHaveIEver extends BaseGame<NeverHaveIEverTypes> {
   private statement: string = "";
@@ -10,20 +10,20 @@ export class NeverHaveIEver extends BaseGame<NeverHaveIEverTypes> {
   private neverVoters: Set<string> = new Set();
   private btnPrefix: string;
   private gameTitle: string;
-  private defaultColor: number;
 
   constructor(manager: any, options: NeverHaveIEverTypes) {
     super(manager, options, "nhie");
     this.btnPrefix = getRandomString(6, "nhie_");
     this.gameTitle = options.embed?.title || "Never Have I Ever";
-    this.defaultColor = safeResolveColor(options.embed?.color, 0x5865f2);
-    this.statement = getRandomNHIE();
-    this.defaultTimeout = options.time || 90_000;
+    this.defaultColor = this.resolveColor(options.embed?.color);
+    this.statement = options.statement || getRandomNHIE();
+    this.defaultTimeout = options.time || manager?.defaultTimeout || 90_000;
   }
 
   public async start(): Promise<void> {
     this.isActive = true;
     this.manager._eventManager.register(this);
+    this.emitStart();
 
     const container = this.createGameContainer(false);
 
@@ -75,6 +75,7 @@ export class NeverHaveIEver extends BaseGame<NeverHaveIEverTypes> {
     this.isActive = false;
     this.clearTimer();
     this.destroy();
+    this.emitEnd("ended", this.haveVoters.size + this.neverVoters.size);
 
     const container = this.createGameContainer(true);
 
@@ -85,7 +86,7 @@ export class NeverHaveIEver extends BaseGame<NeverHaveIEverTypes> {
   }
 
   private createGameContainer(isFinal: boolean): ContainerBuilder {
-    const container = new ContainerBuilder().setAccentColor(isFinal ? 0x57f287 : this.defaultColor);
+    const container = this.createContainer(isFinal ? 0x57f287 : this.defaultColor);
 
     const total = this.haveVoters.size + this.neverVoters.size;
     const havePct = total > 0 ? Math.round((this.haveVoters.size / total) * 100) : 0;
@@ -116,6 +117,7 @@ export class NeverHaveIEver extends BaseGame<NeverHaveIEverTypes> {
       content += `> Click a button below to cast your confession!`;
     }
 
+    content = this.applyEmbedDecorations(container, content);
     container.addTextDisplayComponents((t) => t.setContent(content));
 
     if (!isFinal) {

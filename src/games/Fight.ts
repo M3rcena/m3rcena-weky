@@ -3,7 +3,7 @@ import { FightPlayerInfo, RenderFight } from "../canvas/RenderFight.js";
 import { BaseGame } from "../core/BaseGame.js";
 import { ContextAdapter } from "../core/ContextAdapter.js";
 import { FightTypes } from "../core/Types.js";
-import { getRandomString, safeResolveColor } from "../utils/Helpers.js";
+import { getRandomString } from "../utils/Helpers.js";
 
 export class Fight extends BaseGame<FightTypes> {
   private opponentUser: User;
@@ -16,12 +16,11 @@ export class Fight extends BaseGame<FightTypes> {
   private currentTurnId: string;
   private btnPrefix: string;
   private lastAnnouncement: string = "Choose your action!";
-  private defaultColor: number;
 
   constructor(manager: any, options: FightTypes) {
     super(manager, options, "fight");
     this.btnPrefix = getRandomString(6, "fight_");
-    this.defaultColor = safeResolveColor(options.embed?.color, 0xed4245);
+    this.defaultColor = this.resolveColor(options.embed?.color, 0xed4245);
 
     const opp = options.opponent;
     if (opp instanceof GuildMember) {
@@ -31,12 +30,15 @@ export class Fight extends BaseGame<FightTypes> {
       this.opponentUser = opp as User;
     }
 
+    const startHp = options.startHealth ?? 100;
+    const startCoins = options.coins ?? 20;
+
     this.p1 = {
       id: this.ctx.userId,
       username: this.ctx.user.username,
       avatarUrl: this.ctx.user.displayAvatarURL({ extension: "png", size: 128 }),
-      health: 100,
-      coins: 0,
+      health: startHp,
+      coins: startCoins,
       lastAction: "Challenged opponent",
       activeEffects: [],
     };
@@ -45,20 +47,20 @@ export class Fight extends BaseGame<FightTypes> {
       id: this.opponentUser.id,
       username: this.opponentUser.username,
       avatarUrl: this.opponentUser.displayAvatarURL({ extension: "png", size: 128 }),
-      health: 100,
-      coins: 0,
+      health: startHp,
+      coins: startCoins,
       lastAction: "Awaiting start",
       activeEffects: [],
     };
 
     this.currentTurnId = this.p1.id;
-    this.defaultTimeout = options.time || 60_000;
+    this.defaultTimeout = options.time || manager?.defaultTimeout || 60_000;
   }
 
   public async start(): Promise<void> {
     if (this.opponentUser.id === this.ctx.userId) {
       const msg = this.options.cannotFightYourselfMessage || "❌ You cannot fight against yourself!";
-      const container = new ContainerBuilder().setAccentColor(0xff0000).addTextDisplayComponents((t) => t.setContent(`## ❌ Error\n> ${msg}`));
+      const container = this.createContainer(0xff0000).addTextDisplayComponents((t) => t.setContent(`## ❌ Error\n> ${msg}`));
       await this.ctx.sendInitial({
         components: [container],
         flags: MessageFlags.IsComponentsV2,
@@ -67,7 +69,7 @@ export class Fight extends BaseGame<FightTypes> {
     }
 
     if (this.opponentUser.bot) {
-      const container = new ContainerBuilder().setAccentColor(0xff0000).addTextDisplayComponents((t) => t.setContent("## ❌ Error\n> You cannot fight against a bot!"));
+      const container = this.createContainer(0xff0000).addTextDisplayComponents((t) => t.setContent("## ❌ Error\n> You cannot fight against a bot!"));
       await this.ctx.sendInitial({
         components: [container],
         flags: MessageFlags.IsComponentsV2,
@@ -77,6 +79,7 @@ export class Fight extends BaseGame<FightTypes> {
 
     this.isActive = true;
     this.manager._eventManager.register(this);
+    this.emitStart();
 
     // Render Request Card
     const buffer = await RenderFight.renderRequestCard({ username: this.p1.username, avatarUrl: this.p1.avatarUrl }, { username: this.p2.username, avatarUrl: this.p2.avatarUrl });
@@ -182,9 +185,10 @@ export class Fight extends BaseGame<FightTypes> {
   }
 
   private handleHit(attacker: FightPlayerInfo, defender: FightPlayerInfo, isHeavy: boolean): void {
+    const maxDmg = this.options.damageMax ?? 24;
     let damage = isHeavy
       ? Math.floor(Math.random() * 18) + 18 // 18-35 dmg
-      : Math.floor(Math.random() * 13) + 10; // 10-22 dmg
+      : Math.floor(Math.random() * (maxDmg - 10 + 1)) + 10; // 10-maxDmg dmg
 
     if (isHeavy && Math.random() < 0.25) {
       attacker.lastAction = "Missed Heavy Attack!";
@@ -273,6 +277,7 @@ export class Fight extends BaseGame<FightTypes> {
     this.isActive = false;
     this.clearTimer();
     this.destroy();
+    this.emitEnd(reason);
 
     const winnerData = winner || (this.p1.health > this.p2.health ? this.p1 : this.p2);
     const loserData = loser || (winnerData.id === this.p1.id ? this.p2 : this.p1);
@@ -295,46 +300,49 @@ export class Fight extends BaseGame<FightTypes> {
   }
 
   private createGameContainer(state: "request" | "active" | "won" | "surrender" | "deny" | "timeout" | "error", details?: { image?: string; error?: string; turnId?: string; announcement?: string; winnerId?: string; loserId?: string }): ContainerBuilder {
-    const container = new ContainerBuilder();
+    const stateColors: Record<string, number> = {
+      request: 0xfee75c,
+      active: this.defaultColor,
+      won: 0x57f287,
+      surrender: 0xed4245,
+      deny: 0xed4245,
+      timeout: 0x99aab5,
+      error: 0xff0000,
+    };
+    const container = this.createContainer(stateColors[state]);
     let content = "";
 
     switch (state) {
       case "request":
-        container.setAccentColor(0xfee75c);
         content = this.options.states?.request ? this.options.states.request.replace("{{challengerMention}}", `<@${this.p1.id}>`).replace("{{opponentMention}}", `<@${this.p2.id}>`) : `## ⚔️ Challenge!\n> <@${this.p1.id}> challenged <@${this.p2.id}> to a duel!`;
         break;
 
       case "active":
-        container.setAccentColor(this.defaultColor);
         content = this.options.states?.active ? this.options.states.active : `## ⚔️ Fighting...\n> 🎯 **Turn:** <@${details?.turnId || this.currentTurnId}>\n> ${details?.announcement || this.lastAnnouncement}`;
         break;
 
       case "won":
-        container.setAccentColor(0x57f287);
         content = this.options.states?.won ? this.options.states.won : `## 🏆 Fight Ended\n> 🏆 **<@${details?.winnerId || this.p1.id}>** knocked out <@${details?.loserId || this.p2.id}> and won the duel!`;
         break;
 
       case "surrender":
-        container.setAccentColor(0xed4245);
         content = this.options.states?.surrender ? this.options.states.surrender : `## 🏳️ Surrendered\n> 🏳️ **<@${details?.loserId || this.p2.id}>** surrendered! **<@${details?.winnerId || this.p1.id}>** is victorious!`;
         break;
 
       case "deny":
-        container.setAccentColor(0xed4245);
         content = this.options.states?.deny ? this.options.states.deny : `## 🚫 Denied\n> The challenge was declined.`;
         break;
 
       case "timeout":
-        container.setAccentColor(0x99aab5);
         content = this.options.states?.timeout ? this.options.states.timeout : `## ⏱️ Time's Up\n> The duel timed out due to inactivity.`;
         break;
 
       case "error":
-        container.setAccentColor(0xff0000);
         content = this.options.states?.error?.main ? this.options.states.error.main.replace("{{error}}", details?.error || "Unknown error.") : `## ❌ Error\n> ${details?.error || "Unknown error."}`;
         break;
     }
 
+    content = this.applyEmbedDecorations(container, content);
     container.addTextDisplayComponents((t) => t.setContent(content));
 
     if (details?.image) {

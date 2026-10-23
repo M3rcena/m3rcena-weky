@@ -2,22 +2,23 @@ import { ButtonBuilder, ButtonStyle, ContainerBuilder, Interaction, Message, Mes
 import { BaseGame } from "../core/BaseGame.js";
 import { FastTypeTypes } from "../core/Types.js";
 import { getRandomSentence } from "../data/sentences.js";
-import { formatTime, getRandomString, safeResolveColor } from "../utils/Helpers.js";
+import { formatTime, getRandomString } from "../utils/Helpers.js";
 
 export class FastType extends BaseGame<FastTypeTypes> {
   private sentence: string = "";
-  private startTime: number = 0;
   private hasTyped: boolean = false;
   private btnPrefix: string;
   private gameTitle: string;
-  private defaultColor: number;
+
+  private checkCheating: boolean;
 
   constructor(manager: any, options: FastTypeTypes) {
     super(manager, options, "fasttype");
     this.btnPrefix = getRandomString(6, "ft_");
     this.gameTitle = options.embed?.title || "Fast Type Challenge";
-    this.defaultColor = safeResolveColor(options.embed?.color, 0x5865f2);
-    this.defaultTimeout = options.time || 60_000;
+    this.defaultColor = this.resolveColor(options.embed?.color);
+    this.defaultTimeout = options.time || manager?.defaultTimeout || 60_000;
+    this.checkCheating = options.checkCheating ?? true;
   }
 
   public async start(): Promise<void> {
@@ -25,6 +26,7 @@ export class FastType extends BaseGame<FastTypeTypes> {
     this.startTime = Date.now();
     this.isActive = true;
     this.manager._eventManager.register(this);
+    this.emitStart();
 
     const container = this.createGameContainer("active");
 
@@ -66,7 +68,7 @@ export class FastType extends BaseGame<FastTypeTypes> {
     if (message.deletable) await message.delete().catch(() => {});
 
     // Anti-Cheat: User must have triggered typing event before sending the message
-    if (!this.hasTyped) {
+    if (this.checkCheating && !this.hasTyped) {
       await this.endGame("cheat");
       return;
     }
@@ -92,6 +94,7 @@ export class FastType extends BaseGame<FastTypeTypes> {
     this.isActive = false;
     this.clearTimer();
     this.destroy();
+    this.emitEnd(state, data?.wpm ? Number(data.wpm) : 0);
 
     const container = this.createGameContainer(state, data);
 
@@ -102,53 +105,56 @@ export class FastType extends BaseGame<FastTypeTypes> {
   }
 
   private createGameContainer(state: "loading" | "active" | "typo" | "won" | "cheat" | "timeout" | "cancelled", data?: { timeTaken?: string; wpm?: string }): ContainerBuilder {
-    const container = new ContainerBuilder();
+    const stateColors: Record<string, number> = {
+      loading: this.defaultColor,
+      active: this.defaultColor,
+      typo: 0xed4245,
+      won: 0x57f287,
+      cheat: 0xed4245,
+      timeout: 0xed4245,
+      cancelled: 0xed4245,
+    };
+    const container = this.createContainer(stateColors[state]);
     let content = "";
 
     switch (state) {
       case "loading":
-        container.setAccentColor(this.defaultColor);
         content = `## ${this.gameTitle}\n> 🔄 Preparing sentence...`;
         break;
 
       case "active":
-        container.setAccentColor(this.defaultColor);
         content = this.options.states?.active ? this.options.states.active.replace("{{gameTitle}}", this.gameTitle).replace("{{sentence}}", this.sentence) : `## ${this.gameTitle}\n> Type the sentence below as fast as you can!\n\n\`\`\`text\n${this.sentence}\n\`\`\`\n\n⏳ You have **${formatTime(this.defaultTimeout)}**!`;
         break;
 
       case "typo":
-        container.setAccentColor(0xed4245);
         content = `## ${this.gameTitle}\n> ❌ **Typo! That was not an exact match.** Try again quickly!\n\n\`\`\`text\n${this.sentence}\n\`\`\``;
         break;
 
       case "won":
-        container.setAccentColor(0x57f287);
         const winText = this.options.winMessage ? this.options.winMessage.replace("{{time}}", data?.timeTaken || "0s").replace("{{wpm}}", data?.wpm || "0") : `You typed the sentence in **${data?.timeTaken || "0s"}** with a speed of **${data?.wpm || "0"} WPM**!`;
         content = this.options.states?.won ? this.options.states.won.replace("{{winText}}", winText).replace("{{sentence}}", this.sentence) : `## 🏆 Fast Fingers!\n> ${winText}\n\n**Sentence:**\n\`\`\`text\n${this.sentence}\n\`\`\``;
         break;
 
       case "cheat":
-        container.setAccentColor(0xed4245);
         content = this.options.states?.cheat ? this.options.states.cheat.replace("{{sentence}}", this.sentence) : `## ⚠️ Cheat Detected\n> ${this.options.cheatMessage || "Copy-pasting is not allowed! Please type the sentence manually."}\n\n**Sentence:**\n\`\`\`text\n${this.sentence}\n\`\`\``;
         break;
 
       case "timeout":
-        container.setAccentColor(0xed4245);
         content = this.options.states?.timeout ? this.options.states.timeout.replace("{{sentence}}", this.sentence) : `## ⏱️ Time's Up\n> ${this.options.timeoutMessage || "You ran out of time!"}\n\n**Sentence:**\n\`\`\`text\n${this.sentence}\n\`\`\``;
         break;
 
       case "cancelled":
-        container.setAccentColor(0xed4245);
         content = this.options.states?.cancelled ? this.options.states.cancelled.replace("{{sentence}}", this.sentence) : `## 🚫 Game Cancelled\n> You cancelled the typing test.`;
         break;
     }
 
+    content = this.applyEmbedDecorations(container, content);
     container.addTextDisplayComponents((t) => t.setContent(content));
 
     if (state === "active" || state === "typo") {
       const btnCancel = new ButtonBuilder()
         .setStyle(ButtonStyle.Danger)
-        .setLabel(this.options.cancelButton || "Cancel")
+        .setLabel(this.options.cancelButton || this.options.buttonText || "Cancel")
         .setEmoji("🛑")
         .setCustomId(`${this.btnPrefix}cancel`);
       container.addActionRowComponents((row) => row.setComponents(btnCancel));

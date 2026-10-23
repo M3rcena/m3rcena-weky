@@ -2,7 +2,7 @@ import { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, Contai
 import { RenderSnake } from "../canvas/RenderSnake.js";
 import { BaseGame } from "../core/BaseGame.js";
 import { SnakeTypes } from "../core/Types.js";
-import { getRandomString, safeResolveColor } from "../utils/Helpers.js";
+import { clamp, getRandomString } from "../utils/Helpers.js";
 
 interface Point {
   x: number;
@@ -17,7 +17,6 @@ export class Snake extends BaseGame<SnakeTypes> {
   private score: number = 0;
   private isGameOver: boolean = false;
   private gameTitle: string;
-  private defaultColor: number;
 
   private emojiUp: string;
   private emojiDown: string;
@@ -41,8 +40,8 @@ export class Snake extends BaseGame<SnakeTypes> {
     this.idQuit = `${uid}_quit`;
 
     this.gameTitle = options.embed?.title || "Snake";
-    this.defaultColor = safeResolveColor(options.embed?.color, 0x5865f2);
-    this.gridSize = options.gridSize || 15;
+    this.defaultColor = this.resolveColor(options.embed?.color);
+    this.gridSize = clamp(options.gridSize || 15, 10, 20);
 
     this.emojiUp = options.emojis?.up || "⬆️";
     this.emojiDown = options.emojis?.down || "⬇️";
@@ -50,13 +49,14 @@ export class Snake extends BaseGame<SnakeTypes> {
     this.emojiRight = options.emojis?.right || "➡️";
     this.quitButtonLabel = options.quitButton || "Quit";
 
-    this.defaultTimeout = options.time || 300_000;
+    this.defaultTimeout = options.time || manager?.defaultTimeout || 300_000;
   }
 
   public async start(): Promise<void> {
     this.initGame();
     this.isActive = true;
     this.manager._eventManager.register(this);
+    this.emitStart();
 
     const loadingContainer = this.createGameContainer("loading");
     await this.ctx.sendInitial({
@@ -212,6 +212,7 @@ export class Snake extends BaseGame<SnakeTypes> {
     this.isGameOver = true;
     this.clearTimer();
     this.destroy();
+    this.emitEnd(state, this.score);
 
     if (!attachment && state !== "error") {
       const overlayTitle = state === "quit" ? "GAME STOPPED" : state === "timeout" ? "TIME'S UP" : "GAME OVER";
@@ -230,42 +231,45 @@ export class Snake extends BaseGame<SnakeTypes> {
   }
 
   private createGameContainer(state: "loading" | "active" | "gameover" | "quit" | "timeout" | "error", details?: { error?: string; image?: string; score?: number }): ContainerBuilder {
-    const container = new ContainerBuilder();
+    const stateColors: Record<string, number> = {
+      loading: this.defaultColor,
+      active: this.defaultColor,
+      gameover: 0xed4245,
+      quit: 0xed4245,
+      timeout: 0xed4245,
+      error: 0xff0000,
+    };
+    const container = this.createContainer(stateColors[state]);
     let content = "";
     const score = details?.score ?? this.score;
 
     switch (state) {
       case "loading":
-        container.setAccentColor(this.defaultColor);
         content = this.options.states?.loading ? this.options.states.loading.replace("{{gameTitle}}", this.gameTitle) : `## ${this.gameTitle}\n> 🔄 Starting game...`;
         break;
 
       case "active":
-        container.setAccentColor(this.defaultColor);
         content = this.options.states?.active ? this.options.states.active.replace("{{gameTitle}}", this.gameTitle).replace("{{score}}", score.toString()).replace("{{length}}", this.snake.length.toString()) : `## ${this.gameTitle}\n> Eat food and avoid crashing!\n\n**Score:** \`${score}\` | **Length:** \`${this.snake.length}\``;
         break;
 
       case "gameover":
-        container.setAccentColor(0xed4245);
         content = this.options.states?.gameover ? this.options.states.gameover.replace("{{score}}", score.toString()) : `## 💀 Game Over\n> The snake crashed!\n\n**Final Score:** \`${score}\``;
         break;
 
       case "quit":
-        container.setAccentColor(0xed4245);
         content = this.options.states?.quit ? this.options.states.quit.replace("{{score}}", score.toString()) : `## 🛑 Game Stopped\n> You quit the game.\n\n**Final Score:** \`${score}\``;
         break;
 
       case "timeout":
-        container.setAccentColor(0xed4245);
         content = this.options.states?.timeout ? this.options.states.timeout.replace("{{score}}", score.toString()) : `## ⏱️ Time's Up\n> Game session expired.\n\n**Final Score:** \`${score}\``;
         break;
 
       case "error":
-        container.setAccentColor(0xff0000);
         content = this.options.states?.error?.main ? this.options.states.error.main.replace("{{error}}", details?.error || "Unknown") : `## ❌ Error\n> ${details?.error || "Unknown error occurred."}`;
         break;
     }
 
+    content = this.applyEmbedDecorations(container, content);
     container.addTextDisplayComponents((t) => t.setContent(content));
 
     if (details?.image) {

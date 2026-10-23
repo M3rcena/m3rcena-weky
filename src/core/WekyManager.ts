@@ -1,6 +1,7 @@
-import { Client } from "discord.js";
+import { Client, ColorResolvable, EmbedBuilder } from "discord.js";
+import { EventEmitter } from "events";
 import { EventManager } from "./EventManager.js";
-import { CalcTypes, ChaosTypes, FastTypeTypes, FightTypes, GuessTheNumberTypes, GuessThePokemonTypes, HangmanTypes, LieSwatterTypes, NeverHaveIEverTypes, QuickClickTypes, RPSTypes, ShuffleGuessTypes, SnakeTypes, TicTacToeTypes, Types2048, WillYouPressTheButtonTypes, WouldYouRatherTypes } from "./Types.js";
+import { CalcTypes, ChaosTypes, Embeds, FastTypeTypes, FightTypes, GuessTheNumberTypes, GuessThePokemonTypes, HangmanTypes, LieSwatterTypes, NeverHaveIEverTypes, QuickClickTypes, RPSTypes, ShuffleGuessTypes, SnakeTypes, TicTacToeTypes, Types2048, WillYouPressTheButtonTypes, WouldYouRatherTypes } from "./Types.js";
 
 // Game Imports
 import { Calculator } from "../games/Calculator.js";
@@ -22,35 +23,91 @@ import { WillYouPressTheButton } from "../games/WillYouPressTheButton.js";
 import { WouldYouRather } from "../games/WouldYouRather.js";
 
 // Helpers
-import { formatTime, getRandomString, shuffleArray, shuffleString } from "../utils/Helpers.js";
+import { formatTime, getRandomString, safeResolveColor, shuffleArray, shuffleString } from "../utils/Helpers.js";
+import { checkPackageUpdates } from "../utils/Notifier.js";
+import { version } from "../version.js";
 
+/**
+ * Options for initializing the WekyManager.
+ */
 export interface WekyManagerOptions {
-  /** Optional API key for legacy compatibility */
-  apiKey?: string;
-  /** Whether to log package notifications */
+  /** Global default timeout in milliseconds for all games (default: 60,000) */
+  defaultTimeout?: number;
+  /** Global default brand or embed accent color */
+  embedColor?: ColorResolvable;
+  /** Global default message when an unauthorized user interacts with a game */
+  unauthorizedMessage?: string;
+  /** Whether to log a notification box in the console if a new version of the package is available (default: true) */
   notifyUpdates?: boolean;
 }
 
 /**
  * Main manager class for the `@m3rcena/weky` Discord minigames engine.
+ * Extends EventEmitter to broadcast game lifecycle telemetry:
+ * - `gameStart`: ({ game, user, channelId })
+ * - `gameOver`: ({ game, user, outcome, score, timeElapsed })
+ * - `gameError`: ({ game, error, context })
+ * - `unauthorizedClick`: ({ game, user, interaction })
  */
-export class WekyManager {
+export class WekyManager extends EventEmitter {
   public _client: Client;
   public _eventManager: EventManager;
+  public defaultTimeout: number = 60_000;
+  public embedColor?: ColorResolvable;
+  public unauthorizedMessage?: string;
+  public notifyUpdates: boolean = true;
 
   /**
    * Initializes the WekyManager.
    * @param client The Discord.js Client instance.
-   * @param legacyApiKeyOrOptions Optional API key or config object.
-   * @param legacyNotifyUpdates Optional flag for update notifications.
+   * @param options Optional configuration object or legacy notifyUpdates boolean.
+   * @param notifyUpdatesParam Legacy parameter for update notifications.
    */
-  constructor(client: Client, legacyApiKeyOrOptions?: string | WekyManagerOptions, legacyNotifyUpdates?: boolean) {
-    if (!client || !(client instanceof Client)) {
+  constructor(client: Client, options?: WekyManagerOptions | string | boolean, notifyUpdatesParam?: boolean) {
+    super();
+
+    if (!client || (!(client instanceof Client) && typeof (client as any).on !== "function")) {
       throw new TypeError("[WekyManager] A valid Discord.js Client instance is required.");
     }
 
     this._client = client;
     this._eventManager = new EventManager(this._client);
+
+    if (typeof options === "boolean") {
+      this.notifyUpdates = options;
+    } else if (typeof options === "string") {
+      // Legacy constructor: new WekyManager(client, apiKey, notifyUpdates)
+      this.notifyUpdates = typeof notifyUpdatesParam === "boolean" ? notifyUpdatesParam : true;
+    } else if (options && typeof options === "object") {
+      if (typeof options.defaultTimeout === "number") {
+        this.defaultTimeout = options.defaultTimeout;
+      }
+      if (options.embedColor !== undefined) {
+        this.embedColor = options.embedColor;
+      }
+      if (typeof options.unauthorizedMessage === "string") {
+        this.unauthorizedMessage = options.unauthorizedMessage;
+      }
+      if (typeof options.notifyUpdates === "boolean") {
+        this.notifyUpdates = options.notifyUpdates;
+      }
+    }
+
+    if (this.notifyUpdates) {
+      checkPackageUpdates(version, false).catch(() => {});
+    }
+  }
+
+  /**
+   * Manually checks for newer versions of @m3rcena/weky.
+   */
+  public async checkUpdates(gameName?: string): Promise<void> {
+    await checkPackageUpdates(version, !this.notifyUpdates, gameName);
+  }
+
+  /** Backwards compatibility accessor */
+  public get _EventManager(): EventManager {
+    return this._eventManager;
   }
 
   /* -------------------------------------------------------------------------- */
@@ -185,6 +242,7 @@ export class WekyManager {
     await game.start();
   }
 
+  /** Alias for createRPS */
   public async createRockPaperScissors(options: RPSTypes): Promise<void> {
     return this.createRPS(options);
   }
@@ -223,5 +281,36 @@ export class WekyManager {
 
   public shuffleArray<T>(arr: T[]): T[] {
     return shuffleArray(arr);
+  }
+
+  /**
+   * Builds an EmbedBuilder instance with defaults applied.
+   */
+  public _createEmbed(embedOptions: Partial<Embeds> = {}, noFields: boolean = false): EmbedBuilder {
+    const embed = new EmbedBuilder();
+    if (embedOptions.title) embed.setTitle(embedOptions.title);
+    if (embedOptions.description) embed.setDescription(embedOptions.description);
+    if (embedOptions.url) embed.setURL(embedOptions.url);
+    if (embedOptions.thumbnail) embed.setThumbnail(embedOptions.thumbnail);
+    if (embedOptions.image) embed.setImage(embedOptions.image);
+
+    const color = embedOptions.color || this.embedColor;
+    embed.setColor(safeResolveColor(color, 0x5865f2));
+
+    if (embedOptions.footer) embed.setFooter(embedOptions.footer);
+    if (embedOptions.timestamp) {
+      embed.setTimestamp(embedOptions.timestamp === true ? new Date() : new Date(embedOptions.timestamp));
+    }
+    if (embedOptions.author) {
+      embed.setAuthor({
+        name: embedOptions.author.name,
+        iconURL: embedOptions.author.icon_url,
+        url: embedOptions.author.url,
+      });
+    }
+    if (!noFields && embedOptions.fields && embedOptions.fields.length > 0) {
+      embed.setFields(embedOptions.fields);
+    }
+    return embed;
   }
 }

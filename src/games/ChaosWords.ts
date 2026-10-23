@@ -2,7 +2,7 @@ import { ButtonBuilder, ButtonStyle, ContainerBuilder, Interaction, Message, Mes
 import { BaseGame } from "../core/BaseGame.js";
 import { ChaosTypes } from "../core/Types.js";
 import { getRandomWords } from "../data/words.js";
-import { getRandomString, safeResolveColor } from "../utils/Helpers.js";
+import { getRandomString } from "../utils/Helpers.js";
 
 export class ChaosWords extends BaseGame<ChaosTypes> {
   private words: string[] = [];
@@ -14,23 +14,23 @@ export class ChaosWords extends BaseGame<ChaosTypes> {
   private maxTries: number = 10;
   private btnPrefix: string;
   private gameTitle: string;
-  private defaultColor: number;
 
   constructor(manager: any, options: ChaosTypes) {
     super(manager, options, "chaos");
     this.btnPrefix = getRandomString(6, "chaos_");
     this.gameTitle = options.embed?.title || "Chaos Words";
-    this.defaultColor = safeResolveColor(options.embed?.color, 0x5865f2);
+    this.defaultColor = this.resolveColor(options.embed?.color);
     this.maxTries = options.maxTries || 10;
     this.triesLeft = this.maxTries;
-    this.defaultTimeout = options.time || 60_000;
+    this.defaultTimeout = options.time || manager?.defaultTimeout || 60_000;
   }
 
   public async start(): Promise<void> {
+    const wordCount = this.options.maxWords || (this.options.words && this.options.words.length) || 4;
     if (this.options.words && this.options.words.length > 0) {
-      this.words = this.options.words.map((w) => w.toLowerCase().trim());
+      this.words = this.options.words.slice(0, wordCount).map((w) => w.toLowerCase().trim());
     } else {
-      this.words = getRandomWords(3).map((w) => w.toLowerCase());
+      this.words = getRandomWords(wordCount).map((w) => w.toLowerCase());
     }
 
     this.remainingWords = [...this.words];
@@ -39,6 +39,7 @@ export class ChaosWords extends BaseGame<ChaosTypes> {
 
     this.isActive = true;
     this.manager._eventManager.register(this);
+    this.emitStart();
 
     const container = this.createGameContainer("active");
 
@@ -53,7 +54,7 @@ export class ChaosWords extends BaseGame<ChaosTypes> {
   private generateChaosString(): string {
     const alphabet = "abcdefghijklmnopqrstuvwxyz";
     const totalWordLength = this.words.join("").length;
-    const charCount = this.options.charGenerated || totalWordLength + 12;
+    const charCount = this.options.charCount || this.options.charGenerated || totalWordLength + 12;
 
     this.chaosArray = [];
     for (let i = 0; i < charCount; i++) {
@@ -129,6 +130,7 @@ export class ChaosWords extends BaseGame<ChaosTypes> {
     this.isActive = false;
     this.clearTimer();
     this.destroy();
+    this.emitEnd(state, this.foundWords.length);
 
     const container = this.createGameContainer(state);
     await this.ctx.edit({
@@ -138,7 +140,17 @@ export class ChaosWords extends BaseGame<ChaosTypes> {
   }
 
   private createGameContainer(state: "active" | "correct" | "wrong" | "repeat" | "won" | "lost" | "cancelled" | "timeout", details?: { feedback?: string }): ContainerBuilder {
-    const container = new ContainerBuilder();
+    const stateColors: Record<string, number> = {
+      active: this.defaultColor,
+      correct: 0x57f287,
+      wrong: 0xed4245,
+      repeat: this.defaultColor,
+      won: 0x57f287,
+      lost: 0xed4245,
+      cancelled: 0xed4245,
+      timeout: 0xed4245,
+    };
+    const container = this.createContainer(stateColors[state]);
     let content = "";
 
     const wordsFoundStr = this.foundWords.length > 0 ? this.foundWords.map((w) => `\`${w}\``).join(", ") : "*None yet*";
@@ -148,7 +160,6 @@ export class ChaosWords extends BaseGame<ChaosTypes> {
       case "correct":
       case "wrong":
       case "repeat":
-        container.setAccentColor(state === "wrong" ? 0xed4245 : state === "correct" ? 0x57f287 : this.defaultColor);
         content = `## ${this.gameTitle}\n`;
         if (details?.feedback) {
           content += `> ${details.feedback}\n\n`;
@@ -157,32 +168,33 @@ export class ChaosWords extends BaseGame<ChaosTypes> {
         break;
 
       case "won":
-        container.setAccentColor(0x57f287);
-        content = `## 🏆 Word Master!\n` + `> 🎉 **Congratulations!** You found all hidden words:\n> ${this.words.map((w) => `\`${w}\``).join(", ")}`;
+        content = this.options.winMessage
+          ? `## 🏆 Word Master!\n> ${this.options.winMessage}`
+          : `## 🏆 Word Master!\n` + `> 🎉 **Congratulations!** You found all hidden words:\n> ${this.words.map((w) => `\`${w}\``).join(", ")}`;
         break;
 
       case "lost":
-        container.setAccentColor(0xed4245);
-        content = `## ❌ Out of Tries\n` + `> 💀 You ran out of attempts! The hidden words were:\n> ${this.words.map((w) => `\`${w}\``).join(", ")}`;
+        content = this.options.loseMessage
+          ? `## ❌ Out of Tries\n> ${this.options.loseMessage}`
+          : `## ❌ Out of Tries\n` + `> 💀 You ran out of attempts! The hidden words were:\n> ${this.words.map((w) => `\`${w}\``).join(", ")}`;
         break;
 
       case "cancelled":
-        container.setAccentColor(0xed4245);
         content = `## 🛑 Game Cancelled\n` + `> You stopped the game. The hidden words were:\n> ${this.words.map((w) => `\`${w}\``).join(", ")}`;
         break;
 
       case "timeout":
-        container.setAccentColor(0xed4245);
         content = `## ⏱️ Time's Up\n` + `> Session expired. The hidden words were:\n> ${this.words.map((w) => `\`${w}\``).join(", ")}`;
         break;
     }
 
+    content = this.applyEmbedDecorations(container, content);
     container.addTextDisplayComponents((t) => t.setContent(content));
 
     if (state === "active" || state === "correct" || state === "wrong" || state === "repeat") {
       const cancelBtn = new ButtonBuilder()
         .setStyle(ButtonStyle.Danger)
-        .setLabel(this.options.cancelButton || "Cancel")
+        .setLabel(this.options.cancelButton || this.options.buttonText || "Cancel")
         .setEmoji("🛑")
         .setCustomId(`${this.btnPrefix}cancel`);
       container.addActionRowComponents((row) => row.setComponents(cancelBtn));

@@ -1,7 +1,7 @@
 import { ButtonBuilder, ButtonStyle, ContainerBuilder, Interaction, Message, MessageFlags } from "discord.js";
 import { BaseGame } from "../core/BaseGame.js";
 import { GuessTheNumberTypes } from "../core/Types.js";
-import { formatTime, getRandomString, safeResolveColor } from "../utils/Helpers.js";
+import { formatTime, getRandomString } from "../utils/Helpers.js";
 
 export class GuessTheNumber extends BaseGame<GuessTheNumberTypes> {
   private targetNumber: number = 0;
@@ -9,21 +9,19 @@ export class GuessTheNumber extends BaseGame<GuessTheNumberTypes> {
   private currentMax: number = 1000;
   private attempts: number = 0;
   private participants: Set<string> = new Set();
-  private startTime: number = 0;
   private isPublic: boolean = false;
   private btnPrefix: string;
   private gameTitle: string;
-  private defaultColor: number;
 
   constructor(manager: any, options: GuessTheNumberTypes) {
     super(manager, options, "gtn");
     this.btnPrefix = getRandomString(6, "gtn_");
-    this.isPublic = options.publicGame ?? false;
+    this.isPublic = options.publicMode ?? options.publicGame ?? false;
     this.gameTitle = options.embed?.title || "Guess The Number";
-    this.defaultColor = safeResolveColor(options.embed?.color, 0x5865f2);
+    this.defaultColor = this.resolveColor(options.embed?.color);
 
     this.currentMin = options.min ?? 1;
-    this.currentMax = options.max ?? 1000;
+    this.currentMax = options.max ?? 100;
 
     if (typeof options.number === "number") {
       this.targetNumber = options.number;
@@ -31,13 +29,14 @@ export class GuessTheNumber extends BaseGame<GuessTheNumberTypes> {
       this.targetNumber = Math.floor(Math.random() * (this.currentMax - this.currentMin + 1)) + this.currentMin;
     }
 
-    this.defaultTimeout = options.time || 120_000;
+    this.defaultTimeout = options.time || manager?.defaultTimeout || 120_000;
   }
 
   public async start(): Promise<void> {
     this.startTime = Date.now();
     this.isActive = true;
     this.manager._eventManager.register(this);
+    this.emitStart();
 
     const container = this.createGameContainer("active");
 
@@ -97,6 +96,7 @@ export class GuessTheNumber extends BaseGame<GuessTheNumberTypes> {
     this.isActive = false;
     this.clearTimer();
     this.destroy();
+    this.emitEnd(state, this.attempts);
 
     const elapsed = formatTime(Date.now() - this.startTime);
     const container = this.createGameContainer(state, { winnerId, timeTaken: elapsed });
@@ -108,7 +108,16 @@ export class GuessTheNumber extends BaseGame<GuessTheNumberTypes> {
   }
 
   private createGameContainer(state: "active" | "higher" | "lower" | "won" | "lost" | "cancelled" | "timeout", data?: { hint?: string; winnerId?: string; timeTaken?: string }): ContainerBuilder {
-    const container = new ContainerBuilder();
+    const stateColors: Record<string, number> = {
+      active: this.defaultColor,
+      higher: 0xfee75c,
+      lower: 0xe67e22,
+      won: 0x57f287,
+      cancelled: 0xed4245,
+      lost: 0xed4245,
+      timeout: 0xed4245,
+    };
+    const container = this.createContainer(stateColors[state]);
     let content = "";
 
     const modeText = this.isPublic ? "👥 **Mode:** Public (Everyone can guess!)" : "👤 **Mode:** Solo";
@@ -117,7 +126,6 @@ export class GuessTheNumber extends BaseGame<GuessTheNumberTypes> {
       case "active":
       case "higher":
       case "lower":
-        container.setAccentColor(this.defaultColor);
         content = `## ${this.gameTitle}\n`;
         if (data?.hint) {
           content += `> ${data.hint}\n\n`;
@@ -126,28 +134,26 @@ export class GuessTheNumber extends BaseGame<GuessTheNumberTypes> {
         break;
 
       case "won":
-        container.setAccentColor(0x57f287);
         content = `## 🎯 Number Found!\n` + `> 🏆 **Congratulations <@${data?.winnerId || this.ctx.userId}>!**\n` + `> The secret number was **${this.targetNumber}**!\n\n` + `**Total Attempts:** \`${this.attempts}\` | **Time Taken:** \`${data?.timeTaken || "0s"}\` | **Participants:** \`${this.participants.size}\``;
         break;
 
       case "cancelled":
-        container.setAccentColor(0xed4245);
         content = `## 🛑 Game Cancelled\n` + `> The game was ended. The number was **${this.targetNumber}**.`;
         break;
 
       case "lost":
       case "timeout":
-        container.setAccentColor(0xed4245);
         content = `## ⏱️ Time's Up\n` + `> Game session expired. The secret number was **${this.targetNumber}**.`;
         break;
     }
 
+    content = this.applyEmbedDecorations(container, content);
     container.addTextDisplayComponents((t) => t.setContent(content));
 
     if (state === "active" || state === "higher" || state === "lower") {
       const giveUpBtn = new ButtonBuilder()
         .setStyle(ButtonStyle.Danger)
-        .setLabel(this.options.giveUpButton || "Give Up")
+        .setLabel(this.options.giveUpButton || this.options.button || "Give Up")
         .setEmoji("🛑")
         .setCustomId(`${this.btnPrefix}cancel`);
       container.addActionRowComponents((row) => row.setComponents(giveUpBtn));

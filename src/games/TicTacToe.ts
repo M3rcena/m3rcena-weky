@@ -2,7 +2,7 @@ import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ContainerBuilder, GuildMe
 import { BaseGame } from "../core/BaseGame.js";
 import { ContextAdapter } from "../core/ContextAdapter.js";
 import { TicTacToeTypes } from "../core/Types.js";
-import { getRandomString, safeResolveColor } from "../utils/Helpers.js";
+import { getRandomString } from "../utils/Helpers.js";
 
 type Cell = "X" | "O" | null;
 
@@ -12,21 +12,20 @@ export class TicTacToe extends BaseGame<TicTacToeTypes> {
   private currentTurnId: string;
   private btnPrefix: string;
   private gameTitle: string;
-  private defaultColor: number;
 
   constructor(manager: any, options: TicTacToeTypes) {
     super(manager, options, "tictactoe");
     this.btnPrefix = getRandomString(6, "ttt_");
     this.opponentUser = options.opponent instanceof GuildMember ? options.opponent.user : (options.opponent as User);
     this.gameTitle = options.embed?.title || "Tic Tac Toe";
-    this.defaultColor = safeResolveColor(options.embed?.color, 0x5865f2);
+    this.defaultColor = this.resolveColor(options.embed?.color);
     this.currentTurnId = this.ctx.userId;
-    this.defaultTimeout = options.time || 60_000;
+    this.defaultTimeout = options.time || manager?.defaultTimeout || 60_000;
   }
 
   public async start(): Promise<void> {
     if (this.opponentUser.id === this.ctx.userId) {
-      const container = new ContainerBuilder().setAccentColor(0xff0000).addTextDisplayComponents((t) => t.setContent("## ❌ Error\n> You cannot play Tic Tac Toe against yourself!"));
+      const container = this.createContainer(0xff0000).addTextDisplayComponents((t) => t.setContent("## ❌ Error\n> You cannot play Tic Tac Toe against yourself!"));
       await this.ctx.sendInitial({
         components: [container],
         flags: MessageFlags.IsComponentsV2,
@@ -36,6 +35,7 @@ export class TicTacToe extends BaseGame<TicTacToeTypes> {
 
     this.isActive = true;
     this.manager._eventManager.register(this);
+    this.emitStart();
 
     const container = this.createGameContainer("active");
 
@@ -120,6 +120,8 @@ export class TicTacToe extends BaseGame<TicTacToeTypes> {
     this.clearTimer();
     this.destroy();
 
+    this.emitEnd(state, state === "won" && winningSymbol === "X" ? 1 : 0);
+
     const container = this.createGameContainer(state, winningSymbol);
 
     await this.ctx.edit({
@@ -129,33 +131,34 @@ export class TicTacToe extends BaseGame<TicTacToeTypes> {
   }
 
   private createGameContainer(state: "active" | "won" | "tie" | "timeout", winningSymbol?: Cell): ContainerBuilder {
-    const container = new ContainerBuilder();
+    let stateColor = this.defaultColor;
+    if (state === "won") stateColor = 0x57f287;
+    else if (state === "tie") stateColor = 0xfee75c;
+    else if (state === "timeout") stateColor = 0xed4245;
+
+    const container = this.createContainer(stateColor);
     let content = "";
 
     switch (state) {
       case "active":
-        container.setAccentColor(this.defaultColor);
         content = `## ${this.gameTitle}\n` + `> ⚔️ <@${this.ctx.userId}> (❌) vs <@${this.opponentUser.id}> (⭕)!\n\n` + `> 🎯 **Current Turn:** <@${this.currentTurnId}>`;
         break;
 
       case "won":
-        container.setAccentColor(0x57f287);
         const winnerId = winningSymbol === "X" ? this.ctx.userId : this.opponentUser.id;
         content = `## ${this.gameTitle} - Results\n` + `> 🏆 **GG! <@${winnerId}> (${winningSymbol}) WON the match!**`;
         break;
 
       case "tie":
-        container.setAccentColor(0xfee75c);
         content = `## ${this.gameTitle} - Results\n` + `> 🤝 **It's a TIE!** Neither player could achieve three in a row.`;
         break;
 
       case "timeout":
-        container.setAccentColor(0xed4245);
         content = `## ${this.gameTitle}\n` + `> ⏱️ Game session expired due to inactivity.`;
         break;
     }
 
-    container.addTextDisplayComponents((t) => t.setContent(content));
+    container.addTextDisplayComponents((t) => t.setContent(this.applyEmbedDecorations(container, content)));
 
     const isFinished = state !== "active";
 

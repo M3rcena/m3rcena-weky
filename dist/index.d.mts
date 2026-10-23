@@ -1,10 +1,198 @@
-import { ChatInputCommandInteraction, ButtonInteraction, Message, ColorResolvable, EmbedFooterData, Interaction, GuildMember, User, ButtonStyle, Guild, TextBasedChannel, Client, EmbedBuilder, ActionRowBuilder, ContainerBuilder, AttachmentBuilder, MessageFlags, MediaGalleryBuilder } from 'discord.js';
+import { Client, ColorResolvable, EmbedBuilder, ChatInputCommandInteraction, ButtonInteraction, Message, EmbedFooterData, Interaction, GuildTextBasedChannel, GuildMember, User, ButtonStyle, Guild, TextBasedChannel, ActionRowBuilder, ContainerBuilder, AttachmentBuilder, MessageFlags, MediaGalleryBuilder } from 'discord.js';
+import { EventEmitter } from 'events';
 import { SKRSContext2D } from '@napi-rs/canvas';
+
+declare const version = "14.27.0-1";
+declare const VERSION = "14.27.0-1";
+
+interface PokemonData {
+    id: number;
+    name: string;
+    types: string[];
+    abilities: string[];
+    imageUrl: string;
+}
+type PokemonEntry = PokemonData;
+declare const POPULAR_POKEMONS: PokemonData[];
+declare function fetchRandomPokemon(): Promise<PokemonData>;
+
+/**
+ * Global Event Multiplexer.
+ * Attaches a single listener to the Discord Client to dispatch events to all active minigames
+ * without triggering EventEmitter MaxListenersExceeded warnings or memory leaks.
+ */
+declare class EventManager {
+    private client;
+    private activeGames;
+    private initialized;
+    constructor(client: Client);
+    private initListeners;
+    register(game: IMinigame): void;
+    unregister(gameId: string): void;
+    isRegistered(gameId: string): boolean;
+    getActiveCount(): number;
+}
+
+/**
+ * Options for initializing the WekyManager.
+ */
+interface WekyManagerOptions {
+    /** Global default timeout in milliseconds for all games (default: 60,000) */
+    defaultTimeout?: number;
+    /** Global default brand or embed accent color */
+    embedColor?: ColorResolvable;
+    /** Global default message when an unauthorized user interacts with a game */
+    unauthorizedMessage?: string;
+    /** Whether to log a notification box in the console if a new version of the package is available (default: true) */
+    notifyUpdates?: boolean;
+}
+/**
+ * Main manager class for the `@m3rcena/weky` Discord minigames engine.
+ * Extends EventEmitter to broadcast game lifecycle telemetry:
+ * - `gameStart`: ({ game, user, channelId })
+ * - `gameOver`: ({ game, user, outcome, score, timeElapsed })
+ * - `gameError`: ({ game, error, context })
+ * - `unauthorizedClick`: ({ game, user, interaction })
+ */
+declare class WekyManager extends EventEmitter {
+    _client: Client;
+    _eventManager: EventManager;
+    defaultTimeout: number;
+    embedColor?: ColorResolvable;
+    unauthorizedMessage?: string;
+    notifyUpdates: boolean;
+    /**
+     * Initializes the WekyManager.
+     * @param client The Discord.js Client instance.
+     * @param options Optional configuration object or legacy notifyUpdates boolean.
+     * @param notifyUpdatesParam Legacy parameter for update notifications.
+     */
+    constructor(client: Client, options?: WekyManagerOptions | string | boolean, notifyUpdatesParam?: boolean);
+    /**
+     * Manually checks for newer versions of @m3rcena/weky.
+     */
+    checkUpdates(gameName?: string): Promise<void>;
+    /** Backwards compatibility accessor */
+    get _EventManager(): EventManager;
+    /**
+     * Starts a new **2048** minigame session.
+     */
+    create2048(options: Types2048): Promise<void>;
+    /**
+     * Starts a new **Calculator** session with safe mathematical evaluation.
+     */
+    createCalculator(options: CalcTypes): Promise<void>;
+    /**
+     * Starts a new **Chaos Words** minigame session.
+     */
+    createChaosWords(options: ChaosTypes): Promise<void>;
+    /**
+     * Starts a new **Fast Type** speed typing challenge.
+     */
+    createFastType(options: FastTypeTypes): Promise<void>;
+    /**
+     * Starts a new turn-based **Fight** duel RPG between two players.
+     */
+    createFight(options: FightTypes): Promise<void>;
+    /**
+     * Starts a new **Guess The Number** game (Solo or Public).
+     */
+    createGuessTheNumber(options: GuessTheNumberTypes): Promise<void>;
+    /**
+     * Starts a new **Guess The Pokemon** game featuring native canvas silhouettes.
+     */
+    createGuessThePokemon(options: GuessThePokemonTypes): Promise<void>;
+    /**
+     * Starts a new **Hangman** game featuring high-resolution canvas gallows.
+     */
+    createHangman(options: HangmanTypes): Promise<void>;
+    /**
+     * Starts a new **Lie Swatter** true-or-false trivia quiz.
+     */
+    createLieSwatter(options: LieSwatterTypes): Promise<void>;
+    /**
+     * Starts a new **Never Have I Ever** interactive party voting game.
+     */
+    createNeverHaveIEver(options: NeverHaveIEverTypes): Promise<void>;
+    /**
+     * Starts a new **Quick Click** reaction speed test.
+     */
+    createQuickClick(options: QuickClickTypes): Promise<void>;
+    /**
+     * Starts a new **Shuffle Guess** word unscramble puzzle.
+     */
+    createShuffleGuess(options: ShuffleGuessTypes): Promise<void>;
+    /**
+     * Starts a new **Snake** arcade game featuring retro canvas graphics.
+     */
+    createSnake(options: SnakeTypes): Promise<void>;
+    /**
+     * Starts a new **Will You Press The Button?** dilemma game.
+     */
+    createWillYouPressTheButton(options: WillYouPressTheButtonTypes): Promise<void>;
+    /**
+     * Starts a new **Would You Rather?** dilemma game.
+     */
+    createWouldYouRather(options: WouldYouRatherTypes): Promise<void>;
+    /**
+     * Starts a new **Rock Paper Scissors** game (Solo vs Bot or 2-Player).
+     */
+    createRPS(options: RPSTypes): Promise<void>;
+    /** Alias for createRPS */
+    createRockPaperScissors(options: RPSTypes): Promise<void>;
+    /**
+     * Starts a new interactive **Tic Tac Toe** match.
+     */
+    createTicTacToe(options: TicTacToeTypes): Promise<void>;
+    _getContextUserID(context: any): string;
+    getRandomString(length?: number, prefix?: string): string;
+    convertTime(timeMs: number): string;
+    shuffleString(str: string): string;
+    shuffleArray<T>(arr: T[]): T[];
+    /**
+     * Builds an EmbedBuilder instance with defaults applied.
+     */
+    _createEmbed(embedOptions?: Partial<Embeds>, noFields?: boolean): EmbedBuilder;
+}
 
 /**
  * Universal game context accepting either Slash Commands / Button Interactions or Prefix Messages.
  */
 type GameContextInput = ChatInputCommandInteraction | ButtonInteraction | Message | any;
+/**
+ * Customizable Embed specifications compatible with Discord.js and Components V2.
+ */
+interface Embeds {
+    color?: ColorResolvable;
+    title?: string;
+    url?: string;
+    author?: Author;
+    footer?: EmbedFooterData;
+    description?: string;
+    fields?: Fields[];
+    image?: string;
+    timestamp?: Date | boolean;
+    thumbnail?: string;
+}
+interface Author {
+    name: string;
+    icon_url?: string;
+    url?: string;
+}
+interface Fields {
+    name: string;
+    value: string;
+    inline?: boolean;
+}
+/**
+ * Legacy wrapper type preserved for backwards compatibility with earlier versions.
+ */
+type CustomOptions<T> = T & {
+    context: {
+        channel: GuildTextBasedChannel;
+        guild: NonNullable<any>;
+    };
+};
 /**
  * Common configuration options shared by all games.
  */
@@ -12,12 +200,7 @@ interface BaseGameOptions {
     /** The Discord Interaction or Message context */
     context: GameContextInput;
     /** Custom embed/container styling */
-    embed?: {
-        title?: string;
-        color?: ColorResolvable;
-        footer?: EmbedFooterData;
-        timestamp?: boolean | Date;
-    };
+    embed?: Partial<Embeds>;
     /** Timeout in milliseconds before game expires */
     time?: number;
     /** Message displayed when an unauthorized user clicks a game button */
@@ -46,6 +229,8 @@ interface Types2048 extends BaseGameOptions {
  * Scientific Calculator Options
  */
 interface CalcTypes extends BaseGameOptions {
+    invalidQuery?: string;
+    disabledQuery?: string;
     operationTitles?: {
         logarithm?: string;
         squareRoot?: string;
@@ -85,13 +270,18 @@ interface CalcTypes extends BaseGameOptions {
  */
 interface ChaosTypes extends BaseGameOptions {
     words?: string[];
+    maxWords?: number;
     maxTries?: number;
+    charCount?: number;
     charGenerated?: number;
     cancelButton?: string;
+    buttonText?: string;
     failedFetchMessage?: string;
     wordAlreadyFound?: string;
     correctWord?: string;
     wrongWord?: string;
+    winMessage?: string;
+    loseMessage?: string;
     states?: {
         active?: string;
         correct?: string;
@@ -117,17 +307,23 @@ interface ChaosTypes extends BaseGameOptions {
         timeRemaining?: string;
     };
 }
+/** Alias for ChaosTypes */
+type ChaosWordsTypes = ChaosTypes;
 /**
  * Fast Type Game Options
  */
 interface FastTypeTypes extends BaseGameOptions {
     sentence?: string;
     difficulty?: "easy" | "medium" | "hard";
+    checkCheating?: boolean;
     cancelButton?: string;
+    buttonText?: string;
+    cancelMessage?: string;
     winMessage?: string;
     loseMessage?: string;
     timeoutMessage?: string;
     cheatMessage?: string;
+    failedFetchError?: string;
     states?: {
         loading?: string;
         active?: string;
@@ -159,6 +355,9 @@ interface FightPowerUp {
  */
 interface FightTypes extends BaseGameOptions {
     opponent: GuildMember | User;
+    startHealth?: number;
+    damageMax?: number;
+    coins?: number;
     buttons?: {
         hit?: string;
         heavy?: string;
@@ -195,12 +394,39 @@ interface FightTypes extends BaseGameOptions {
             uknownError?: string;
         };
     };
+    failedRequestCardGeneration?: string;
+    notEnoughtCoins?: string;
     wrongUserFight?: string;
     opponentsTurnMessage?: string;
     highHealthMessage?: string;
     lowHealthMessage?: string;
     cannotFightYourselfMessage?: string;
     playerAlreadyInFight?: string;
+}
+/** Legacy powerup interface */
+interface PowerUp {
+    id: string;
+    label?: string;
+    name?: string;
+    description?: string;
+    style?: ButtonStyle;
+    cost?: number;
+    effect?: (player: PlayerData, playerUsername: string) => string;
+}
+/** Legacy player data interface */
+interface PlayerData {
+    memberId?: string;
+    id?: string;
+    username?: string;
+    name?: string;
+    health: number;
+    maxHealth?: number;
+    lastAttack?: string;
+    coins?: number;
+    skipNextTurn?: boolean;
+    activeEffects?: string[];
+    specialButtons?: string[];
+    powerUps?: PowerUp[];
 }
 /**
  * Guess The Number Options
@@ -210,13 +436,20 @@ interface GuessTheNumberTypes extends BaseGameOptions {
     min?: number;
     max?: number;
     publicGame?: boolean;
+    publicMode?: boolean;
     giveUpButton?: string;
+    button?: string;
     ongoingMessage?: string;
     winMessage?: {
         publicGame?: string;
         privateGame?: string;
-    };
+    } | string;
     loseMessage?: string;
+    bigNumber?: string;
+    biggerNumberMessage?: string;
+    smallNumber?: string;
+    smallerNumberMeesage?: string;
+    otherMessage?: string;
     states?: {
         active?: string;
         higher?: string;
@@ -229,6 +462,7 @@ interface GuessTheNumberTypes extends BaseGameOptions {
  * Guess The Pokemon Options
  */
 interface GuessThePokemonTypes extends BaseGameOptions {
+    pokemon?: PokemonEntry;
     giveUpButton?: string;
     winMessage?: string;
     loseMessage?: string;
@@ -243,12 +477,23 @@ interface GuessThePokemonTypes extends BaseGameOptions {
         error?: string;
     };
 }
+interface GuessThePokemonData {
+    name: string;
+    sprites?: {
+        other?: {
+            home?: {
+                front_default?: string;
+            };
+        };
+    };
+}
 /**
  * Hangman Game Options
  */
 interface HangmanTypes extends BaseGameOptions {
     word?: string;
     category?: string;
+    maxMistakes?: number;
     quitButton?: string;
     states?: {
         loading?: string;
@@ -264,14 +509,16 @@ interface HangmanTypes extends BaseGameOptions {
     };
     errors?: {
         failedToStart?: string;
-        failedToGenerate?: string;
-        noApiResponse?: string;
+        connectionError?: string;
     };
 }
 /**
  * Lie Swatter Options
  */
 interface LieSwatterTypes extends BaseGameOptions {
+    statement?: string;
+    isTrue?: boolean;
+    explanation?: string;
     buttons?: {
         true?: string;
         lie?: string;
@@ -292,6 +539,7 @@ interface LieSwatterTypes extends BaseGameOptions {
  * Never Have I Ever Options
  */
 interface NeverHaveIEverTypes extends BaseGameOptions {
+    statement?: string;
     buttons?: {
         optionA?: string;
         optionB?: string;
@@ -305,16 +553,28 @@ interface NeverHaveIEverTypes extends BaseGameOptions {
         timeout?: string;
         error?: string;
     };
+    errors?: {
+        failedFetch?: string;
+        noResult?: string;
+    };
 }
 /**
  * Quick Click Options
  */
 interface QuickClickTypes extends BaseGameOptions {
+    buttonCount?: number;
+    minDelay?: number;
+    maxDelay?: number;
     emoji?: string;
     waitMessage?: string;
     startMessage?: string;
     winMessage?: string;
     loseMessage?: string;
+    ongoingMessage?: string;
+    errors?: {
+        main?: string;
+        gameAlreadyRunning?: string;
+    };
     states?: {
         waiting?: string;
         active?: string;
@@ -338,7 +598,14 @@ interface ShuffleGuessTypes extends BaseGameOptions {
     incorrectMessage?: string;
 }
 /**
- * Snake Game Options
+ * Snake Point Interface
+ */
+interface Point {
+    x: number;
+    y: number;
+}
+/**
+ * Retro Snake Options
  */
 interface SnakeTypes extends BaseGameOptions {
     gridSize?: number;
@@ -360,11 +627,29 @@ interface SnakeTypes extends BaseGameOptions {
             unknownError?: string;
         };
     };
+    errors?: {
+        couldNotCreateGame?: string;
+        failedToGenerateBoard?: string;
+        connectionError?: string;
+    };
+}
+interface SnakeGameTypes {
+    gameID: string;
+    playerID: string;
+    username: string;
+    score: number;
+    snake: Point[];
+    food: Point;
+    direction: "UP" | "DOWN" | "LEFT" | "RIGHT";
+    gridSize: number;
+    gameOver: boolean;
 }
 /**
  * Will You Press The Button Options
  */
 interface WillYouPressTheButtonTypes extends BaseGameOptions {
+    perk?: string;
+    consequence?: string;
     button?: {
         yes?: string;
         no?: string;
@@ -384,10 +669,32 @@ interface WillYouPressTheButtonTypes extends BaseGameOptions {
         error?: string;
     };
 }
+interface DilemmaData {
+    id: string;
+    url: string;
+    question: string;
+    result: string;
+    stats: {
+        yes: {
+            percentage: string;
+            count: string;
+        };
+        no: {
+            percentage: string;
+            count: string;
+        };
+    };
+}
+/** Alias for WillYouPressTheButtonTypes */
+type WYPTBTypes = WillYouPressTheButtonTypes;
 /**
  * Would You Rather Options
  */
 interface WouldYouRatherTypes extends BaseGameOptions {
+    optionA?: string;
+    optionB?: string;
+    buttonA?: string;
+    buttonB?: string;
     buttons?: {
         optionA?: string;
         optionB?: string;
@@ -401,6 +708,8 @@ interface WouldYouRatherTypes extends BaseGameOptions {
         error?: string;
     };
 }
+/** Alias for WouldYouRatherTypes */
+type WYRTypes = WouldYouRatherTypes;
 /**
  * Rock Paper Scissors Options
  */
@@ -423,6 +732,19 @@ interface TicTacToeTypes extends BaseGameOptions {
         x?: string;
         o?: string;
         blank?: string;
+    };
+}
+/**
+ * Legacy bot usage data interface
+ */
+interface BotDataTypes {
+    botID: string;
+    botName: string;
+    secretKey: string;
+    usage: {
+        minigames: Record<string, number>;
+        inits: number;
+        totalRequests: number;
     };
 }
 /**
@@ -488,14 +810,25 @@ declare class ContextAdapter {
 
 declare abstract class BaseGame<T extends BaseGameOptions> implements IMinigame {
     id: string;
+    gameKey: string;
     ctx: ContextAdapter;
     options: T;
     manager: any;
     isActive: boolean;
+    defaultColor: number;
+    protected startTime: number;
     protected timeoutTimer: NodeJS.Timeout | null;
     protected defaultTimeout: number;
     constructor(manager: any, options: T, gameKey: string);
     abstract start(): Promise<any>;
+    /**
+     * Safely resolves a color according to the hierarchy:
+     * 1. Explicit override color passed
+     * 2. options.embed.color
+     * 3. manager.embedColor
+     * 4. fallback color
+     */
+    resolveColor(color?: ColorResolvable | string | number | null, fallback?: number): number;
     /**
      * Resets the inactivity timeout.
      */
@@ -510,12 +843,30 @@ declare abstract class BaseGame<T extends BaseGameOptions> implements IMinigame 
     protected onTimeout(): void;
     /**
      * Helper to construct a Components V2 ContainerBuilder with accent color.
+     * If the user provided an embed.color, it is strictly prioritized across all states.
      */
-    protected createContainer(accentColor?: number): ContainerBuilder;
+    createContainer(stateAccentColor?: number): ContainerBuilder;
     /**
      * Helper to construct a Components V2 MediaGalleryBuilder for attachments.
      */
     protected createMediaGallery(attachmentUrlOrName: string): MediaGalleryBuilder;
+    /**
+     * Applies custom embed properties (author, description, fields, footer, timestamp)
+     * to markdown text displayed inside a Components V2 Container.
+     */
+    applyEmbedDecorations(container: ContainerBuilder, content: string): string;
+    /**
+     * Emits the gameStart lifecycle event on WekyManager.
+     */
+    protected emitStart(): void;
+    /**
+     * Emits the gameOver lifecycle event on WekyManager.
+     */
+    protected emitEnd(outcome: string, score?: number): void;
+    /**
+     * Emits the gameError lifecycle event on WekyManager.
+     */
+    protected emitError(error: any): void;
     /**
      * Standardized Embed builder for backwards compatibility.
      */
@@ -531,118 +882,6 @@ declare abstract class BaseGame<T extends BaseGameOptions> implements IMinigame 
     onInteraction?(interaction: Interaction): Promise<void> | void;
     onMessage?(message: Message): Promise<void> | void;
     onTypingStart?(typing: any): Promise<void> | void;
-}
-
-/**
- * Global Event Multiplexer.
- * Attaches a single listener to the Discord Client to dispatch events to all active minigames
- * without triggering EventEmitter MaxListenersExceeded warnings or memory leaks.
- */
-declare class EventManager {
-    private client;
-    private activeGames;
-    private initialized;
-    constructor(client: Client);
-    private initListeners;
-    register(game: IMinigame): void;
-    unregister(gameId: string): void;
-    isRegistered(gameId: string): boolean;
-    getActiveCount(): number;
-}
-
-interface WekyManagerOptions {
-    /** Optional API key for legacy compatibility */
-    apiKey?: string;
-    /** Whether to log package notifications */
-    notifyUpdates?: boolean;
-}
-/**
- * Main manager class for the `@m3rcena/weky` Discord minigames engine.
- */
-declare class WekyManager {
-    _client: Client;
-    _eventManager: EventManager;
-    /**
-     * Initializes the WekyManager.
-     * @param client The Discord.js Client instance.
-     * @param legacyApiKeyOrOptions Optional API key or config object.
-     * @param legacyNotifyUpdates Optional flag for update notifications.
-     */
-    constructor(client: Client, legacyApiKeyOrOptions?: string | WekyManagerOptions, legacyNotifyUpdates?: boolean);
-    /**
-     * Starts a new **2048** minigame session.
-     */
-    create2048(options: Types2048): Promise<void>;
-    /**
-     * Starts a new **Calculator** session with safe mathematical evaluation.
-     */
-    createCalculator(options: CalcTypes): Promise<void>;
-    /**
-     * Starts a new **Chaos Words** minigame session.
-     */
-    createChaosWords(options: ChaosTypes): Promise<void>;
-    /**
-     * Starts a new **Fast Type** speed typing challenge.
-     */
-    createFastType(options: FastTypeTypes): Promise<void>;
-    /**
-     * Starts a new turn-based **Fight** duel RPG between two players.
-     */
-    createFight(options: FightTypes): Promise<void>;
-    /**
-     * Starts a new **Guess The Number** game (Solo or Public).
-     */
-    createGuessTheNumber(options: GuessTheNumberTypes): Promise<void>;
-    /**
-     * Starts a new **Guess The Pokemon** game featuring native canvas silhouettes.
-     */
-    createGuessThePokemon(options: GuessThePokemonTypes): Promise<void>;
-    /**
-     * Starts a new **Hangman** game featuring high-resolution canvas gallows.
-     */
-    createHangman(options: HangmanTypes): Promise<void>;
-    /**
-     * Starts a new **Lie Swatter** true-or-false trivia quiz.
-     */
-    createLieSwatter(options: LieSwatterTypes): Promise<void>;
-    /**
-     * Starts a new **Never Have I Ever** interactive party voting game.
-     */
-    createNeverHaveIEver(options: NeverHaveIEverTypes): Promise<void>;
-    /**
-     * Starts a new **Quick Click** reaction speed test.
-     */
-    createQuickClick(options: QuickClickTypes): Promise<void>;
-    /**
-     * Starts a new **Shuffle Guess** word unscramble puzzle.
-     */
-    createShuffleGuess(options: ShuffleGuessTypes): Promise<void>;
-    /**
-     * Starts a new **Snake** arcade game featuring retro canvas graphics.
-     */
-    createSnake(options: SnakeTypes): Promise<void>;
-    /**
-     * Starts a new **Will You Press The Button?** dilemma game.
-     */
-    createWillYouPressTheButton(options: WillYouPressTheButtonTypes): Promise<void>;
-    /**
-     * Starts a new **Would You Rather?** dilemma game.
-     */
-    createWouldYouRather(options: WouldYouRatherTypes): Promise<void>;
-    /**
-     * Starts a new **Rock Paper Scissors** game (Solo vs Bot or 2-Player).
-     */
-    createRPS(options: RPSTypes): Promise<void>;
-    createRockPaperScissors(options: RPSTypes): Promise<void>;
-    /**
-     * Starts a new interactive **Tic Tac Toe** match.
-     */
-    createTicTacToe(options: TicTacToeTypes): Promise<void>;
-    _getContextUserID(context: any): string;
-    getRandomString(length?: number, prefix?: string): string;
-    convertTime(timeMs: number): string;
-    shuffleString(str: string): string;
-    shuffleArray<T>(arr: T[]): T[];
 }
 
 declare class Calculator extends BaseGame<CalcTypes> {
@@ -676,7 +915,6 @@ declare class ChaosWords extends BaseGame<ChaosTypes> {
     private maxTries;
     private btnPrefix;
     private gameTitle;
-    private defaultColor;
     constructor(manager: any, options: ChaosTypes);
     start(): Promise<void>;
     private generateChaosString;
@@ -688,11 +926,10 @@ declare class ChaosWords extends BaseGame<ChaosTypes> {
 
 declare class FastType extends BaseGame<FastTypeTypes> {
     private sentence;
-    private startTime;
     private hasTyped;
     private btnPrefix;
     private gameTitle;
-    private defaultColor;
+    private checkCheating;
     constructor(manager: any, options: FastTypeTypes);
     start(): Promise<void>;
     onTypingStart(typing: any): void;
@@ -711,7 +948,6 @@ declare class Fight extends BaseGame<FightTypes> {
     private currentTurnId;
     private btnPrefix;
     private lastAnnouncement;
-    private defaultColor;
     constructor(manager: any, options: FightTypes);
     start(): Promise<void>;
     onInteraction(interaction: Interaction): Promise<void>;
@@ -731,7 +967,6 @@ declare class Game2048 extends BaseGame<Types2048> {
     private hasWon;
     private isGameOver;
     private gameTitle;
-    private defaultColor;
     private emojiUp;
     private emojiDown;
     private emojiLeft;
@@ -762,11 +997,9 @@ declare class GuessTheNumber extends BaseGame<GuessTheNumberTypes> {
     private currentMax;
     private attempts;
     private participants;
-    private startTime;
     private isPublic;
     private btnPrefix;
     private gameTitle;
-    private defaultColor;
     constructor(manager: any, options: GuessTheNumberTypes);
     start(): Promise<void>;
     onInteraction(interaction: Interaction): Promise<void>;
@@ -779,9 +1012,7 @@ declare class GuessThePokemon extends BaseGame<GuessThePokemonTypes> {
     private pokemon;
     private btnPrefix;
     private modalId;
-    private startTime;
     private gameTitle;
-    private defaultColor;
     private giveUpButtonLabel;
     constructor(manager: any, options: GuessThePokemonTypes);
     start(): Promise<void>;
@@ -798,10 +1029,10 @@ declare class Hangman extends BaseGame<HangmanTypes> {
     private displayWord;
     private guessedLetters;
     private wrongGuesses;
+    private maxMistakes;
     private btnPrefix;
     private modalId;
     private gameTitle;
-    private defaultColor;
     private quitButtonLabel;
     constructor(manager: any, options: HangmanTypes);
     start(): Promise<void>;
@@ -817,10 +1048,8 @@ declare class Hangman extends BaseGame<HangmanTypes> {
 
 declare class LieSwatter extends BaseGame<LieSwatterTypes> {
     private fact;
-    private startTime;
     private btnPrefix;
     private gameTitle;
-    private defaultColor;
     private labelTrue;
     private labelLie;
     constructor(manager: any, options: LieSwatterTypes);
@@ -836,7 +1065,6 @@ declare class NeverHaveIEver extends BaseGame<NeverHaveIEverTypes> {
     private neverVoters;
     private btnPrefix;
     private gameTitle;
-    private defaultColor;
     constructor(manager: any, options: NeverHaveIEverTypes);
     start(): Promise<void>;
     onInteraction(interaction: Interaction): Promise<void>;
@@ -848,11 +1076,12 @@ declare class QuickClick extends BaseGame<QuickClickTypes> {
     private targetIndex;
     private btnPrefix;
     private isWaiting;
-    private startTime;
     private waitTimer;
     private emoji;
     private gameTitle;
-    private defaultColor;
+    private buttonCount;
+    private minDelay;
+    private maxDelay;
     constructor(manager: any, options: QuickClickTypes);
     start(): Promise<void>;
     private triggerActiveState;
@@ -869,7 +1098,6 @@ declare class RockPaperScissors extends BaseGame<RPSTypes> {
     private p2Move;
     private btnPrefix;
     private gameTitle;
-    private defaultColor;
     constructor(manager: any, options: RPSTypes);
     start(): Promise<void>;
     onInteraction(interaction: Interaction): Promise<void>;
@@ -880,10 +1108,8 @@ declare class RockPaperScissors extends BaseGame<RPSTypes> {
 declare class ShuffleGuess extends BaseGame<ShuffleGuessTypes> {
     private targetWord;
     private scrambled;
-    private startTime;
     private btnPrefix;
     private gameTitle;
-    private defaultColor;
     constructor(manager: any, options: ShuffleGuessTypes);
     start(): Promise<void>;
     private getValidScramble;
@@ -901,7 +1127,6 @@ declare class Snake extends BaseGame<SnakeTypes> {
     private score;
     private isGameOver;
     private gameTitle;
-    private defaultColor;
     private emojiUp;
     private emojiDown;
     private emojiLeft;
@@ -929,7 +1154,6 @@ declare class TicTacToe extends BaseGame<TicTacToeTypes> {
     private currentTurnId;
     private btnPrefix;
     private gameTitle;
-    private defaultColor;
     constructor(manager: any, options: TicTacToeTypes);
     start(): Promise<void>;
     onInteraction(interaction: Interaction): Promise<void>;
@@ -942,7 +1166,6 @@ declare class WillYouPressTheButton extends BaseGame<WillYouPressTheButtonTypes>
     private dilemma;
     private btnPrefix;
     private gameTitle;
-    private defaultColor;
     private labelYes;
     private labelNo;
     constructor(manager: any, options: WillYouPressTheButtonTypes);
@@ -956,7 +1179,6 @@ declare class WouldYouRather extends BaseGame<WouldYouRatherTypes> {
     private dilemma;
     private btnPrefix;
     private gameTitle;
-    private defaultColor;
     private labelA;
     private labelB;
     constructor(manager: any, options: WouldYouRatherTypes);
@@ -1623,6 +1845,37 @@ declare class MathEvaluator {
     private static evaluateRPN;
 }
 
+/**
+ * Utility functions for update checking and terminal box notifications.
+ *
+ * @copyright 2026 M3rcena Development. All rights reserved.
+ * @license Apache-2.0
+ */
+/**
+ * Strips ANSI color escape codes to compute visible string length.
+ */
+declare function stripAnsi(str: string): string;
+/**
+ * Renders an array of text messages inside a styled terminal box.
+ */
+declare function boxConsole(messages: string[]): void;
+/**
+ * Compares two semantic version strings.
+ * Returns -1 if v1 < v2, 0 if equal, 1 if v1 > v2.
+ */
+declare function compareSemver(v1: string, v2: string): number;
+/**
+ * Fetches the latest published version of `@m3rcena/weky` from the npm registry.
+ */
+declare function fetchLatestVersion(): Promise<string | null>;
+/**
+ * Checks if a newer version of `@m3rcena/weky` is available and logs the notification box.
+ * @param currentVersion Current running package version.
+ * @param disabled If true, update checking is bypassed.
+ * @param gameName Optional name of the game being executed.
+ */
+declare function checkPackageUpdates(currentVersion: string, disabled?: boolean, gameName?: string): Promise<void>;
+
 interface WYPTBDilemma {
     question: string;
     consequence: string;
@@ -1643,16 +1896,6 @@ declare const WYPTB_DILEMMAS: WYPTBDilemma[];
 declare const WYR_DILEMMAS: WYRDilemma[];
 declare function getRandomWYPTB(): WYPTBDilemma;
 declare function getRandomWYR(): WYRDilemma;
-
-interface PokemonData {
-    id: number;
-    name: string;
-    types: string[];
-    abilities: string[];
-    imageUrl: string;
-}
-declare const POPULAR_POKEMONS: PokemonData[];
-declare function fetchRandomPokemon(): Promise<PokemonData>;
 
 declare const EASY_SENTENCES: string[];
 declare const MEDIUM_SENTENCES: string[];
@@ -1678,16 +1921,5 @@ declare function getRandomHangmanWord(category?: string): {
     category: string;
 };
 
-/**
- * @m3rcena/weky
- * The ultimate modern Discord minigames engine.
- * Powered by @napi-rs/canvas, hybrid Slash/Message contexts, and zero external dependencies.
- *
- * @copyright 2026 M3rcena Development. All rights reserved.
- * @license Apache-2.0
- */
-declare const version = "14.27.0";
-declare const VERSION = "14.27.0";
-
-export { BaseGame, COMMON_WORDS, Calculator, CalculatorEngine, CanvasUtils, ChaosWords, ContextAdapter, EASY_SENTENCES, EventManager, FastType, Fight, FightEngine, Game2048, Game2048Engine, GuessTheNumber, GuessThePokemon, HANGMAN_CATEGORIES, HARD_SENTENCES, Hangman, HangmanEngine, LieSwatter, MEDIUM_SENTENCES, MathEvaluator, NEVER_HAVE_I_EVER_PROMPTS, NeverHaveIEver, POPULAR_POKEMONS, QuickClick, Render2048, RenderFight, RenderHangman, RenderPokemon, RenderSnake, RockPaperScissors, ShuffleGuess, Snake, SnakeEngine, TRIVIA_FACTS, TicTacToe, TicTacToeEngine, VERSION, WYPTB_DILEMMAS, WYR_DILEMMAS, WekyCanvas, WekyEngine, WekyManager, WillYouPressTheButton, WouldYouRather, clamp, fetchRandomPokemon, formatTime, getRandomHangmanWord, getRandomNHIE, getRandomSentence, getRandomString, getRandomTriviaFact, getRandomWYPTB, getRandomWYR, getRandomWord, getRandomWords, safeResolveColor, shuffleArray, shuffleString, version };
-export type { BaseGameOptions, CalcTypes, CalculatorState, ChaosTypes, ContextSendOptions, EvaluationResult, FastTypeTypes, FightEngineOptions, FightPlayerInfo, FightPowerUp, FightState, FightTypes, Game2048EngineOptions, Game2048State, GameContextInput, GameControlItem, GameControlRow, GuessTheNumberTypes, GuessThePokemonTypes, HangmanEngineOptions, HangmanState, HangmanTypes, IMinigame, LieSwatterTypes, NeverHaveIEverTypes, PokemonData, QuickClickTypes, RPSTypes, ShuffleGuessTypes, SnakeEngineOptions, SnakeState, SnakeTypes, TicTacToeEngineOptions, TicTacToeState, TicTacToeTypes, TriviaFact, Types2048, WYPTBDilemma, WYRDilemma, WekyManagerOptions, WillYouPressTheButtonTypes, WouldYouRatherTypes };
+export { BaseGame, COMMON_WORDS, Calculator, CalculatorEngine, CanvasUtils, ChaosWords, ContextAdapter, EASY_SENTENCES, EventManager, FastType, Fight, FightEngine, Game2048, Game2048Engine, GuessTheNumber, GuessThePokemon, HANGMAN_CATEGORIES, HARD_SENTENCES, Hangman, HangmanEngine, LieSwatter, MEDIUM_SENTENCES, MathEvaluator, NEVER_HAVE_I_EVER_PROMPTS, NeverHaveIEver, POPULAR_POKEMONS, QuickClick, Render2048, RenderFight, RenderHangman, RenderPokemon, RenderSnake, RockPaperScissors, ShuffleGuess, Snake, SnakeEngine, TRIVIA_FACTS, TicTacToe, TicTacToeEngine, VERSION, WYPTB_DILEMMAS, WYR_DILEMMAS, WekyCanvas, WekyEngine, WekyManager, WillYouPressTheButton, WouldYouRather, boxConsole, checkPackageUpdates, clamp, compareSemver, fetchLatestVersion, fetchRandomPokemon, formatTime, getRandomHangmanWord, getRandomNHIE, getRandomSentence, getRandomString, getRandomTriviaFact, getRandomWYPTB, getRandomWYR, getRandomWord, getRandomWords, safeResolveColor, shuffleArray, shuffleString, stripAnsi, version };
+export type { Author, BaseGameOptions, BotDataTypes, CalcTypes, CalculatorState, ChaosTypes, ChaosWordsTypes, ContextSendOptions, CustomOptions, DilemmaData, Embeds, EvaluationResult, FastTypeTypes, Fields, FightEngineOptions, FightPlayerInfo, FightPowerUp, FightState, FightTypes, Game2048EngineOptions, Game2048State, GameContextInput, GameControlItem, GameControlRow, GuessTheNumberTypes, GuessThePokemonData, GuessThePokemonTypes, HangmanEngineOptions, HangmanState, HangmanTypes, IMinigame, LieSwatterTypes, NeverHaveIEverTypes, PlayerData, Point, PokemonData, PokemonEntry, PowerUp, QuickClickTypes, RPSTypes, ShuffleGuessTypes, SnakeEngineOptions, SnakeGameTypes, SnakeState, SnakeTypes, TicTacToeEngineOptions, TicTacToeState, TicTacToeTypes, TriviaFact, Types2048, WYPTBDilemma, WYPTBTypes, WYRDilemma, WYRTypes, WekyManagerOptions, WillYouPressTheButtonTypes, WouldYouRatherTypes };

@@ -2,15 +2,13 @@ import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ContainerBuilder, Interac
 import { BaseGame } from "../core/BaseGame.js";
 import { ShuffleGuessTypes } from "../core/Types.js";
 import { getRandomWord } from "../data/words.js";
-import { formatTime, getRandomString, safeResolveColor, shuffleString } from "../utils/Helpers.js";
+import { formatTime, getRandomString, shuffleString } from "../utils/Helpers.js";
 
 export class ShuffleGuess extends BaseGame<ShuffleGuessTypes> {
   private targetWord: string = "";
   private scrambled: string = "";
-  private startTime: number = 0;
   private btnPrefix: string;
   private gameTitle: string;
-  private defaultColor: number;
 
   constructor(manager: any, options: ShuffleGuessTypes) {
     super(manager, options, "shuffleguess");
@@ -18,14 +16,15 @@ export class ShuffleGuess extends BaseGame<ShuffleGuessTypes> {
     this.targetWord = (options.word || getRandomWord()).toUpperCase().trim();
     this.scrambled = this.getValidScramble(this.targetWord);
     this.gameTitle = options.embed?.title || "Shuffle Guess";
-    this.defaultColor = safeResolveColor(options.embed?.color, 0x5865f2);
-    this.defaultTimeout = options.time || 60_000;
+    this.defaultColor = this.resolveColor(options.embed?.color);
+    this.defaultTimeout = options.time || manager?.defaultTimeout || 60_000;
   }
 
   public async start(): Promise<void> {
     this.startTime = Date.now();
     this.isActive = true;
     this.manager._eventManager.register(this);
+    this.emitStart();
 
     const container = this.createGameContainer("active");
 
@@ -94,6 +93,7 @@ export class ShuffleGuess extends BaseGame<ShuffleGuessTypes> {
     this.isActive = false;
     this.clearTimer();
     this.destroy();
+    this.emitEnd(state);
 
     const elapsed = formatTime(Date.now() - this.startTime);
     const container = this.createGameContainer(state, { timeTaken: elapsed });
@@ -105,7 +105,15 @@ export class ShuffleGuess extends BaseGame<ShuffleGuessTypes> {
   }
 
   private createGameContainer(state: "active" | "reshuffled" | "wrong" | "won" | "quit" | "timeout", data?: { feedback?: string; timeTaken?: string }): ContainerBuilder {
-    const container = new ContainerBuilder();
+    const stateColors: Record<string, number> = {
+      active: this.defaultColor,
+      reshuffled: this.defaultColor,
+      wrong: 0xed4245,
+      won: 0x57f287,
+      quit: 0xed4245,
+      timeout: 0xed4245,
+    };
+    const container = this.createContainer(stateColors[state]);
     let content = "";
     const formatted = this.scrambled.split("").join("  ");
 
@@ -113,7 +121,6 @@ export class ShuffleGuess extends BaseGame<ShuffleGuessTypes> {
       case "active":
       case "reshuffled":
       case "wrong":
-        container.setAccentColor(state === "wrong" ? 0xed4245 : this.defaultColor);
         content = `## ${this.gameTitle}\n`;
         if (data?.feedback) {
           content += `> ${data.feedback}\n\n`;
@@ -122,21 +129,19 @@ export class ShuffleGuess extends BaseGame<ShuffleGuessTypes> {
         break;
 
       case "won":
-        container.setAccentColor(0x57f287);
         content = `## 🎉 Word Solved!\n` + `> 🏆 **GG <@${this.ctx.userId}>!**\n> You unscrambled **${this.targetWord}** in **${data?.timeTaken || "0s"}**!`;
         break;
 
       case "quit":
-        container.setAccentColor(0xed4245);
         content = `## 🛑 Game Over\n` + `> You gave up! The secret word was **${this.targetWord}**.`;
         break;
 
       case "timeout":
-        container.setAccentColor(0xed4245);
         content = `## ⏱️ Time's Up\n` + `> Session expired. The secret word was **${this.targetWord}**.`;
         break;
     }
 
+    content = this.applyEmbedDecorations(container, content);
     container.addTextDisplayComponents((t) => t.setContent(content));
 
     if (state === "active" || state === "reshuffled" || state === "wrong") {

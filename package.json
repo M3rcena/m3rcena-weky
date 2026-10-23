@@ -1,6 +1,6 @@
 {
   "name": "@m3rcena/weky",
-  "version": "14.27.0",
+  "version": "14.27.0-1",
   "description": "The ultimate Discord minigames engine with blazingly fast @napi-rs/canvas graphics, hybrid Slash/Message support, and zero external dependencies.",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -20,7 +20,8 @@
   "files": [
     "dist",
     "assets",
-    "DOCUMENTATION.md"
+    "DOCUMENTATION.md",
+    "CHANGELOG.md"
   ],
   "publishConfig": {
     "access": "public"
@@ -29,7 +30,7 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
-    "test": "tsx test/verify.ts && tsx test/componentsV2.test.ts && tsx test/dashboard.test.ts",
+    "test": "tsx test/verify.ts && tsx test/componentsV2.test.ts && tsx test/dashboard.test.ts && tsx test/managerAndCustomizations.test.ts",
     "test:bot": "tsx test/index.ts"
   },
   "keywords": [

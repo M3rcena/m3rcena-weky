@@ -2,7 +2,7 @@ import { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, Contai
 import { Render2048 } from "../canvas/Render2048.js";
 import { BaseGame } from "../core/BaseGame.js";
 import { Types2048 } from "../core/Types.js";
-import { getRandomString, safeResolveColor } from "../utils/Helpers.js";
+import { getRandomString } from "../utils/Helpers.js";
 
 export class Game2048 extends BaseGame<Types2048> {
   private board: number[][] = [];
@@ -10,7 +10,6 @@ export class Game2048 extends BaseGame<Types2048> {
   private hasWon: boolean = false;
   private isGameOver: boolean = false;
   private gameTitle: string;
-  private defaultColor: number;
 
   private emojiUp: string;
   private emojiDown: string;
@@ -34,7 +33,7 @@ export class Game2048 extends BaseGame<Types2048> {
     this.idQuit = `${uid}_quit`;
 
     this.gameTitle = options.embed?.title || "2048";
-    this.defaultColor = safeResolveColor(options.embed?.color, 0x5865f2);
+    this.defaultColor = this.resolveColor(options.embed?.color);
 
     this.emojiUp = options.emojis?.up || "⬆️";
     this.emojiDown = options.emojis?.down || "⬇️";
@@ -42,13 +41,14 @@ export class Game2048 extends BaseGame<Types2048> {
     this.emojiRight = options.emojis?.right || "➡️";
     this.quitButtonLabel = options.quitButton || "Quit";
 
-    this.defaultTimeout = options.time || 300_000;
+    this.defaultTimeout = options.time || manager?.defaultTimeout || 300_000;
   }
 
   public async start(): Promise<void> {
     this.initBoard();
     this.isActive = true;
     this.manager._eventManager.register(this);
+    this.emitStart();
 
     const initialContainer = this.createGameContainer("loading");
     await this.ctx.sendInitial({
@@ -238,6 +238,7 @@ export class Game2048 extends BaseGame<Types2048> {
     this.isActive = false;
     this.clearTimer();
     this.destroy();
+    this.emitEnd(state, this.score);
 
     if (!attachment && state !== "error") {
       const buffer = await this.renderBoardImage(state);
@@ -255,47 +256,50 @@ export class Game2048 extends BaseGame<Types2048> {
   }
 
   private createGameContainer(state: "loading" | "active" | "won" | "gameover" | "quit" | "timeout" | "error", details?: { error?: string; image?: string; score?: number }): ContainerBuilder {
-    const container = new ContainerBuilder();
+    const stateColors: Record<string, number> = {
+      loading: this.defaultColor,
+      active: this.defaultColor,
+      won: 0x57f287,
+      gameover: 0xed4245,
+      quit: 0xed4245,
+      timeout: 0xed4245,
+      error: 0xff0000,
+    };
+    const container = this.createContainer(stateColors[state]);
     let content = "";
     const score = details?.score ?? this.score;
 
     switch (state) {
       case "loading":
-        container.setAccentColor(this.defaultColor);
         content = this.options.loadingMessage ? this.options.loadingMessage.replace("{{gameTitle}}", this.gameTitle) : `## ${this.gameTitle}\n> 🔄 Starting game...`;
         break;
 
       case "active":
-        container.setAccentColor(this.defaultColor);
         content = this.options.activeMessage ? this.options.activeMessage.replace("{{gameTitle}}", this.gameTitle).replace("{{score}}", score.toString()) : `## ${this.gameTitle}\n> Combine the tiles to reach **2048**!\n\n**Score:** \`${score}\``;
         break;
 
       case "won":
-        container.setAccentColor(0x57f287);
         content = this.options.wonMessage ? this.options.wonMessage.replace("{{score}}", score.toString()) : `## 🎉 You Won!\n> You reached the **2048** tile!\n\n**Final Score:** \`${score}\``;
         break;
 
       case "gameover":
-        container.setAccentColor(0xed4245);
         content = this.options.gameoverMessage ? this.options.gameoverMessage.replace("{{score}}", score.toString()) : `## 💀 Game Over\n> No more moves available.\n\n**Final Score:** \`${score}\``;
         break;
 
       case "quit":
-        container.setAccentColor(0xed4245);
         content = this.options.quitMessage ? this.options.quitMessage.replace("{{score}}", score.toString()) : `## 🛑 Game Stopped\n> You quit the game.\n\n**Final Score:** \`${score}\``;
         break;
 
       case "timeout":
-        container.setAccentColor(0xed4245);
         content = this.options.timeoutMessage ? this.options.timeoutMessage.replace("{{score}}", score.toString()) : `## ⏱️ Time's Up\n> Game session expired.\n\n**Final Score:** \`${score}\``;
         break;
 
       case "error":
-        container.setAccentColor(0xff0000);
         content = this.options.errorMessage ? this.options.errorMessage.replace("{{error}}", details?.error || "Unknown") : `## ❌ Error\n> ${details?.error || "Unknown error occurred."}`;
         break;
     }
 
+    content = this.applyEmbedDecorations(container, content);
     container.addTextDisplayComponents((t) => t.setContent(content));
 
     if (details?.image) {

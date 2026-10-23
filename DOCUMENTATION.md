@@ -108,7 +108,44 @@ const weky = new WekyManager(client, {
   defaultTimeout: 60_000, // Default game timeout (ms)
   embedColor: "#5865F2", // Default brand color
   unauthorizedMessage: "⛔ Only the game initiator can interact with these buttons!",
+  notifyUpdates: true, // Log styled alert box in console when a new package version is on npm (default: true)
 });
+```
+
+#### Flexible Constructor Signatures
+
+`WekyManager` supports flexible initialization to maintain 100% backwards compatibility:
+
+```typescript
+// 1. Recommended: Options object
+new WekyManager(client, { defaultTimeout, embedColor, unauthorizedMessage, notifyUpdates });
+
+// 2. Boolean toggle: Enable or disable update notification box
+new WekyManager(client, false);
+
+// 3. Legacy signature: Backwards compatible with older versions
+new WekyManager(client, "apiKey", false);
+```
+
+### Terminal Update Notification Box
+
+When `notifyUpdates` is active (default), `WekyManager` automatically queries the npm registry upon bot startup without blocking execution. If an update is detected, an alert box is rendered to your console:
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│                                                             │
+│         New version of @m3rcena/weky is available!          │
+│                     14.27.0 -> 14.28.0                      │
+│    Registry: https://www.npmjs.com/package/@m3rcena/weky    │
+│         Run npm i @m3rcena/weky@14.28.0 to update!          │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+You can also trigger manual checks in code via:
+
+```typescript
+await weky.checkUpdates();
 ```
 
 ### Global Event Hooks

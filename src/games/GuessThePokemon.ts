@@ -3,15 +3,13 @@ import { RenderPokemon } from "../canvas/RenderPokemon.js";
 import { BaseGame } from "../core/BaseGame.js";
 import { GuessThePokemonTypes } from "../core/Types.js";
 import { fetchRandomPokemon, PokemonData } from "../data/pokemons.js";
-import { formatTime, getRandomString, safeResolveColor } from "../utils/Helpers.js";
+import { formatTime, getRandomString } from "../utils/Helpers.js";
 
 export class GuessThePokemon extends BaseGame<GuessThePokemonTypes> {
   private pokemon: PokemonData | null = null;
   private btnPrefix: string;
   private modalId: string;
-  private startTime: number = 0;
   private gameTitle: string;
-  private defaultColor: number;
   private giveUpButtonLabel: string;
 
   constructor(manager: any, options: GuessThePokemonTypes) {
@@ -19,14 +17,15 @@ export class GuessThePokemon extends BaseGame<GuessThePokemonTypes> {
     this.btnPrefix = getRandomString(6, "gtp_");
     this.modalId = `${this.btnPrefix}modal`;
     this.gameTitle = options.embed?.title || "Who's That Pokémon?";
-    this.defaultColor = safeResolveColor(options.embed?.color, 0x5865f2);
+    this.defaultColor = this.resolveColor(options.embed?.color);
     this.giveUpButtonLabel = options.giveUpButton || "Give Up";
-    this.defaultTimeout = options.time || 60_000;
+    this.defaultTimeout = options.time || manager?.defaultTimeout || 60_000;
   }
 
   public async start(): Promise<void> {
     this.isActive = true;
     this.manager._eventManager.register(this);
+    this.emitStart();
 
     const loadingContainer = this.createGameContainer("loading");
     await this.ctx.sendInitial({
@@ -35,8 +34,12 @@ export class GuessThePokemon extends BaseGame<GuessThePokemonTypes> {
     });
 
     try {
-      this.pokemon = await fetchRandomPokemon();
+      this.pokemon = this.options.pokemon || (await fetchRandomPokemon());
     } catch {
+      return this.endGame("error", "Failed to retrieve Pokémon data.");
+    }
+
+    if (!this.pokemon) {
       return this.endGame("error", "Failed to retrieve Pokémon data.");
     }
 
@@ -137,6 +140,7 @@ export class GuessThePokemon extends BaseGame<GuessThePokemonTypes> {
     this.isActive = false;
     this.clearTimer();
     this.destroy();
+    this.emitEnd(state);
 
     if (!this.pokemon) {
       const container = this.createGameContainer("error", { error: errorMsg || "Unknown error occurred." });
@@ -165,18 +169,23 @@ export class GuessThePokemon extends BaseGame<GuessThePokemonTypes> {
   }
 
   private createGameContainer(state: "loading" | "active" | "won" | "lost" | "error", details?: { image?: string; error?: string; statusNotice?: string; timeTaken?: string }): ContainerBuilder {
-    const container = new ContainerBuilder();
+    const stateColors: Record<string, number> = {
+      loading: this.defaultColor,
+      active: this.defaultColor,
+      won: 0x57f287,
+      lost: 0xed4245,
+      error: 0xff0000,
+    };
+    const container = this.createContainer(stateColors[state]);
     let content = "";
     const name = this.pokemon?.name || "Unknown";
 
     switch (state) {
       case "loading":
-        container.setAccentColor(this.defaultColor);
         content = this.options.states?.loading ? this.options.states.loading.replace("{{gameTitle}}", this.gameTitle) : `## ${this.gameTitle}\n> 🔄 ${this.options.thinkMessage || "Searching the tall grass for a wild Pokémon..."}`;
         break;
 
       case "active":
-        container.setAccentColor(this.defaultColor);
         const typesStr = this.pokemon?.types.map((t) => `\`${t}\``).join(", ") || "`Unknown`";
         const abilitiesStr = this.pokemon?.abilities.map((a) => `\`${a}\``).join(", ") || "`Unknown`";
 
@@ -184,23 +193,21 @@ export class GuessThePokemon extends BaseGame<GuessThePokemonTypes> {
         break;
 
       case "won":
-        container.setAccentColor(0x57f287);
         const winText = this.options.winMessage ? this.options.winMessage.replace("{{answer}}", name).replace("{{time}}", details?.timeTaken || "0s") : `GG! It was **${name}**. You got it in **${details?.timeTaken || "0s"}**!`;
         content = this.options.states?.won ? this.options.states.won.replace("{{gameTitle}}", this.gameTitle).replace("{{answer}}", name) : `## 🎉 Pokémon Identified!\n> 🏆 ${winText}`;
         break;
 
       case "lost":
-        container.setAccentColor(0xed4245);
         const loseText = this.options.loseMessage ? this.options.loseMessage.replace("{{answer}}", name) : `Better luck next time! It was **${name}**.`;
         content = this.options.states?.lost ? this.options.states.lost.replace("{{gameTitle}}", this.gameTitle).replace("{{answer}}", name) : `## 💨 Pokémon Got Away!\n> ${loseText}`;
         break;
 
       case "error":
-        container.setAccentColor(0xff0000);
         content = this.options.states?.error ? this.options.states.error.replace("{{error}}", details?.error || "Unknown error.") : `## ❌ Error\n> ${details?.error || "Unknown error occurred."}`;
         break;
     }
 
+    content = this.applyEmbedDecorations(container, content);
     container.addTextDisplayComponents((t) => t.setContent(content));
 
     if (details?.image) {

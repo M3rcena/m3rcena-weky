@@ -48,10 +48,12 @@ The original `weky` relied on external backend servers and database round-trips 
 
 ---
 
-## 📚 Complete Documentation
+## 📚 Complete Documentation & Changelog
 
 Looking for exhaustive options, callback signatures, headless engine hooks, or canvas rendering methods for all 17 minigames?
-👉 **[Read the Full Documentation (DOCUMENTATION.md)](./DOCUMENTATION.md)**
+
+- 📖 **[Read the Full Documentation (DOCUMENTATION.md)](./DOCUMENTATION.md)**
+- 📋 **[View Version History & Changelog (CHANGELOG.md)](./CHANGELOG.md)**
 
 ---
 
@@ -83,8 +85,12 @@ let weky: WekyManager;
 
 client.once("ready", (c) => {
   console.log(`✅ ${c.user.tag} is online!`);
-  // Initialize Weky with your client (no API key needed!)
-  weky = new WekyManager(c);
+  // Initialize Weky with custom brand color, timeout, and update notifier
+  weky = new WekyManager(c, {
+    embedColor: "#5865F2", // Default brand color for all games
+    defaultTimeout: 60_000, // Default timeout (ms)
+    notifyUpdates: true, // Alerts in console when a new package version is on npm
+  });
 });
 
 client.login("YOUR_BOT_TOKEN");
@@ -100,9 +106,24 @@ await weky.create2048({
   context: interaction, // or message
   embed: {
     title: "2048 Challenge",
-    color: "Blurple",
+    color: "#5865F2", // Accepts Hex, Number (0x5865F2), or Discord color names
   },
 });
+```
+
+### 3. Terminal Update Notifier Box
+
+When `notifyUpdates` is enabled (default), Weky automatically checks the npm registry in the background and alerts you in your console if an update is available:
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│                                                             │
+│         New version of @m3rcena/weky is available!          │
+│                     14.27.0 -> 14.28.0                      │
+│    Registry: https://www.npmjs.com/package/@m3rcena/weky    │
+│         Run npm i @m3rcena/weky@14.28.0 to update!          │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---

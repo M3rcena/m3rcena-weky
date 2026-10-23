@@ -2,7 +2,6 @@ import { ActionRowBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle, Contai
 import { BaseGame } from "../core/BaseGame.js";
 import { ContextAdapter } from "../core/ContextAdapter.js";
 import { CalcTypes } from "../core/Types.js";
-import { safeResolveColor } from "../utils/Helpers.js";
 import { MathEvaluator } from "../utils/MathEvaluator.js";
 
 const STANDARD_KEYS = ["DC", "(", ")", "⌫", "AC", "7", "8", "9", "÷", "^", "4", "5", "6", "x", "SQRT", "1", "2", "3", " - ", " + ", "2nd", "0", ".", "ans", "="];
@@ -30,8 +29,8 @@ export class Calculator extends BaseGame<CalcTypes> {
 
   constructor(manager: any, options: CalcTypes) {
     super(manager, options, "calc");
-    this.accentColor = safeResolveColor(options.embed?.color, 0x5865f2);
-    this.defaultTimeout = options.time || 300_000;
+    this.accentColor = this.resolveColor(options.embed?.color);
+    this.defaultTimeout = options.time || manager?.defaultTimeout || 300_000;
 
     this.modalOperations = {
       calLG: {
@@ -86,6 +85,7 @@ export class Calculator extends BaseGame<CalcTypes> {
   public async start(): Promise<void> {
     this.isActive = true;
     this.manager._eventManager.register(this);
+    this.emitStart();
 
     const container = this.buildContainer();
 
@@ -247,12 +247,15 @@ export class Calculator extends BaseGame<CalcTypes> {
     this.isActive = false;
     this.clearTimer();
     this.destroy();
+    this.emitEnd("closed");
 
     const endMsg = this.options.sessionEndMessage || "Calculator Session Closed";
 
     if (this.msg1) {
-      const container = new ContainerBuilder().setAccentColor(this.accentColor);
-      container.addTextDisplayComponents((t) => t.setContent(`\`\`\`\n${endMsg}\n\`\`\``));
+      const container = this.createContainer(this.accentColor);
+      let content = `\`\`\`\n${endMsg}\n\`\`\``;
+      content = this.applyEmbedDecorations(container, content);
+      container.addTextDisplayComponents((t) => t.setContent(content));
       const keys = this.is2nd ? SCIENTIFIC_KEYS : STANDARD_KEYS;
       this.addButtonsToContainer(container, keys, true);
 
@@ -266,8 +269,11 @@ export class Calculator extends BaseGame<CalcTypes> {
   }
 
   private buildContainer(forceEmpty: boolean = false): ContainerBuilder {
-    const container = new ContainerBuilder().setAccentColor(this.accentColor);
-    container.addTextDisplayComponents((t) => t.setContent(this.getDisplay()));
+    const container = this.createContainer(this.accentColor);
+    const header = this.options.embed?.title ? `## ${this.options.embed.title}\n` : "";
+    let content = `${header}${this.getDisplay()}`;
+    content = this.applyEmbedDecorations(container, content);
+    container.addTextDisplayComponents((t) => t.setContent(content));
 
     const keys = this.is2nd ? SCIENTIFIC_KEYS : STANDARD_KEYS;
     this.addButtonsToContainer(container, keys, forceEmpty);

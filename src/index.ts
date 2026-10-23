@@ -7,8 +7,7 @@
  * @license Apache-2.0
  */
 
-export const version = "14.27.0";
-export const VERSION = "14.27.0";
+export { version, VERSION } from "./version.js";
 
 // Core Manager and Adapters
 export { BaseGame } from "./core/BaseGame.js";
@@ -54,6 +53,7 @@ export { RenderSnake } from "./canvas/RenderSnake.js";
 // Utilities
 export { clamp, formatTime, getRandomString, safeResolveColor, shuffleArray, shuffleString } from "./utils/Helpers.js";
 export { MathEvaluator, type EvaluationResult } from "./utils/MathEvaluator.js";
+export { boxConsole, checkPackageUpdates, compareSemver, fetchLatestVersion, stripAnsi } from "./utils/Notifier.js";
 
 // Datasets
 export * from "./data/dilemmas.js";

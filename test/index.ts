@@ -4,6 +4,7 @@ import { WekyManager } from "../src/index.js";
 
 const TOKEN = process.env.DISCORD_TOKEN || "YOUR_BOT_TOKEN_HERE";
 const CLIENT_ID = process.env.CLIENT_ID || "YOUR_CLIENT_ID_HERE";
+const GUILD_ID = process.env.GUILD_ID;
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMessageTyping],
@@ -52,17 +53,48 @@ const commands = [
 
 client.once(Events.ClientReady, async (c) => {
   console.log(`🎮 [Weky Bot] Logged in as ${c.user.tag}!`);
-  weky = new WekyManager(c);
 
-  // Auto-register slash commands if token and client id provided
+  weky = new WekyManager(c, {
+    notifyUpdates: true,
+    embedColor: "#5865F2",
+    defaultTimeout: 60_000,
+    unauthorizedMessage: "⛔ Only the game initiator can interact with these buttons!",
+  });
+
+  // Attach lifecycle event listeners
+  weky.on("gameStart", ({ game, user, channelId }) => {
+    console.log(`[Weky Event] 🟢 ${user?.username || "Unknown"} started minigame "${game}" in channel <#${channelId}>`);
+  });
+
+  weky.on("gameOver", ({ game, user, outcome, score, timeElapsed }) => {
+    console.log(`[Weky Event] 🏁 ${user?.username || "Unknown"} finished "${game}" (outcome: ${outcome}, score: ${score}, elapsed: ${timeElapsed}ms)`);
+  });
+
+  weky.on("gameError", ({ game, error }) => {
+    console.error(`[Weky Event] ❌ Error in "${game}":`, error);
+  });
+
+  weky.on("unauthorizedClick", ({ game, user }) => {
+    console.warn(`[Weky Event] ⚠️ ${user?.username || "Someone"} clicked an unauthorized button on "${game}"`);
+  });
+
+  // Auto-register slash commands if credentials provided
   if (TOKEN !== "YOUR_BOT_TOKEN_HERE" && CLIENT_ID !== "YOUR_CLIENT_ID_HERE") {
     const rest = new REST({ version: "10" }).setToken(TOKEN);
     try {
-      console.log("Registering global slash commands...");
-      await rest.put(Routes.applicationCommands(CLIENT_ID), {
-        body: commands.map((cmd) => cmd.toJSON()),
-      });
-      console.log("Successfully registered all 17 minigame slash commands!");
+      if (GUILD_ID) {
+        console.log(`Registering slash commands to Guild ID: ${GUILD_ID}...`);
+        await rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), {
+          body: commands.map((cmd) => cmd.toJSON()),
+        });
+        console.log(`Successfully registered all 17 minigame slash commands to guild ${GUILD_ID}!`);
+      } else {
+        console.log("Registering global slash commands (may take up to 1 hour to propagate)...");
+        await rest.put(Routes.applicationCommands(CLIENT_ID), {
+          body: commands.map((cmd) => cmd.toJSON()),
+        });
+        console.log("Successfully registered all 17 minigame global slash commands!");
+      }
     } catch (err) {
       console.error("Failed to register application commands:", err);
     }
@@ -163,5 +195,13 @@ client.on(Events.MessageCreate, async (msg) => {
 if (TOKEN && TOKEN !== "YOUR_BOT_TOKEN_HERE") {
   client.login(TOKEN);
 } else {
-  console.log("ℹ️ Provide DISCORD_TOKEN in .env or test/index.ts to start the live bot.");
+  console.log(`
+ℹ️  No DISCORD_TOKEN provided.
+To test the live bot interactively in Discord:
+1. Create a .env file from .env.example:
+   cp .env.example .env
+2. Fill in your DISCORD_TOKEN, CLIENT_ID, and GUILD_ID (for instant slash commands).
+3. Run:
+   npm run test:bot
+`);
 }

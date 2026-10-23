@@ -1,3 +1,7 @@
+// src/version.ts
+var version = "14.27.0-1";
+var VERSION = version;
+
 // src/core/BaseGame.ts
 import { ContainerBuilder as ContainerBuilder2, EmbedBuilder as EmbedBuilder2, MediaGalleryBuilder } from "discord.js";
 
@@ -225,18 +229,36 @@ var ContextAdapter = class _ContextAdapter {
 // src/core/BaseGame.ts
 var BaseGame = class {
   id;
+  gameKey;
   ctx;
   options;
   manager;
   isActive = false;
+  defaultColor;
+  startTime = 0;
   timeoutTimer = null;
   defaultTimeout = 6e4;
   constructor(manager, options, gameKey) {
     this.manager = manager;
     this.options = options;
+    this.gameKey = gameKey;
     this.ctx = ContextAdapter.from(options.context);
     this.id = `${this.ctx.userId}_${gameKey}`;
-    this.defaultTimeout = options.time || 6e4;
+    this.defaultTimeout = options.time || manager?.defaultTimeout || 6e4;
+    this.defaultColor = this.resolveColor(options.embed?.color);
+  }
+  /**
+   * Safely resolves a color according to the hierarchy:
+   * 1. Explicit override color passed
+   * 2. options.embed.color
+   * 3. manager.embedColor
+   * 4. fallback color
+   */
+  resolveColor(color, fallback = 5793266) {
+    if (color) return safeResolveColor(color, fallback);
+    if (this.options.embed?.color) return safeResolveColor(this.options.embed.color, fallback);
+    if (this.manager?.embedColor) return safeResolveColor(this.manager.embedColor, fallback);
+    return fallback;
   }
   /**
    * Resets the inactivity timeout.
@@ -268,10 +290,11 @@ var BaseGame = class {
   }
   /**
    * Helper to construct a Components V2 ContainerBuilder with accent color.
+   * If the user provided an embed.color, it is strictly prioritized across all states.
    */
-  createContainer(accentColor) {
+  createContainer(stateAccentColor) {
     const container = new ContainerBuilder2();
-    const color = accentColor !== void 0 ? accentColor : safeResolveColor(this.options.embed?.color, 5793266);
+    const color = this.options.embed?.color ? safeResolveColor(this.options.embed.color, this.defaultColor) : stateAccentColor !== void 0 ? stateAccentColor : this.defaultColor;
     container.setAccentColor(color);
     return container;
   }
@@ -283,6 +306,89 @@ var BaseGame = class {
     return new MediaGalleryBuilder().addItems((item) => item.setURL(url));
   }
   /**
+   * Applies custom embed properties (author, description, fields, footer, timestamp)
+   * to markdown text displayed inside a Components V2 Container.
+   */
+  applyEmbedDecorations(container, content) {
+    let finalContent = content;
+    if (this.options.embed?.author?.name) {
+      const authorText = this.options.embed.author.url ? `[${this.options.embed.author.name}](${this.options.embed.author.url})` : `**${this.options.embed.author.name}**`;
+      finalContent = `${authorText}
+
+${finalContent}`;
+    }
+    if (this.options.embed?.description && !finalContent.includes(this.options.embed.description)) {
+      finalContent = `${finalContent}
+
+${this.options.embed.description}`;
+    }
+    if (this.options.embed?.fields && this.options.embed.fields.length > 0) {
+      const fieldsText = this.options.embed.fields.map((f) => `**${f.name}**
+${f.value}`).join("\n\n");
+      finalContent = `${finalContent}
+
+${fieldsText}`;
+    }
+    const footerParts = [];
+    if (this.options.embed?.footer?.text) {
+      footerParts.push(this.options.embed.footer.text);
+    }
+    if (this.options.embed?.timestamp) {
+      const date = this.options.embed.timestamp === true ? /* @__PURE__ */ new Date() : new Date(this.options.embed.timestamp);
+      footerParts.push(`<t:${Math.floor(date.getTime() / 1e3)}:R>`);
+    }
+    if (footerParts.length > 0) {
+      finalContent = `${finalContent}
+
+- - -
+${footerParts.join(" \u2022 ")}`;
+    }
+    if (this.options.embed?.thumbnail && !container.data.components?.some((c) => c.type === 18)) {
+      container.addMediaGalleryComponents(this.createMediaGallery(this.options.embed.thumbnail));
+    }
+    return finalContent;
+  }
+  /**
+   * Emits the gameStart lifecycle event on WekyManager.
+   */
+  emitStart() {
+    this.startTime = Date.now();
+    if (this.manager && typeof this.manager.emit === "function") {
+      this.manager.emit("gameStart", {
+        game: this.gameKey,
+        user: this.ctx.user,
+        channelId: this.ctx.channel?.id
+      });
+    }
+  }
+  /**
+   * Emits the gameOver lifecycle event on WekyManager.
+   */
+  emitEnd(outcome, score = 0) {
+    const timeElapsed = this.startTime > 0 ? Date.now() - this.startTime : 0;
+    if (this.manager && typeof this.manager.emit === "function") {
+      this.manager.emit("gameOver", {
+        game: this.gameKey,
+        user: this.ctx.user,
+        outcome,
+        score,
+        timeElapsed
+      });
+    }
+  }
+  /**
+   * Emits the gameError lifecycle event on WekyManager.
+   */
+  emitError(error) {
+    if (this.manager && typeof this.manager.emit === "function") {
+      this.manager.emit("gameError", {
+        game: this.gameKey,
+        error,
+        context: this.ctx
+      });
+    }
+  }
+  /**
    * Standardized Embed builder for backwards compatibility.
    */
   createEmbed(description, titleOverride) {
@@ -291,15 +397,34 @@ var BaseGame = class {
     if (titleOverride || opts?.title) {
       embed.setTitle(titleOverride || opts.title);
     }
-    if (description) {
-      embed.setDescription(description);
+    if (description || opts?.description) {
+      embed.setDescription(description || opts.description);
     }
-    embed.setColor(safeResolveColor(opts?.color, 5793266));
+    embed.setColor(this.resolveColor(opts?.color));
     if (opts?.footer) {
       embed.setFooter(opts.footer);
     }
     if (opts?.timestamp) {
-      embed.setTimestamp(opts.timestamp === true ? /* @__PURE__ */ new Date() : opts.timestamp);
+      embed.setTimestamp(opts.timestamp === true ? /* @__PURE__ */ new Date() : new Date(opts.timestamp));
+    }
+    if (opts?.author) {
+      embed.setAuthor({
+        name: opts.author.name,
+        iconURL: opts.author.icon_url,
+        url: opts.author.url
+      });
+    }
+    if (opts?.fields && opts.fields.length > 0) {
+      embed.setFields(opts.fields);
+    }
+    if (opts?.thumbnail) {
+      embed.setThumbnail(opts.thumbnail);
+    }
+    if (opts?.image) {
+      embed.setImage(opts.image);
+    }
+    if (opts?.url) {
+      embed.setURL(opts.url);
     }
     return embed;
   }
@@ -310,9 +435,16 @@ var BaseGame = class {
     const userId = interaction.user.id;
     const allowed = allowedUserIds || [this.ctx.userId];
     if (!allowed.includes(userId)) {
-      const template = this.options.othersMessage || "Only <@{{author}}> can use these buttons!";
+      const template = this.options.othersMessage || this.manager?.unauthorizedMessage || "Only <@{{author}}> can use these buttons!";
       const reply = template.replace(/\{\{author\}\}/g, this.ctx.userId);
       ContextAdapter.replyEphemeral(interaction, reply);
+      if (this.manager && typeof this.manager.emit === "function") {
+        this.manager.emit("unauthorizedClick", {
+          game: this.gameKey,
+          user: interaction.user,
+          interaction
+        });
+      }
       return false;
     }
     return true;
@@ -392,10 +524,11 @@ var EventManager = class {
 };
 
 // src/core/WekyManager.ts
-import { Client as Client3 } from "discord.js";
+import { Client as Client3, EmbedBuilder as EmbedBuilder3 } from "discord.js";
+import { EventEmitter } from "events";
 
 // src/games/Calculator.ts
-import { ActionRowBuilder as ActionRowBuilder2, ButtonBuilder, ButtonStyle, ContainerBuilder as ContainerBuilder3, LabelBuilder, MessageFlags as MessageFlags2, ModalBuilder, TextDisplayBuilder, TextInputBuilder, TextInputStyle } from "discord.js";
+import { ActionRowBuilder as ActionRowBuilder2, ButtonBuilder, ButtonStyle, LabelBuilder, MessageFlags as MessageFlags2, ModalBuilder, TextDisplayBuilder, TextInputBuilder, TextInputStyle } from "discord.js";
 
 // src/utils/MathEvaluator.ts
 var MathEvaluator = class {
@@ -672,8 +805,8 @@ var Calculator = class extends BaseGame {
   modalOperations;
   constructor(manager, options) {
     super(manager, options, "calc");
-    this.accentColor = safeResolveColor(options.embed?.color, 5793266);
-    this.defaultTimeout = options.time || 3e5;
+    this.accentColor = this.resolveColor(options.embed?.color);
+    this.defaultTimeout = options.time || manager?.defaultTimeout || 3e5;
     this.modalOperations = {
       calLG: {
         title: options.operationTitles?.logarithm || "Logarithm",
@@ -726,6 +859,7 @@ var Calculator = class extends BaseGame {
   async start() {
     this.isActive = true;
     this.manager._eventManager.register(this);
+    this.emitStart();
     const container = this.buildContainer();
     this.msg1 = await this.ctx.sendInitial({
       components: [container],
@@ -857,12 +991,15 @@ ${this.currentExpression === " " ? "```No Prompt Yet```" : this.getDisplay()}`);
     this.isActive = false;
     this.clearTimer();
     this.destroy();
+    this.emitEnd("closed");
     const endMsg = this.options.sessionEndMessage || "Calculator Session Closed";
     if (this.msg1) {
-      const container = new ContainerBuilder3().setAccentColor(this.accentColor);
-      container.addTextDisplayComponents((t) => t.setContent(`\`\`\`
+      const container = this.createContainer(this.accentColor);
+      let content = `\`\`\`
 ${endMsg}
-\`\`\``));
+\`\`\``;
+      content = this.applyEmbedDecorations(container, content);
+      container.addTextDisplayComponents((t) => t.setContent(content));
       const keys = this.is2nd ? SCIENTIFIC_KEYS : STANDARD_KEYS;
       this.addButtonsToContainer(container, keys, true);
       await this.msg1.edit({ components: [container], flags: MessageFlags2.IsComponentsV2 }).catch(() => {
@@ -876,8 +1013,12 @@ ${this.currentExpression}${modeTag}
 \`\`\``;
   }
   buildContainer(forceEmpty = false) {
-    const container = new ContainerBuilder3().setAccentColor(this.accentColor);
-    container.addTextDisplayComponents((t) => t.setContent(this.getDisplay()));
+    const container = this.createContainer(this.accentColor);
+    const header = this.options.embed?.title ? `## ${this.options.embed.title}
+` : "";
+    let content = `${header}${this.getDisplay()}`;
+    content = this.applyEmbedDecorations(container, content);
+    container.addTextDisplayComponents((t) => t.setContent(content));
     const keys = this.is2nd ? SCIENTIFIC_KEYS : STANDARD_KEYS;
     this.addButtonsToContainer(container, keys, forceEmpty);
     return container;
@@ -920,7 +1061,7 @@ ${this.currentExpression}${modeTag}
 };
 
 // src/games/ChaosWords.ts
-import { ButtonBuilder as ButtonBuilder2, ButtonStyle as ButtonStyle2, ContainerBuilder as ContainerBuilder4, MessageFlags as MessageFlags3 } from "discord.js";
+import { ButtonBuilder as ButtonBuilder2, ButtonStyle as ButtonStyle2, MessageFlags as MessageFlags3 } from "discord.js";
 
 // src/data/words.ts
 var HANGMAN_CATEGORIES = {
@@ -1201,27 +1342,28 @@ var ChaosWords = class extends BaseGame {
   maxTries = 10;
   btnPrefix;
   gameTitle;
-  defaultColor;
   constructor(manager, options) {
     super(manager, options, "chaos");
     this.btnPrefix = getRandomString(6, "chaos_");
     this.gameTitle = options.embed?.title || "Chaos Words";
-    this.defaultColor = safeResolveColor(options.embed?.color, 5793266);
+    this.defaultColor = this.resolveColor(options.embed?.color);
     this.maxTries = options.maxTries || 10;
     this.triesLeft = this.maxTries;
-    this.defaultTimeout = options.time || 6e4;
+    this.defaultTimeout = options.time || manager?.defaultTimeout || 6e4;
   }
   async start() {
+    const wordCount = this.options.maxWords || this.options.words && this.options.words.length || 4;
     if (this.options.words && this.options.words.length > 0) {
-      this.words = this.options.words.map((w) => w.toLowerCase().trim());
+      this.words = this.options.words.slice(0, wordCount).map((w) => w.toLowerCase().trim());
     } else {
-      this.words = getRandomWords(3).map((w) => w.toLowerCase());
+      this.words = getRandomWords(wordCount).map((w) => w.toLowerCase());
     }
     this.remainingWords = [...this.words];
     this.foundWords = [];
     this.chaosString = this.generateChaosString();
     this.isActive = true;
     this.manager._eventManager.register(this);
+    this.emitStart();
     const container = this.createGameContainer("active");
     await this.ctx.sendInitial({
       components: [container],
@@ -1232,7 +1374,7 @@ var ChaosWords = class extends BaseGame {
   generateChaosString() {
     const alphabet = "abcdefghijklmnopqrstuvwxyz";
     const totalWordLength = this.words.join("").length;
-    const charCount = this.options.charGenerated || totalWordLength + 12;
+    const charCount = this.options.charCount || this.options.charGenerated || totalWordLength + 12;
     this.chaosArray = [];
     for (let i = 0; i < charCount; i++) {
       this.chaosArray.push(alphabet.charAt(Math.floor(Math.random() * alphabet.length)));
@@ -1295,6 +1437,7 @@ var ChaosWords = class extends BaseGame {
     this.isActive = false;
     this.clearTimer();
     this.destroy();
+    this.emitEnd(state, this.foundWords.length);
     const container = this.createGameContainer(state);
     await this.ctx.edit({
       components: [container],
@@ -1302,7 +1445,17 @@ var ChaosWords = class extends BaseGame {
     });
   }
   createGameContainer(state, details) {
-    const container = new ContainerBuilder4();
+    const stateColors = {
+      active: this.defaultColor,
+      correct: 5763719,
+      wrong: 15548997,
+      repeat: this.defaultColor,
+      won: 5763719,
+      lost: 15548997,
+      cancelled: 15548997,
+      timeout: 15548997
+    };
+    const container = this.createContainer(stateColors[state]);
     let content = "";
     const wordsFoundStr = this.foundWords.length > 0 ? this.foundWords.map((w) => `\`${w}\``).join(", ") : "*None yet*";
     switch (state) {
@@ -1310,7 +1463,6 @@ var ChaosWords = class extends BaseGame {
       case "correct":
       case "wrong":
       case "repeat":
-        container.setAccentColor(state === "wrong" ? 15548997 : state === "correct" ? 5763719 : this.defaultColor);
         content = `## ${this.gameTitle}
 `;
         if (details?.feedback) {
@@ -1328,33 +1480,32 @@ ${this.chaosString}
 **Tries Left:** \`${this.triesLeft} / ${this.maxTries}\``;
         break;
       case "won":
-        container.setAccentColor(5763719);
-        content = `## \u{1F3C6} Word Master!
+        content = this.options.winMessage ? `## \u{1F3C6} Word Master!
+> ${this.options.winMessage}` : `## \u{1F3C6} Word Master!
 > \u{1F389} **Congratulations!** You found all hidden words:
 > ${this.words.map((w) => `\`${w}\``).join(", ")}`;
         break;
       case "lost":
-        container.setAccentColor(15548997);
-        content = `## \u274C Out of Tries
+        content = this.options.loseMessage ? `## \u274C Out of Tries
+> ${this.options.loseMessage}` : `## \u274C Out of Tries
 > \u{1F480} You ran out of attempts! The hidden words were:
 > ${this.words.map((w) => `\`${w}\``).join(", ")}`;
         break;
       case "cancelled":
-        container.setAccentColor(15548997);
         content = `## \u{1F6D1} Game Cancelled
 > You stopped the game. The hidden words were:
 > ${this.words.map((w) => `\`${w}\``).join(", ")}`;
         break;
       case "timeout":
-        container.setAccentColor(15548997);
         content = `## \u23F1\uFE0F Time's Up
 > Session expired. The hidden words were:
 > ${this.words.map((w) => `\`${w}\``).join(", ")}`;
         break;
     }
+    content = this.applyEmbedDecorations(container, content);
     container.addTextDisplayComponents((t) => t.setContent(content));
     if (state === "active" || state === "correct" || state === "wrong" || state === "repeat") {
-      const cancelBtn = new ButtonBuilder2().setStyle(ButtonStyle2.Danger).setLabel(this.options.cancelButton || "Cancel").setEmoji("\u{1F6D1}").setCustomId(`${this.btnPrefix}cancel`);
+      const cancelBtn = new ButtonBuilder2().setStyle(ButtonStyle2.Danger).setLabel(this.options.cancelButton || this.options.buttonText || "Cancel").setEmoji("\u{1F6D1}").setCustomId(`${this.btnPrefix}cancel`);
       container.addActionRowComponents((row) => row.setComponents(cancelBtn));
     }
     return container;
@@ -1362,7 +1513,7 @@ ${this.chaosString}
 };
 
 // src/games/FastType.ts
-import { ButtonBuilder as ButtonBuilder3, ButtonStyle as ButtonStyle3, ContainerBuilder as ContainerBuilder5, MessageFlags as MessageFlags4 } from "discord.js";
+import { ButtonBuilder as ButtonBuilder3, ButtonStyle as ButtonStyle3, MessageFlags as MessageFlags4 } from "discord.js";
 
 // src/data/sentences.ts
 var EASY_SENTENCES = [
@@ -1419,23 +1570,24 @@ function getRandomSentence(difficulty = "medium") {
 // src/games/FastType.ts
 var FastType = class extends BaseGame {
   sentence = "";
-  startTime = 0;
   hasTyped = false;
   btnPrefix;
   gameTitle;
-  defaultColor;
+  checkCheating;
   constructor(manager, options) {
     super(manager, options, "fasttype");
     this.btnPrefix = getRandomString(6, "ft_");
     this.gameTitle = options.embed?.title || "Fast Type Challenge";
-    this.defaultColor = safeResolveColor(options.embed?.color, 5793266);
-    this.defaultTimeout = options.time || 6e4;
+    this.defaultColor = this.resolveColor(options.embed?.color);
+    this.defaultTimeout = options.time || manager?.defaultTimeout || 6e4;
+    this.checkCheating = options.checkCheating ?? true;
   }
   async start() {
     this.sentence = this.options.sentence || getRandomSentence(this.options.difficulty || "medium");
     this.startTime = Date.now();
     this.isActive = true;
     this.manager._eventManager.register(this);
+    this.emitStart();
     const container = this.createGameContainer("active");
     await this.ctx.sendInitial({
       components: [container],
@@ -1468,7 +1620,7 @@ var FastType = class extends BaseGame {
     if (input.startsWith("/") || input.startsWith("!")) return;
     if (message.deletable) await message.delete().catch(() => {
     });
-    if (!this.hasTyped) {
+    if (this.checkCheating && !this.hasTyped) {
       await this.endGame("cheat");
       return;
     }
@@ -1491,6 +1643,7 @@ var FastType = class extends BaseGame {
     this.isActive = false;
     this.clearTimer();
     this.destroy();
+    this.emitEnd(state, data?.wpm ? Number(data.wpm) : 0);
     const container = this.createGameContainer(state, data);
     await this.ctx.edit({
       components: [container],
@@ -1498,16 +1651,23 @@ var FastType = class extends BaseGame {
     });
   }
   createGameContainer(state, data) {
-    const container = new ContainerBuilder5();
+    const stateColors = {
+      loading: this.defaultColor,
+      active: this.defaultColor,
+      typo: 15548997,
+      won: 5763719,
+      cheat: 15548997,
+      timeout: 15548997,
+      cancelled: 15548997
+    };
+    const container = this.createContainer(stateColors[state]);
     let content = "";
     switch (state) {
       case "loading":
-        container.setAccentColor(this.defaultColor);
         content = `## ${this.gameTitle}
 > \u{1F504} Preparing sentence...`;
         break;
       case "active":
-        container.setAccentColor(this.defaultColor);
         content = this.options.states?.active ? this.options.states.active.replace("{{gameTitle}}", this.gameTitle).replace("{{sentence}}", this.sentence) : `## ${this.gameTitle}
 > Type the sentence below as fast as you can!
 
@@ -1518,7 +1678,6 @@ ${this.sentence}
 \u23F3 You have **${formatTime(this.defaultTimeout)}**!`;
         break;
       case "typo":
-        container.setAccentColor(15548997);
         content = `## ${this.gameTitle}
 > \u274C **Typo! That was not an exact match.** Try again quickly!
 
@@ -1527,7 +1686,6 @@ ${this.sentence}
 \`\`\``;
         break;
       case "won":
-        container.setAccentColor(5763719);
         const winText = this.options.winMessage ? this.options.winMessage.replace("{{time}}", data?.timeTaken || "0s").replace("{{wpm}}", data?.wpm || "0") : `You typed the sentence in **${data?.timeTaken || "0s"}** with a speed of **${data?.wpm || "0"} WPM**!`;
         content = this.options.states?.won ? this.options.states.won.replace("{{winText}}", winText).replace("{{sentence}}", this.sentence) : `## \u{1F3C6} Fast Fingers!
 > ${winText}
@@ -1538,7 +1696,6 @@ ${this.sentence}
 \`\`\``;
         break;
       case "cheat":
-        container.setAccentColor(15548997);
         content = this.options.states?.cheat ? this.options.states.cheat.replace("{{sentence}}", this.sentence) : `## \u26A0\uFE0F Cheat Detected
 > ${this.options.cheatMessage || "Copy-pasting is not allowed! Please type the sentence manually."}
 
@@ -1548,7 +1705,6 @@ ${this.sentence}
 \`\`\``;
         break;
       case "timeout":
-        container.setAccentColor(15548997);
         content = this.options.states?.timeout ? this.options.states.timeout.replace("{{sentence}}", this.sentence) : `## \u23F1\uFE0F Time's Up
 > ${this.options.timeoutMessage || "You ran out of time!"}
 
@@ -1558,14 +1714,14 @@ ${this.sentence}
 \`\`\``;
         break;
       case "cancelled":
-        container.setAccentColor(15548997);
         content = this.options.states?.cancelled ? this.options.states.cancelled.replace("{{sentence}}", this.sentence) : `## \u{1F6AB} Game Cancelled
 > You cancelled the typing test.`;
         break;
     }
+    content = this.applyEmbedDecorations(container, content);
     container.addTextDisplayComponents((t) => t.setContent(content));
     if (state === "active" || state === "typo") {
-      const btnCancel = new ButtonBuilder3().setStyle(ButtonStyle3.Danger).setLabel(this.options.cancelButton || "Cancel").setEmoji("\u{1F6D1}").setCustomId(`${this.btnPrefix}cancel`);
+      const btnCancel = new ButtonBuilder3().setStyle(ButtonStyle3.Danger).setLabel(this.options.cancelButton || this.options.buttonText || "Cancel").setEmoji("\u{1F6D1}").setCustomId(`${this.btnPrefix}cancel`);
       container.addActionRowComponents((row) => row.setComponents(btnCancel));
     }
     return container;
@@ -1573,7 +1729,7 @@ ${this.sentence}
 };
 
 // src/games/Fight.ts
-import { ActionRowBuilder as ActionRowBuilder3, AttachmentBuilder as AttachmentBuilder2, ButtonBuilder as ButtonBuilder4, ButtonStyle as ButtonStyle4, ContainerBuilder as ContainerBuilder6, GuildMember as GuildMember2, MediaGalleryBuilder as MediaGalleryBuilder2, MessageFlags as MessageFlags5 } from "discord.js";
+import { ActionRowBuilder as ActionRowBuilder3, AttachmentBuilder as AttachmentBuilder2, ButtonBuilder as ButtonBuilder4, ButtonStyle as ButtonStyle4, GuildMember as GuildMember2, MediaGalleryBuilder as MediaGalleryBuilder2, MessageFlags as MessageFlags5 } from "discord.js";
 
 // src/canvas/RenderFight.ts
 import { Canvas } from "@napi-rs/canvas";
@@ -2005,11 +2161,10 @@ var Fight = class extends BaseGame {
   currentTurnId;
   btnPrefix;
   lastAnnouncement = "Choose your action!";
-  defaultColor;
   constructor(manager, options) {
     super(manager, options, "fight");
     this.btnPrefix = getRandomString(6, "fight_");
-    this.defaultColor = safeResolveColor(options.embed?.color, 15548997);
+    this.defaultColor = this.resolveColor(options.embed?.color, 15548997);
     const opp = options.opponent;
     if (opp instanceof GuildMember2) {
       this.opponentMember = opp;
@@ -2017,12 +2172,14 @@ var Fight = class extends BaseGame {
     } else {
       this.opponentUser = opp;
     }
+    const startHp = options.startHealth ?? 100;
+    const startCoins = options.coins ?? 20;
     this.p1 = {
       id: this.ctx.userId,
       username: this.ctx.user.username,
       avatarUrl: this.ctx.user.displayAvatarURL({ extension: "png", size: 128 }),
-      health: 100,
-      coins: 0,
+      health: startHp,
+      coins: startCoins,
       lastAction: "Challenged opponent",
       activeEffects: []
     };
@@ -2030,18 +2187,18 @@ var Fight = class extends BaseGame {
       id: this.opponentUser.id,
       username: this.opponentUser.username,
       avatarUrl: this.opponentUser.displayAvatarURL({ extension: "png", size: 128 }),
-      health: 100,
-      coins: 0,
+      health: startHp,
+      coins: startCoins,
       lastAction: "Awaiting start",
       activeEffects: []
     };
     this.currentTurnId = this.p1.id;
-    this.defaultTimeout = options.time || 6e4;
+    this.defaultTimeout = options.time || manager?.defaultTimeout || 6e4;
   }
   async start() {
     if (this.opponentUser.id === this.ctx.userId) {
       const msg = this.options.cannotFightYourselfMessage || "\u274C You cannot fight against yourself!";
-      const container2 = new ContainerBuilder6().setAccentColor(16711680).addTextDisplayComponents((t) => t.setContent(`## \u274C Error
+      const container2 = this.createContainer(16711680).addTextDisplayComponents((t) => t.setContent(`## \u274C Error
 > ${msg}`));
       await this.ctx.sendInitial({
         components: [container2],
@@ -2050,7 +2207,7 @@ var Fight = class extends BaseGame {
       return;
     }
     if (this.opponentUser.bot) {
-      const container2 = new ContainerBuilder6().setAccentColor(16711680).addTextDisplayComponents((t) => t.setContent("## \u274C Error\n> You cannot fight against a bot!"));
+      const container2 = this.createContainer(16711680).addTextDisplayComponents((t) => t.setContent("## \u274C Error\n> You cannot fight against a bot!"));
       await this.ctx.sendInitial({
         components: [container2],
         flags: MessageFlags5.IsComponentsV2
@@ -2059,6 +2216,7 @@ var Fight = class extends BaseGame {
     }
     this.isActive = true;
     this.manager._eventManager.register(this);
+    this.emitStart();
     const buffer = await RenderFight.renderRequestCard({ username: this.p1.username, avatarUrl: this.p1.avatarUrl }, { username: this.p2.username, avatarUrl: this.p2.avatarUrl });
     const attachment = new AttachmentBuilder2(buffer, { name: "fight-request.png" });
     const container = this.createGameContainer("request", { image: "fight-request.png" });
@@ -2146,7 +2304,8 @@ var Fight = class extends BaseGame {
     await this.updateBattleInterface();
   }
   handleHit(attacker, defender, isHeavy) {
-    let damage = isHeavy ? Math.floor(Math.random() * 18) + 18 : Math.floor(Math.random() * 13) + 10;
+    const maxDmg = this.options.damageMax ?? 24;
+    let damage = isHeavy ? Math.floor(Math.random() * 18) + 18 : Math.floor(Math.random() * (maxDmg - 10 + 1)) + 10;
     if (isHeavy && Math.random() < 0.25) {
       attacker.lastAction = "Missed Heavy Attack!";
       this.lastAnnouncement = `\u{1F4A8} **${attacker.username}** swung hard but missed!`;
@@ -2222,6 +2381,7 @@ var Fight = class extends BaseGame {
     this.isActive = false;
     this.clearTimer();
     this.destroy();
+    this.emitEnd(reason);
     const winnerData = winner || (this.p1.health > this.p2.health ? this.p1 : this.p2);
     const loserData = loser || (winnerData.id === this.p1.id ? this.p2 : this.p1);
     const buffer = await RenderFight.renderOutcomeCard({ username: winnerData.username, avatarUrl: winnerData.avatarUrl }, loserData ? { username: loserData.username, avatarUrl: loserData.avatarUrl } : void 0, reason);
@@ -2239,46 +2399,49 @@ var Fight = class extends BaseGame {
     });
   }
   createGameContainer(state, details) {
-    const container = new ContainerBuilder6();
+    const stateColors = {
+      request: 16705372,
+      active: this.defaultColor,
+      won: 5763719,
+      surrender: 15548997,
+      deny: 15548997,
+      timeout: 10070709,
+      error: 16711680
+    };
+    const container = this.createContainer(stateColors[state]);
     let content = "";
     switch (state) {
       case "request":
-        container.setAccentColor(16705372);
         content = this.options.states?.request ? this.options.states.request.replace("{{challengerMention}}", `<@${this.p1.id}>`).replace("{{opponentMention}}", `<@${this.p2.id}>`) : `## \u2694\uFE0F Challenge!
 > <@${this.p1.id}> challenged <@${this.p2.id}> to a duel!`;
         break;
       case "active":
-        container.setAccentColor(this.defaultColor);
         content = this.options.states?.active ? this.options.states.active : `## \u2694\uFE0F Fighting...
 > \u{1F3AF} **Turn:** <@${details?.turnId || this.currentTurnId}>
 > ${details?.announcement || this.lastAnnouncement}`;
         break;
       case "won":
-        container.setAccentColor(5763719);
         content = this.options.states?.won ? this.options.states.won : `## \u{1F3C6} Fight Ended
 > \u{1F3C6} **<@${details?.winnerId || this.p1.id}>** knocked out <@${details?.loserId || this.p2.id}> and won the duel!`;
         break;
       case "surrender":
-        container.setAccentColor(15548997);
         content = this.options.states?.surrender ? this.options.states.surrender : `## \u{1F3F3}\uFE0F Surrendered
 > \u{1F3F3}\uFE0F **<@${details?.loserId || this.p2.id}>** surrendered! **<@${details?.winnerId || this.p1.id}>** is victorious!`;
         break;
       case "deny":
-        container.setAccentColor(15548997);
         content = this.options.states?.deny ? this.options.states.deny : `## \u{1F6AB} Denied
 > The challenge was declined.`;
         break;
       case "timeout":
-        container.setAccentColor(10070709);
         content = this.options.states?.timeout ? this.options.states.timeout : `## \u23F1\uFE0F Time's Up
 > The duel timed out due to inactivity.`;
         break;
       case "error":
-        container.setAccentColor(16711680);
         content = this.options.states?.error?.main ? this.options.states.error.main.replace("{{error}}", details?.error || "Unknown error.") : `## \u274C Error
 > ${details?.error || "Unknown error."}`;
         break;
     }
+    content = this.applyEmbedDecorations(container, content);
     container.addTextDisplayComponents((t) => t.setContent(content));
     if (details?.image) {
       const gallery = new MediaGalleryBuilder2().addItems((item) => item.setURL(`attachment://${details.image}`));
@@ -2312,7 +2475,7 @@ var Fight = class extends BaseGame {
 };
 
 // src/games/Game2048.ts
-import { ActionRowBuilder as ActionRowBuilder4, AttachmentBuilder as AttachmentBuilder3, ButtonBuilder as ButtonBuilder5, ButtonStyle as ButtonStyle5, ContainerBuilder as ContainerBuilder7, MediaGalleryBuilder as MediaGalleryBuilder3, MessageFlags as MessageFlags6 } from "discord.js";
+import { ActionRowBuilder as ActionRowBuilder4, AttachmentBuilder as AttachmentBuilder3, ButtonBuilder as ButtonBuilder5, ButtonStyle as ButtonStyle5, MediaGalleryBuilder as MediaGalleryBuilder3, MessageFlags as MessageFlags6 } from "discord.js";
 
 // src/canvas/Render2048.ts
 import { Canvas as Canvas2 } from "@napi-rs/canvas";
@@ -2429,7 +2592,6 @@ var Game2048 = class extends BaseGame {
   hasWon = false;
   isGameOver = false;
   gameTitle;
-  defaultColor;
   emojiUp;
   emojiDown;
   emojiLeft;
@@ -2449,18 +2611,19 @@ var Game2048 = class extends BaseGame {
     this.idRight = `${uid}_right`;
     this.idQuit = `${uid}_quit`;
     this.gameTitle = options.embed?.title || "2048";
-    this.defaultColor = safeResolveColor(options.embed?.color, 5793266);
+    this.defaultColor = this.resolveColor(options.embed?.color);
     this.emojiUp = options.emojis?.up || "\u2B06\uFE0F";
     this.emojiDown = options.emojis?.down || "\u2B07\uFE0F";
     this.emojiLeft = options.emojis?.left || "\u2B05\uFE0F";
     this.emojiRight = options.emojis?.right || "\u27A1\uFE0F";
     this.quitButtonLabel = options.quitButton || "Quit";
-    this.defaultTimeout = options.time || 3e5;
+    this.defaultTimeout = options.time || manager?.defaultTimeout || 3e5;
   }
   async start() {
     this.initBoard();
     this.isActive = true;
     this.manager._eventManager.register(this);
+    this.emitStart();
     const initialContainer = this.createGameContainer("loading");
     await this.ctx.sendInitial({
       components: [initialContainer],
@@ -2622,6 +2785,7 @@ var Game2048 = class extends BaseGame {
     this.isActive = false;
     this.clearTimer();
     this.destroy();
+    this.emitEnd(state, this.score);
     if (!attachment && state !== "error") {
       const buffer = await this.renderBoardImage(state);
       attachment = new AttachmentBuilder3(buffer, { name: "2048-board.png" });
@@ -2635,56 +2799,59 @@ var Game2048 = class extends BaseGame {
     });
   }
   createGameContainer(state, details) {
-    const container = new ContainerBuilder7();
+    const stateColors = {
+      loading: this.defaultColor,
+      active: this.defaultColor,
+      won: 5763719,
+      gameover: 15548997,
+      quit: 15548997,
+      timeout: 15548997,
+      error: 16711680
+    };
+    const container = this.createContainer(stateColors[state]);
     let content = "";
     const score = details?.score ?? this.score;
     switch (state) {
       case "loading":
-        container.setAccentColor(this.defaultColor);
         content = this.options.loadingMessage ? this.options.loadingMessage.replace("{{gameTitle}}", this.gameTitle) : `## ${this.gameTitle}
 > \u{1F504} Starting game...`;
         break;
       case "active":
-        container.setAccentColor(this.defaultColor);
         content = this.options.activeMessage ? this.options.activeMessage.replace("{{gameTitle}}", this.gameTitle).replace("{{score}}", score.toString()) : `## ${this.gameTitle}
 > Combine the tiles to reach **2048**!
 
 **Score:** \`${score}\``;
         break;
       case "won":
-        container.setAccentColor(5763719);
         content = this.options.wonMessage ? this.options.wonMessage.replace("{{score}}", score.toString()) : `## \u{1F389} You Won!
 > You reached the **2048** tile!
 
 **Final Score:** \`${score}\``;
         break;
       case "gameover":
-        container.setAccentColor(15548997);
         content = this.options.gameoverMessage ? this.options.gameoverMessage.replace("{{score}}", score.toString()) : `## \u{1F480} Game Over
 > No more moves available.
 
 **Final Score:** \`${score}\``;
         break;
       case "quit":
-        container.setAccentColor(15548997);
         content = this.options.quitMessage ? this.options.quitMessage.replace("{{score}}", score.toString()) : `## \u{1F6D1} Game Stopped
 > You quit the game.
 
 **Final Score:** \`${score}\``;
         break;
       case "timeout":
-        container.setAccentColor(15548997);
         content = this.options.timeoutMessage ? this.options.timeoutMessage.replace("{{score}}", score.toString()) : `## \u23F1\uFE0F Time's Up
 > Game session expired.
 
 **Final Score:** \`${score}\``;
         break;
       case "error":
-        container.setAccentColor(16711680);
         content = this.options.errorMessage ? this.options.errorMessage.replace("{{error}}", details?.error || "Unknown") : `## \u274C Error
 > ${details?.error || "Unknown error occurred."}`;
         break;
     }
+    content = this.applyEmbedDecorations(container, content);
     container.addTextDisplayComponents((t) => t.setContent(content));
     if (details?.image) {
       const gallery = new MediaGalleryBuilder3().addItems((item) => item.setURL(`attachment://${details.image}`));
@@ -2709,37 +2876,36 @@ var Game2048 = class extends BaseGame {
 };
 
 // src/games/GuessTheNumber.ts
-import { ButtonBuilder as ButtonBuilder6, ButtonStyle as ButtonStyle6, ContainerBuilder as ContainerBuilder8, MessageFlags as MessageFlags7 } from "discord.js";
+import { ButtonBuilder as ButtonBuilder6, ButtonStyle as ButtonStyle6, MessageFlags as MessageFlags7 } from "discord.js";
 var GuessTheNumber = class extends BaseGame {
   targetNumber = 0;
   currentMin = 1;
   currentMax = 1e3;
   attempts = 0;
   participants = /* @__PURE__ */ new Set();
-  startTime = 0;
   isPublic = false;
   btnPrefix;
   gameTitle;
-  defaultColor;
   constructor(manager, options) {
     super(manager, options, "gtn");
     this.btnPrefix = getRandomString(6, "gtn_");
-    this.isPublic = options.publicGame ?? false;
+    this.isPublic = options.publicMode ?? options.publicGame ?? false;
     this.gameTitle = options.embed?.title || "Guess The Number";
-    this.defaultColor = safeResolveColor(options.embed?.color, 5793266);
+    this.defaultColor = this.resolveColor(options.embed?.color);
     this.currentMin = options.min ?? 1;
-    this.currentMax = options.max ?? 1e3;
+    this.currentMax = options.max ?? 100;
     if (typeof options.number === "number") {
       this.targetNumber = options.number;
     } else {
       this.targetNumber = Math.floor(Math.random() * (this.currentMax - this.currentMin + 1)) + this.currentMin;
     }
-    this.defaultTimeout = options.time || 12e4;
+    this.defaultTimeout = options.time || manager?.defaultTimeout || 12e4;
   }
   async start() {
     this.startTime = Date.now();
     this.isActive = true;
     this.manager._eventManager.register(this);
+    this.emitStart();
     const container = this.createGameContainer("active");
     await this.ctx.sendInitial({
       components: [container],
@@ -2789,6 +2955,7 @@ var GuessTheNumber = class extends BaseGame {
     this.isActive = false;
     this.clearTimer();
     this.destroy();
+    this.emitEnd(state, this.attempts);
     const elapsed = formatTime(Date.now() - this.startTime);
     const container = this.createGameContainer(state, { winnerId, timeTaken: elapsed });
     await this.ctx.edit({
@@ -2797,14 +2964,22 @@ var GuessTheNumber = class extends BaseGame {
     });
   }
   createGameContainer(state, data) {
-    const container = new ContainerBuilder8();
+    const stateColors = {
+      active: this.defaultColor,
+      higher: 16705372,
+      lower: 15105570,
+      won: 5763719,
+      cancelled: 15548997,
+      lost: 15548997,
+      timeout: 15548997
+    };
+    const container = this.createContainer(stateColors[state]);
     let content = "";
     const modeText = this.isPublic ? "\u{1F465} **Mode:** Public (Everyone can guess!)" : "\u{1F464} **Mode:** Solo";
     switch (state) {
       case "active":
       case "higher":
       case "lower":
-        container.setAccentColor(this.defaultColor);
         content = `## ${this.gameTitle}
 `;
         if (data?.hint) {
@@ -2818,7 +2993,6 @@ var GuessTheNumber = class extends BaseGame {
 **Attempts:** \`${this.attempts}\` | **Participants:** \`${this.participants.size}\``;
         break;
       case "won":
-        container.setAccentColor(5763719);
         content = `## \u{1F3AF} Number Found!
 > \u{1F3C6} **Congratulations <@${data?.winnerId || this.ctx.userId}>!**
 > The secret number was **${this.targetNumber}**!
@@ -2826,20 +3000,19 @@ var GuessTheNumber = class extends BaseGame {
 **Total Attempts:** \`${this.attempts}\` | **Time Taken:** \`${data?.timeTaken || "0s"}\` | **Participants:** \`${this.participants.size}\``;
         break;
       case "cancelled":
-        container.setAccentColor(15548997);
         content = `## \u{1F6D1} Game Cancelled
 > The game was ended. The number was **${this.targetNumber}**.`;
         break;
       case "lost":
       case "timeout":
-        container.setAccentColor(15548997);
         content = `## \u23F1\uFE0F Time's Up
 > Game session expired. The secret number was **${this.targetNumber}**.`;
         break;
     }
+    content = this.applyEmbedDecorations(container, content);
     container.addTextDisplayComponents((t) => t.setContent(content));
     if (state === "active" || state === "higher" || state === "lower") {
-      const giveUpBtn = new ButtonBuilder6().setStyle(ButtonStyle6.Danger).setLabel(this.options.giveUpButton || "Give Up").setEmoji("\u{1F6D1}").setCustomId(`${this.btnPrefix}cancel`);
+      const giveUpBtn = new ButtonBuilder6().setStyle(ButtonStyle6.Danger).setLabel(this.options.giveUpButton || this.options.button || "Give Up").setEmoji("\u{1F6D1}").setCustomId(`${this.btnPrefix}cancel`);
       container.addActionRowComponents((row) => row.setComponents(giveUpBtn));
     }
     return container;
@@ -2847,7 +3020,7 @@ var GuessTheNumber = class extends BaseGame {
 };
 
 // src/games/GuessThePokemon.ts
-import { ActionRowBuilder as ActionRowBuilder5, AttachmentBuilder as AttachmentBuilder4, ButtonBuilder as ButtonBuilder7, ButtonStyle as ButtonStyle7, ContainerBuilder as ContainerBuilder9, LabelBuilder as LabelBuilder2, MediaGalleryBuilder as MediaGalleryBuilder4, MessageFlags as MessageFlags8, ModalBuilder as ModalBuilder2, TextInputBuilder as TextInputBuilder2, TextInputStyle as TextInputStyle2 } from "discord.js";
+import { ActionRowBuilder as ActionRowBuilder5, AttachmentBuilder as AttachmentBuilder4, ButtonBuilder as ButtonBuilder7, ButtonStyle as ButtonStyle7, LabelBuilder as LabelBuilder2, MediaGalleryBuilder as MediaGalleryBuilder4, MessageFlags as MessageFlags8, ModalBuilder as ModalBuilder2, TextInputBuilder as TextInputBuilder2, TextInputStyle as TextInputStyle2 } from "discord.js";
 
 // src/canvas/RenderPokemon.ts
 import { Canvas as Canvas3, loadImage as loadImage2 } from "@napi-rs/canvas";
@@ -3132,30 +3305,32 @@ var GuessThePokemon = class extends BaseGame {
   pokemon = null;
   btnPrefix;
   modalId;
-  startTime = 0;
   gameTitle;
-  defaultColor;
   giveUpButtonLabel;
   constructor(manager, options) {
     super(manager, options, "gtp");
     this.btnPrefix = getRandomString(6, "gtp_");
     this.modalId = `${this.btnPrefix}modal`;
     this.gameTitle = options.embed?.title || "Who's That Pok\xE9mon?";
-    this.defaultColor = safeResolveColor(options.embed?.color, 5793266);
+    this.defaultColor = this.resolveColor(options.embed?.color);
     this.giveUpButtonLabel = options.giveUpButton || "Give Up";
-    this.defaultTimeout = options.time || 6e4;
+    this.defaultTimeout = options.time || manager?.defaultTimeout || 6e4;
   }
   async start() {
     this.isActive = true;
     this.manager._eventManager.register(this);
+    this.emitStart();
     const loadingContainer = this.createGameContainer("loading");
     await this.ctx.sendInitial({
       components: [loadingContainer],
       flags: MessageFlags8.IsComponentsV2
     });
     try {
-      this.pokemon = await fetchRandomPokemon();
+      this.pokemon = this.options.pokemon || await fetchRandomPokemon();
     } catch {
+      return this.endGame("error", "Failed to retrieve Pok\xE9mon data.");
+    }
+    if (!this.pokemon) {
       return this.endGame("error", "Failed to retrieve Pok\xE9mon data.");
     }
     this.startTime = Date.now();
@@ -3236,6 +3411,7 @@ var GuessThePokemon = class extends BaseGame {
     this.isActive = false;
     this.clearTimer();
     this.destroy();
+    this.emitEnd(state);
     if (!this.pokemon) {
       const container2 = this.createGameContainer("error", { error: errorMsg || "Unknown error occurred." });
       await this.ctx.edit({
@@ -3259,17 +3435,22 @@ var GuessThePokemon = class extends BaseGame {
     });
   }
   createGameContainer(state, details) {
-    const container = new ContainerBuilder9();
+    const stateColors = {
+      loading: this.defaultColor,
+      active: this.defaultColor,
+      won: 5763719,
+      lost: 15548997,
+      error: 16711680
+    };
+    const container = this.createContainer(stateColors[state]);
     let content = "";
     const name = this.pokemon?.name || "Unknown";
     switch (state) {
       case "loading":
-        container.setAccentColor(this.defaultColor);
         content = this.options.states?.loading ? this.options.states.loading.replace("{{gameTitle}}", this.gameTitle) : `## ${this.gameTitle}
 > \u{1F504} ${this.options.thinkMessage || "Searching the tall grass for a wild Pok\xE9mon..."}`;
         break;
       case "active":
-        container.setAccentColor(this.defaultColor);
         const typesStr = this.pokemon?.types.map((t) => `\`${t}\``).join(", ") || "`Unknown`";
         const abilitiesStr = this.pokemon?.abilities.map((a) => `\`${a}\``).join(", ") || "`Unknown`";
         content = this.options.states?.active ? this.options.states.active.replace("{{gameTitle}}", this.gameTitle) : `## ${this.gameTitle}
@@ -3281,23 +3462,21 @@ var GuessThePokemon = class extends BaseGame {
 > ${details.statusNotice}` : ""}`;
         break;
       case "won":
-        container.setAccentColor(5763719);
         const winText = this.options.winMessage ? this.options.winMessage.replace("{{answer}}", name).replace("{{time}}", details?.timeTaken || "0s") : `GG! It was **${name}**. You got it in **${details?.timeTaken || "0s"}**!`;
         content = this.options.states?.won ? this.options.states.won.replace("{{gameTitle}}", this.gameTitle).replace("{{answer}}", name) : `## \u{1F389} Pok\xE9mon Identified!
 > \u{1F3C6} ${winText}`;
         break;
       case "lost":
-        container.setAccentColor(15548997);
         const loseText = this.options.loseMessage ? this.options.loseMessage.replace("{{answer}}", name) : `Better luck next time! It was **${name}**.`;
         content = this.options.states?.lost ? this.options.states.lost.replace("{{gameTitle}}", this.gameTitle).replace("{{answer}}", name) : `## \u{1F4A8} Pok\xE9mon Got Away!
 > ${loseText}`;
         break;
       case "error":
-        container.setAccentColor(16711680);
         content = this.options.states?.error ? this.options.states.error.replace("{{error}}", details?.error || "Unknown error.") : `## \u274C Error
 > ${details?.error || "Unknown error occurred."}`;
         break;
     }
+    content = this.applyEmbedDecorations(container, content);
     container.addTextDisplayComponents((t) => t.setContent(content));
     if (details?.image) {
       const gallery = new MediaGalleryBuilder4().addItems((item) => item.setURL(`attachment://${details.image}`));
@@ -3314,7 +3493,7 @@ var GuessThePokemon = class extends BaseGame {
 };
 
 // src/games/Hangman.ts
-import { ActionRowBuilder as ActionRowBuilder6, AttachmentBuilder as AttachmentBuilder5, ButtonBuilder as ButtonBuilder8, ButtonStyle as ButtonStyle8, ContainerBuilder as ContainerBuilder10, LabelBuilder as LabelBuilder3, MediaGalleryBuilder as MediaGalleryBuilder5, MessageFlags as MessageFlags9, ModalBuilder as ModalBuilder3, TextInputBuilder as TextInputBuilder3, TextInputStyle as TextInputStyle3 } from "discord.js";
+import { ActionRowBuilder as ActionRowBuilder6, AttachmentBuilder as AttachmentBuilder5, ButtonBuilder as ButtonBuilder8, ButtonStyle as ButtonStyle8, LabelBuilder as LabelBuilder3, MediaGalleryBuilder as MediaGalleryBuilder5, MessageFlags as MessageFlags9, ModalBuilder as ModalBuilder3, TextInputBuilder as TextInputBuilder3, TextInputStyle as TextInputStyle3 } from "discord.js";
 
 // src/canvas/RenderHangman.ts
 import { Canvas as Canvas4 } from "@napi-rs/canvas";
@@ -3478,19 +3657,20 @@ var Hangman = class extends BaseGame {
   displayWord = "";
   guessedLetters = [];
   wrongGuesses = 0;
+  maxMistakes = 6;
   btnPrefix;
   modalId;
   gameTitle;
-  defaultColor;
   quitButtonLabel;
   constructor(manager, options) {
     super(manager, options, "hangman");
     this.btnPrefix = getRandomString(6, "hang_");
     this.modalId = `${this.btnPrefix}modal`;
     this.gameTitle = options.embed?.title || "Hangman";
-    this.defaultColor = safeResolveColor(options.embed?.color, 5793266);
+    this.defaultColor = this.resolveColor(options.embed?.color);
     this.quitButtonLabel = options.quitButton || "Quit Game";
-    this.defaultTimeout = options.time || 18e4;
+    this.maxMistakes = options.maxMistakes ?? 6;
+    this.defaultTimeout = options.time || manager?.defaultTimeout || 18e4;
   }
   async start() {
     if (this.options.word) {
@@ -3504,6 +3684,7 @@ var Hangman = class extends BaseGame {
     this.updateDisplayWord();
     this.isActive = true;
     this.manager._eventManager.register(this);
+    this.emitStart();
     const loadingContainer = this.createGameContainer("loading");
     await this.ctx.sendInitial({
       components: [loadingContainer],
@@ -3581,7 +3762,7 @@ var Hangman = class extends BaseGame {
         await this.endGame("won");
       } else {
         this.wrongGuesses += 1;
-        if (this.wrongGuesses >= 6) {
+        if (this.wrongGuesses >= this.maxMistakes) {
           await this.endGame("lost");
         } else {
           await this.refreshBoard(`\u274C **${guess}** is not the word! (-1 Life)`);
@@ -3605,7 +3786,7 @@ var Hangman = class extends BaseGame {
       }
     } else {
       this.wrongGuesses += 1;
-      if (this.wrongGuesses >= 6) {
+      if (this.wrongGuesses >= this.maxMistakes) {
         await this.endGame("lost");
       } else {
         await this.refreshBoard(`\u274C Letter **${letter}** is not in the word! (-1 Life)`);
@@ -3629,6 +3810,7 @@ var Hangman = class extends BaseGame {
     this.isActive = false;
     this.clearTimer();
     this.destroy();
+    this.emitEnd(state, this.wrongGuesses);
     const isWon = state === "won";
     const isOver = state === "lost" || state === "quit" || state === "timeout";
     const buffer = await this.renderImage(isOver, isWon);
@@ -3645,17 +3827,24 @@ var Hangman = class extends BaseGame {
     });
   }
   createGameContainer(state, details) {
-    const container = new ContainerBuilder10();
+    const stateColors = {
+      loading: this.defaultColor,
+      active: this.defaultColor,
+      won: 5763719,
+      lost: 15548997,
+      quit: 15548997,
+      timeout: 15548997,
+      error: 16711680
+    };
+    const container = this.createContainer(stateColors[state]);
     let content = "";
     const revealedWord = details?.word || this.targetWord;
     switch (state) {
       case "loading":
-        container.setAccentColor(this.defaultColor);
         content = this.options.states?.loading ? this.options.states.loading.replace("{{gameTitle}}", this.gameTitle) : `## ${this.gameTitle}
 > \u{1F504} Starting game...`;
         break;
       case "active":
-        container.setAccentColor(this.defaultColor);
         content = this.options.states?.active ? this.options.states.active.replace("{{gameTitle}}", this.gameTitle) : `## ${this.gameTitle}
 > **Category:** \`${this.category}\`
 > Click **Guess Letter / Word** or type your guess directly in the chat!
@@ -3663,31 +3852,27 @@ ${details?.statusNotice ? `
 > ${details.statusNotice}` : ""}`;
         break;
       case "won":
-        container.setAccentColor(5763719);
         content = this.options.states?.won ? this.options.states.won.replace("{{word}}", revealedWord) : `## \u{1F389} Victory!
 > You guessed the word: **${revealedWord}**!`;
         break;
       case "lost":
-        container.setAccentColor(15548997);
         content = this.options.states?.lost ? this.options.states.lost.replace("{{word}}", revealedWord) : `## \u{1F480} Game Over
 > The word was: **${revealedWord}**`;
         break;
       case "quit":
-        container.setAccentColor(15548997);
         content = this.options.states?.quit ? this.options.states.quit.replace("{{word}}", revealedWord) : `## \u{1F6D1} Game Stopped
 > You quit the game. The word was **${revealedWord}**`;
         break;
       case "timeout":
-        container.setAccentColor(15548997);
         content = this.options.states?.timeout ? this.options.states.timeout.replace("{{word}}", revealedWord) : `## \u23F1\uFE0F Time's Up
 > Session expired. The word was: **${revealedWord}**`;
         break;
       case "error":
-        container.setAccentColor(16711680);
         content = this.options.states?.error?.main ? this.options.states.error.main.replace("{{error}}", details?.error || "Unknown error.") : `## \u274C Error
 > ${details?.error || "Unknown error occurred."}`;
         break;
     }
+    content = this.applyEmbedDecorations(container, content);
     container.addTextDisplayComponents((t) => t.setContent(content));
     if (details?.image) {
       const gallery = new MediaGalleryBuilder5().addItems((item) => item.setURL(`attachment://${details.image}`));
@@ -3704,7 +3889,7 @@ ${details?.statusNotice ? `
 };
 
 // src/games/LieSwatter.ts
-import { ActionRowBuilder as ActionRowBuilder7, ButtonBuilder as ButtonBuilder9, ButtonStyle as ButtonStyle9, ContainerBuilder as ContainerBuilder11, MessageFlags as MessageFlags10 } from "discord.js";
+import { ActionRowBuilder as ActionRowBuilder7, ButtonBuilder as ButtonBuilder9, ButtonStyle as ButtonStyle9, MessageFlags as MessageFlags10 } from "discord.js";
 
 // src/data/trivia.ts
 var TRIVIA_FACTS = [
@@ -3811,26 +3996,33 @@ function getRandomNHIE() {
 // src/games/LieSwatter.ts
 var LieSwatter = class extends BaseGame {
   fact;
-  startTime = 0;
   btnPrefix;
   gameTitle;
-  defaultColor;
   labelTrue;
   labelLie;
   constructor(manager, options) {
     super(manager, options, "lieswatter");
     this.btnPrefix = getRandomString(6, "ls_");
     this.gameTitle = options.embed?.title || "Lie Swatter";
-    this.defaultColor = safeResolveColor(options.embed?.color, 5793266);
+    this.defaultColor = this.resolveColor(options.embed?.color);
     this.labelTrue = options.buttons?.true || "Truth";
     this.labelLie = options.buttons?.lie || "Lie";
-    this.fact = getRandomTriviaFact();
-    this.defaultTimeout = options.time || 45e3;
+    if (options.statement) {
+      this.fact = {
+        statement: options.statement,
+        isTrue: options.isTrue ?? true,
+        explanation: options.explanation || "No explanation provided."
+      };
+    } else {
+      this.fact = getRandomTriviaFact();
+    }
+    this.defaultTimeout = options.time || manager?.defaultTimeout || 45e3;
   }
   async start() {
     this.startTime = Date.now();
     this.isActive = true;
     this.manager._eventManager.register(this);
+    this.emitStart();
     const container = this.createGameContainer("active");
     await this.ctx.sendInitial({
       components: [container],
@@ -3855,6 +4047,7 @@ var LieSwatter = class extends BaseGame {
     this.isActive = false;
     this.clearTimer();
     this.destroy();
+    this.emitEnd(state);
     const elapsed = formatTime(Date.now() - this.startTime);
     const container = this.createGameContainer(state, { timeTaken: elapsed });
     await this.ctx.edit({
@@ -3863,19 +4056,23 @@ var LieSwatter = class extends BaseGame {
     });
   }
   createGameContainer(state, data) {
-    const container = new ContainerBuilder11();
+    const stateColors = {
+      active: this.defaultColor,
+      won: 5763719,
+      lost: 15548997,
+      timeout: 15548997
+    };
+    const container = this.createContainer(stateColors[state]);
     let content = "";
     const correctLabel = this.fact.isTrue ? this.labelTrue : this.labelLie;
     switch (state) {
       case "active":
-        container.setAccentColor(this.defaultColor);
         content = `## ${this.gameTitle}
 > "${this.fact.statement}"
 
 Is this statement a **${this.labelTrue}** or a **${this.labelLie}**?`;
         break;
       case "won":
-        container.setAccentColor(5763719);
         const winText = this.options.winMessage ? this.options.winMessage.replace("{{answer}}", correctLabel).replace("{{time}}", data?.timeTaken || "0s") : `\u{1F3C6} Spot on! It was indeed **${correctLabel}**! Answered in **${data?.timeTaken || "0s"}**.`;
         content = `## ${this.gameTitle}
 > ${winText}
@@ -3883,7 +4080,6 @@ Is this statement a **${this.labelTrue}** or a **${this.labelLie}**?`;
 \u{1F4D6} **Fact:** ${this.fact.explanation}`;
         break;
       case "lost":
-        container.setAccentColor(15548997);
         const loseText = this.options.loseMessage ? this.options.loseMessage.replace("{{answer}}", correctLabel) : `\u{1F480} Swatted! It was actually **${correctLabel}**.`;
         content = `## ${this.gameTitle}
 > ${loseText}
@@ -3891,13 +4087,13 @@ Is this statement a **${this.labelTrue}** or a **${this.labelLie}**?`;
 \u{1F4D6} **Fact:** ${this.fact.explanation}`;
         break;
       case "timeout":
-        container.setAccentColor(15548997);
         content = `## ${this.gameTitle}
 > \u23F1\uFE0F Time's up! It was actually **${correctLabel}**.
 
 \u{1F4D6} **Fact:** ${this.fact.explanation}`;
         break;
     }
+    content = this.applyEmbedDecorations(container, content);
     container.addTextDisplayComponents((t) => t.setContent(content));
     const isResult = state !== "active";
     const trueBtn = new ButtonBuilder9().setCustomId(`${this.btnPrefix}true`).setLabel(this.labelTrue).setEmoji("\u2705").setStyle(isResult ? this.fact.isTrue ? ButtonStyle9.Success : ButtonStyle9.Secondary : ButtonStyle9.Success).setDisabled(isResult);
@@ -3909,25 +4105,25 @@ Is this statement a **${this.labelTrue}** or a **${this.labelLie}**?`;
 };
 
 // src/games/NeverHaveIEver.ts
-import { ActionRowBuilder as ActionRowBuilder8, ButtonBuilder as ButtonBuilder10, ButtonStyle as ButtonStyle10, ContainerBuilder as ContainerBuilder12, MessageFlags as MessageFlags11 } from "discord.js";
+import { ActionRowBuilder as ActionRowBuilder8, ButtonBuilder as ButtonBuilder10, ButtonStyle as ButtonStyle10, MessageFlags as MessageFlags11 } from "discord.js";
 var NeverHaveIEver = class extends BaseGame {
   statement = "";
   haveVoters = /* @__PURE__ */ new Set();
   neverVoters = /* @__PURE__ */ new Set();
   btnPrefix;
   gameTitle;
-  defaultColor;
   constructor(manager, options) {
     super(manager, options, "nhie");
     this.btnPrefix = getRandomString(6, "nhie_");
     this.gameTitle = options.embed?.title || "Never Have I Ever";
-    this.defaultColor = safeResolveColor(options.embed?.color, 5793266);
-    this.statement = getRandomNHIE();
-    this.defaultTimeout = options.time || 9e4;
+    this.defaultColor = this.resolveColor(options.embed?.color);
+    this.statement = options.statement || getRandomNHIE();
+    this.defaultTimeout = options.time || manager?.defaultTimeout || 9e4;
   }
   async start() {
     this.isActive = true;
     this.manager._eventManager.register(this);
+    this.emitStart();
     const container = this.createGameContainer(false);
     await this.ctx.sendInitial({
       components: [container],
@@ -3969,6 +4165,7 @@ var NeverHaveIEver = class extends BaseGame {
     this.isActive = false;
     this.clearTimer();
     this.destroy();
+    this.emitEnd("ended", this.haveVoters.size + this.neverVoters.size);
     const container = this.createGameContainer(true);
     await this.ctx.edit({
       components: [container],
@@ -3976,7 +4173,7 @@ var NeverHaveIEver = class extends BaseGame {
     });
   }
   createGameContainer(isFinal) {
-    const container = new ContainerBuilder12().setAccentColor(isFinal ? 5763719 : this.defaultColor);
+    const container = this.createContainer(isFinal ? 5763719 : this.defaultColor);
     const total = this.haveVoters.size + this.neverVoters.size;
     const havePct = total > 0 ? Math.round(this.haveVoters.size / total * 100) : 0;
     const neverPct = total > 0 ? Math.round(this.neverVoters.size / total * 100) : 0;
@@ -4006,6 +4203,7 @@ var NeverHaveIEver = class extends BaseGame {
     } else {
       content += `> Click a button below to cast your confession!`;
     }
+    content = this.applyEmbedDecorations(container, content);
     container.addTextDisplayComponents((t) => t.setContent(content));
     if (!isFinal) {
       const row = new ActionRowBuilder8().addComponents(
@@ -4020,35 +4218,40 @@ var NeverHaveIEver = class extends BaseGame {
 };
 
 // src/games/QuickClick.ts
-import { ActionRowBuilder as ActionRowBuilder9, ButtonBuilder as ButtonBuilder11, ButtonStyle as ButtonStyle11, ContainerBuilder as ContainerBuilder13, MessageFlags as MessageFlags12 } from "discord.js";
+import { ActionRowBuilder as ActionRowBuilder9, ButtonBuilder as ButtonBuilder11, ButtonStyle as ButtonStyle11, MessageFlags as MessageFlags12 } from "discord.js";
 var QuickClick = class extends BaseGame {
   targetIndex = 0;
   btnPrefix;
   isWaiting = true;
-  startTime = 0;
   waitTimer = null;
   emoji;
   gameTitle;
-  defaultColor;
+  buttonCount;
+  minDelay;
+  maxDelay;
   constructor(manager, options) {
     super(manager, options, "quickclick");
     this.btnPrefix = getRandomString(6, "qc_");
     this.emoji = options.emoji || "\u26A1";
     this.gameTitle = options.embed?.title || "Quick Click";
-    this.defaultColor = safeResolveColor(options.embed?.color, 5793266);
-    this.defaultTimeout = options.time || 15e3;
+    this.defaultColor = this.resolveColor(options.embed?.color);
+    this.buttonCount = clamp(options.buttonCount ?? 20, 1, 25);
+    this.minDelay = options.minDelay ?? 2e3;
+    this.maxDelay = options.maxDelay ?? 6e3;
+    this.defaultTimeout = options.time || manager?.defaultTimeout || 1e4;
   }
   async start() {
-    this.targetIndex = Math.floor(Math.random() * 25);
+    this.targetIndex = Math.floor(Math.random() * this.buttonCount);
     this.isWaiting = true;
     this.isActive = true;
     this.manager._eventManager.register(this);
+    this.emitStart();
     const container = this.createGameContainer("waiting");
     await this.ctx.sendInitial({
       components: [container],
       flags: MessageFlags12.IsComponentsV2
     });
-    const delay = Math.floor(Math.random() * 3500) + 2e3;
+    const delay = Math.floor(Math.random() * (this.maxDelay - this.minDelay + 1)) + this.minDelay;
     this.waitTimer = setTimeout(() => {
       this.triggerActiveState();
     }, delay);
@@ -4096,6 +4299,7 @@ var QuickClick = class extends BaseGame {
       clearTimeout(this.waitTimer);
       this.waitTimer = null;
     }
+    this.emitEnd(reason, reactionMs ? Math.round(reactionMs) : 0);
     const container = this.createGameContainer(reason, reactionMs);
     await this.ctx.edit({
       components: [container],
@@ -4110,21 +4314,25 @@ var QuickClick = class extends BaseGame {
     }
   }
   createGameContainer(state, reactionMs) {
-    const container = new ContainerBuilder13();
+    const stateColors = {
+      waiting: this.defaultColor,
+      active: this.defaultColor,
+      won: 5763719,
+      early: 15548997,
+      timeout: 15548997
+    };
+    const container = this.createContainer(stateColors[state]);
     let content = "";
     switch (state) {
       case "waiting":
-        container.setAccentColor(this.defaultColor);
         content = `## ${this.gameTitle}
 > \u23F3 ${this.options.waitMessage || `Get ready! The **${this.emoji}** button will appear randomly...`}`;
         break;
       case "active":
-        container.setAccentColor(16705372);
         content = `## ${this.gameTitle}
 > \u{1F525} **CLICK NOW!** Find and click the **${this.emoji}** button as fast as you can!`;
         break;
       case "won":
-        container.setAccentColor(5763719);
         const sec = ((reactionMs || 0) / 1e3).toFixed(3);
         content = `## \u26A1 Blazing Fast Reaction!
 > \u{1F3C6} **GG <@${this.ctx.userId}>!**
@@ -4132,36 +4340,40 @@ var QuickClick = class extends BaseGame {
 > *(Network latency compensated)*`;
         break;
       case "early":
-        container.setAccentColor(15548997);
         content = `## \u274C Too Early!
 > You clicked before the button appeared! Patience is a virtue.`;
         break;
       case "timeout":
-        container.setAccentColor(15548997);
         content = `## \u23F1\uFE0F Time's Up!
 > ${this.options.loseMessage || "Time expired! You weren't fast enough."}`;
         break;
     }
+    content = this.applyEmbedDecorations(container, content);
     container.addTextDisplayComponents((t) => t.setContent(content));
     const allDisabled = state !== "active";
     const showTarget = state === "active" || state === "won";
     let btnIndex = 0;
     for (let r = 0; r < 5; r++) {
       const row = new ActionRowBuilder9();
+      let addedInRow = 0;
       for (let c = 0; c < 5; c++) {
+        if (btnIndex >= this.buttonCount) break;
         const isTarget = btnIndex === this.targetIndex;
         const btn = new ButtonBuilder11().setCustomId(`${this.btnPrefix}${btnIndex}`).setLabel(isTarget && showTarget ? this.emoji : "\u200B").setStyle(isTarget && showTarget ? ButtonStyle11.Success : ButtonStyle11.Secondary).setDisabled(allDisabled ? true : !isTarget);
         row.addComponents(btn);
         btnIndex++;
+        addedInRow++;
       }
-      container.addActionRowComponents(row);
+      if (addedInRow > 0) {
+        container.addActionRowComponents(row);
+      }
     }
     return container;
   }
 };
 
 // src/games/RockPaperScissors.ts
-import { ActionRowBuilder as ActionRowBuilder10, ButtonBuilder as ButtonBuilder12, ButtonStyle as ButtonStyle12, ContainerBuilder as ContainerBuilder14, GuildMember as GuildMember3, MessageFlags as MessageFlags13 } from "discord.js";
+import { ActionRowBuilder as ActionRowBuilder10, ButtonBuilder as ButtonBuilder12, ButtonStyle as ButtonStyle12, GuildMember as GuildMember3, MessageFlags as MessageFlags13 } from "discord.js";
 var RockPaperScissors = class extends BaseGame {
   opponentUser = null;
   isVsBot = true;
@@ -4169,21 +4381,21 @@ var RockPaperScissors = class extends BaseGame {
   p2Move = null;
   btnPrefix;
   gameTitle;
-  defaultColor;
   constructor(manager, options) {
     super(manager, options, "rps");
     this.btnPrefix = getRandomString(6, "rps_");
     this.gameTitle = options.embed?.title || "Rock Paper Scissors";
-    this.defaultColor = safeResolveColor(options.embed?.color, 5793266);
+    this.defaultColor = this.resolveColor(options.embed?.color);
     if (options.opponent) {
       this.opponentUser = options.opponent instanceof GuildMember3 ? options.opponent.user : options.opponent;
       this.isVsBot = this.opponentUser.bot || this.opponentUser.id === this.ctx.client.user?.id;
     }
-    this.defaultTimeout = options.time || 6e4;
+    this.defaultTimeout = options.time || manager?.defaultTimeout || 45e3;
   }
   async start() {
     this.isActive = true;
     this.manager._eventManager.register(this);
+    this.emitStart();
     const container = this.createGameContainer("active");
     await this.ctx.sendInitial({
       components: [container],
@@ -4243,6 +4455,7 @@ var RockPaperScissors = class extends BaseGame {
     this.isActive = false;
     this.clearTimer();
     this.destroy();
+    this.emitEnd(state);
     const container = this.createGameContainer(state);
     await this.ctx.edit({
       components: [container],
@@ -4250,7 +4463,13 @@ var RockPaperScissors = class extends BaseGame {
     });
   }
   createGameContainer(state, details) {
-    const container = new ContainerBuilder14();
+    const stateColors = {
+      active: this.defaultColor,
+      waiting: 16705372,
+      result: 5763719,
+      timeout: 15548997
+    };
+    const container = this.createContainer(stateColors[state]);
     let content = "";
     const emojis = {
       rock: "\u{1FAA8} Rock",
@@ -4259,7 +4478,6 @@ var RockPaperScissors = class extends BaseGame {
     };
     switch (state) {
       case "active":
-        container.setAccentColor(this.defaultColor);
         if (this.isVsBot || !this.opponentUser) {
           content = `## ${this.gameTitle}
 > You are playing against the **Bot**!
@@ -4271,13 +4489,11 @@ var RockPaperScissors = class extends BaseGame {
         }
         break;
       case "waiting":
-        container.setAccentColor(16705372);
         content = `## ${this.gameTitle}
 > One player locked in their move!
 > \u23F3 Waiting for ${details?.waitingFor}...`;
         break;
       case "result":
-        container.setAccentColor(5763719);
         const m1 = this.p1Move || "rock";
         const m2 = this.p2Move || "rock";
         let winnerText = "";
@@ -4298,11 +4514,11 @@ var RockPaperScissors = class extends BaseGame {
 ${p2Label}: ${emojis[m2]}`;
         break;
       case "timeout":
-        container.setAccentColor(15548997);
         content = `## ${this.gameTitle}
 > \u23F1\uFE0F Game session expired. Moves were not submitted in time.`;
         break;
     }
+    content = this.applyEmbedDecorations(container, content);
     container.addTextDisplayComponents((t) => t.setContent(content));
     if (state === "active" || state === "waiting") {
       const rock = new ButtonBuilder12().setCustomId(`${this.btnPrefix}rock`).setLabel(this.options.buttons?.rock || "Rock").setEmoji("\u{1FAA8}").setStyle(ButtonStyle12.Primary);
@@ -4316,27 +4532,26 @@ ${p2Label}: ${emojis[m2]}`;
 };
 
 // src/games/ShuffleGuess.ts
-import { ActionRowBuilder as ActionRowBuilder11, ButtonBuilder as ButtonBuilder13, ButtonStyle as ButtonStyle13, ContainerBuilder as ContainerBuilder15, MessageFlags as MessageFlags14 } from "discord.js";
+import { ActionRowBuilder as ActionRowBuilder11, ButtonBuilder as ButtonBuilder13, ButtonStyle as ButtonStyle13, MessageFlags as MessageFlags14 } from "discord.js";
 var ShuffleGuess = class extends BaseGame {
   targetWord = "";
   scrambled = "";
-  startTime = 0;
   btnPrefix;
   gameTitle;
-  defaultColor;
   constructor(manager, options) {
     super(manager, options, "shuffleguess");
     this.btnPrefix = getRandomString(6, "sg_");
     this.targetWord = (options.word || getRandomWord()).toUpperCase().trim();
     this.scrambled = this.getValidScramble(this.targetWord);
     this.gameTitle = options.embed?.title || "Shuffle Guess";
-    this.defaultColor = safeResolveColor(options.embed?.color, 5793266);
-    this.defaultTimeout = options.time || 6e4;
+    this.defaultColor = this.resolveColor(options.embed?.color);
+    this.defaultTimeout = options.time || manager?.defaultTimeout || 6e4;
   }
   async start() {
     this.startTime = Date.now();
     this.isActive = true;
     this.manager._eventManager.register(this);
+    this.emitStart();
     const container = this.createGameContainer("active");
     await this.ctx.sendInitial({
       components: [container],
@@ -4393,6 +4608,7 @@ var ShuffleGuess = class extends BaseGame {
     this.isActive = false;
     this.clearTimer();
     this.destroy();
+    this.emitEnd(state);
     const elapsed = formatTime(Date.now() - this.startTime);
     const container = this.createGameContainer(state, { timeTaken: elapsed });
     await this.ctx.edit({
@@ -4401,14 +4617,21 @@ var ShuffleGuess = class extends BaseGame {
     });
   }
   createGameContainer(state, data) {
-    const container = new ContainerBuilder15();
+    const stateColors = {
+      active: this.defaultColor,
+      reshuffled: this.defaultColor,
+      wrong: 15548997,
+      won: 5763719,
+      quit: 15548997,
+      timeout: 15548997
+    };
+    const container = this.createContainer(stateColors[state]);
     let content = "";
     const formatted = this.scrambled.split("").join("  ");
     switch (state) {
       case "active":
       case "reshuffled":
       case "wrong":
-        container.setAccentColor(state === "wrong" ? 15548997 : this.defaultColor);
         content = `## ${this.gameTitle}
 `;
         if (data?.feedback) {
@@ -4424,22 +4647,20 @@ ${formatted}
 **Word Length:** \`${this.targetWord.length} letters\``;
         break;
       case "won":
-        container.setAccentColor(5763719);
         content = `## \u{1F389} Word Solved!
 > \u{1F3C6} **GG <@${this.ctx.userId}>!**
 > You unscrambled **${this.targetWord}** in **${data?.timeTaken || "0s"}**!`;
         break;
       case "quit":
-        container.setAccentColor(15548997);
         content = `## \u{1F6D1} Game Over
 > You gave up! The secret word was **${this.targetWord}**.`;
         break;
       case "timeout":
-        container.setAccentColor(15548997);
         content = `## \u23F1\uFE0F Time's Up
 > Session expired. The secret word was **${this.targetWord}**.`;
         break;
     }
+    content = this.applyEmbedDecorations(container, content);
     container.addTextDisplayComponents((t) => t.setContent(content));
     if (state === "active" || state === "reshuffled" || state === "wrong") {
       const row = new ActionRowBuilder11().addComponents(
@@ -4453,7 +4674,7 @@ ${formatted}
 };
 
 // src/games/Snake.ts
-import { ActionRowBuilder as ActionRowBuilder12, AttachmentBuilder as AttachmentBuilder6, ButtonBuilder as ButtonBuilder14, ButtonStyle as ButtonStyle14, ContainerBuilder as ContainerBuilder16, MediaGalleryBuilder as MediaGalleryBuilder6, MessageFlags as MessageFlags15 } from "discord.js";
+import { ActionRowBuilder as ActionRowBuilder12, AttachmentBuilder as AttachmentBuilder6, ButtonBuilder as ButtonBuilder14, ButtonStyle as ButtonStyle14, MediaGalleryBuilder as MediaGalleryBuilder6, MessageFlags as MessageFlags15 } from "discord.js";
 
 // src/canvas/RenderSnake.ts
 import { Canvas as Canvas5 } from "@napi-rs/canvas";
@@ -4591,7 +4812,6 @@ var Snake = class extends BaseGame {
   score = 0;
   isGameOver = false;
   gameTitle;
-  defaultColor;
   emojiUp;
   emojiDown;
   emojiLeft;
@@ -4611,19 +4831,20 @@ var Snake = class extends BaseGame {
     this.idRight = `${uid}_right`;
     this.idQuit = `${uid}_quit`;
     this.gameTitle = options.embed?.title || "Snake";
-    this.defaultColor = safeResolveColor(options.embed?.color, 5793266);
-    this.gridSize = options.gridSize || 15;
+    this.defaultColor = this.resolveColor(options.embed?.color);
+    this.gridSize = clamp(options.gridSize || 15, 10, 20);
     this.emojiUp = options.emojis?.up || "\u2B06\uFE0F";
     this.emojiDown = options.emojis?.down || "\u2B07\uFE0F";
     this.emojiLeft = options.emojis?.left || "\u2B05\uFE0F";
     this.emojiRight = options.emojis?.right || "\u27A1\uFE0F";
     this.quitButtonLabel = options.quitButton || "Quit";
-    this.defaultTimeout = options.time || 3e5;
+    this.defaultTimeout = options.time || manager?.defaultTimeout || 3e5;
   }
   async start() {
     this.initGame();
     this.isActive = true;
     this.manager._eventManager.register(this);
+    this.emitStart();
     const loadingContainer = this.createGameContainer("loading");
     await this.ctx.sendInitial({
       components: [loadingContainer],
@@ -4752,6 +4973,7 @@ var Snake = class extends BaseGame {
     this.isGameOver = true;
     this.clearTimer();
     this.destroy();
+    this.emitEnd(state, this.score);
     if (!attachment && state !== "error") {
       const overlayTitle = state === "quit" ? "GAME STOPPED" : state === "timeout" ? "TIME'S UP" : "GAME OVER";
       const buffer = await this.renderBoardImage(overlayTitle);
@@ -4766,49 +4988,52 @@ var Snake = class extends BaseGame {
     });
   }
   createGameContainer(state, details) {
-    const container = new ContainerBuilder16();
+    const stateColors = {
+      loading: this.defaultColor,
+      active: this.defaultColor,
+      gameover: 15548997,
+      quit: 15548997,
+      timeout: 15548997,
+      error: 16711680
+    };
+    const container = this.createContainer(stateColors[state]);
     let content = "";
     const score = details?.score ?? this.score;
     switch (state) {
       case "loading":
-        container.setAccentColor(this.defaultColor);
         content = this.options.states?.loading ? this.options.states.loading.replace("{{gameTitle}}", this.gameTitle) : `## ${this.gameTitle}
 > \u{1F504} Starting game...`;
         break;
       case "active":
-        container.setAccentColor(this.defaultColor);
         content = this.options.states?.active ? this.options.states.active.replace("{{gameTitle}}", this.gameTitle).replace("{{score}}", score.toString()).replace("{{length}}", this.snake.length.toString()) : `## ${this.gameTitle}
 > Eat food and avoid crashing!
 
 **Score:** \`${score}\` | **Length:** \`${this.snake.length}\``;
         break;
       case "gameover":
-        container.setAccentColor(15548997);
         content = this.options.states?.gameover ? this.options.states.gameover.replace("{{score}}", score.toString()) : `## \u{1F480} Game Over
 > The snake crashed!
 
 **Final Score:** \`${score}\``;
         break;
       case "quit":
-        container.setAccentColor(15548997);
         content = this.options.states?.quit ? this.options.states.quit.replace("{{score}}", score.toString()) : `## \u{1F6D1} Game Stopped
 > You quit the game.
 
 **Final Score:** \`${score}\``;
         break;
       case "timeout":
-        container.setAccentColor(15548997);
         content = this.options.states?.timeout ? this.options.states.timeout.replace("{{score}}", score.toString()) : `## \u23F1\uFE0F Time's Up
 > Game session expired.
 
 **Final Score:** \`${score}\``;
         break;
       case "error":
-        container.setAccentColor(16711680);
         content = this.options.states?.error?.main ? this.options.states.error.main.replace("{{error}}", details?.error || "Unknown") : `## \u274C Error
 > ${details?.error || "Unknown error occurred."}`;
         break;
     }
+    content = this.applyEmbedDecorations(container, content);
     container.addTextDisplayComponents((t) => t.setContent(content));
     if (details?.image) {
       const gallery = new MediaGalleryBuilder6().addItems((item) => item.setURL(`attachment://${details.image}`));
@@ -4833,26 +5058,25 @@ var Snake = class extends BaseGame {
 };
 
 // src/games/TicTacToe.ts
-import { ActionRowBuilder as ActionRowBuilder13, ButtonBuilder as ButtonBuilder15, ButtonStyle as ButtonStyle15, ContainerBuilder as ContainerBuilder17, GuildMember as GuildMember4, MessageFlags as MessageFlags16 } from "discord.js";
+import { ActionRowBuilder as ActionRowBuilder13, ButtonBuilder as ButtonBuilder15, ButtonStyle as ButtonStyle15, GuildMember as GuildMember4, MessageFlags as MessageFlags16 } from "discord.js";
 var TicTacToe = class extends BaseGame {
   opponentUser;
   board = Array(9).fill(null);
   currentTurnId;
   btnPrefix;
   gameTitle;
-  defaultColor;
   constructor(manager, options) {
     super(manager, options, "tictactoe");
     this.btnPrefix = getRandomString(6, "ttt_");
     this.opponentUser = options.opponent instanceof GuildMember4 ? options.opponent.user : options.opponent;
     this.gameTitle = options.embed?.title || "Tic Tac Toe";
-    this.defaultColor = safeResolveColor(options.embed?.color, 5793266);
+    this.defaultColor = this.resolveColor(options.embed?.color);
     this.currentTurnId = this.ctx.userId;
-    this.defaultTimeout = options.time || 6e4;
+    this.defaultTimeout = options.time || manager?.defaultTimeout || 6e4;
   }
   async start() {
     if (this.opponentUser.id === this.ctx.userId) {
-      const container2 = new ContainerBuilder17().setAccentColor(16711680).addTextDisplayComponents((t) => t.setContent("## \u274C Error\n> You cannot play Tic Tac Toe against yourself!"));
+      const container2 = this.createContainer(16711680).addTextDisplayComponents((t) => t.setContent("## \u274C Error\n> You cannot play Tic Tac Toe against yourself!"));
       await this.ctx.sendInitial({
         components: [container2],
         flags: MessageFlags16.IsComponentsV2
@@ -4861,6 +5085,7 @@ var TicTacToe = class extends BaseGame {
     }
     this.isActive = true;
     this.manager._eventManager.register(this);
+    this.emitStart();
     const container = this.createGameContainer("active");
     await this.ctx.sendInitial({
       components: [container],
@@ -4927,6 +5152,7 @@ var TicTacToe = class extends BaseGame {
     this.isActive = false;
     this.clearTimer();
     this.destroy();
+    this.emitEnd(state, state === "won" && winningSymbol === "X" ? 1 : 0);
     const container = this.createGameContainer(state, winningSymbol);
     await this.ctx.edit({
       components: [container],
@@ -4934,34 +5160,34 @@ var TicTacToe = class extends BaseGame {
     });
   }
   createGameContainer(state, winningSymbol) {
-    const container = new ContainerBuilder17();
+    let stateColor = this.defaultColor;
+    if (state === "won") stateColor = 5763719;
+    else if (state === "tie") stateColor = 16705372;
+    else if (state === "timeout") stateColor = 15548997;
+    const container = this.createContainer(stateColor);
     let content = "";
     switch (state) {
       case "active":
-        container.setAccentColor(this.defaultColor);
         content = `## ${this.gameTitle}
 > \u2694\uFE0F <@${this.ctx.userId}> (\u274C) vs <@${this.opponentUser.id}> (\u2B55)!
 
 > \u{1F3AF} **Current Turn:** <@${this.currentTurnId}>`;
         break;
       case "won":
-        container.setAccentColor(5763719);
         const winnerId = winningSymbol === "X" ? this.ctx.userId : this.opponentUser.id;
         content = `## ${this.gameTitle} - Results
 > \u{1F3C6} **GG! <@${winnerId}> (${winningSymbol}) WON the match!**`;
         break;
       case "tie":
-        container.setAccentColor(16705372);
         content = `## ${this.gameTitle} - Results
 > \u{1F91D} **It's a TIE!** Neither player could achieve three in a row.`;
         break;
       case "timeout":
-        container.setAccentColor(15548997);
         content = `## ${this.gameTitle}
 > \u23F1\uFE0F Game session expired due to inactivity.`;
         break;
     }
-    container.addTextDisplayComponents((t) => t.setContent(content));
+    container.addTextDisplayComponents((t) => t.setContent(this.applyEmbedDecorations(container, content)));
     const isFinished = state !== "active";
     for (let row = 0; row < 3; row++) {
       const actionRow = new ActionRowBuilder13();
@@ -4987,7 +5213,7 @@ var TicTacToe = class extends BaseGame {
 };
 
 // src/games/WillYouPressTheButton.ts
-import { ActionRowBuilder as ActionRowBuilder14, ButtonBuilder as ButtonBuilder16, ButtonStyle as ButtonStyle16, ContainerBuilder as ContainerBuilder18, MessageFlags as MessageFlags17 } from "discord.js";
+import { ActionRowBuilder as ActionRowBuilder14, ButtonBuilder as ButtonBuilder16, ButtonStyle as ButtonStyle16, MessageFlags as MessageFlags17 } from "discord.js";
 
 // src/data/dilemmas.ts
 var WYPTB_DILEMMAS = [
@@ -5131,22 +5357,30 @@ var WillYouPressTheButton = class extends BaseGame {
   dilemma;
   btnPrefix;
   gameTitle;
-  defaultColor;
   labelYes;
   labelNo;
   constructor(manager, options) {
     super(manager, options, "wyptb");
     this.btnPrefix = getRandomString(6, "wyptb_");
     this.gameTitle = options.embed?.title || "Will You Press The Button?";
-    this.defaultColor = safeResolveColor(options.embed?.color, 5793266);
+    this.defaultColor = this.resolveColor(options.embed?.color, 5793266);
     this.labelYes = options.button?.yes || options.buttons?.yes || "Yes! Press it!";
     this.labelNo = options.button?.no || options.buttons?.no || "No! Don't press!";
-    this.dilemma = getRandomWYPTB();
+    if (options.perk && options.consequence) {
+      this.dilemma = {
+        question: options.perk,
+        consequence: options.consequence,
+        stats: { yes: "50%", no: "50%" }
+      };
+    } else {
+      this.dilemma = getRandomWYPTB();
+    }
     this.defaultTimeout = options.time || 6e4;
   }
   async start() {
     this.isActive = true;
     this.manager._eventManager.register(this);
+    this.emitStart();
     const container = this.createGameContainer("active");
     await this.ctx.sendInitial({
       components: [container],
@@ -5169,6 +5403,8 @@ var WillYouPressTheButton = class extends BaseGame {
     this.isActive = false;
     this.clearTimer();
     this.destroy();
+    const outcome = pressed === void 0 ? "timeout" : pressed ? "pressed" : "passed";
+    this.emitEnd(outcome);
     const state = pressed !== void 0 ? "result" : "timeout";
     const container = this.createGameContainer(state, pressed);
     await this.ctx.edit({
@@ -5177,11 +5413,16 @@ var WillYouPressTheButton = class extends BaseGame {
     });
   }
   createGameContainer(state, pressed) {
-    const container = new ContainerBuilder18();
+    let stateColor = this.defaultColor;
+    if (state === "result") {
+      stateColor = pressed ? 5763719 : 15548997;
+    } else if (state === "timeout") {
+      stateColor = 15548997;
+    }
+    const container = this.createContainer(stateColor);
     let content = "";
     switch (state) {
       case "active":
-        container.setAccentColor(this.defaultColor);
         content = `## ${this.gameTitle}
 > ${this.dilemma.question}
 
@@ -5190,7 +5431,6 @@ var WillYouPressTheButton = class extends BaseGame {
 > ${this.dilemma.consequence}`;
         break;
       case "result":
-        container.setAccentColor(pressed ? 5763719 : 15548997);
         const decisionText = pressed ? this.options.yesPress || "Yes! Press it!" : this.options.noPress || "No! Don't press!";
         content = `## ${this.gameTitle}
 > ${this.dilemma.question}
@@ -5206,7 +5446,6 @@ var WillYouPressTheButton = class extends BaseGame {
 \u{1F6AB} **Didn't Press:** \`${this.dilemma.stats.no}\``;
         break;
       case "timeout":
-        container.setAccentColor(15548997);
         content = `## ${this.gameTitle}
 > \u23F1\uFE0F Time's up! You took too long to decide.
 
@@ -5215,7 +5454,7 @@ var WillYouPressTheButton = class extends BaseGame {
 \u{1F6AB} **Didn't Press:** \`${this.dilemma.stats.no}\``;
         break;
     }
-    container.addTextDisplayComponents((t) => t.setContent(content));
+    container.addTextDisplayComponents((t) => t.setContent(this.applyEmbedDecorations(container, content)));
     const isResult = state === "result" || state === "timeout";
     const txtYes = isResult ? `${this.labelYes} (${this.dilemma.stats.yes})` : this.labelYes;
     const txtNo = isResult ? `${this.labelNo} (${this.dilemma.stats.no})` : this.labelNo;
@@ -5234,27 +5473,35 @@ var WillYouPressTheButton = class extends BaseGame {
 };
 
 // src/games/WouldYouRather.ts
-import { ActionRowBuilder as ActionRowBuilder15, ButtonBuilder as ButtonBuilder17, ButtonStyle as ButtonStyle17, ContainerBuilder as ContainerBuilder19, MessageFlags as MessageFlags18 } from "discord.js";
+import { ActionRowBuilder as ActionRowBuilder15, ButtonBuilder as ButtonBuilder17, ButtonStyle as ButtonStyle17, MessageFlags as MessageFlags18 } from "discord.js";
 var WouldYouRather = class extends BaseGame {
   dilemma;
   btnPrefix;
   gameTitle;
-  defaultColor;
   labelA;
   labelB;
   constructor(manager, options) {
     super(manager, options, "wyr");
     this.btnPrefix = getRandomString(6, "wyr_");
     this.gameTitle = options.embed?.title || "Would You Rather?";
-    this.defaultColor = safeResolveColor(options.embed?.color, 5793266);
-    this.labelA = options.buttons?.optionA || "Option A";
-    this.labelB = options.buttons?.optionB || "Option B";
-    this.dilemma = getRandomWYR();
+    this.defaultColor = this.resolveColor(options.embed?.color, 5793266);
+    this.labelA = options.buttons?.optionA || options.buttonA || "Option A";
+    this.labelB = options.buttons?.optionB || options.buttonB || "Option B";
+    if (options.optionA && options.optionB) {
+      this.dilemma = {
+        optionA: options.optionA,
+        optionB: options.optionB,
+        stats: { votesA: 50, votesB: 50 }
+      };
+    } else {
+      this.dilemma = getRandomWYR();
+    }
     this.defaultTimeout = options.time || 6e4;
   }
   async start() {
     this.isActive = true;
     this.manager._eventManager.register(this);
+    this.emitStart();
     const container = this.createGameContainer("active");
     await this.ctx.sendInitial({
       components: [container],
@@ -5277,6 +5524,8 @@ var WouldYouRather = class extends BaseGame {
     this.isActive = false;
     this.clearTimer();
     this.destroy();
+    const outcome = choice ? `chose_${choice.toLowerCase()}` : "timeout";
+    this.emitEnd(outcome);
     const state = choice ? "result" : "timeout";
     const container = this.createGameContainer(state, choice);
     await this.ctx.edit({
@@ -5285,14 +5534,19 @@ var WouldYouRather = class extends BaseGame {
     });
   }
   createGameContainer(state, choice) {
-    const container = new ContainerBuilder19();
+    let stateColor = this.defaultColor;
+    if (state === "result") {
+      stateColor = choice === "A" ? 5793266 : 5763719;
+    } else if (state === "timeout") {
+      stateColor = 15548997;
+    }
+    const container = this.createContainer(stateColor);
     let content = "";
     const totalVotes = this.dilemma.stats.votesA + this.dilemma.stats.votesB;
     const pctA = Math.round(this.dilemma.stats.votesA / totalVotes * 100);
     const pctB = Math.round(this.dilemma.stats.votesB / totalVotes * 100);
     switch (state) {
       case "active":
-        container.setAccentColor(this.defaultColor);
         content = `## ${this.gameTitle}
 > **Would you rather...**
 
@@ -5307,7 +5561,6 @@ var WouldYouRather = class extends BaseGame {
 *Choose your fate below!*`;
         break;
       case "result":
-        container.setAccentColor(choice === "A" ? 5793266 : 5763719);
         const chosenText = choice === "A" ? this.dilemma.optionA : this.dilemma.optionB;
         content = `## ${this.gameTitle}
 > \u{1F449} You chose **Option ${choice}**: "${chosenText}"
@@ -5320,7 +5573,6 @@ var WouldYouRather = class extends BaseGame {
 > ${this.dilemma.optionB}`;
         break;
       case "timeout":
-        container.setAccentColor(15548997);
         content = `## ${this.gameTitle}
 > \u23F1\uFE0F Time's up! You took too long to choose.
 
@@ -5332,7 +5584,7 @@ var WouldYouRather = class extends BaseGame {
 > ${this.dilemma.optionB}`;
         break;
     }
-    container.addTextDisplayComponents((t) => t.setContent(content));
+    container.addTextDisplayComponents((t) => t.setContent(this.applyEmbedDecorations(container, content)));
     const isResult = state === "result" || state === "timeout";
     const labelA = isResult ? `${this.labelA} (${pctA}%)` : this.labelA;
     const labelB = isResult ? `${this.labelB} (${pctB}%)` : this.labelB;
@@ -5355,22 +5607,138 @@ var WouldYouRather = class extends BaseGame {
   }
 };
 
+// src/utils/Notifier.ts
+var yellow = (s) => `\x1B[33m${s}\x1B[39m`;
+var green = (s) => `\x1B[32m${s}\x1B[39m`;
+var red = (s) => `\x1B[31m${s}\x1B[39m`;
+var cyan = (s) => `\x1B[36m${s}\x1B[39m`;
+function stripAnsi(str) {
+  return str.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, "");
+}
+function boxConsole(messages) {
+  const defaultSpace = 4;
+  const stripped = messages.map((m) => stripAnsi(m));
+  const maxLen = Math.max(...stripped.map((s) => s.length)) + defaultSpace * 2;
+  const line = yellow("\u2500".repeat(maxLen));
+  console.log(yellow("\u250C") + line + yellow("\u2510"));
+  console.log(yellow("\u2502") + " ".repeat(maxLen) + yellow("\u2502"));
+  for (let i = 0; i < messages.length; i++) {
+    const len = stripped[i].length;
+    const padTotal = maxLen - len;
+    const padLeft = Math.floor(padTotal / 2);
+    const padRight = padTotal - padLeft;
+    console.log(yellow("\u2502") + " ".repeat(padLeft) + messages[i] + " ".repeat(padRight) + yellow("\u2502"));
+  }
+  console.log(yellow("\u2502") + " ".repeat(maxLen) + yellow("\u2502"));
+  console.log(yellow("\u2514") + line + yellow("\u2518"));
+}
+function compareSemver(v1, v2) {
+  const clean1 = v1.replace(/^v/, "").split("-")[0].split(".").map((n) => parseInt(n, 10) || 0);
+  const clean2 = v2.replace(/^v/, "").split("-")[0].split(".").map((n) => parseInt(n, 10) || 0);
+  for (let i = 0; i < Math.max(clean1.length, clean2.length); i++) {
+    const num1 = clean1[i] || 0;
+    const num2 = clean2[i] || 0;
+    if (num1 > num2) return 1;
+    if (num1 < num2) return -1;
+  }
+  return 0;
+}
+async function fetchLatestVersion() {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 3500);
+    const res = await fetch("https://registry.npmjs.org/@m3rcena/weky/latest", {
+      signal: controller.signal,
+      headers: { "User-Agent": "@m3rcena/weky-update-notifier" }
+    });
+    clearTimeout(timer);
+    if (res.ok) {
+      const data = await res.json();
+      return typeof data.version === "string" ? data.version : null;
+    }
+  } catch {
+    try {
+      const { exec } = await import("child_process");
+      const { promisify } = await import("util");
+      const execPromise = promisify(exec);
+      const { stdout } = await execPromise("npm show @m3rcena/weky version", { timeout: 3500 });
+      return stdout.trim() || null;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+async function checkPackageUpdates(currentVersion, disabled, gameName) {
+  if (disabled) return;
+  try {
+    const latest = await fetchLatestVersion();
+    if (!latest) return;
+    if (compareSemver(currentVersion, latest) < 0) {
+      const messages = [];
+      if (gameName) {
+        messages.push(`Are you using ${red(gameName)}? Don't lose out on new features!`);
+      }
+      messages.push(`New ${green("version")} of ${yellow("@m3rcena/weky")} is available!`, `${red(currentVersion)} -> ${green(latest)}`, `Registry: ${cyan("https://www.npmjs.com/package/@m3rcena/weky")}`, `Run ${green(`npm i @m3rcena/weky@${latest}`)} to update!`);
+      boxConsole(messages);
+    }
+  } catch {
+  }
+}
+
 // src/core/WekyManager.ts
-var WekyManager = class {
+var WekyManager = class extends EventEmitter {
   _client;
   _eventManager;
+  defaultTimeout = 6e4;
+  embedColor;
+  unauthorizedMessage;
+  notifyUpdates = true;
   /**
    * Initializes the WekyManager.
    * @param client The Discord.js Client instance.
-   * @param legacyApiKeyOrOptions Optional API key or config object.
-   * @param legacyNotifyUpdates Optional flag for update notifications.
+   * @param options Optional configuration object or legacy notifyUpdates boolean.
+   * @param notifyUpdatesParam Legacy parameter for update notifications.
    */
-  constructor(client, legacyApiKeyOrOptions, legacyNotifyUpdates) {
-    if (!client || !(client instanceof Client3)) {
+  constructor(client, options, notifyUpdatesParam) {
+    super();
+    if (!client || !(client instanceof Client3) && typeof client.on !== "function") {
       throw new TypeError("[WekyManager] A valid Discord.js Client instance is required.");
     }
     this._client = client;
     this._eventManager = new EventManager(this._client);
+    if (typeof options === "boolean") {
+      this.notifyUpdates = options;
+    } else if (typeof options === "string") {
+      this.notifyUpdates = typeof notifyUpdatesParam === "boolean" ? notifyUpdatesParam : true;
+    } else if (options && typeof options === "object") {
+      if (typeof options.defaultTimeout === "number") {
+        this.defaultTimeout = options.defaultTimeout;
+      }
+      if (options.embedColor !== void 0) {
+        this.embedColor = options.embedColor;
+      }
+      if (typeof options.unauthorizedMessage === "string") {
+        this.unauthorizedMessage = options.unauthorizedMessage;
+      }
+      if (typeof options.notifyUpdates === "boolean") {
+        this.notifyUpdates = options.notifyUpdates;
+      }
+    }
+    if (this.notifyUpdates) {
+      checkPackageUpdates(version, false).catch(() => {
+      });
+    }
+  }
+  /**
+   * Manually checks for newer versions of @m3rcena/weky.
+   */
+  async checkUpdates(gameName) {
+    await checkPackageUpdates(version, !this.notifyUpdates, gameName);
+  }
+  /** Backwards compatibility accessor */
+  get _EventManager() {
+    return this._eventManager;
   }
   /* -------------------------------------------------------------------------- */
   /* MINIGAMES CREATION METHODS                                                 */
@@ -5487,6 +5855,7 @@ var WekyManager = class {
     const game = new RockPaperScissors(this, options);
     await game.start();
   }
+  /** Alias for createRPS */
   async createRockPaperScissors(options) {
     return this.createRPS(options);
   }
@@ -5518,6 +5887,34 @@ var WekyManager = class {
   }
   shuffleArray(arr) {
     return shuffleArray(arr);
+  }
+  /**
+   * Builds an EmbedBuilder instance with defaults applied.
+   */
+  _createEmbed(embedOptions = {}, noFields = false) {
+    const embed = new EmbedBuilder3();
+    if (embedOptions.title) embed.setTitle(embedOptions.title);
+    if (embedOptions.description) embed.setDescription(embedOptions.description);
+    if (embedOptions.url) embed.setURL(embedOptions.url);
+    if (embedOptions.thumbnail) embed.setThumbnail(embedOptions.thumbnail);
+    if (embedOptions.image) embed.setImage(embedOptions.image);
+    const color = embedOptions.color || this.embedColor;
+    embed.setColor(safeResolveColor(color, 5793266));
+    if (embedOptions.footer) embed.setFooter(embedOptions.footer);
+    if (embedOptions.timestamp) {
+      embed.setTimestamp(embedOptions.timestamp === true ? /* @__PURE__ */ new Date() : new Date(embedOptions.timestamp));
+    }
+    if (embedOptions.author) {
+      embed.setAuthor({
+        name: embedOptions.author.name,
+        iconURL: embedOptions.author.icon_url,
+        url: embedOptions.author.url
+      });
+    }
+    if (!noFields && embedOptions.fields && embedOptions.fields.length > 0) {
+      embed.setFields(embedOptions.fields);
+    }
+    return embed;
   }
 };
 
@@ -6543,10 +6940,6 @@ var WekyEngine = class _WekyEngine {
   static calculator = _WekyEngine.createCalculator;
   static ticTacToe = _WekyEngine.createTicTacToe;
 };
-
-// src/index.ts
-var version = "14.27.0";
-var VERSION = "14.27.0";
 export {
   BaseGame,
   COMMON_WORDS,
@@ -6595,7 +6988,11 @@ export {
   WekyManager,
   WillYouPressTheButton,
   WouldYouRather,
+  boxConsole,
+  checkPackageUpdates,
   clamp,
+  compareSemver,
+  fetchLatestVersion,
   fetchRandomPokemon,
   formatTime,
   getRandomHangmanWord,
@@ -6610,8 +7007,15 @@ export {
   safeResolveColor,
   shuffleArray,
   shuffleString,
+  stripAnsi,
   version
 };
+/**
+ * Utility functions for update checking and terminal box notifications.
+ *
+ * @copyright 2026 M3rcena Development. All rights reserved.
+ * @license Apache-2.0
+ */
 /**
  * @m3rcena/weky
  * The ultimate modern Discord minigames engine.

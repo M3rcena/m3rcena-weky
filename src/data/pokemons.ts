@@ -6,6 +6,8 @@ export interface PokemonData {
   imageUrl: string;
 }
 
+export type PokemonEntry = PokemonData;
+
 export const POPULAR_POKEMONS: PokemonData[] = [
   {
     id: 25,

@@ -2,14 +2,12 @@ import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ContainerBuilder, Interac
 import { BaseGame } from "../core/BaseGame.js";
 import { LieSwatterTypes } from "../core/Types.js";
 import { getRandomTriviaFact, TriviaFact } from "../data/trivia.js";
-import { formatTime, getRandomString, safeResolveColor } from "../utils/Helpers.js";
+import { formatTime, getRandomString } from "../utils/Helpers.js";
 
 export class LieSwatter extends BaseGame<LieSwatterTypes> {
   private fact: TriviaFact;
-  private startTime: number = 0;
   private btnPrefix: string;
   private gameTitle: string;
-  private defaultColor: number;
   private labelTrue: string;
   private labelLie: string;
 
@@ -17,17 +15,28 @@ export class LieSwatter extends BaseGame<LieSwatterTypes> {
     super(manager, options, "lieswatter");
     this.btnPrefix = getRandomString(6, "ls_");
     this.gameTitle = options.embed?.title || "Lie Swatter";
-    this.defaultColor = safeResolveColor(options.embed?.color, 0x5865f2);
+    this.defaultColor = this.resolveColor(options.embed?.color);
     this.labelTrue = options.buttons?.true || "Truth";
     this.labelLie = options.buttons?.lie || "Lie";
-    this.fact = getRandomTriviaFact();
-    this.defaultTimeout = options.time || 45_000;
+
+    if (options.statement) {
+      this.fact = {
+        statement: options.statement,
+        isTrue: options.isTrue ?? true,
+        explanation: options.explanation || "No explanation provided.",
+      };
+    } else {
+      this.fact = getRandomTriviaFact();
+    }
+
+    this.defaultTimeout = options.time || manager?.defaultTimeout || 45_000;
   }
 
   public async start(): Promise<void> {
     this.startTime = Date.now();
     this.isActive = true;
     this.manager._eventManager.register(this);
+    this.emitStart();
 
     const container = this.createGameContainer("active");
 
@@ -59,6 +68,7 @@ export class LieSwatter extends BaseGame<LieSwatterTypes> {
     this.isActive = false;
     this.clearTimer();
     this.destroy();
+    this.emitEnd(state);
 
     const elapsed = formatTime(Date.now() - this.startTime);
     const container = this.createGameContainer(state, { timeTaken: elapsed });
@@ -70,34 +80,37 @@ export class LieSwatter extends BaseGame<LieSwatterTypes> {
   }
 
   private createGameContainer(state: "active" | "won" | "lost" | "timeout", data?: { timeTaken?: string }): ContainerBuilder {
-    const container = new ContainerBuilder();
+    const stateColors: Record<string, number> = {
+      active: this.defaultColor,
+      won: 0x57f287,
+      lost: 0xed4245,
+      timeout: 0xed4245,
+    };
+    const container = this.createContainer(stateColors[state]);
     let content = "";
     const correctLabel = this.fact.isTrue ? this.labelTrue : this.labelLie;
 
     switch (state) {
       case "active":
-        container.setAccentColor(this.defaultColor);
         content = `## ${this.gameTitle}\n> "${this.fact.statement}"\n\nIs this statement a **${this.labelTrue}** or a **${this.labelLie}**?`;
         break;
 
       case "won":
-        container.setAccentColor(0x57f287);
         const winText = this.options.winMessage ? this.options.winMessage.replace("{{answer}}", correctLabel).replace("{{time}}", data?.timeTaken || "0s") : `🏆 Spot on! It was indeed **${correctLabel}**! Answered in **${data?.timeTaken || "0s"}**.`;
         content = `## ${this.gameTitle}\n> ${winText}\n\n📖 **Fact:** ${this.fact.explanation}`;
         break;
 
       case "lost":
-        container.setAccentColor(0xed4245);
         const loseText = this.options.loseMessage ? this.options.loseMessage.replace("{{answer}}", correctLabel) : `💀 Swatted! It was actually **${correctLabel}**.`;
         content = `## ${this.gameTitle}\n> ${loseText}\n\n📖 **Fact:** ${this.fact.explanation}`;
         break;
 
       case "timeout":
-        container.setAccentColor(0xed4245);
         content = `## ${this.gameTitle}\n> ⏱️ Time's up! It was actually **${correctLabel}**.\n\n📖 **Fact:** ${this.fact.explanation}`;
         break;
     }
 
+    content = this.applyEmbedDecorations(container, content);
     container.addTextDisplayComponents((t) => t.setContent(content));
 
     const isResult = state !== "active";

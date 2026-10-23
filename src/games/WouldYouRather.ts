@@ -2,13 +2,12 @@ import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ContainerBuilder, Interac
 import { BaseGame } from "../core/BaseGame.js";
 import { WouldYouRatherTypes } from "../core/Types.js";
 import { getRandomWYR, WYRDilemma } from "../data/dilemmas.js";
-import { getRandomString, safeResolveColor } from "../utils/Helpers.js";
+import { getRandomString } from "../utils/Helpers.js";
 
 export class WouldYouRather extends BaseGame<WouldYouRatherTypes> {
   private dilemma: WYRDilemma;
   private btnPrefix: string;
   private gameTitle: string;
-  private defaultColor: number;
   private labelA: string;
   private labelB: string;
 
@@ -16,16 +15,27 @@ export class WouldYouRather extends BaseGame<WouldYouRatherTypes> {
     super(manager, options, "wyr");
     this.btnPrefix = getRandomString(6, "wyr_");
     this.gameTitle = options.embed?.title || "Would You Rather?";
-    this.defaultColor = safeResolveColor(options.embed?.color, 0x5865f2);
-    this.labelA = options.buttons?.optionA || "Option A";
-    this.labelB = options.buttons?.optionB || "Option B";
-    this.dilemma = getRandomWYR();
+    this.defaultColor = this.resolveColor(options.embed?.color, 0x5865f2);
+    this.labelA = options.buttons?.optionA || options.buttonA || "Option A";
+    this.labelB = options.buttons?.optionB || options.buttonB || "Option B";
+
+    if (options.optionA && options.optionB) {
+      this.dilemma = {
+        optionA: options.optionA,
+        optionB: options.optionB,
+        stats: { votesA: 50, votesB: 50 },
+      };
+    } else {
+      this.dilemma = getRandomWYR();
+    }
+
     this.defaultTimeout = options.time || 60_000;
   }
 
   public async start(): Promise<void> {
     this.isActive = true;
     this.manager._eventManager.register(this);
+    this.emitStart();
 
     const container = this.createGameContainer("active");
 
@@ -56,6 +66,9 @@ export class WouldYouRather extends BaseGame<WouldYouRatherTypes> {
     this.clearTimer();
     this.destroy();
 
+    const outcome = choice ? `chose_${choice.toLowerCase()}` : "timeout";
+    this.emitEnd(outcome);
+
     const state = choice ? "result" : "timeout";
     const container = this.createGameContainer(state, choice);
 
@@ -66,7 +79,14 @@ export class WouldYouRather extends BaseGame<WouldYouRatherTypes> {
   }
 
   private createGameContainer(state: "active" | "result" | "timeout", choice?: "A" | "B"): ContainerBuilder {
-    const container = new ContainerBuilder();
+    let stateColor = this.defaultColor;
+    if (state === "result") {
+      stateColor = choice === "A" ? 0x5865f2 : 0x57f287;
+    } else if (state === "timeout") {
+      stateColor = 0xed4245;
+    }
+
+    const container = this.createContainer(stateColor);
     let content = "";
 
     const totalVotes = this.dilemma.stats.votesA + this.dilemma.stats.votesB;
@@ -75,23 +95,20 @@ export class WouldYouRather extends BaseGame<WouldYouRatherTypes> {
 
     switch (state) {
       case "active":
-        container.setAccentColor(this.defaultColor);
         content = `## ${this.gameTitle}\n` + `> **Would you rather...**\n\n` + `🅰️ **Option A:**\n> ${this.dilemma.optionA}\n\n` + `*— OR —*\n\n` + `🅱️ **Option B:**\n> ${this.dilemma.optionB}\n\n` + `*Choose your fate below!*`;
         break;
 
       case "result":
-        container.setAccentColor(choice === "A" ? 0x5865f2 : 0x57f287);
         const chosenText = choice === "A" ? this.dilemma.optionA : this.dilemma.optionB;
         content = `## ${this.gameTitle}\n` + `> 👉 You chose **Option ${choice}**: "${chosenText}"\n\n` + `📊 **Community Consensus:**\n` + `🅰️ **Option A (${pctA}%):**\n> ${this.dilemma.optionA}\n\n` + `🅱️ **Option B (${pctB}%):**\n> ${this.dilemma.optionB}`;
         break;
 
       case "timeout":
-        container.setAccentColor(0xed4245);
         content = `## ${this.gameTitle}\n` + `> ⏱️ Time's up! You took too long to choose.\n\n` + `📊 **Community Consensus:**\n` + `🅰️ **Option A (${pctA}%):**\n> ${this.dilemma.optionA}\n\n` + `🅱️ **Option B (${pctB}%):**\n> ${this.dilemma.optionB}`;
         break;
     }
 
-    container.addTextDisplayComponents((t) => t.setContent(content));
+    container.addTextDisplayComponents((t) => t.setContent(this.applyEmbedDecorations(container, content)));
 
     const isResult = state === "result" || state === "timeout";
     const labelA = isResult ? `${this.labelA} (${pctA}%)` : this.labelA;

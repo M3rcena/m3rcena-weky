@@ -2,7 +2,7 @@ import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ContainerBuilder, GuildMe
 import { BaseGame } from "../core/BaseGame.js";
 import { ContextAdapter } from "../core/ContextAdapter.js";
 import { RPSTypes } from "../core/Types.js";
-import { getRandomString, safeResolveColor } from "../utils/Helpers.js";
+import { getRandomString } from "../utils/Helpers.js";
 
 type RPSMove = "rock" | "paper" | "scissors";
 
@@ -13,25 +13,25 @@ export class RockPaperScissors extends BaseGame<RPSTypes> {
   private p2Move: RPSMove | null = null;
   private btnPrefix: string;
   private gameTitle: string;
-  private defaultColor: number;
 
   constructor(manager: any, options: RPSTypes) {
     super(manager, options, "rps");
     this.btnPrefix = getRandomString(6, "rps_");
     this.gameTitle = options.embed?.title || "Rock Paper Scissors";
-    this.defaultColor = safeResolveColor(options.embed?.color, 0x5865f2);
+    this.defaultColor = this.resolveColor(options.embed?.color);
 
     if (options.opponent) {
       this.opponentUser = options.opponent instanceof GuildMember ? options.opponent.user : (options.opponent as User);
       this.isVsBot = this.opponentUser.bot || this.opponentUser.id === this.ctx.client.user?.id;
     }
 
-    this.defaultTimeout = options.time || 60_000;
+    this.defaultTimeout = options.time || manager?.defaultTimeout || 45_000;
   }
 
   public async start(): Promise<void> {
     this.isActive = true;
     this.manager._eventManager.register(this);
+    this.emitStart();
 
     const container = this.createGameContainer("active");
 
@@ -102,6 +102,7 @@ export class RockPaperScissors extends BaseGame<RPSTypes> {
     this.isActive = false;
     this.clearTimer();
     this.destroy();
+    this.emitEnd(state);
 
     const container = this.createGameContainer(state);
 
@@ -112,7 +113,13 @@ export class RockPaperScissors extends BaseGame<RPSTypes> {
   }
 
   private createGameContainer(state: "active" | "waiting" | "result" | "timeout", details?: { waitingFor?: string }): ContainerBuilder {
-    const container = new ContainerBuilder();
+    const stateColors: Record<string, number> = {
+      active: this.defaultColor,
+      waiting: 0xfee75c,
+      result: 0x57f287,
+      timeout: 0xed4245,
+    };
+    const container = this.createContainer(stateColors[state]);
     let content = "";
 
     const emojis: Record<RPSMove, string> = {
@@ -123,7 +130,6 @@ export class RockPaperScissors extends BaseGame<RPSTypes> {
 
     switch (state) {
       case "active":
-        container.setAccentColor(this.defaultColor);
         if (this.isVsBot || !this.opponentUser) {
           content = `## ${this.gameTitle}\n> You are playing against the **Bot**!\n> Select your move below:`;
         } else {
@@ -132,12 +138,10 @@ export class RockPaperScissors extends BaseGame<RPSTypes> {
         break;
 
       case "waiting":
-        container.setAccentColor(0xfee75c);
         content = `## ${this.gameTitle}\n> One player locked in their move!\n> ⏳ Waiting for ${details?.waitingFor}...`;
         break;
 
       case "result":
-        container.setAccentColor(0x57f287);
         const m1 = this.p1Move || "rock";
         const m2 = this.p2Move || "rock";
         let winnerText = "";
@@ -156,11 +160,11 @@ export class RockPaperScissors extends BaseGame<RPSTypes> {
         break;
 
       case "timeout":
-        container.setAccentColor(0xed4245);
         content = `## ${this.gameTitle}\n> ⏱️ Game session expired. Moves were not submitted in time.`;
         break;
     }
 
+    content = this.applyEmbedDecorations(container, content);
     container.addTextDisplayComponents((t) => t.setContent(content));
 
     if (state === "active" || state === "waiting") {
