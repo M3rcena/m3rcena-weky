@@ -10451,11 +10451,11 @@ var WekyBridgeRouter = class {
 				const opponentId = body.opponentId || "ai";
 				const opponentName = body.opponentName || "Antigravity AI";
 				engine = new TicTacToeEngine({
-					player1: {
+					playerX: {
 						id: playerId,
 						username
 					},
-					player2: {
+					playerO: {
 						id: opponentId,
 						username: opponentName
 					}
@@ -10464,6 +10464,7 @@ var WekyBridgeRouter = class {
 				players.push({
 					id: opponentId,
 					username: opponentName,
+					avatarUrl: void 0,
 					platform: "dashboard"
 				});
 			} else if (game === "hangman") {
@@ -10624,16 +10625,14 @@ var WekyBridgeRouter = class {
 						avatarUrl: req.query.p1Avatar || avatarUrl,
 						health: p1Hp,
 						maxHealth: 100,
-						shield: false,
-						doubleDamage: false
+						coins: 50
 					}, {
 						id: "p2",
 						username: req.query.p2 || req.query.p2Name || "Dragon Boss",
 						avatarUrl: req.query.p2Avatar || "",
 						health: p2Hp,
 						maxHealth: 100,
-						shield: false,
-						doubleDamage: false
+						coins: 50
 					}, "p1", req.query.action || "⚔️ Hero used Heavy Strike for 24 damage!");
 				} else if (type === "hangman") {
 					const word = req.query.word || "DEVELOPER";
@@ -10647,9 +10646,11 @@ var WekyBridgeRouter = class {
 					id: 25
 				}, req.query.revealed === "true");
 				else if (type === "share") buffer = await RenderShareCard.render({
-					title: req.query.game || "Weky Arcade",
+					gameName: req.query.game || "Weky Arcade",
 					username,
 					avatarUrl,
+					primaryScore: req.query.score || "4,096",
+					headline: req.query.outcome || "VICTORY 👑",
 					stats: [{
 						label: "Score",
 						value: req.query.score || "4,096"
@@ -11134,6 +11135,7 @@ async function fetchLatestVersion() {
 	try {
 		const controller = new AbortController();
 		const timer = setTimeout(() => controller.abort(), 3500);
+		timer.unref?.();
 		const res = await fetch("https://registry.npmjs.org/@m3rcena/weky/latest", {
 			signal: controller.signal,
 			headers: { "User-Agent": "@m3rcena/weky-update-notifier" }

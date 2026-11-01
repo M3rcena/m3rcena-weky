@@ -145,11 +145,11 @@ export class WekyBridgeRouter implements BridgePackageRouter {
         const opponentId = body.opponentId || "ai";
         const opponentName = body.opponentName || "Antigravity AI";
         engine = new TicTacToeEngine({
-          player1: { id: playerId, username },
-          player2: { id: opponentId, username: opponentName },
+          playerX: { id: playerId, username },
+          playerO: { id: opponentId, username: opponentName },
         });
         initialState = engine.getState();
-        players.push({ id: opponentId, username: opponentName, platform: "dashboard" as any });
+        players.push({ id: opponentId, username: opponentName, avatarUrl: undefined, platform: "dashboard" as any });
       } else if (game === "hangman") {
         engine = new HangmanEngine();
         initialState = engine.getState();
@@ -302,8 +302,7 @@ export class WekyBridgeRouter implements BridgePackageRouter {
               avatarUrl: req.query.p1Avatar || avatarUrl,
               health: p1Hp,
               maxHealth: 100,
-              shield: false,
-              doubleDamage: false,
+              coins: 50,
             },
             {
               id: "p2",
@@ -311,8 +310,7 @@ export class WekyBridgeRouter implements BridgePackageRouter {
               avatarUrl: req.query.p2Avatar || "",
               health: p2Hp,
               maxHealth: 100,
-              shield: false,
-              doubleDamage: false,
+              coins: 50,
             },
             "p1",
             req.query.action || "⚔️ Hero used Heavy Strike for 24 damage!"
@@ -340,9 +338,11 @@ export class WekyBridgeRouter implements BridgePackageRouter {
           );
         } else if (type === "share") {
           buffer = await RenderShareCard.render({
-            title: req.query.game || "Weky Arcade",
+            gameName: req.query.game || "Weky Arcade",
             username,
             avatarUrl,
+            primaryScore: req.query.score || "4,096",
+            headline: req.query.outcome || "VICTORY 👑",
             stats: [
               { label: "Score", value: req.query.score || "4,096" },
               { label: "Outcome", value: req.query.outcome || "VICTORY" },

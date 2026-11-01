@@ -73,6 +73,7 @@ export async function fetchLatestVersion(): Promise<string | null> {
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 3500);
+    timer.unref?.();
 
     const res = await fetch("https://registry.npmjs.org/@m3rcena/weky/latest", {
       signal: controller.signal,
