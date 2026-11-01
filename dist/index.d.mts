@@ -1,6 +1,7 @@
 import { ActionRowBuilder, AttachmentBuilder, ButtonInteraction, ButtonStyle, ChatInputCommandInteraction, Client, ColorResolvable, ContainerBuilder, EmbedBuilder, EmbedFooterData, Guild, GuildMember, GuildTextBasedChannel, Interaction, MediaGalleryBuilder, Message, MessageFlags, TextBasedChannel, User } from "discord.js";
 import { EventEmitter } from "events";
 import { SKRSContext2D } from "@napi-rs/canvas";
+import { M3rcenaBridge, M3rcenaBridge as M3rcenaBridge$1 } from "@m3rcena/bridge";
 export declare const version = "14.28.0";
 export declare const VERSION = "14.28.0";
 export interface PokemonData {
@@ -970,7 +971,16 @@ interface DashboardOverview {
 export declare class WekyBridge {
   private sessions;
   wekyManager?: any;
-  constructor(wekyManager?: any);
+  m3rcenaBridge: M3rcenaBridge$1;
+  constructor(wekyManager?: any, customBridge?: M3rcenaBridge$1);
+  /**
+   * Returns the underlying M3rcenaBridge instance.
+   */
+  getM3rcenaBridge(): M3rcenaBridge$1;
+  /**
+   * Replaces or connects an existing M3rcenaBridge instance.
+   */
+  setM3rcenaBridge(bridge: M3rcenaBridge$1): void;
   /**
    * Registers an active game session into the cross-platform bridge.
    */
@@ -1058,6 +1068,8 @@ interface WekyManagerOptions {
   soundboard?: SoundboardConfig;
   /** Leaderboard & ELO rating configuration */
   leaderboard?: LeaderboardManagerOptions;
+  /** Cross-platform dashboard bridge instance from `@m3rcena/bridge` or custom `WekyBridge` */
+  bridge?: any;
 }
 /**
  * Main manager class for the `@m3rcena/weky` Discord minigames engine.
@@ -1221,6 +1233,10 @@ export declare class WekyManager extends EventEmitter {
    * Registers an external or hybrid game session with the cross-platform bridge.
    */
   registerCrossPlatformSession(session: BridgeSession): void;
+  /**
+   * Connects or replaces the dashboard bridge with an M3rcenaBridge instance.
+   */
+  setBridge(bridge: any): void;
 }
 /**
  * Universal game context accepting either Slash Commands / Button Interactions or Prefix Messages.
@@ -3064,5 +3080,5 @@ export declare function getRandomHangmanWord(category?: string): {
   word: string;
   category: string;
 };
-export type { ArcadeGameEntry, ArcadeHubCustomTexts, ArcadeHubOptions, BossProfile, BracketMatch, BracketParticipant, BracketRenderOptions, BridgeMoveResult, BridgePlayer, BridgeSession, CalculatorState, ContextSendOptions, CrossPlatformMove, CustomPointingMatchContext, CustomPointingMatchHandler, CustomPointingScoreContext, CustomPointingScoreHandler, DashboardOverview, DashboardSoundEntry, EloChangeResult, EvaluationResult, FightCardCustomTexts, FightEngineOptions, FightPlayerInfo, FightState, Game2048EngineOptions, Game2048State, GrandFinalsSession, HangmanEngineOptions, HangmanState, LeaderboardCustomTexts, LeaderboardEntry, LeaderboardManagerOptions, LeaderboardPlayer, LeaderboardPointingOptions, LeaderboardStorageAdapter, ManualMatchInput, ManualTournamentOptions, RenderLeaderboardOptions, RenderShareCardOptions, ShareCardCustomTexts, ShareCardStat, SnakeEngineOptions, SnakeState, SoundboardConfig, SoundboardPlayOptions, SoundboardPlayResult, TicTacToeDifficulty, TicTacToeEngineOptions, TicTacToeState, TournamentCustomTexts, TournamentMatchSession, TournamentOptions, WekyManagerOptions };
+export { type ArcadeGameEntry, type ArcadeHubCustomTexts, type ArcadeHubOptions, type BossProfile, type BracketMatch, type BracketParticipant, type BracketRenderOptions, type BridgeMoveResult, type BridgePlayer, type BridgeSession, type CalculatorState, type ContextSendOptions, type CrossPlatformMove, type CustomPointingMatchContext, type CustomPointingMatchHandler, type CustomPointingScoreContext, type CustomPointingScoreHandler, type DashboardOverview, type DashboardSoundEntry, type EloChangeResult, type EvaluationResult, type FightCardCustomTexts, type FightEngineOptions, type FightPlayerInfo, type FightState, type Game2048EngineOptions, type Game2048State, type GrandFinalsSession, type HangmanEngineOptions, type HangmanState, type LeaderboardCustomTexts, type LeaderboardEntry, type LeaderboardManagerOptions, type LeaderboardPlayer, type LeaderboardPointingOptions, type LeaderboardStorageAdapter, M3rcenaBridge, type ManualMatchInput, type ManualTournamentOptions, type RenderLeaderboardOptions, type RenderShareCardOptions, type ShareCardCustomTexts, type ShareCardStat, type SnakeEngineOptions, type SnakeState, type SoundboardConfig, type SoundboardPlayOptions, type SoundboardPlayResult, type TicTacToeDifficulty, type TicTacToeEngineOptions, type TicTacToeState, type TournamentCustomTexts, type TournamentMatchSession, type TournamentOptions, type WekyManagerOptions };
 //# sourceMappingURL=index.d.mts.map

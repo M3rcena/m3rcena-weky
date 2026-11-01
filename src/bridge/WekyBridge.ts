@@ -10,6 +10,7 @@
 
 import { CrossPlatformMoveEvent, BridgeSyncEvent } from "../core/EventTypes.js";
 import { LeaderboardPlayer } from "../leaderboard/LeaderboardManager.js";
+import { M3rcenaBridge } from "@m3rcena/bridge";
 
 export interface BridgePlayer {
   id: string;
@@ -92,9 +93,46 @@ export interface DashboardOverview {
 export class WekyBridge {
   private sessions: Map<string, BridgeSession> = new Map();
   public wekyManager?: any;
+  public m3rcenaBridge: M3rcenaBridge;
 
-  constructor(wekyManager?: any) {
+  constructor(wekyManager?: any, customBridge?: M3rcenaBridge) {
     this.wekyManager = wekyManager;
+    this.m3rcenaBridge = customBridge || new M3rcenaBridge();
+
+    // Register module "games" in M3rcenaBridge
+    this.m3rcenaBridge.registerModule("games", async (action) => {
+      const res = await this.dispatchMove(action.sessionId || "", {
+        playerId: action.playerId,
+        action: action.action,
+        payload: action.payload,
+        sourcePlatform: (action.sourcePlatform as any) || "dashboard",
+      });
+      return {
+        success: res.success,
+        state: res.state,
+        nextTurnId: res.nextTurnId,
+        isEnded: res.isGameOver,
+        winnerId: res.winnerId,
+        announcement: res.announcement,
+        soundKey: res.soundKey,
+        soundUrl: res.soundUrl,
+        error: res.error,
+      };
+    });
+  }
+
+  /**
+   * Returns the underlying M3rcenaBridge instance.
+   */
+  public getM3rcenaBridge(): M3rcenaBridge {
+    return this.m3rcenaBridge;
+  }
+
+  /**
+   * Replaces or connects an existing M3rcenaBridge instance.
+   */
+  public setM3rcenaBridge(bridge: M3rcenaBridge): void {
+    this.m3rcenaBridge = bridge;
   }
 
   /**
@@ -104,6 +142,47 @@ export class WekyBridge {
     session.createdAt = session.createdAt || Date.now();
     session.lastUpdated = Date.now();
     this.sessions.set(session.id, session);
+
+    // Synchronize session with M3rcenaBridge
+    this.m3rcenaBridge.registerSession({
+      id: session.id,
+      module: "games",
+      type: session.game,
+      platform: session.platform,
+      players: session.players.map((p) => ({
+        id: p.id,
+        username: p.username,
+        avatarUrl: p.avatarUrl,
+        platform: p.platform,
+      })),
+      currentTurnId: session.currentTurnId,
+      state: session.state,
+      metadata: session.metadata,
+      createdAt: session.createdAt,
+      lastUpdated: session.lastUpdated,
+      isEnded: session.isGameOver,
+      winnerId: session.winnerId,
+      onAction: async (action) => {
+        const res = await this.dispatchMove(action.sessionId || session.id, {
+          playerId: action.playerId,
+          action: action.action,
+          payload: action.payload,
+          sourcePlatform: (action.sourcePlatform as any) || "dashboard",
+        });
+        return {
+          success: res.success,
+          state: res.state,
+          nextTurnId: res.nextTurnId,
+          isEnded: res.isGameOver,
+          winnerId: res.winnerId,
+          announcement: res.announcement,
+          soundKey: res.soundKey,
+          soundUrl: res.soundUrl,
+          error: res.error,
+        };
+      },
+      renderSnapshot: session.renderSnapshot || (session.engine && typeof session.engine.renderDataURL === "function" ? () => session.engine.renderDataURL() : undefined),
+    }).catch?.(() => {});
 
     if (this.wekyManager && typeof this.wekyManager.emit === "function") {
       this.wekyManager.emit("bridgeSync", {
@@ -121,6 +200,7 @@ export class WekyBridge {
    */
   public unregisterSession(sessionId: string): void {
     this.sessions.delete(sessionId);
+    this.m3rcenaBridge.unregisterSession(sessionId);
   }
 
   /**
@@ -160,6 +240,7 @@ export class WekyBridge {
 
     session.state = newState;
     session.lastUpdated = Date.now();
+    this.m3rcenaBridge.updateSessionState(sessionId, newState, source as any).catch?.(() => {});
 
     if (this.wekyManager && typeof this.wekyManager.emit === "function") {
       this.wekyManager.emit("bridgeSync", {
@@ -241,6 +322,13 @@ export class WekyBridge {
           username: movingPlayer?.username,
           targetUserIds,
         });
+
+        this.m3rcenaBridge.dispatchAudioCue({
+          sound: soundKey,
+          userId: move.playerId,
+          targetUserIds,
+          module: "games",
+        });
       }
 
       // Telemetry emit
@@ -277,6 +365,7 @@ export class WekyBridge {
     session.isGameOver = true;
     session.winnerId = outcome.winnerId;
     session.lastUpdated = Date.now();
+    this.m3rcenaBridge.endSession(sessionId, outcome).catch?.(() => {});
   }
 
   /**
@@ -373,6 +462,11 @@ export class WekyBridge {
    * Notifies the bridge/soundboard that a user is actively connected on the web dashboard.
    */
   public setDashboardUserOnline(userId: string, isOnline: boolean = true): void {
+    if (isOnline) {
+      this.m3rcenaBridge.setUserOnline(userId, "dashboard");
+    } else {
+      this.m3rcenaBridge.setUserOffline(userId);
+    }
     if (this.wekyManager?.soundboard && typeof this.wekyManager.soundboard.setDashboardUserOnline === "function") {
       this.wekyManager.soundboard.setDashboardUserOnline(userId, isOnline);
     }
@@ -382,6 +476,7 @@ export class WekyBridge {
    * Returns whether a user is currently verified as online/active on the web dashboard.
    */
   public isUserOnDashboard(userId: string): boolean {
+    if (this.m3rcenaBridge.isUserOnline(userId)) return true;
     if (this.wekyManager?.soundboard && typeof this.wekyManager.soundboard.isUserOnDashboard === "function") {
       return this.wekyManager.soundboard.isUserOnDashboard(userId);
     }

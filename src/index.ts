@@ -17,6 +17,7 @@ export * from "./core/Types.js";
 export * from "./core/EventTypes.js";
 export { WekyManager, type WekyManagerOptions } from "./core/WekyManager.js";
 export { WekyBridge, type BridgeSession, type BridgePlayer, type CrossPlatformMove, type BridgeMoveResult, type DashboardOverview } from "./bridge/WekyBridge.js";
+export { M3rcenaBridge } from "@m3rcena/bridge";
 
 // Game Classes
 export { Calculator } from "./games/Calculator.js";

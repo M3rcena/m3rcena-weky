@@ -55,6 +55,8 @@ export interface WekyManagerOptions {
   soundboard?: SoundboardConfig;
   /** Leaderboard & ELO rating configuration */
   leaderboard?: LeaderboardManagerOptions;
+  /** Cross-platform dashboard bridge instance from `@m3rcena/bridge` or custom `WekyBridge` */
+  bridge?: any;
 }
 
 /**
@@ -91,7 +93,18 @@ export class WekyManager extends EventEmitter {
 
     this._client = client;
     this._eventManager = new EventManager(this._client);
-    this.bridge = new WekyBridge(this);
+
+    const customBridge = options && typeof options === "object" ? options.bridge : undefined;
+    if (customBridge) {
+      if (customBridge instanceof WekyBridge) {
+        this.bridge = customBridge;
+        this.bridge.wekyManager = this;
+      } else {
+        this.bridge = new WekyBridge(this, customBridge);
+      }
+    } else {
+      this.bridge = new WekyBridge(this);
+    }
 
     if (typeof options === "boolean") {
       this.notifyUpdates = options;
@@ -528,5 +541,17 @@ export class WekyManager extends EventEmitter {
    */
   public registerCrossPlatformSession(session: BridgeSession): void {
     this.bridge.registerSession(session);
+  }
+
+  /**
+   * Connects or replaces the dashboard bridge with an M3rcenaBridge instance.
+   */
+  public setBridge(bridge: any): void {
+    if (bridge instanceof WekyBridge) {
+      this.bridge = bridge;
+      this.bridge.wekyManager = this;
+    } else {
+      this.bridge.setM3rcenaBridge(bridge);
+    }
   }
 }

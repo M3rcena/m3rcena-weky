@@ -5,6 +5,7 @@ import { Canvas, createCanvas, loadImage } from "@napi-rs/canvas";
 import path, * as path$1 from "node:path";
 import { fileURLToPath } from "node:url";
 import * as fs from "node:fs";
+import { M3rcenaBridge, M3rcenaBridge as M3rcenaBridge$1 } from "@m3rcena/bridge";
 // src/version.ts
 const version = "14.28.0";
 const VERSION = version;
@@ -8701,8 +8702,41 @@ var SoundboardManager = class {
 var WekyBridge = class {
 	sessions = /* @__PURE__ */ new Map();
 	wekyManager;
-	constructor(wekyManager) {
+	m3rcenaBridge;
+	constructor(wekyManager, customBridge) {
 		this.wekyManager = wekyManager;
+		this.m3rcenaBridge = customBridge || new M3rcenaBridge$1();
+		this.m3rcenaBridge.registerModule("games", async (action) => {
+			const res = await this.dispatchMove(action.sessionId || "", {
+				playerId: action.playerId,
+				action: action.action,
+				payload: action.payload,
+				sourcePlatform: action.sourcePlatform || "dashboard"
+			});
+			return {
+				success: res.success,
+				state: res.state,
+				nextTurnId: res.nextTurnId,
+				isEnded: res.isGameOver,
+				winnerId: res.winnerId,
+				announcement: res.announcement,
+				soundKey: res.soundKey,
+				soundUrl: res.soundUrl,
+				error: res.error
+			};
+		});
+	}
+	/**
+	* Returns the underlying M3rcenaBridge instance.
+	*/
+	getM3rcenaBridge() {
+		return this.m3rcenaBridge;
+	}
+	/**
+	* Replaces or connects an existing M3rcenaBridge instance.
+	*/
+	setM3rcenaBridge(bridge) {
+		this.m3rcenaBridge = bridge;
 	}
 	/**
 	* Registers an active game session into the cross-platform bridge.
@@ -8711,6 +8745,45 @@ var WekyBridge = class {
 		session.createdAt = session.createdAt || Date.now();
 		session.lastUpdated = Date.now();
 		this.sessions.set(session.id, session);
+		this.m3rcenaBridge.registerSession({
+			id: session.id,
+			module: "games",
+			type: session.game,
+			platform: session.platform,
+			players: session.players.map((p) => ({
+				id: p.id,
+				username: p.username,
+				avatarUrl: p.avatarUrl,
+				platform: p.platform
+			})),
+			currentTurnId: session.currentTurnId,
+			state: session.state,
+			metadata: session.metadata,
+			createdAt: session.createdAt,
+			lastUpdated: session.lastUpdated,
+			isEnded: session.isGameOver,
+			winnerId: session.winnerId,
+			onAction: async (action) => {
+				const res = await this.dispatchMove(action.sessionId || session.id, {
+					playerId: action.playerId,
+					action: action.action,
+					payload: action.payload,
+					sourcePlatform: action.sourcePlatform || "dashboard"
+				});
+				return {
+					success: res.success,
+					state: res.state,
+					nextTurnId: res.nextTurnId,
+					isEnded: res.isGameOver,
+					winnerId: res.winnerId,
+					announcement: res.announcement,
+					soundKey: res.soundKey,
+					soundUrl: res.soundUrl,
+					error: res.error
+				};
+			},
+			renderSnapshot: session.renderSnapshot || (session.engine && typeof session.engine.renderDataURL === "function" ? () => session.engine.renderDataURL() : void 0)
+		}).catch?.(() => {});
 		if (this.wekyManager && typeof this.wekyManager.emit === "function") this.wekyManager.emit("bridgeSync", {
 			sessionId: session.id,
 			game: session.game,
@@ -8724,6 +8797,7 @@ var WekyBridge = class {
 	*/
 	unregisterSession(sessionId) {
 		this.sessions.delete(sessionId);
+		this.m3rcenaBridge.unregisterSession(sessionId);
 	}
 	/**
 	* Retrieves a session by ID.
@@ -8757,6 +8831,7 @@ var WekyBridge = class {
 		if (!session) return;
 		session.state = newState;
 		session.lastUpdated = Date.now();
+		this.m3rcenaBridge.updateSessionState(sessionId, newState, source).catch?.(() => {});
 		if (this.wekyManager && typeof this.wekyManager.emit === "function") this.wekyManager.emit("bridgeSync", {
 			sessionId: session.id,
 			game: session.game,
@@ -8824,6 +8899,12 @@ var WekyBridge = class {
 					username: movingPlayer?.username,
 					targetUserIds
 				});
+				this.m3rcenaBridge.dispatchAudioCue({
+					sound: soundKey,
+					userId: move.playerId,
+					targetUserIds,
+					module: "games"
+				});
 			}
 			if (this.wekyManager && typeof this.wekyManager.emit === "function") {
 				this.wekyManager.emit("crossPlatformMove", {
@@ -8854,6 +8935,7 @@ var WekyBridge = class {
 		session.isGameOver = true;
 		session.winnerId = outcome.winnerId;
 		session.lastUpdated = Date.now();
+		this.m3rcenaBridge.endSession(sessionId, outcome).catch?.(() => {});
 	}
 	/**
 	* Renders a live visual snapshot of the session (Canvas image Buffer or Data URL).
@@ -8930,12 +9012,15 @@ var WekyBridge = class {
 	* Notifies the bridge/soundboard that a user is actively connected on the web dashboard.
 	*/
 	setDashboardUserOnline(userId, isOnline = true) {
+		if (isOnline) this.m3rcenaBridge.setUserOnline(userId, "dashboard");
+		else this.m3rcenaBridge.setUserOffline(userId);
 		if (this.wekyManager?.soundboard && typeof this.wekyManager.soundboard.setDashboardUserOnline === "function") this.wekyManager.soundboard.setDashboardUserOnline(userId, isOnline);
 	}
 	/**
 	* Returns whether a user is currently verified as online/active on the web dashboard.
 	*/
 	isUserOnDashboard(userId) {
+		if (this.m3rcenaBridge.isUserOnline(userId)) return true;
 		if (this.wekyManager?.soundboard && typeof this.wekyManager.soundboard.isUserOnDashboard === "function") return this.wekyManager.soundboard.isUserOnDashboard(userId);
 		return false;
 	}
@@ -9067,7 +9152,13 @@ var WekyManager = class extends EventEmitter {
 		if (!client || !(client instanceof Client) && typeof client.on !== "function") throw new TypeError("[WekyManager] A valid Discord.js Client instance is required.");
 		this._client = client;
 		this._eventManager = new EventManager(this._client);
-		this.bridge = new WekyBridge(this);
+		const customBridge = options && typeof options === "object" ? options.bridge : void 0;
+		if (customBridge) {
+			if (customBridge instanceof WekyBridge) {
+				this.bridge = customBridge;
+				this.bridge.wekyManager = this;
+			} else this.bridge = new WekyBridge(this, customBridge);
+		} else this.bridge = new WekyBridge(this);
 		if (typeof options === "boolean") this.notifyUpdates = options;
 		else if (typeof options === "string") this.notifyUpdates = typeof notifyUpdatesParam === "boolean" ? notifyUpdatesParam : true;
 		else if (options && typeof options === "object") {
@@ -9362,6 +9453,15 @@ var WekyManager = class extends EventEmitter {
 	*/
 	registerCrossPlatformSession(session) {
 		this.bridge.registerSession(session);
+	}
+	/**
+	* Connects or replaces the dashboard bridge with an M3rcenaBridge instance.
+	*/
+	setBridge(bridge) {
+		if (bridge instanceof WekyBridge) {
+			this.bridge = bridge;
+			this.bridge.wekyManager = this;
+		} else this.bridge.setM3rcenaBridge(bridge);
 	}
 };
 // src/canvas/WekyCanvas.ts
@@ -10618,6 +10718,6 @@ var WekyEngine = class WekyEngine {
 * @copyright 2026 M3rcena Development. All rights reserved.
 * @license Apache-2.0
 */
-export { ARCADE_GAMES, ArcadeHub, BaseGame, COMMON_WORDS, Calculator, CalculatorEngine, CanvasUtils, ChaosWords, ContextAdapter, DEFAULT_DASHBOARD_SOUNDS, DEFAULT_DISCORD_SOUNDS, EASY_SENTENCES, EventManager, FIGHT_BOSSES, FastType, Fight, FightAI, FightEngine, Game2048, Game2048Engine, GuessTheNumber, GuessThePokemon, HANGMAN_CATEGORIES, HARD_SENTENCES, Hangman, HangmanEngine, LeaderboardManager, LieSwatter, MEDIUM_SENTENCES, MathEvaluator, NEVER_HAVE_I_EVER_PROMPTS, NeverHaveIEver, POPULAR_POKEMONS, QuickClick, RPSPredictor, Render2048, RenderBracket, RenderFight, RenderHangman, RenderLeaderboard, RenderPokemon, RenderShareCard, RenderSnake, RockPaperScissors, ShuffleGuess, Snake, SnakeEngine, SoundboardManager, TRIVIA_FACTS, TicTacToe, TicTacToeAI, TicTacToeEngine, TournamentManager, VERSION, WYPTB_DILEMMAS, WYR_DILEMMAS, WekyBridge, WekyCanvas, WekyEngine, WekyManager, WillYouPressTheButton, WouldYouRather, boxConsole, checkPackageUpdates, clamp, compareSemver, fetchLatestVersion, fetchRandomPokemon, formatTime, getRandomHangmanWord, getRandomNHIE, getRandomSentence, getRandomString, getRandomTriviaFact, getRandomWYPTB, getRandomWYR, getRandomWord, getRandomWords, safeResolveColor, shuffleArray, shuffleString, stripAnsi, version };
+export { ARCADE_GAMES, ArcadeHub, BaseGame, COMMON_WORDS, Calculator, CalculatorEngine, CanvasUtils, ChaosWords, ContextAdapter, DEFAULT_DASHBOARD_SOUNDS, DEFAULT_DISCORD_SOUNDS, EASY_SENTENCES, EventManager, FIGHT_BOSSES, FastType, Fight, FightAI, FightEngine, Game2048, Game2048Engine, GuessTheNumber, GuessThePokemon, HANGMAN_CATEGORIES, HARD_SENTENCES, Hangman, HangmanEngine, LeaderboardManager, LieSwatter, M3rcenaBridge, MEDIUM_SENTENCES, MathEvaluator, NEVER_HAVE_I_EVER_PROMPTS, NeverHaveIEver, POPULAR_POKEMONS, QuickClick, RPSPredictor, Render2048, RenderBracket, RenderFight, RenderHangman, RenderLeaderboard, RenderPokemon, RenderShareCard, RenderSnake, RockPaperScissors, ShuffleGuess, Snake, SnakeEngine, SoundboardManager, TRIVIA_FACTS, TicTacToe, TicTacToeAI, TicTacToeEngine, TournamentManager, VERSION, WYPTB_DILEMMAS, WYR_DILEMMAS, WekyBridge, WekyCanvas, WekyEngine, WekyManager, WillYouPressTheButton, WouldYouRather, boxConsole, checkPackageUpdates, clamp, compareSemver, fetchLatestVersion, fetchRandomPokemon, formatTime, getRandomHangmanWord, getRandomNHIE, getRandomSentence, getRandomString, getRandomTriviaFact, getRandomWYPTB, getRandomWYR, getRandomWord, getRandomWords, safeResolveColor, shuffleArray, shuffleString, stripAnsi, version };
 
 //# sourceMappingURL=index.mjs.map
