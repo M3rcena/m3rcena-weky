@@ -1255,6 +1255,19 @@ export declare class WekyManager extends EventEmitter {
    */
   registerCrossPlatformSession(session: BridgeSession): void;
   /**
+   * Package router reference for @m3rcena/bridge mounting.
+   */
+  get router(): any;
+  /**
+   * Universal router getter for @m3rcena/bridge.
+   */
+  toBridgeRouter(): any;
+  /**
+   * Connects this WekyManager instance with an M3rcenaBridge controller.
+   * Enables: weky.connectBridge(bridge) or bridge.use(weky).
+   */
+  connectBridge(bridge: any): this;
+  /**
    * Connects or replaces the dashboard bridge with an M3rcenaBridge instance.
    */
   setBridge(bridge: any): void;

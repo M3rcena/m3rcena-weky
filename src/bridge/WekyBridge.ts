@@ -137,6 +137,28 @@ export class WekyBridge {
    */
   public setM3rcenaBridge(bridge: M3rcenaBridge): void {
     this.m3rcenaBridge = bridge;
+    if (this.m3rcenaBridge && typeof this.m3rcenaBridge.mountPackage === "function") {
+      this.m3rcenaBridge.mountPackage(this.router);
+      this.m3rcenaBridge.registerModule("games", async (action) => {
+        const res = await this.dispatchMove(action.sessionId || "", {
+          playerId: action.playerId,
+          action: action.action,
+          payload: action.payload,
+          sourcePlatform: (action.sourcePlatform as any) || "dashboard",
+        });
+        return {
+          success: res.success,
+          state: res.state,
+          nextTurnId: res.nextTurnId,
+          isEnded: res.isGameOver,
+          winnerId: res.winnerId,
+          announcement: res.announcement,
+          soundKey: res.soundKey,
+          soundUrl: res.soundUrl,
+          error: res.error,
+        };
+      });
+    }
   }
 
   /**

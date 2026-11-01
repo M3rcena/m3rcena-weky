@@ -544,6 +544,29 @@ export class WekyManager extends EventEmitter {
   }
 
   /**
+   * Package router reference for @m3rcena/bridge mounting.
+   */
+  public get router(): any {
+    return this.bridge.router;
+  }
+
+  /**
+   * Universal router getter for @m3rcena/bridge.
+   */
+  public toBridgeRouter(): any {
+    return this.bridge.router;
+  }
+
+  /**
+   * Connects this WekyManager instance with an M3rcenaBridge controller.
+   * Enables: weky.connectBridge(bridge) or bridge.use(weky).
+   */
+  public connectBridge(bridge: any): this {
+    this.setBridge(bridge);
+    return this;
+  }
+
+  /**
    * Connects or replaces the dashboard bridge with an M3rcenaBridge instance.
    */
   public setBridge(bridge: any): void {

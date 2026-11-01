@@ -10786,6 +10786,28 @@ var WekyBridge = class {
 	*/
 	setM3rcenaBridge(bridge) {
 		this.m3rcenaBridge = bridge;
+		if (this.m3rcenaBridge && typeof this.m3rcenaBridge.mountPackage === "function") {
+			this.m3rcenaBridge.mountPackage(this.router);
+			this.m3rcenaBridge.registerModule("games", async (action) => {
+				const res = await this.dispatchMove(action.sessionId || "", {
+					playerId: action.playerId,
+					action: action.action,
+					payload: action.payload,
+					sourcePlatform: action.sourcePlatform || "dashboard"
+				});
+				return {
+					success: res.success,
+					state: res.state,
+					nextTurnId: res.nextTurnId,
+					isEnded: res.isGameOver,
+					winnerId: res.winnerId,
+					announcement: res.announcement,
+					soundKey: res.soundKey,
+					soundUrl: res.soundUrl,
+					error: res.error
+				};
+			});
+		}
 	}
 	/**
 	* Registers an active game session into the cross-platform bridge.
@@ -11502,6 +11524,26 @@ var WekyManager = class extends events.EventEmitter {
 	*/
 	registerCrossPlatformSession(session) {
 		this.bridge.registerSession(session);
+	}
+	/**
+	* Package router reference for @m3rcena/bridge mounting.
+	*/
+	get router() {
+		return this.bridge.router;
+	}
+	/**
+	* Universal router getter for @m3rcena/bridge.
+	*/
+	toBridgeRouter() {
+		return this.bridge.router;
+	}
+	/**
+	* Connects this WekyManager instance with an M3rcenaBridge controller.
+	* Enables: weky.connectBridge(bridge) or bridge.use(weky).
+	*/
+	connectBridge(bridge) {
+		this.setBridge(bridge);
+		return this;
 	}
 	/**
 	* Connects or replaces the dashboard bridge with an M3rcenaBridge instance.
