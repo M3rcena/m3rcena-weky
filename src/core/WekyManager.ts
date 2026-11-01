@@ -1,7 +1,9 @@
 import { Client, ColorResolvable, EmbedBuilder } from "discord.js";
 import { EventEmitter } from "events";
 import { EventManager } from "./EventManager.js";
+import { ContextAdapter } from "./ContextAdapter.js";
 import { CalcTypes, ChaosTypes, Embeds, FastTypeTypes, FightTypes, GuessTheNumberTypes, GuessThePokemonTypes, HangmanTypes, LieSwatterTypes, NeverHaveIEverTypes, QuickClickTypes, RPSTypes, ShuffleGuessTypes, SnakeTypes, TicTacToeTypes, Types2048, WillYouPressTheButtonTypes, WouldYouRatherTypes } from "./Types.js";
+import { WekyEvents } from "./EventTypes.js";
 
 // Game Imports
 import { Calculator } from "../games/Calculator.js";
@@ -22,6 +24,16 @@ import { TicTacToe } from "../games/TicTacToe.js";
 import { WillYouPressTheButton } from "../games/WillYouPressTheButton.js";
 import { WouldYouRather } from "../games/WouldYouRather.js";
 
+// Hub, Tournament, Leaderboard, Audio, Bridge
+import { ArcadeHub, ArcadeHubOptions } from "../hub/ArcadeHub.js";
+import { TournamentManager, TournamentOptions, ManualTournamentOptions } from "../tournament/TournamentManager.js";
+import { RenderBracket, BracketRenderOptions } from "../tournament/RenderBracket.js";
+import { LeaderboardManager, LeaderboardManagerOptions, LeaderboardPointingOptions } from "../leaderboard/LeaderboardManager.js";
+import { RenderLeaderboard, RenderLeaderboardOptions } from "../canvas/RenderLeaderboard.js";
+import { RenderShareCard, RenderShareCardOptions } from "../canvas/RenderShareCard.js";
+import { SoundboardManager, SoundboardConfig } from "../soundboard/SoundboardManager.js";
+import { WekyBridge, BridgeSession, CrossPlatformMove, BridgeMoveResult, DashboardOverview } from "../bridge/WekyBridge.js";
+
 // Helpers
 import { formatTime, getRandomString, safeResolveColor, shuffleArray, shuffleString } from "../utils/Helpers.js";
 import { checkPackageUpdates } from "../utils/Notifier.js";
@@ -39,6 +51,10 @@ export interface WekyManagerOptions {
   unauthorizedMessage?: string;
   /** Whether to log a notification box in the console if a new version of the package is available (default: true) */
   notifyUpdates?: boolean;
+  /** Soundboard configuration for triggering Discord soundboard audio */
+  soundboard?: SoundboardConfig;
+  /** Leaderboard & ELO rating configuration */
+  leaderboard?: LeaderboardManagerOptions;
 }
 
 /**
@@ -56,6 +72,9 @@ export class WekyManager extends EventEmitter {
   public embedColor?: ColorResolvable;
   public unauthorizedMessage?: string;
   public notifyUpdates: boolean = true;
+  public soundboard: SoundboardManager;
+  public leaderboard: LeaderboardManager;
+  public bridge: WekyBridge;
 
   /**
    * Initializes the WekyManager.
@@ -72,6 +91,7 @@ export class WekyManager extends EventEmitter {
 
     this._client = client;
     this._eventManager = new EventManager(this._client);
+    this.bridge = new WekyBridge(this);
 
     if (typeof options === "boolean") {
       this.notifyUpdates = options;
@@ -93,9 +113,55 @@ export class WekyManager extends EventEmitter {
       }
     }
 
+    const sbConfig = options && typeof options === "object" ? options.soundboard : undefined;
+    this.soundboard = new SoundboardManager(this._client, sbConfig);
+
+    const lbConfig = options && typeof options === "object" ? options.leaderboard : undefined;
+    this.leaderboard = new LeaderboardManager({ ...lbConfig, wekyManager: this });
+
     if (this.notifyUpdates) {
       checkPackageUpdates(version, false).catch(() => {});
     }
+  }
+
+  // --------------------------------------------------------------------------
+  // STRONGLY-TYPED EVENT EMITTER OVERRIDES (No more 'any' types!)
+  // --------------------------------------------------------------------------
+
+  public override on<K extends keyof WekyEvents>(event: K, listener: (...args: WekyEvents[K]) => void): this;
+  public override on(event: string | symbol, listener: (...args: any[]) => void): this;
+  public override on(event: string | symbol, listener: (...args: any[]) => void): this {
+    return super.on(event, listener);
+  }
+
+  public override once<K extends keyof WekyEvents>(event: K, listener: (...args: WekyEvents[K]) => void): this;
+  public override once(event: string | symbol, listener: (...args: any[]) => void): this;
+  public override once(event: string | symbol, listener: (...args: any[]) => void): this {
+    return super.once(event, listener);
+  }
+
+  public override emit<K extends keyof WekyEvents>(event: K, ...args: WekyEvents[K]): boolean;
+  public override emit(event: string | symbol, ...args: any[]): boolean;
+  public override emit(event: string | symbol, ...args: any[]): boolean {
+    return super.emit(event, ...args);
+  }
+
+  public override off<K extends keyof WekyEvents>(event: K, listener: (...args: WekyEvents[K]) => void): this;
+  public override off(event: string | symbol, listener: (...args: any[]) => void): this;
+  public override off(event: string | symbol, listener: (...args: any[]) => void): this {
+    return super.off(event, listener);
+  }
+
+  public override addListener<K extends keyof WekyEvents>(event: K, listener: (...args: WekyEvents[K]) => void): this;
+  public override addListener(event: string | symbol, listener: (...args: any[]) => void): this;
+  public override addListener(event: string | symbol, listener: (...args: any[]) => void): this {
+    return super.addListener(event, listener);
+  }
+
+  public override removeListener<K extends keyof WekyEvents>(event: K, listener: (...args: WekyEvents[K]) => void): this;
+  public override removeListener(event: string | symbol, listener: (...args: any[]) => void): this;
+  public override removeListener(event: string | symbol, listener: (...args: any[]) => void): this {
+    return super.removeListener(event, listener);
   }
 
   /**
@@ -255,6 +321,116 @@ export class WekyManager extends EventEmitter {
     await game.start();
   }
 
+  /**
+   * Starts a new **Arcade Hub** central minigames launcher cabinet.
+   */
+  public async createArcadeHub(options: ArcadeHubOptions): Promise<void> {
+    const hub = new ArcadeHub(this, options);
+    await hub.start();
+  }
+
+  /**
+   * Starts a new automated or manual **Tournament** bracket championship (4 to 16 players).
+   */
+  public async createTournament(options: TournamentOptions): Promise<TournamentManager> {
+    const tournament = new TournamentManager(this, options);
+    await tournament.start();
+    return tournament;
+  }
+
+  /**
+   * Generates tournament bracket progress manually for any game or custom competition.
+   */
+  public async generateTournamentProgress(options: ManualTournamentOptions): Promise<Buffer> {
+    return TournamentManager.generateBracketProgress(options);
+  }
+
+  /**
+   * Generates a tournament bracket canvas chart image buffer.
+   */
+  public async renderTournamentBracket(options: BracketRenderOptions): Promise<Buffer> {
+    return RenderBracket.render(options);
+  }
+
+  /**
+   * Generates a high-score arcade leaderboard card image buffer.
+   */
+  public async renderLeaderboard(options: RenderLeaderboardOptions): Promise<Buffer> {
+    return RenderLeaderboard.render(options);
+  }
+
+  /**
+   * Generates a "Share & Flex" gamer score card image buffer.
+   */
+  public async renderShareCard(options: RenderShareCardOptions): Promise<Buffer> {
+    return RenderShareCard.render(options);
+  }
+
+  /**
+   * Launches any minigame by key (used by ArcadeHub and custom launchers).
+   */
+  public async launchGameByKey(gameKey: string, contextOrOptions: any): Promise<void> {
+    const rawContext =
+      contextOrOptions instanceof ContextAdapter
+        ? contextOrOptions.raw
+        : contextOrOptions?.context ||
+          contextOrOptions?.interaction ||
+          contextOrOptions?.message ||
+          contextOrOptions;
+
+    const baseOpts = {
+      context: rawContext,
+      ...(typeof contextOrOptions === "object" && !(contextOrOptions instanceof ContextAdapter)
+        ? contextOrOptions
+        : {}),
+    };
+
+    switch (gameKey.toLowerCase()) {
+      case "2048":
+        return this.create2048(baseOpts);
+      case "calculator":
+        return this.createCalculator(baseOpts);
+      case "chaoswords":
+        return this.createChaosWords(baseOpts);
+      case "fasttype":
+        return this.createFastType(baseOpts);
+      case "fight":
+        return this.createFight({ ...baseOpts, ai: true });
+      case "gtn":
+      case "guessthenumber":
+        return this.createGuessTheNumber(baseOpts);
+      case "gtp":
+      case "guessthepokemon":
+        return this.createGuessThePokemon(baseOpts);
+      case "hangman":
+        return this.createHangman(baseOpts);
+      case "lieswatter":
+        return this.createLieSwatter(baseOpts);
+      case "nhie":
+      case "neverhaveiever":
+        return this.createNeverHaveIEver(baseOpts);
+      case "quickclick":
+        return this.createQuickClick(baseOpts);
+      case "rps":
+      case "rockpaperscissors":
+        return this.createRPS(baseOpts);
+      case "shuffleguess":
+        return this.createShuffleGuess(baseOpts);
+      case "snake":
+        return this.createSnake(baseOpts);
+      case "tictactoe":
+        return this.createTicTacToe({ ...baseOpts, ai: true });
+      case "wyptb":
+      case "willyoupressthebutton":
+        return this.createWillYouPressTheButton(baseOpts);
+      case "wyr":
+      case "wouldyourather":
+        return this.createWouldYouRather(baseOpts);
+      default:
+        throw new Error(`[WekyManager] Unknown game key: ${gameKey}`);
+    }
+  }
+
   /* -------------------------------------------------------------------------- */
   /* UTILITY HELPERS                                                            */
   /* -------------------------------------------------------------------------- */
@@ -312,5 +488,30 @@ export class WekyManager extends EventEmitter {
       embed.setFields(embedOptions.fields);
     }
     return embed;
+  }
+
+  /* -------------------------------------------------------------------------- */
+  /* CROSS-PLATFORM BRIDGE & DASHBOARD GATEWAY                                  */
+  /* -------------------------------------------------------------------------- */
+
+  /**
+   * Retrieves dashboard overview metrics, live sessions, and leaderboard data for Web Dashboards.
+   */
+  public async getDashboardOverview(): Promise<DashboardOverview> {
+    return await this.bridge.getDashboardOverview();
+  }
+
+  /**
+   * Dispatches a cross-platform move from Web Dashboard, REST API, or Discord.
+   */
+  public async dispatchCrossPlatformMove(sessionId: string, move: CrossPlatformMove): Promise<BridgeMoveResult> {
+    return await this.bridge.dispatchMove(sessionId, move);
+  }
+
+  /**
+   * Registers an external or hybrid game session with the cross-platform bridge.
+   */
+  public registerCrossPlatformSession(session: BridgeSession): void {
+    this.bridge.registerSession(session);
   }
 }

@@ -1,8 +1,8 @@
 # 📖 @m3rcena/weky Comprehensive API Documentation
 
-Welcome to the definitive documentation for **`@m3rcena/weky`** (v14.27.0).
+Welcome to the definitive documentation for **`@m3rcena/weky`** (v14.28.0).
 
-This document covers everything you need to know: architecture, installation, event listeners, the universal context adapter, full option references for all 17 minigames, headless engines for web dashboards, and the standalone canvas hub.
+This document covers everything you need to know: architecture, installation, event listeners, the universal context adapter, full option references for all 17 minigames, the v14.28.0 Next-Gen Arcade Suite (Hub, Tournaments, AI Opponents & Bosses, Soundboard, ELO Leaderboards, and Gamer Cards), headless engines for web dashboards, and the standalone canvas hub.
 
 ---
 
@@ -30,12 +30,19 @@ This document covers everything you need to know: architecture, installation, ev
    - [5.15. Tic-Tac-Toe (`createTicTacToe`)](#515-tic-tac-toe)
    - [5.16. Will You Press The Button? (`createWillYouPressTheButton`)](#516-will-you-press-the-button)
    - [5.17. Would You Rather? (`createWouldYouRather`)](#517-would-you-rather)
-6. [Headless Game Engines (`WekyEngine`) for Web Dashboards](#6-headless-game-engines-wekyengine-for-web-dashboards)
-7. [Standalone Canvas Hub (`WekyCanvas`)](#7-standalone-canvas-hub-wekycanvas)
-8. [Safe Mathematical Evaluator (`MathEvaluator`)](#8-safe-mathematical-evaluator-mathevaluator)
-9. [Built-in Datasets & Word Banks](#9-built-in-datasets--word-banks)
-10. [Pure JavaScript Type Safety & Autocomplete](#10-pure-javascript-type-safety--autocomplete)
-11. [Troubleshooting & Best Practices](#11-troubleshooting--best-practices)
+6. [Next-Gen Arcade Suite (v14.28.0 Features)](#6-next-gen-arcade-suite-v14280-features)
+   - [6.1. The Arcade Hub Launcher (`createArcadeHub`)](#61-the-arcade-hub-launcher)
+   - [6.2. Automated Tournaments & Canvas Brackets (`createTournament`)](#62-automated-tournaments--canvas-brackets)
+   - [6.3. Intelligent AI Opponents & RPG Bosses](#63-intelligent-ai-opponents--rpg-bosses)
+   - [6.4. Discord Soundboard SFX (`SoundboardManager`)](#64-discord-soundboard-sfx)
+   - [6.5. Plug-and-Play ELO & Canvas Leaderboards (`LeaderboardManager`)](#65-plug-and-play-elo--canvas-leaderboards)
+   - [6.6. 'Share & Flex' Gamer Score Cards (`RenderShareCard`)](#66-share--flex-gamer-score-cards)
+7. [Headless Game Engines (`WekyEngine`) for Web Dashboards](#7-headless-game-engines-wekyengine-for-web-dashboards)
+8. [Standalone Canvas Hub (`WekyCanvas`)](#8-standalone-canvas-hub-wekycanvas)
+9. [Safe Mathematical Evaluator (`MathEvaluator`)](#9-safe-mathematical-evaluator-mathevaluator)
+10. [Built-in Datasets & Word Banks](#10-built-in-datasets--word-banks)
+11. [Pure JavaScript Type Safety & Autocomplete](#11-pure-javascript-type-safety--autocomplete)
+12. [Troubleshooting & Best Practices](#12-troubleshooting--best-practices)
 
 ---
 
@@ -148,30 +155,43 @@ You can also trigger manual checks in code via:
 await weky.checkUpdates();
 ```
 
-### Global Event Hooks
+### Global Event Hooks (Strongly-Typed)
 
-`WekyManager` extends Node's `EventEmitter` and broadcasts four core lifecycle events:
+`WekyManager` extends Node's `EventEmitter` with **strict TypeScript parameter types**—parameters are automatically typed instead of `any`:
 
 ```typescript
 // 1. Fired whenever any minigame starts
-weky.on("gameStart", ({ game, user, channelId }) => {
-  console.log(`[WEKY] ${user.username} started ${game} in channel ${channelId}`);
+weky.on("gameStart", (event) => {
+  // event is GameStartEvent: { game: string, user: User, channelId?: string, timestamp: number }
+  console.log(`[WEKY] ${event.user.username} started ${event.game} in channel ${event.channelId}`);
 });
 
 // 2. Fired when a game concludes (Victory, Defeat, Timeout, Surrender)
-weky.on("gameOver", ({ game, user, outcome, score, timeElapsed }) => {
-  console.log(`[WEKY] ${user.username} finished ${game}: ${outcome} (Score: ${score}, Time: ${timeElapsed}ms)`);
-  // Award XP or coins in your database here!
+weky.on("gameOver", (event) => {
+  // event is GameOverEvent: { game: string, user: User, outcome: string, score: number, timeElapsed: number, timestamp: number }
+  console.log(`[WEKY] ${event.user.username} finished ${event.game}: ${event.outcome} (Score: ${event.score}, Time: ${event.timeElapsed}ms)`);
 });
 
-// 3. Fired if an unhandled error occurs during execution
-weky.on("gameError", ({ game, error, context }) => {
-  console.error(`[WEKY ERROR] ${game} threw an error:`, error);
+// 3. Fired on leaderboard rating or score updates
+weky.on("leaderboardUpdate", (event) => {
+  // event is LeaderboardUpdateEvent: { userId: string, username: string, game: string, oldValue: number, newValue: number, change: number, isWin: boolean, streak: number }
+  console.log(`[LEADERBOARD] ${event.username} rating changed by ${event.change} -> ${event.newValue}`);
 });
 
-// 4. Fired when an unauthorized user clicks a game button
-weky.on("unauthorizedClick", ({ game, user, interaction }) => {
-  console.warn(`[WEKY] ${user.username} tried clicking controls for ${game}`);
+// 4. Fired on cross-platform moves (Discord <-> Web Dashboard)
+weky.on("crossPlatformMove", (event) => {
+  // event is CrossPlatformMoveEvent: { sessionId: string, game: string, playerId: string, action: string, platform: "discord" | "dashboard" | "web" | "api" }
+  console.log(`[BRIDGE] Move received from ${event.platform} for ${event.game}`);
+});
+
+// 5. Fired if an unhandled error occurs during execution
+weky.on("gameError", (event) => {
+  console.error(`[WEKY ERROR] ${event.game} threw an error:`, event.error);
+});
+
+// 6. Fired when an unauthorized user clicks a game button
+weky.on("unauthorizedClick", (event) => {
+  console.warn(`[WEKY] ${event.user.username} tried clicking controls for ${event.game}`);
 });
 ```
 
@@ -644,7 +664,268 @@ await weky.createWouldYouRather({
 
 ---
 
-## 6. Headless Game Engines (`WekyEngine`) for Web Dashboards
+## 6. Next-Gen Arcade Suite (v14.28.0 Features)
+
+### 6.1. The Arcade Hub Launcher
+
+`ArcadeHub` provides a unified Discord interactive cabinet interface grouping all 17 minigames into 4 clean categories:
+- **Classic Arcade**: 2048, Snake
+- **PvP Duels**: Fight RPG, Tic Tac Toe, Rock Paper Scissors
+- **Brain & Puzzles**: Hangman, Who's That Pokémon?, Scientific Calculator, Fast Type, Chaos Words, Shuffle Guess, Lie Swatter
+- **Party & Social**: Guess The Number, Never Have I Ever, Will You Press The Button?, Would You Rather?, Quick Click
+
+#### Options (`ArcadeHubOptions`)
+
+| Option        | Type                                                            | Default                         | Description                         |
+| :------------ | :-------------------------------------------------------------- | :------------------------------ | :---------------------------------- |
+| `context`     | `GameContextInput`                                              | **Required**                    | The Interaction or Message          |
+| `title`       | `string`                                                        | `"🕹️ Weky Mini-Arcade Cabinet"` | Custom header title                 |
+| `bannerUrl`   | `string`                                                        | `undefined`                     | Optional banner image URL           |
+| `exclude`     | `string[]`                                                      | `[]`                            | Minigame keys to exclude            |
+| `onSelect`    | `(gameKey: string, context: ContextAdapter) => Promise<void>`   | `undefined`                     | Custom callback when a game is chosen|
+| `time`        | `number`                                                        | `120000`                        | Inactivity timeout (ms)             |
+
+#### Code Example
+
+```typescript
+await weky.createArcadeHub({
+  context: interaction,
+  title: "Community Arcade Hub",
+  exclude: ["calculator"], // Exclude specific games if desired
+});
+```
+
+---
+
+### 6.2. Automated Tournaments & Canvas Brackets
+
+`TournamentManager` runs single-elimination championships (4 to 16 players) with eSports-style `@napi-rs/canvas` bracket charts rendered in real time.
+
+#### How It Works:
+1. **Simultaneous Ephemeral Preliminary Rounds**:
+   - All matches in the active round take place **at the same time** rather than waiting match-by-match.
+   - When a player clicks **"⚔️ Play My Match"**, a private ephemeral game session opens waiting for the opponent.
+   - As soon as the opponent also clicks **"⚔️ Play My Match"**, both players' ephemerals synchronously initialize with live interactive Components V2 buttons.
+   - As moves are played, both players' private ephemerals update in real time with synchronized board state.
+2. **Anti-AFK & Timeout Protection**:
+   - **Ready-Up Timeout (60s)**: If an opponent does not join within 60 seconds, the active player wins by Walkover / Forfeit.
+   - **Turn Inactivity Timeout (45s)**: If a player does not make a move on their turn within 45 seconds, the match is forfeited to the active player.
+3. **Detailed Victory & Defeat Reason Tracking**:
+   - Each match records the exact outcome details (e.g. *3-in-a-row across Top Row*, *ROCK defeated SCISSORS*, *Knockout with Heavy Strike (54 HP remaining)*, or *Walkover / 45s AFK*).
+   - Displayed inside both players' match result screens, on the active match status board, and embedded directly onto the canvas bracket!
+
+4. **Manual & Non-Game-Specific Tournaments**:
+   - Run tournaments for **any game or competition** (e.g. *Valorant*, *Chess*, *Smash Bros*, *FIFA*, *Rocket League*, or custom IRL events).
+   - Set `manual: true` or `game: "custom"` (or any custom game title). The organizer can use the interactive **"👑 Advance Match"** button directly on the tournament board to report match results and advance players.
+   - Programmatic control via `tournament.progressMatch(matchId, winnerId, outcomeDetail)`.
+
+5. **Live Public Grand Finals**:
+   - The final round is **not ephemeral**! The Grand Finals is hosted directly on the public tournament message in the channel with live interactive buttons, allowing the entire server to watch the championship match in real time.
+   - The winner is crowned **Tournament Champion** with custom gold-accented canvas bracket celebration!
+
+#### Options (`TournamentOptions`)
+
+| Option     | Type                            | Default                          | Description                         |
+| :--------- | :------------------------------ | :------------------------------- | :---------------------------------- |
+| `context`  | `GameContextInput`              | **Required**                     | The Interaction or Message          |
+| `game`     | `"rps" \| "tictactoe" \| "fight" \| "custom" \| string` | `"tictactoe"`    | Game discipline or custom title     |
+| `players`  | `(User \| GuildMember)[]`       | **Required** (4–16 players)      | Participant array                   |
+| `title`    | `string`                        | `"Championship Tournament"`      | Tournament title                    |
+| `manual`   | `boolean`                       | `false`                          | Enable manual winner progression    |
+
+#### Code Example: Interactive Game Tournament
+
+```typescript
+await weky.createTournament({
+  context: interaction,
+  game: "fight",
+  players: [user1, user2, user3, user4, user5, user6, user7, user8],
+  title: "Grand Battle Arena Tournament 🏆",
+});
+```
+
+#### Code Example: Non-Game-Specific Manual Tournament
+
+```typescript
+// Run a custom tournament for any game with organizer manual match reporting
+await weky.createTournament({
+  context: interaction,
+  game: "Super Smash Bros",
+  manual: true,
+  players: [p1, p2, p3, p4],
+  title: "Smash Arena Invitational 🏆",
+});
+```
+
+#### Standalone Manual Bracket Progress Generator (`weky.generateTournamentProgress`)
+
+Generate high-definition tournament progress bracket images on demand for ANY game or event without starting an active bot session:
+
+```typescript
+const buffer = await weky.generateTournamentProgress({
+  title: "Valorant Masters",
+  gameName: "Valorant",
+  rounds: 2,
+  matches: [
+    { round: 1, matchIndex: 0, p1Username: "Sentinels", p2Username: "Fnatic", winnerUsername: "Sentinels", scoreText: "13-9", outcomeDetail: "Ascent 13-9" },
+    { round: 1, matchIndex: 1, p1Username: "PaperRex", p2Username: "LOUD", winnerUsername: "PaperRex", scoreText: "13-11", outcomeDetail: "Haven 13-11" },
+    { round: 2, matchIndex: 0, p1Username: "Sentinels", p2Username: "PaperRex", winnerUsername: "Sentinels", scoreText: "3-1", outcomeDetail: "Grand Finals 3-1" },
+  ],
+  championUsername: "Sentinels",
+});
+```
+
+---
+
+### 6.3. Intelligent AI Opponents & RPG Bosses
+
+`@m3rcena/weky` v14.28.0 eliminates the need for a second human player across competitive duels:
+
+- **Tic Tac Toe Minimax AI**:
+  - `difficulty: "unbeatable"`: Uses full depth-penalized Minimax algorithm. Impossible to defeat.
+  - `difficulty: "hard"`: Tactical Minimax evaluation.
+  - `difficulty: "medium"`: Smart heuristic blocking and winning move detection.
+  - `difficulty: "easy"`: Casual random move placement.
+
+```typescript
+await weky.createTicTacToe({
+  context: interaction,
+  ai: true,
+  difficulty: "unbeatable",
+});
+```
+
+- **Fight RPG Bosses**:
+  - Challenge 3 custom scripted tactical bosses:
+    - `"dragon"` (`Dragon Sovereign`): Ancient Pyromancer with high health (160 HP) and devastating Inferno Breath.
+    - `"cyber_knight"` (`Cyber Knight`): Protocol MK-VII with EMP Overcharge that pierces and disables shields.
+    - `"shadow_goblin"` (`Shadow Goblin`): Greed Master who pickpockets coins during combat and lands rapid critical strikes.
+
+```typescript
+await weky.createFight({
+  context: interaction,
+  ai: true,
+  boss: "dragon",
+});
+```
+
+- **Rock Paper Scissors Psychological AI**:
+  - Predicts human choices via psychological win-stay / lose-shift heuristics:
+
+```typescript
+await weky.createRPS({
+  context: interaction,
+  difficulty: "hard", // "easy" | "medium" | "hard"
+});
+```
+
+---
+
+### 6.4. Discord Soundboard SFX
+
+`SoundboardManager` triggers Discord soundboard audio cues across match lifecycles without extra bot audio libraries:
+
+```typescript
+// Initialized automatically via WekyManager options:
+const weky = new WekyManager(client, {
+  soundboard: {
+    enabled: true,
+    sounds: {
+      victory: "123456789012345678", // Discord sound ID
+      defeat: "876543210987654321",
+    },
+  },
+});
+
+// Trigger directly:
+await weky.soundboard.playSound(channelId, "victory");
+```
+
+---
+
+### 6.5. Plug-and-Play ELO & Canvas Leaderboards
+
+`LeaderboardManager` calculates international FIDE ELO ratings and records high scores with optional custom database persistence, **custom developer pointing formulas**, and **custom card labels**:
+
+```typescript
+// 1. Initialize with optional custom pointing system:
+const weky = new WekyManager(client, {
+  leaderboard: {
+    defaultElo: 1200,
+    // Optional Developer Custom Pointing:
+    pointing: {
+      winPoints: 50,    // Flat win points (if not using dynamic formula)
+      lossPoints: 20,   // Flat loss deduction
+      drawPoints: 10,   // Flat draw points
+      streakBonus: 5,   // +5 extra points per active streak
+      // OR define a custom formula function:
+      calculateMatchPoints: (ctx) => ({
+        p1Change: ctx.result === "p1" ? 100 : -40,
+        p2Change: ctx.result === "p1" ? -40 : 100,
+      }),
+      calculateSoloPoints: (ctx) => ctx.score * 1.5, // Custom solo score formula
+    },
+  },
+});
+
+// Record a 1v1 match outcome:
+const { p1NewElo, p2NewElo, p1Change, p2Change } = await weky.leaderboard.recordMatch(
+  winnerId,
+  loserId,
+  "p1",
+  { p1Username: "Alice", p2Username: "Bob", kFactor: 32 }
+);
+
+// Record solo arcade score:
+await weky.leaderboard.recordScore(userId, "snake", 1850);
+
+// Generate a High-Score Poster Canvas Image with customizable texts:
+const buffer = await weky.renderLeaderboard({
+  title: "ARCADE CHAMPIONSHIP",
+  subtitle: "SEASON 1 • TOP PLAYERS",
+  entries: [
+    { rank: 1, username: "Alice", scoreOrElo: "1,520 ELO", streak: 7 },
+    { rank: 2, username: "Bob", scoreOrElo: "1,440 ELO", stats: "22W - 5L" },
+  ],
+  texts: {
+    categoryBadge: "HALL OF FAME",
+    topContendersBadge: "{{count}} TOP CONTENDERS",
+    rankColumn: "RANK",
+    playerColumn: "PLAYER",
+    recordColumn: "RECORD / STREAK",
+    scoreColumn: "SCORE / ELO",
+    streakSuffix: "STREAK",
+    footer: "Powered by @m3rcena/weky • Modern Discord Minigames Engine",
+  },
+});
+```
+
+---
+
+### 6.6. 'Share & Flex' Gamer Score Cards
+
+`RenderShareCard` creates collectible holographic-styled victory passes:
+
+```typescript
+const shareCardBuffer = await weky.renderShareCard({
+  username: "ShadowBlade",
+  avatarUrl: user.displayAvatarURL({ extension: "png" }),
+  gameName: "Fight RPG Duel",
+  headline: "CHAMPIONSHIP VICTORY 👑",
+  primaryScore: "VICTORY (+32 ELO)",
+  rankBadge: "DIAMOND TIER",
+  stats: [
+    { label: "ROUND TURNS", value: "8 Turns", color: "#5865f2" },
+    { label: "CRITICAL HITS", value: "3", color: "#57f287" },
+    { label: "COINS WON", value: "+45 🪙", color: "#ffd700" },
+    { label: "HEALTH REMAINING", value: "72%", color: "#00f7ff" },
+  ],
+});
+```
+
+---
+
+## 7. Headless Game Engines (`WekyEngine`) for Web Dashboards
 
 `WekyEngine` lets you run minigames entirely outside Discord—inside Next.js web apps, Express REST APIs, React web frontends, or Electron dashboards.
 
@@ -727,7 +1008,7 @@ export default function GameCard({ imageUrl, controls, onMove }) {
 
 ---
 
-## 7. Standalone Canvas Hub (`WekyCanvas`)
+## 8. Standalone Canvas Hub (`WekyCanvas`)
 
 `WekyCanvas` allows generating game graphic cards on demand without needing an active game session:
 
@@ -744,7 +1025,39 @@ const base64 = WekyCanvas.toBase64(fightBuffer);
 
 ---
 
-## 8. Safe Mathematical Evaluator (`MathEvaluator`)
+## 9. Cross-Platform Bridge & Web Dashboard Gateway (`WekyBridge`)
+
+The `WekyBridge` directly links your Discord bot with your Web Dashboard or backend REST/WebSocket server, enabling **cross-platform play** (e.g. Player 1 on Discord vs Player 2 on a web browser) and live synchronization of games and leaderboards:
+
+```typescript
+// 1. Access the bridge directly from your WekyManager instance:
+const bridge = weky.bridge;
+
+// 2. Query real-time dashboard overview metrics for web UI:
+const overview = await weky.getDashboardOverview();
+console.log(overview);
+// {
+//   activeGamesCount: 4,
+//   totalLeaderboardPlayers: 180,
+//   activeSessions: [ ... ],
+//   topContenders: [ ... ]
+// }
+
+// 3. Dispatch a move made on the Web Dashboard to an active Discord game:
+const moveResult = await weky.dispatchCrossPlatformMove("session_123", {
+  playerId: "web_user_456",
+  action: "attack",
+  sourcePlatform: "dashboard",
+});
+
+// 4. Export or import full leaderboard JSON for database backups or external sync:
+const rawLeaderboard = await weky.leaderboard.exportData();
+await weky.leaderboard.importData(rawLeaderboard);
+```
+
+---
+
+## 10. Safe Mathematical Evaluator (`MathEvaluator`)
 
 Built-in safe mathematical parser powering the calculator and math minigames.
 
@@ -761,7 +1074,7 @@ console.log(result); // { result: 14, formatted: "14", error: null }
 
 ---
 
-## 9. Built-in Datasets & Word Banks
+## 11. Built-in Datasets & Word Banks
 
 Access rich curated collections directly in your bot:
 
@@ -776,7 +1089,7 @@ console.log(getRandomWYR()); // { optionA: "...", optionB: "..." }
 
 ---
 
-## 10. Pure JavaScript Type Safety & Autocomplete
+## 12. Pure JavaScript Type Safety & Autocomplete
 
 Using pure JavaScript instead of TypeScript? You don't have to sacrifice IntelliSense!
 
@@ -786,16 +1099,16 @@ Using pure JavaScript instead of TypeScript? You don't have to sacrifice Intelli
 
 ---
 
-## 11. Troubleshooting & Best Practices
+## 13. Troubleshooting & Best Practices
 
 | Issue                                     | Cause                                              | Solution                                                                                                                                               |
 | :---------------------------------------- | :------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `COMPONENT_MAX_TOTAL_COMPONENTS_EXCEEDED` | Discord limits messages to 40 components           | Keep total buttons + rows $\le 40$. In `@m3rcena/weky` v14.27.0, all layouts are strictly engineered under this threshold.                             |
+| `COMPONENT_MAX_TOTAL_COMPONENTS_EXCEEDED` | Discord limits messages to 40 components           | Keep total buttons + rows $\le 40$. In `@m3rcena/weky` v14.28.0, all layouts are strictly engineered under this threshold.                             |
 | Missing Gateway Intent error              | Bot lacks `MessageContent` or `GuildMessageTyping` | Enable `MessageContent` and `GuildMessageTyping` in the Discord Developer Portal under Bot > Privileged Gateway Intents.                               |
 | Canvas emojis rendering as boxes (`▯`)    | Server OS lacks color emoji fonts                  | `@m3rcena/weky` renders pure vector canvas graphics (`drawCoinIcon`) and typography badges to ensure universal rendering on Linux and Windows servers. |
 
 ---
 
 <p align="center">
-  <b>@m3rcena/weky v14.27.0</b> • Designed and engineered with ❤️ by <b>M3rcena</b>
+  <b>@m3rcena/weky v14.28.0</b> • Designed and engineered with ❤️ by <b>M3rcena</b>
 </p>

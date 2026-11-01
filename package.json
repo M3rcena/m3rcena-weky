@@ -1,6 +1,6 @@
 {
   "name": "@m3rcena/weky",
-  "version": "14.27.0-1",
+  "version": "14.28.0",
   "description": "The ultimate Discord minigames engine with blazingly fast @napi-rs/canvas graphics, hybrid Slash/Message support, and zero external dependencies.",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -30,7 +30,7 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
-    "test": "tsx test/verify.ts && tsx test/componentsV2.test.ts && tsx test/dashboard.test.ts && tsx test/managerAndCustomizations.test.ts",
+    "test": "tsx test/verify.ts && tsx test/componentsV2.test.ts && tsx test/dashboard.test.ts && tsx test/managerAndCustomizations.test.ts && tsx test/v14_28_features.test.ts",
     "test:bot": "tsx test/index.ts"
   },
   "keywords": [
@@ -62,7 +62,7 @@
   "dependencies": {
     "@napi-rs/canvas": "^1.0.11",
     "chalk": "^6.0.1",
-    "discord.js": "^14.27.0",
+    "discord.js": "^14.28.0",
     "html-entities": "^2.6.0"
   },
   "devDependencies": {

@@ -6,6 +6,38 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [14.28.0] - 2026-11-01
+
+### 🚀 Major Release: Discord.js 14.28.0 Parity & Next-Gen Arcade Suite
+
+#### Added
+
+- **Discord.js v14.28.0 Parity**: Full compatibility upgrade with Discord.js `14.28.0`.
+- **Feature 1: The Arcade Hub (`ArcadeHub` & `weky.createArcadeHub`)**:
+  - Centralized, interactive minigames launcher cabinet grouping all 17 minigames into 4 organized categories (*Classic Arcade*, *PvP Duels*, *Brain & Puzzles*, *Party & Social*).
+  - Uses Discord Components V2 Containers with interactive `StringSelectMenuBuilder`, quick random game launcher button, and game filtering (`options.exclude`).
+  - Added `weky.launchGameByKey(gameKey, context)` universal dispatch router.
+- **Feature 2: Automated Tournament & Canvas Bracket Engine (`TournamentManager` & `RenderBracket`)**:
+  - Single-elimination automated championship system supporting 4 to 16 players.
+  - Generates high-definition, eSports-style tournament bracket canvas diagrams with player avatars, round columns, match connectors, and live status badges (`✔ W`, `OUT`).
+  - Step-by-step match progression with "Play Next Match" controls and champion crowning.
+- **Feature 3: Intelligent AI Opponents & RPG Boss Duels**:
+  - **Tic Tac Toe**: Unbeatable Minimax AI (`"unbeatable"` / `"hard"`), smart heuristic blocking (`"medium"`), and casual (`"easy"`). Play solo vs AI without requiring a second player.
+  - **Fight RPG**: Solo boss fights against 3 unique tactical bosses (`Dragon Sovereign`, `Cyber Knight`, `Shadow Goblin`) with unique abilities, dialogues, and coin stealing.
+  - **Rock Paper Scissors**: Heuristic psychological AI using win-stay / lose-shift prediction to outsmart human move habits.
+- **Feature 4: Discord Soundboard & Audio SFX Integration (`SoundboardManager`)**:
+  - Safe, non-intrusive soundboard sound dispatcher directly utilizing Discord's REST soundboard endpoints.
+  - Fires custom audio SFX for victory, defeat, countdown, or actions with built-in permission fallback.
+- **Feature 5: Plug-and-Play ELO & Canvas Leaderboards (`LeaderboardManager` & `RenderLeaderboard`)**:
+  - Mathematical ELO calculation using standard international FIDE formulas with customizable K-factors.
+  - Built-in tracking for wins, losses, draws, win streaks, personal best scores, and pluggable storage adapter support (`LeaderboardStorageAdapter`).
+  - High-resolution cyberpunk/neon arcade leaderboard card renderer drawing top 10 player ranks, circular avatars, medals, and streaks.
+- **Feature 6: "Share & Flex" Gamer Score Cards (`RenderShareCard`)**:
+  - Collectible, holographic-style match victory and score ticket generator using `@napi-rs/canvas`.
+  - Displays large player avatar, neon rank tier badge, primary score hero box, customizable 2x2 metric stat grid, and verification barcode.
+
+---
+
 ## [14.27.0-1] - 2026-10-23
 
 ### ️ Fixes, Regressions Resolution & Enhancements

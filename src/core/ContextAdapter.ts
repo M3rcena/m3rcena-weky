@@ -24,6 +24,9 @@ export class ContextAdapter {
   public gameMessage: Message | null = null;
 
   constructor(context: GameContextInput) {
+    if (context instanceof ContextAdapter) {
+      context = context.raw;
+    }
     this.raw = context;
 
     if (context instanceof Message) {
@@ -91,7 +94,13 @@ export class ContextAdapter {
           if (options.embeds !== undefined) payload.embeds = options.embeds;
         }
         const msg = await interaction.editReply(payload);
-        this.gameMessage = msg instanceof Message ? msg : await (interaction as any).fetchReply().catch(() => null);
+        if (msg instanceof Message) {
+          this.gameMessage = msg;
+        } else if (typeof (interaction as any).fetchReply === "function") {
+          this.gameMessage = await (interaction as any).fetchReply().catch(() => null);
+        } else {
+          this.gameMessage = msg || null;
+        }
       } else {
         const payload: any = {
           components: options.components,
@@ -105,12 +114,14 @@ export class ContextAdapter {
         }
         const response: any = await interaction.reply(payload);
 
-        if (response instanceof InteractionCallbackResponse && response.resource?.message) {
+        if (response && typeof response === "object" && "resource" in response && response.resource?.message) {
           this.gameMessage = response.resource.message;
-        } else if (response instanceof Message) {
+        } else if (response instanceof Message || (response && typeof response === "object" && "id" in response)) {
           this.gameMessage = response;
-        } else {
+        } else if (typeof (interaction as any).fetchReply === "function") {
           this.gameMessage = await (interaction as any).fetchReply().catch(() => null);
+        } else {
+          this.gameMessage = response || null;
         }
       }
     } else {
@@ -139,7 +150,10 @@ export class ContextAdapter {
    * Updates the game message safely with Components V2 support.
    */
   public async edit(options: ContextSendOptions): Promise<void> {
-    if (!this.gameMessage) return;
+    if (!this.gameMessage) {
+      await this.sendInitial(options);
+      return;
+    }
     const resolvedFlags = this.resolveFlags(options);
     const isV2 = !!((resolvedFlags ?? 0) & MessageFlags.IsComponentsV2);
 

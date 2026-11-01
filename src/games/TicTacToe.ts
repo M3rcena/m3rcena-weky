@@ -1,4 +1,5 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ContainerBuilder, GuildMember, Interaction, MessageFlags, User } from "discord.js";
+import { TicTacToeAI, TicTacToeDifficulty } from "../ai/TicTacToeAI.js";
 import { BaseGame } from "../core/BaseGame.js";
 import { ContextAdapter } from "../core/ContextAdapter.js";
 import { TicTacToeTypes } from "../core/Types.js";
@@ -12,20 +13,38 @@ export class TicTacToe extends BaseGame<TicTacToeTypes> {
   private currentTurnId: string;
   private btnPrefix: string;
   private gameTitle: string;
+  private isVsAi: boolean = false;
+  private difficulty: TicTacToeDifficulty = "hard";
 
   constructor(manager: any, options: TicTacToeTypes) {
     super(manager, options, "tictactoe");
     this.btnPrefix = getRandomString(6, "ttt_");
-    this.opponentUser = options.opponent instanceof GuildMember ? options.opponent.user : (options.opponent as User);
     this.gameTitle = options.embed?.title || "Tic Tac Toe";
     this.defaultColor = this.resolveColor(options.embed?.color);
     this.currentTurnId = this.ctx.userId;
     this.defaultTimeout = options.time || manager?.defaultTimeout || 60_000;
+
+    if (options.ai || !options.opponent) {
+      this.isVsAi = true;
+      this.difficulty = options.difficulty || "hard";
+      const botUser = this.ctx.client?.user;
+      this.opponentUser = (botUser || {
+        id: "weky_ai",
+        username: `Weky AI (${this.difficulty})`,
+        bot: true,
+      }) as User;
+    } else {
+      this.opponentUser = options.opponent instanceof GuildMember ? options.opponent.user : (options.opponent as User);
+      if (this.opponentUser.bot || this.opponentUser.id === this.ctx.client?.user?.id) {
+        this.isVsAi = true;
+        this.difficulty = options.difficulty || "hard";
+      }
+    }
   }
 
   public async start(): Promise<void> {
-    if (this.opponentUser.id === this.ctx.userId) {
-      const container = this.createContainer(0xff0000).addTextDisplayComponents((t) => t.setContent("## ❌ Error\n> You cannot play Tic Tac Toe against yourself!"));
+    if (!this.isVsAi && this.opponentUser.id === this.ctx.userId) {
+      const container = this.createContainer(0xff0000).addTextDisplayComponents((t) => t.setContent("## ❌ Error\n> You cannot play Tic Tac Toe against yourself! Enable AI mode or invite an opponent."));
       await this.ctx.sendInitial({
         components: [container],
         flags: MessageFlags.IsComponentsV2,
@@ -56,7 +75,7 @@ export class TicTacToe extends BaseGame<TicTacToeTypes> {
 
     const userId = interaction.user.id;
 
-    if (userId !== this.ctx.userId && userId !== this.opponentUser.id) {
+    if (userId !== this.ctx.userId && (!this.isVsAi && userId !== this.opponentUser.id)) {
       ContextAdapter.replyEphemeral(interaction, "You are not participating in this Tic Tac Toe match!");
       return;
     }
@@ -86,7 +105,25 @@ export class TicTacToe extends BaseGame<TicTacToeTypes> {
       return;
     }
 
-    this.currentTurnId = this.currentTurnId === this.ctx.userId ? this.opponentUser.id : this.ctx.userId;
+    if (this.isVsAi) {
+      // AI Move execution
+      const aiMove = TicTacToeAI.getBestMove(this.board, "O", this.difficulty);
+      if (aiMove !== -1) {
+        this.board[aiMove] = "O";
+        const aiWinner = this.checkWinner();
+        if (aiWinner) {
+          await this.endGame("won", aiWinner);
+          return;
+        }
+        if (this.board.every((cell) => cell !== null)) {
+          await this.endGame("tie");
+          return;
+        }
+      }
+      this.currentTurnId = this.ctx.userId;
+    } else {
+      this.currentTurnId = this.currentTurnId === this.ctx.userId ? this.opponentUser.id : this.ctx.userId;
+    }
 
     const container = this.createGameContainer("active");
     await this.ctx.edit({

@@ -141,32 +141,60 @@ export abstract class BaseGame<T extends BaseGameOptions> implements IMinigame {
   }
 
   /**
-   * Emits the gameStart lifecycle event on WekyManager.
+   * Emits the gameStart lifecycle event on WekyManager and registers session with the bridge.
    */
   protected emitStart(): void {
     this.startTime = Date.now();
-    if (this.manager && typeof this.manager.emit === "function") {
-      this.manager.emit("gameStart", {
-        game: this.gameKey,
-        user: this.ctx.user,
-        channelId: this.ctx.channel?.id,
-      });
+    if (this.manager) {
+      if (typeof this.manager.emit === "function") {
+        this.manager.emit("gameStart", {
+          game: this.gameKey,
+          user: this.ctx.user,
+          channelId: this.ctx.channel?.id,
+          timestamp: this.startTime,
+        });
+      }
+      if (this.manager.bridge && typeof this.manager.bridge.registerSession === "function") {
+        this.manager.bridge.registerSession({
+          id: this.id,
+          game: this.gameKey,
+          platform: "discord",
+          players: [
+            {
+              id: this.ctx.userId,
+              username: this.ctx.user?.username || "Player",
+              avatarUrl: this.ctx.user?.displayAvatarURL ? this.ctx.user.displayAvatarURL({ extension: "png" }) : undefined,
+              platform: "discord",
+            },
+          ],
+          state: { active: true, startTime: this.startTime },
+          createdAt: this.startTime,
+          lastUpdated: Date.now(),
+          isGameOver: false,
+        });
+      }
     }
   }
 
   /**
-   * Emits the gameOver lifecycle event on WekyManager.
+   * Emits the gameOver lifecycle event on WekyManager and updates the bridge session.
    */
   protected emitEnd(outcome: string, score: number = 0): void {
     const timeElapsed = this.startTime > 0 ? Date.now() - this.startTime : 0;
-    if (this.manager && typeof this.manager.emit === "function") {
-      this.manager.emit("gameOver", {
-        game: this.gameKey,
-        user: this.ctx.user,
-        outcome,
-        score,
-        timeElapsed,
-      });
+    if (this.manager) {
+      if (typeof this.manager.emit === "function") {
+        this.manager.emit("gameOver", {
+          game: this.gameKey,
+          user: this.ctx.user,
+          outcome,
+          score,
+          timeElapsed,
+          timestamp: Date.now(),
+        });
+      }
+      if (this.manager.bridge && typeof this.manager.bridge.endSession === "function") {
+        this.manager.bridge.endSession(this.id, { reason: outcome });
+      }
     }
   }
 
@@ -258,8 +286,13 @@ export abstract class BaseGame<T extends BaseGameOptions> implements IMinigame {
   public destroy(): void {
     this.isActive = false;
     this.clearTimer();
-    if (this.manager && this.manager._eventManager) {
-      this.manager._eventManager.unregister(this.id);
+    if (this.manager) {
+      if (this.manager._eventManager) {
+        this.manager._eventManager.unregister(this.id);
+      }
+      if (this.manager.bridge && typeof this.manager.bridge.unregisterSession === "function") {
+        this.manager.bridge.unregisterSession(this.id);
+      }
     }
   }
 

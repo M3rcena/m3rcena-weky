@@ -1,10 +1,9 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ContainerBuilder, GuildMember, Interaction, MessageFlags, User } from "discord.js";
+import { RPSMove, RPSPredictor } from "../ai/RPSPredictor.js";
 import { BaseGame } from "../core/BaseGame.js";
 import { ContextAdapter } from "../core/ContextAdapter.js";
 import { RPSTypes } from "../core/Types.js";
 import { getRandomString } from "../utils/Helpers.js";
-
-type RPSMove = "rock" | "paper" | "scissors";
 
 export class RockPaperScissors extends BaseGame<RPSTypes> {
   private opponentUser: User | null = null;
@@ -13,12 +12,14 @@ export class RockPaperScissors extends BaseGame<RPSTypes> {
   private p2Move: RPSMove | null = null;
   private btnPrefix: string;
   private gameTitle: string;
+  private difficulty: "easy" | "medium" | "hard" = "hard";
 
   constructor(manager: any, options: RPSTypes) {
     super(manager, options, "rps");
     this.btnPrefix = getRandomString(6, "rps_");
     this.gameTitle = options.embed?.title || "Rock Paper Scissors";
     this.defaultColor = this.resolveColor(options.embed?.color);
+    this.difficulty = options.difficulty || "hard";
 
     if (options.opponent) {
       this.opponentUser = options.opponent instanceof GuildMember ? options.opponent.user : (options.opponent as User);
@@ -61,8 +62,7 @@ export class RockPaperScissors extends BaseGame<RPSTypes> {
 
       await interaction.deferUpdate().catch(() => {});
       this.p1Move = move;
-      const botMoves: RPSMove[] = ["rock", "paper", "scissors"];
-      this.p2Move = botMoves[Math.floor(Math.random() * botMoves.length)];
+      this.p2Move = RPSPredictor.getCounterMove([move], undefined, this.difficulty);
       await this.endGame("result");
     } else {
       if (userId !== this.ctx.userId && userId !== this.opponentUser.id) {

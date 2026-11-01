@@ -14,7 +14,9 @@ export { BaseGame } from "./core/BaseGame.js";
 export { ContextAdapter, type ContextSendOptions } from "./core/ContextAdapter.js";
 export { EventManager } from "./core/EventManager.js";
 export * from "./core/Types.js";
+export * from "./core/EventTypes.js";
 export { WekyManager, type WekyManagerOptions } from "./core/WekyManager.js";
+export { WekyBridge, type BridgeSession, type BridgePlayer, type CrossPlatformMove, type BridgeMoveResult, type DashboardOverview } from "./bridge/WekyBridge.js";
 
 // Game Classes
 export { Calculator } from "./games/Calculator.js";
@@ -42,10 +44,28 @@ export * from "./core/ControlTypes.js";
 export { WekyCanvas } from "./canvas/WekyCanvas.js";
 export { CalculatorEngine, FightEngine, Game2048Engine, HangmanEngine, SnakeEngine, TicTacToeEngine, WekyEngine, type CalculatorState, type FightEngineOptions, type FightState, type Game2048EngineOptions, type Game2048State, type HangmanEngineOptions, type HangmanState, type SnakeEngineOptions, type SnakeState, type TicTacToeEngineOptions, type TicTacToeState } from "./engines/WekyEngine.js";
 
+// Arcade Hub, Tournaments & Audio
+export { ArcadeHub, ARCADE_GAMES, type ArcadeGameEntry, type ArcadeHubOptions, type ArcadeHubCustomTexts } from "./hub/ArcadeHub.js";
+export { TournamentManager, type TournamentOptions, type TournamentCustomTexts, type TournamentMatchSession, type GrandFinalsSession, type ManualMatchInput, type ManualTournamentOptions } from "./tournament/TournamentManager.js";
+export { RenderBracket, type BracketParticipant, type BracketMatch, type BracketRenderOptions } from "./tournament/RenderBracket.js";
+export { SoundboardManager, type SoundboardConfig } from "./soundboard/SoundboardManager.js";
+
+// AI Opponents & Boss Duels
+export { TicTacToeAI, type TicTacToeDifficulty } from "./ai/TicTacToeAI.js";
+export { FightAI, FIGHT_BOSSES, type BossProfile } from "./ai/FightBosses.js";
+export { RPSPredictor } from "./ai/RPSPredictor.js";
+
+// Leaderboards & ELO Engine
+export { LeaderboardManager, type LeaderboardPlayer, type EloChangeResult, type LeaderboardStorageAdapter, type LeaderboardManagerOptions, type LeaderboardPointingOptions, type CustomPointingMatchHandler, type CustomPointingScoreHandler, type CustomPointingMatchContext, type CustomPointingScoreContext } from "./leaderboard/LeaderboardManager.js";
+export { RenderLeaderboard, type LeaderboardEntry, type RenderLeaderboardOptions, type LeaderboardCustomTexts } from "./canvas/RenderLeaderboard.js";
+
+// Share & Flex Gamer Cards
+export { RenderShareCard, type ShareCardStat, type RenderShareCardOptions, type ShareCardCustomTexts } from "./canvas/RenderShareCard.js";
+
 // Canvas Renderers
 export { CanvasUtils } from "./canvas/CanvasUtils.js";
 export { Render2048 } from "./canvas/Render2048.js";
-export { RenderFight, type FightPlayerInfo } from "./canvas/RenderFight.js";
+export { RenderFight, type FightPlayerInfo, type FightCardCustomTexts } from "./canvas/RenderFight.js";
 export { RenderHangman } from "./canvas/RenderHangman.js";
 export { RenderPokemon } from "./canvas/RenderPokemon.js";
 export { RenderSnake } from "./canvas/RenderSnake.js";

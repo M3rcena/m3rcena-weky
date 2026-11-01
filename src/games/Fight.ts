@@ -1,4 +1,5 @@
 import { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, ContainerBuilder, GuildMember, Interaction, MediaGalleryBuilder, MessageFlags, User } from "discord.js";
+import { BossProfile, FIGHT_BOSSES, FightAI } from "../ai/FightBosses.js";
 import { FightPlayerInfo, RenderFight } from "../canvas/RenderFight.js";
 import { BaseGame } from "../core/BaseGame.js";
 import { ContextAdapter } from "../core/ContextAdapter.js";
@@ -6,9 +7,11 @@ import { FightTypes } from "../core/Types.js";
 import { getRandomString } from "../utils/Helpers.js";
 
 export class Fight extends BaseGame<FightTypes> {
-  private opponentUser: User;
+  private opponentUser: User | null = null;
   private opponentMember: GuildMember | null = null;
   private phase: "REQUEST" | "FIGHT" | "ENDED" = "REQUEST";
+  private isVsBoss: boolean = false;
+  private bossProfile: BossProfile | null = null;
 
   // Player Stats
   private p1: FightPlayerInfo;
@@ -22,14 +25,6 @@ export class Fight extends BaseGame<FightTypes> {
     this.btnPrefix = getRandomString(6, "fight_");
     this.defaultColor = this.resolveColor(options.embed?.color, 0xed4245);
 
-    const opp = options.opponent;
-    if (opp instanceof GuildMember) {
-      this.opponentMember = opp;
-      this.opponentUser = opp.user;
-    } else {
-      this.opponentUser = opp as User;
-    }
-
     const startHp = options.startHealth ?? 100;
     const startCoins = options.coins ?? 20;
 
@@ -38,38 +33,58 @@ export class Fight extends BaseGame<FightTypes> {
       username: this.ctx.user.username,
       avatarUrl: this.ctx.user.displayAvatarURL({ extension: "png", size: 128 }),
       health: startHp,
+      maxHealth: startHp,
       coins: startCoins,
       lastAction: "Challenged opponent",
       activeEffects: [],
     };
 
-    this.p2 = {
-      id: this.opponentUser.id,
-      username: this.opponentUser.username,
-      avatarUrl: this.opponentUser.displayAvatarURL({ extension: "png", size: 128 }),
-      health: startHp,
-      coins: startCoins,
-      lastAction: "Awaiting start",
-      activeEffects: [],
-    };
+    const opp = options.opponent;
+    const isBotOrOmitted = !opp || (opp instanceof GuildMember ? opp.user.bot : (opp as User).bot) || options.ai || options.boss;
+
+    if (isBotOrOmitted) {
+      this.isVsBoss = true;
+      const bossKey = options.boss || "dragon";
+      this.bossProfile = FIGHT_BOSSES[bossKey] || FIGHT_BOSSES["dragon"];
+
+      this.p2 = {
+        id: "weky_boss",
+        username: this.bossProfile.name,
+        avatarUrl: this.bossProfile.avatarUrl,
+        health: this.bossProfile.maxHealth,
+        maxHealth: this.bossProfile.maxHealth,
+        coins: this.bossProfile.coins,
+        lastAction: this.bossProfile.title,
+        activeEffects: [],
+      };
+    } else {
+      if (opp instanceof GuildMember) {
+        this.opponentMember = opp;
+        this.opponentUser = opp.user;
+      } else {
+        this.opponentUser = opp as User;
+      }
+
+      this.p2 = {
+        id: this.opponentUser.id,
+        username: this.opponentUser.username,
+        avatarUrl: this.opponentUser.displayAvatarURL({ extension: "png", size: 128 }),
+        health: startHp,
+        maxHealth: startHp,
+        coins: startCoins,
+        lastAction: "Awaiting start",
+        activeEffects: [],
+      };
+    }
 
     this.currentTurnId = this.p1.id;
     this.defaultTimeout = options.time || manager?.defaultTimeout || 60_000;
   }
 
   public async start(): Promise<void> {
-    if (this.opponentUser.id === this.ctx.userId) {
+    if (!this.isVsBoss && this.opponentUser && this.opponentUser.id === this.ctx.userId) {
       const msg = this.options.cannotFightYourselfMessage || "❌ You cannot fight against yourself!";
       const container = this.createContainer(0xff0000).addTextDisplayComponents((t) => t.setContent(`## ❌ Error\n> ${msg}`));
-      await this.ctx.sendInitial({
-        components: [container],
-        flags: MessageFlags.IsComponentsV2,
-      });
-      return;
-    }
-
-    if (this.opponentUser.bot) {
-      const container = this.createContainer(0xff0000).addTextDisplayComponents((t) => t.setContent("## ❌ Error\n> You cannot fight against a bot!"));
       await this.ctx.sendInitial({
         components: [container],
         flags: MessageFlags.IsComponentsV2,
@@ -81,7 +96,17 @@ export class Fight extends BaseGame<FightTypes> {
     this.manager._eventManager.register(this);
     this.emitStart();
 
-    // Render Request Card
+    if (this.isVsBoss && this.bossProfile) {
+      // Jump directly into battle with Boss intro!
+      this.phase = "FIGHT";
+      this.currentTurnId = this.p1.id;
+      this.lastAnnouncement = this.bossProfile.dialogueIntro;
+      await this.updateBattleInterface();
+      this.resetTimeout(() => this.endGame("TIMEOUT"));
+      return;
+    }
+
+    // Render Request Card for PvP
     const buffer = await RenderFight.renderRequestCard({ username: this.p1.username, avatarUrl: this.p1.avatarUrl }, { username: this.p2.username, avatarUrl: this.p2.avatarUrl });
     const attachment = new AttachmentBuilder(buffer, { name: "fight-request.png" });
 
@@ -171,6 +196,39 @@ export class Fight extends BaseGame<FightTypes> {
         return;
       }
 
+      if (this.isVsBoss) {
+        // AI Boss Turn Execution
+        const bossAction = FightAI.decideAction(this.p2, this.p1, this.bossProfile || undefined);
+        const playerAnnouncement = this.lastAnnouncement;
+
+        if (bossAction === "special" && this.bossProfile) {
+          const res = this.bossProfile.specialMoveEffect(this.p2, this.p1);
+          this.p2.lastAction = this.bossProfile.specialMoveName;
+          this.lastAnnouncement = `${playerAnnouncement}\n\n${res.message}`;
+        } else if (bossAction === "heavy") {
+          this.handleHit(this.p2, this.p1, true);
+          this.lastAnnouncement = `${playerAnnouncement}\n\n${this.lastAnnouncement}`;
+        } else if (bossAction === "heal") {
+          this.handleHeal(this.p2);
+          this.lastAnnouncement = `${playerAnnouncement}\n\n${this.lastAnnouncement}`;
+        } else if (bossAction === "shield") {
+          this.handleShield(this.p2);
+          this.lastAnnouncement = `${playerAnnouncement}\n\n${this.lastAnnouncement}`;
+        } else {
+          this.handleHit(this.p2, this.p1, false);
+          this.lastAnnouncement = `${playerAnnouncement}\n\n${this.lastAnnouncement}`;
+        }
+
+        if (this.p1.health <= 0) {
+          await this.endGame("WIN", this.p2, this.p1);
+          return;
+        }
+
+        this.currentTurnId = this.p1.id;
+        await this.updateBattleInterface();
+        return;
+      }
+
       this.currentTurnId = targetFighter.id;
       await this.updateBattleInterface();
     }
@@ -185,16 +243,31 @@ export class Fight extends BaseGame<FightTypes> {
   }
 
   private handleHit(attacker: FightPlayerInfo, defender: FightPlayerInfo, isHeavy: boolean): void {
-    const maxDmg = this.options.damageMax ?? 24;
-    let damage = isHeavy
-      ? Math.floor(Math.random() * 18) + 18 // 18-35 dmg
-      : Math.floor(Math.random() * (maxDmg - 10 + 1)) + 10; // 10-maxDmg dmg
+    const isBoss = attacker.id === "weky_boss" && this.bossProfile;
+    let minDmg = 12;
+    let maxDmg = this.options.damageMax ?? 20;
 
-    if (isHeavy && Math.random() < 0.25) {
-      attacker.lastAction = "Missed Heavy Attack!";
-      this.lastAnnouncement = `💨 **${attacker.username}** swung hard but missed!`;
-      attacker.coins += 5;
-      return;
+    if (isBoss && this.bossProfile) {
+      minDmg = this.bossProfile.damageMin;
+      maxDmg = this.bossProfile.damageMax;
+    }
+
+    let damage = 0;
+    if (isHeavy) {
+      const missChance = isBoss ? 0.08 : 0.14;
+      if (Math.random() < missChance) {
+        attacker.lastAction = "Missed Heavy Attack!";
+        this.lastAnnouncement = `💨 **${attacker.username}** swung hard but missed!`;
+        attacker.coins += 5;
+        return;
+      }
+      if (isBoss && this.bossProfile) {
+        damage = Math.floor(Math.random() * (Math.round(maxDmg * 1.35) - Math.round(minDmg * 1.35) + 1)) + Math.round(minDmg * 1.35);
+      } else {
+        damage = Math.floor(Math.random() * 11) + 20; // 20-30 dmg
+      }
+    } else {
+      damage = Math.floor(Math.random() * (maxDmg - minDmg + 1)) + minDmg;
     }
 
     if (attacker.activeEffects?.includes("2x Damage")) {
@@ -215,15 +288,16 @@ export class Fight extends BaseGame<FightTypes> {
   }
 
   private handleHeal(player: FightPlayerInfo): void {
-    if (player.health >= 85) {
-      const highHpMsg = this.options.highHealthMessage || "You cannot heal if your HP is above 85!";
+    const maxHp = player.maxHealth || 100;
+    if (player.health >= maxHp * 0.85) {
+      const highHpMsg = this.options.highHealthMessage || "You cannot heal if your HP is above 85%!";
       this.lastAnnouncement = `⚠️ **${player.username}** tried to heal: ${highHpMsg}`;
       player.lastAction = "Heal failed (High HP)";
       return;
     }
 
-    const healAmount = Math.floor(Math.random() * 11) + 15; // 15-25 HP
-    player.health = Math.min(100, player.health + healAmount);
+    const healAmount = Math.floor(Math.random() * 11) + 16; // 16-26 HP
+    player.health = Math.min(maxHp, player.health + healAmount);
     player.coins += 5;
     player.lastAction = `Healed +${healAmount} HP`;
     this.lastAnnouncement = `💚 **${player.username}** healed for **+${healAmount} HP**!`;
@@ -265,11 +339,19 @@ export class Fight extends BaseGame<FightTypes> {
       announcement: this.lastAnnouncement,
     });
 
-    await this.ctx.edit({
-      components: [container],
-      files: [attachment],
-      flags: MessageFlags.IsComponentsV2,
-    });
+    if (!this.ctx.gameMessage) {
+      await this.ctx.sendInitial({
+        components: [container],
+        files: [attachment],
+        flags: MessageFlags.IsComponentsV2,
+      });
+    } else {
+      await this.ctx.edit({
+        components: [container],
+        files: [attachment],
+        flags: MessageFlags.IsComponentsV2,
+      });
+    }
   }
 
   private async endGame(reason: "WIN" | "SURRENDER" | "DENIED" | "TIMEOUT", winner?: FightPlayerInfo, loser?: FightPlayerInfo): Promise<void> {
@@ -292,11 +374,19 @@ export class Fight extends BaseGame<FightTypes> {
       loserId: loserData?.id,
     });
 
-    await this.ctx.edit({
-      components: [container],
-      files: [attachment],
-      flags: MessageFlags.IsComponentsV2,
-    });
+    if (!this.ctx.gameMessage) {
+      await this.ctx.sendInitial({
+        components: [container],
+        files: [attachment],
+        flags: MessageFlags.IsComponentsV2,
+      });
+    } else {
+      await this.ctx.edit({
+        components: [container],
+        files: [attachment],
+        flags: MessageFlags.IsComponentsV2,
+      });
+    }
   }
 
   private createGameContainer(state: "request" | "active" | "won" | "surrender" | "deny" | "timeout" | "error", details?: { image?: string; error?: string; turnId?: string; announcement?: string; winnerId?: string; loserId?: string }): ContainerBuilder {
@@ -312,21 +402,32 @@ export class Fight extends BaseGame<FightTypes> {
     const container = this.createContainer(stateColors[state]);
     let content = "";
 
+    const formatFighterName = (id?: string) => {
+      if (!id) return "Unknown";
+      if (id === "weky_boss") return `**${this.p2.username} (Boss)**`;
+      return `<@${id}>`;
+    };
+
     switch (state) {
       case "request":
-        content = this.options.states?.request ? this.options.states.request.replace("{{challengerMention}}", `<@${this.p1.id}>`).replace("{{opponentMention}}", `<@${this.p2.id}>`) : `## ⚔️ Challenge!\n> <@${this.p1.id}> challenged <@${this.p2.id}> to a duel!`;
+        content = this.options.states?.request ? this.options.states.request.replace("{{challengerMention}}", `<@${this.p1.id}>`).replace("{{opponentMention}}", formatFighterName(this.p2.id)) : `## ⚔️ Challenge!\n> <@${this.p1.id}> challenged ${formatFighterName(this.p2.id)} to a duel!`;
         break;
 
       case "active":
-        content = this.options.states?.active ? this.options.states.active : `## ⚔️ Fighting...\n> 🎯 **Turn:** <@${details?.turnId || this.currentTurnId}>\n> ${details?.announcement || this.lastAnnouncement}`;
+        const turnText = formatFighterName(details?.turnId || this.currentTurnId);
+        content = this.options.states?.active ? this.options.states.active : `## ⚔️ Fighting...\n> 🎯 **Turn:** ${turnText}\n> ${details?.announcement || this.lastAnnouncement}`;
         break;
 
       case "won":
-        content = this.options.states?.won ? this.options.states.won : `## 🏆 Fight Ended\n> 🏆 **<@${details?.winnerId || this.p1.id}>** knocked out <@${details?.loserId || this.p2.id}> and won the duel!`;
+        const winnerName = formatFighterName(details?.winnerId || this.p1.id);
+        const loserName = formatFighterName(details?.loserId || this.p2.id);
+        content = this.options.states?.won ? this.options.states.won : `## 🏆 Fight Ended\n> 🏆 ${winnerName} knocked out ${loserName} and won the duel!`;
         break;
 
       case "surrender":
-        content = this.options.states?.surrender ? this.options.states.surrender : `## 🏳️ Surrendered\n> 🏳️ **<@${details?.loserId || this.p2.id}>** surrendered! **<@${details?.winnerId || this.p1.id}>** is victorious!`;
+        const surrLoser = formatFighterName(details?.loserId || this.p2.id);
+        const surrWinner = formatFighterName(details?.winnerId || this.p1.id);
+        content = this.options.states?.surrender ? this.options.states.surrender : `## 🏳️ Surrendered\n> 🏳️ ${surrLoser} surrendered! ${surrWinner} is victorious!`;
         break;
 
       case "deny":

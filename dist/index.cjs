@@ -30,6 +30,8 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 // src/index.ts
 var index_exports = {};
 __export(index_exports, {
+  ARCADE_GAMES: () => ARCADE_GAMES,
+  ArcadeHub: () => ArcadeHub,
   BaseGame: () => BaseGame,
   COMMON_WORDS: () => COMMON_WORDS,
   Calculator: () => Calculator,
@@ -39,8 +41,10 @@ __export(index_exports, {
   ContextAdapter: () => ContextAdapter,
   EASY_SENTENCES: () => EASY_SENTENCES,
   EventManager: () => EventManager,
+  FIGHT_BOSSES: () => FIGHT_BOSSES,
   FastType: () => FastType,
   Fight: () => Fight,
+  FightAI: () => FightAI,
   FightEngine: () => FightEngine,
   Game2048: () => Game2048,
   Game2048Engine: () => Game2048Engine,
@@ -50,6 +54,7 @@ __export(index_exports, {
   HARD_SENTENCES: () => HARD_SENTENCES,
   Hangman: () => Hangman,
   HangmanEngine: () => HangmanEngine,
+  LeaderboardManager: () => LeaderboardManager,
   LieSwatter: () => LieSwatter,
   MEDIUM_SENTENCES: () => MEDIUM_SENTENCES,
   MathEvaluator: () => MathEvaluator,
@@ -57,21 +62,29 @@ __export(index_exports, {
   NeverHaveIEver: () => NeverHaveIEver,
   POPULAR_POKEMONS: () => POPULAR_POKEMONS,
   QuickClick: () => QuickClick,
+  RPSPredictor: () => RPSPredictor,
   Render2048: () => Render2048,
+  RenderBracket: () => RenderBracket,
   RenderFight: () => RenderFight,
   RenderHangman: () => RenderHangman,
+  RenderLeaderboard: () => RenderLeaderboard,
   RenderPokemon: () => RenderPokemon,
+  RenderShareCard: () => RenderShareCard,
   RenderSnake: () => RenderSnake,
   RockPaperScissors: () => RockPaperScissors,
   ShuffleGuess: () => ShuffleGuess,
   Snake: () => Snake,
   SnakeEngine: () => SnakeEngine,
+  SoundboardManager: () => SoundboardManager,
   TRIVIA_FACTS: () => TRIVIA_FACTS,
   TicTacToe: () => TicTacToe,
+  TicTacToeAI: () => TicTacToeAI,
   TicTacToeEngine: () => TicTacToeEngine,
+  TournamentManager: () => TournamentManager,
   VERSION: () => VERSION,
   WYPTB_DILEMMAS: () => WYPTB_DILEMMAS,
   WYR_DILEMMAS: () => WYR_DILEMMAS,
+  WekyBridge: () => WekyBridge,
   WekyCanvas: () => WekyCanvas,
   WekyEngine: () => WekyEngine,
   WekyManager: () => WekyManager,
@@ -102,7 +115,7 @@ __export(index_exports, {
 module.exports = __toCommonJS(index_exports);
 
 // src/version.ts
-var version = "14.27.0-1";
+var version = "14.28.0";
 var VERSION = version;
 
 // src/core/BaseGame.ts
@@ -178,6 +191,9 @@ var ContextAdapter = class _ContextAdapter {
   isMessage;
   gameMessage = null;
   constructor(context) {
+    if (context instanceof _ContextAdapter) {
+      context = context.raw;
+    }
     this.raw = context;
     if (context instanceof import_discord2.Message) {
       this.isMessage = true;
@@ -237,7 +253,13 @@ var ContextAdapter = class _ContextAdapter {
           if (options.embeds !== void 0) payload.embeds = options.embeds;
         }
         const msg = await interaction.editReply(payload);
-        this.gameMessage = msg instanceof import_discord2.Message ? msg : await interaction.fetchReply().catch(() => null);
+        if (msg instanceof import_discord2.Message) {
+          this.gameMessage = msg;
+        } else if (typeof interaction.fetchReply === "function") {
+          this.gameMessage = await interaction.fetchReply().catch(() => null);
+        } else {
+          this.gameMessage = msg || null;
+        }
       } else {
         const payload = {
           components: options.components,
@@ -250,12 +272,14 @@ var ContextAdapter = class _ContextAdapter {
           if (options.embeds !== void 0) payload.embeds = options.embeds;
         }
         const response = await interaction.reply(payload);
-        if (response instanceof import_discord2.InteractionCallbackResponse && response.resource?.message) {
+        if (response && typeof response === "object" && "resource" in response && response.resource?.message) {
           this.gameMessage = response.resource.message;
-        } else if (response instanceof import_discord2.Message) {
+        } else if (response instanceof import_discord2.Message || response && typeof response === "object" && "id" in response) {
           this.gameMessage = response;
-        } else {
+        } else if (typeof interaction.fetchReply === "function") {
           this.gameMessage = await interaction.fetchReply().catch(() => null);
+        } else {
+          this.gameMessage = response || null;
         }
       }
     } else {
@@ -282,7 +306,10 @@ var ContextAdapter = class _ContextAdapter {
    * Updates the game message safely with Components V2 support.
    */
   async edit(options) {
-    if (!this.gameMessage) return;
+    if (!this.gameMessage) {
+      await this.sendInitial(options);
+      return;
+    }
     const resolvedFlags = this.resolveFlags(options);
     const isV2 = !!((resolvedFlags ?? 0) & import_discord2.MessageFlags.IsComponentsV2);
     const payload = {
@@ -452,31 +479,59 @@ ${footerParts.join(" \u2022 ")}`;
     return finalContent;
   }
   /**
-   * Emits the gameStart lifecycle event on WekyManager.
+   * Emits the gameStart lifecycle event on WekyManager and registers session with the bridge.
    */
   emitStart() {
     this.startTime = Date.now();
-    if (this.manager && typeof this.manager.emit === "function") {
-      this.manager.emit("gameStart", {
-        game: this.gameKey,
-        user: this.ctx.user,
-        channelId: this.ctx.channel?.id
-      });
+    if (this.manager) {
+      if (typeof this.manager.emit === "function") {
+        this.manager.emit("gameStart", {
+          game: this.gameKey,
+          user: this.ctx.user,
+          channelId: this.ctx.channel?.id,
+          timestamp: this.startTime
+        });
+      }
+      if (this.manager.bridge && typeof this.manager.bridge.registerSession === "function") {
+        this.manager.bridge.registerSession({
+          id: this.id,
+          game: this.gameKey,
+          platform: "discord",
+          players: [
+            {
+              id: this.ctx.userId,
+              username: this.ctx.user?.username || "Player",
+              avatarUrl: this.ctx.user?.displayAvatarURL ? this.ctx.user.displayAvatarURL({ extension: "png" }) : void 0,
+              platform: "discord"
+            }
+          ],
+          state: { active: true, startTime: this.startTime },
+          createdAt: this.startTime,
+          lastUpdated: Date.now(),
+          isGameOver: false
+        });
+      }
     }
   }
   /**
-   * Emits the gameOver lifecycle event on WekyManager.
+   * Emits the gameOver lifecycle event on WekyManager and updates the bridge session.
    */
   emitEnd(outcome, score = 0) {
     const timeElapsed = this.startTime > 0 ? Date.now() - this.startTime : 0;
-    if (this.manager && typeof this.manager.emit === "function") {
-      this.manager.emit("gameOver", {
-        game: this.gameKey,
-        user: this.ctx.user,
-        outcome,
-        score,
-        timeElapsed
-      });
+    if (this.manager) {
+      if (typeof this.manager.emit === "function") {
+        this.manager.emit("gameOver", {
+          game: this.gameKey,
+          user: this.ctx.user,
+          outcome,
+          score,
+          timeElapsed,
+          timestamp: Date.now()
+        });
+      }
+      if (this.manager.bridge && typeof this.manager.bridge.endSession === "function") {
+        this.manager.bridge.endSession(this.id, { reason: outcome });
+      }
     }
   }
   /**
@@ -558,8 +613,13 @@ ${footerParts.join(" \u2022 ")}`;
   destroy() {
     this.isActive = false;
     this.clearTimer();
-    if (this.manager && this.manager._eventManager) {
-      this.manager._eventManager.unregister(this.id);
+    if (this.manager) {
+      if (this.manager._eventManager) {
+        this.manager._eventManager.unregister(this.id);
+      }
+      if (this.manager.bridge && typeof this.manager.bridge.unregisterSession === "function") {
+        this.manager.bridge.unregisterSession(this.id);
+      }
     }
   }
 };
@@ -627,7 +687,7 @@ var EventManager = class {
 };
 
 // src/core/WekyManager.ts
-var import_discord22 = require("discord.js");
+var import_discord24 = require("discord.js");
 var import_events = require("events");
 
 // src/games/Calculator.ts
@@ -1834,6 +1894,102 @@ ${this.sentence}
 // src/games/Fight.ts
 var import_discord8 = require("discord.js");
 
+// src/ai/FightBosses.ts
+var FIGHT_BOSSES = {
+  dragon: {
+    id: "dragon_sovereign",
+    name: "Dragon Sovereign",
+    title: "Ancient Pyromancer",
+    avatarUrl: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/6.png",
+    maxHealth: 150,
+    damageMin: 15,
+    damageMax: 24,
+    coins: 40,
+    dialogueIntro: "\u{1F525} *The ground shakes as the Dragon Sovereign lands! 'Kneel or turn to ash!'*",
+    dialogueVictory: "\u{1F525} *'Your courage was admirable, mortal, but you are merely kindling!'*",
+    dialogueDefeat: "\u{1F4A8} *'Impossible... defeated by mere flesh and bone?!'*",
+    specialMoveName: "Inferno Breath",
+    specialMoveEffect: (boss, player) => {
+      let dmg = Math.floor(Math.random() * 11) + 24;
+      if (player.activeEffects?.includes("Shield")) {
+        dmg = Math.floor(dmg * 0.7);
+        player.activeEffects = player.activeEffects.filter((e) => e !== "Shield");
+      }
+      player.health = Math.max(0, player.health - dmg);
+      return { damage: dmg, message: `\u{1F525} **${boss.username} unleashes INFERNO BREATH dealing ${dmg} scorching damage!**` };
+    }
+  },
+  cyber_knight: {
+    id: "cyber_knight",
+    name: "Cyber Knight",
+    title: "Protocol MK-VII",
+    avatarUrl: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/212.png",
+    maxHealth: 135,
+    damageMin: 13,
+    damageMax: 22,
+    coins: 35,
+    dialogueIntro: "\u26A1 *Sensors active. Target acquired. Commencing combat protocol.*",
+    dialogueVictory: "\u26A1 *Threat neutralized. Target combat readiness: 0%.*",
+    dialogueDefeat: "\u26A1 *Critical system failure... Re-routing power to emergency beacon.*",
+    specialMoveName: "EMP Overcharge",
+    specialMoveEffect: (boss, player) => {
+      const dmg = Math.floor(Math.random() * 9) + 20;
+      player.health = Math.max(0, player.health - dmg);
+      player.activeEffects = [];
+      return { damage: dmg, message: `\u26A1 **${boss.username} fires an EMP OVERCHARGE for ${dmg} damage, overloading your systems and stripping all buffs!**` };
+    }
+  },
+  shadow_goblin: {
+    id: "shadow_goblin",
+    name: "Shadow Goblin",
+    title: "Greed Master",
+    avatarUrl: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/302.png",
+    maxHealth: 120,
+    damageMin: 11,
+    damageMax: 19,
+    coins: 55,
+    dialogueIntro: "\u{1F5E1}\uFE0F *Hehehe! What shiny coins you got there! Hand 'em over or bleed!*",
+    dialogueVictory: "\u{1F4B0} *Hehehe! Thanks for the loot, chump! All mine now!*",
+    dialogueDefeat: "\u{1F4A8} *Gahh! My loot! I'll be back for this, you brute!*",
+    specialMoveName: "Coin Heist & Backstab",
+    specialMoveEffect: (boss, player) => {
+      const stolen = Math.min(player.coins, Math.floor(Math.random() * 9) + 10);
+      player.coins -= stolen;
+      boss.coins += stolen;
+      const dmg = Math.floor(Math.random() * 7) + 16;
+      player.health = Math.max(0, player.health - dmg);
+      return { damage: dmg, message: `\u{1F5E1}\uFE0F **${boss.username} strikes for ${dmg} damage and pickpockets ${stolen} coins from your pouch!**` };
+    }
+  }
+};
+FIGHT_BOSSES["knight"] = FIGHT_BOSSES["cyber_knight"];
+FIGHT_BOSSES["goblin"] = FIGHT_BOSSES["shadow_goblin"];
+var FightAI = class {
+  /**
+   * Decides the tactical action for the AI/Boss on its turn.
+   */
+  static decideAction(aiPlayer, humanPlayer, bossProfile) {
+    if (humanPlayer.activeEffects?.includes("2x Damage")) {
+      if (aiPlayer.coins >= 25 && !aiPlayer.activeEffects?.includes("Shield") && Math.random() < 0.6) {
+        return "shield";
+      }
+      if (bossProfile && Math.random() < 0.4) {
+        return "special";
+      }
+    }
+    if (bossProfile && Math.random() < 0.28) {
+      return "special";
+    }
+    if (aiPlayer.health < 45 && aiPlayer.coins >= 25 && !aiPlayer.activeEffects?.includes("Shield") && Math.random() < 0.45) {
+      return Math.random() < 0.6 ? "shield" : "heal";
+    }
+    if (humanPlayer.health <= 30 && Math.random() < 0.6) {
+      return "heavy";
+    }
+    return Math.random() < 0.4 ? "heavy" : "attack";
+  }
+};
+
 // src/canvas/RenderFight.ts
 var import_canvas2 = require("@napi-rs/canvas");
 
@@ -1954,6 +2110,100 @@ var CanvasUtils = class {
     ctx.fillText("\xA2", x, y + 0.5);
     ctx.restore();
   }
+  /**
+   * Safely cleans text by stripping Unicode emojis and symbols that render as tofu `[?]` boxes on Linux servers.
+   */
+  static cleanText(text) {
+    if (!text) return "";
+    return text.replace(/[\u{1F300}-\u{1FAD6}\u{2600}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{FE00}-\u{FE0F}]/gu, "").replace(/\s+/g, " ").trim();
+  }
+  /**
+   * Draws a crisp vector checkmark badge at (cx, cy).
+   */
+  static drawCheckmarkIcon(ctx, cx, cy, radius = 8, bgColor = "#57f287", checkColor = "#0b0f19") {
+    ctx.save();
+    ctx.fillStyle = bgColor;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = checkColor;
+    ctx.lineWidth = Math.max(1.5, radius / 4);
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.beginPath();
+    ctx.moveTo(cx - radius * 0.45, cy);
+    ctx.lineTo(cx - radius * 0.1, cy + radius * 0.4);
+    ctx.lineTo(cx + radius * 0.45, cy - radius * 0.35);
+    ctx.stroke();
+    ctx.restore();
+  }
+  /**
+   * Draws a vector 5-point star icon at (cx, cy).
+   */
+  static drawStarIcon(ctx, cx, cy, spikes = 5, outerRadius = 7, innerRadius = 3.5, color = "#ffd700") {
+    ctx.save();
+    let rot = Math.PI / 2 * 3;
+    let x = cx;
+    let y = cy;
+    const step = Math.PI / spikes;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - outerRadius);
+    for (let i = 0; i < spikes; i++) {
+      x = cx + Math.cos(rot) * outerRadius;
+      y = cy + Math.sin(rot) * outerRadius;
+      ctx.lineTo(x, y);
+      rot += step;
+      x = cx + Math.cos(rot) * innerRadius;
+      y = cy + Math.sin(rot) * innerRadius;
+      ctx.lineTo(x, y);
+      rot += step;
+    }
+    ctx.lineTo(cx, cy - outerRadius);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.restore();
+  }
+  /**
+   * Draws a sleek vector flame icon at (cx, cy).
+   */
+  static drawFlameIcon(ctx, cx, cy, size = 10, color = "#ff8c38") {
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - size * 0.9);
+    ctx.quadraticCurveTo(cx + size * 0.7, cy - size * 0.2, cx + size * 0.5, cy + size * 0.5);
+    ctx.quadraticCurveTo(cx + size * 0.2, cy + size * 0.9, cx, cy + size * 0.9);
+    ctx.quadraticCurveTo(cx - size * 0.2, cy + size * 0.9, cx - size * 0.5, cy + size * 0.5);
+    ctx.quadraticCurveTo(cx - size * 0.7, cy - size * 0.2, cx, cy - size * 0.9);
+    ctx.fill();
+    ctx.fillStyle = "#ffe066";
+    ctx.beginPath();
+    ctx.arc(cx, cy + size * 0.35, size * 0.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+  /**
+   * Draws a clean vector crown icon at (cx, cy).
+   */
+  static drawCrownIcon(ctx, cx, cy, width = 14, height = 9, color = "#ffd700") {
+    ctx.save();
+    ctx.fillStyle = color;
+    const halfW = width / 2;
+    const topY = cy - height / 2;
+    const botY = cy + height / 2;
+    ctx.beginPath();
+    ctx.moveTo(cx - halfW, topY);
+    ctx.lineTo(cx - halfW * 0.5, topY + height * 0.45);
+    ctx.lineTo(cx, topY);
+    ctx.lineTo(cx + halfW * 0.5, topY + height * 0.45);
+    ctx.lineTo(cx + halfW, topY);
+    ctx.lineTo(cx + halfW * 0.75, botY);
+    ctx.lineTo(cx - halfW * 0.75, botY);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
 };
 
 // src/canvas/RenderFight.ts
@@ -1983,7 +2233,7 @@ var RenderFight = class {
   /**
    * Renders the initial Fight Challenge / Request card.
    */
-  static async renderRequestCard(challenger, opponent) {
+  static async renderRequestCard(challenger, opponent, customTexts) {
     const W = 900;
     const H = 520;
     const canvas = new import_canvas2.Canvas(W, H);
@@ -2016,7 +2266,8 @@ var RenderFight = class {
     ctx.fillStyle = "#00f5a0";
     ctx.shadowColor = "rgba(0, 245, 160, 0.6)";
     ctx.shadowBlur = 18;
-    ctx.fillText("DUEL CHALLENGE", W / 2, 75);
+    const reqTitle = CanvasUtils.cleanText(customTexts?.title || "DUEL CHALLENGE");
+    ctx.fillText(reqTitle, W / 2, 75);
     ctx.restore();
     await CanvasUtils.drawCircularAvatar(ctx, challenger.avatarUrl, 230, 240, 80, "#00f5a0", 5);
     await CanvasUtils.drawCircularAvatar(ctx, opponent.avatarUrl, 670, 240, 80, "#ff2d55", 5);
@@ -2030,7 +2281,8 @@ var RenderFight = class {
     ctx.fillStyle = "#ffffff";
     ctx.shadowColor = "rgba(255, 255, 255, 0.6)";
     ctx.shadowBlur = 12;
-    ctx.fillText("VS", vsX, vsY + 2);
+    const vsText = CanvasUtils.cleanText(customTexts?.vsText || "VS");
+    ctx.fillText(vsText, vsX, vsY + 2);
     ctx.restore();
     const drawPlayerInfo = (name, role, x, color) => {
       CanvasUtils.fillRoundedRect(ctx, x - 130, 345, 260, 68, 16, "rgba(18, 22, 30, 0.85)", color, 1.5);
@@ -2048,13 +2300,14 @@ var RenderFight = class {
     ctx.font = "15px sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("Awaiting opponent to accept duel...", W / 2, 455);
+    const reqSub = CanvasUtils.cleanText(customTexts?.subtitle || "Awaiting opponent to accept duel...");
+    ctx.fillText(reqSub, W / 2, 455);
     return canvas.toBuffer("image/png");
   }
   /**
    * Renders the dynamic Battle Arena card with health bars, coins, and current turn indicators.
    */
-  static async renderBattleCard(player1, player2, currentTurnUserId, announcement = "Battle in progress!") {
+  static async renderBattleCard(player1, player2, currentTurnUserId, announcement = "Battle in progress!", customTexts) {
     const W = 900;
     const H = 620;
     const canvas = new import_canvas2.Canvas(W, H);
@@ -2073,7 +2326,7 @@ var RenderFight = class {
       ctx.lineTo(x, H);
       ctx.stroke();
     }
-    const cleanAnnouncement = this.cleanText(announcement, [player1, player2]) || "Duel in progress!";
+    const cleanAnnouncement = this.cleanText(customTexts?.title || announcement, [player1, player2]) || "Duel in progress!";
     CanvasUtils.fillRoundedRect(ctx, 40, 24, W - 80, 60, 16, "rgba(18, 22, 30, 0.88)", "rgba(255, 255, 255, 0.12)", 1.5);
     ctx.save();
     ctx.fillStyle = "#ffffff";
@@ -2087,8 +2340,8 @@ var RenderFight = class {
     ctx.restore();
     const isP1Turn = player1.id === currentTurnUserId;
     const isP2Turn = player2.id === currentTurnUserId;
-    await this.drawFighterPanel(ctx, player1, 45, 110, 365, 475, isP1Turn, "#00f5a0");
-    await this.drawFighterPanel(ctx, player2, 490, 110, 365, 475, isP2Turn, "#ff2d55");
+    await this.drawFighterPanel(ctx, player1, 45, 110, 365, 475, isP1Turn, "#00f5a0", customTexts);
+    await this.drawFighterPanel(ctx, player2, 490, 110, 365, 475, isP2Turn, "#ff2d55", customTexts);
     const vsX = W / 2;
     const vsY = 340;
     CanvasUtils.fillRoundedRect(ctx, vsX - 32, vsY - 32, 64, 64, 16, "#121620", "rgba(255, 255, 255, 0.2)", 1.5);
@@ -2097,11 +2350,12 @@ var RenderFight = class {
     ctx.fillStyle = "rgba(255, 255, 255, 0.75)";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("VS", vsX, vsY + 1);
+    const vsLabel = CanvasUtils.cleanText(customTexts?.vsText || "VS");
+    ctx.fillText(vsLabel, vsX, vsY + 1);
     ctx.restore();
     return canvas.toBuffer("image/png");
   }
-  static async drawFighterPanel(ctx, player, x, y, w, h, isTurn, themeColor) {
+  static async drawFighterPanel(ctx, player, x, y, w, h, isTurn, themeColor, customTexts) {
     const borderColor = isTurn ? themeColor : "rgba(255, 255, 255, 0.08)";
     const borderWidth = isTurn ? 2.5 : 1;
     CanvasUtils.fillRoundedRect(ctx, x, y, w, h, 22, "rgba(16, 20, 28, 0.9)", borderColor, borderWidth);
@@ -2121,19 +2375,21 @@ var RenderFight = class {
     const nameY = avatarY + 74;
     const truncated = player.username.length > 15 ? player.username.slice(0, 14) + "\u2026" : player.username;
     ctx.fillText(truncated, x + w / 2, nameY);
-    const hp = Math.max(0, Math.min(100, player.health));
+    const maxHp = player.maxHealth || 100;
+    const currentHp = Math.max(0, Math.min(maxHp, player.health));
+    const hpRatio = maxHp > 0 ? currentHp / maxHp : 0;
     const hpY = nameY + 28;
     const barW = w - 44;
     const barX = x + 22;
     const barH = 26;
     CanvasUtils.fillRoundedRect(ctx, barX, hpY, barW, barH, 13, "#212530", "rgba(255,255,255,0.06)", 1);
-    if (hp > 0) {
-      const fillW = Math.max(barH, barW * hp / 100);
+    if (currentHp > 0) {
+      const fillW = Math.max(barH, barW * hpRatio);
       const hpGrad = ctx.createLinearGradient(barX, hpY, barX + fillW, hpY);
-      if (hp > 50) {
+      if (hpRatio > 0.5) {
         hpGrad.addColorStop(0, "#00f5a0");
         hpGrad.addColorStop(1, "#00b862");
-      } else if (hp > 25) {
+      } else if (hpRatio > 0.25) {
         hpGrad.addColorStop(0, "#ffb700");
         hpGrad.addColorStop(1, "#ff7700");
       } else {
@@ -2142,13 +2398,15 @@ var RenderFight = class {
       }
       CanvasUtils.fillRoundedRect(ctx, barX, hpY, fillW, barH, 13, hpGrad);
     }
+    const hpLabel = CanvasUtils.cleanText(customTexts?.hpLabel || "HP");
     ctx.fillStyle = "#ffffff";
     ctx.font = "bold 13px sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(`${hp} / 100 HP`, x + w / 2, hpY + barH / 2 + 1);
+    ctx.fillText(`${currentHp} / ${maxHp} ${hpLabel}`, x + w / 2, hpY + barH / 2 + 1);
     const statsY = hpY + 48;
-    const coinStr = `${player.coins} Coins`;
+    const coinLabel = CanvasUtils.cleanText(customTexts?.coinLabel || "Coins");
+    const coinStr = `${player.coins} ${coinLabel}`;
     ctx.font = "bold 16px sans-serif";
     const textW = ctx.measureText(coinStr).width;
     const totalCoinW = 20 + 8 + textW;
@@ -2180,7 +2438,7 @@ var RenderFight = class {
   /**
    * Renders the Victory or Game Over card.
    */
-  static async renderOutcomeCard(winner, loser, type = "WIN") {
+  static async renderOutcomeCard(winner, loser, type = "WIN", customTexts) {
     const W = 900;
     const H = 540;
     const canvas = new import_canvas2.Canvas(W, H);
@@ -2214,18 +2472,8 @@ var RenderFight = class {
     ctx.save();
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    let titleText = "VICTORY";
-    let subtitleText = "Wins the battle!";
-    if (type === "SURRENDER") {
-      titleText = "SURRENDER";
-      subtitleText = "The opponent surrendered.";
-    } else if (type === "DENIED") {
-      titleText = "CHALLENGE DECLINED";
-      subtitleText = "The duel invitation was rejected.";
-    } else if (type === "TIMEOUT") {
-      titleText = "TIME'S UP";
-      subtitleText = "The duel timed out due to inactivity.";
-    }
+    let titleText = customTexts?.title || (type === "SURRENDER" ? "SURRENDER" : type === "DENIED" ? "CHALLENGE DECLINED" : type === "TIMEOUT" ? "TIME'S UP" : "VICTORY");
+    let subtitleText = customTexts?.subtitle || (type === "SURRENDER" ? "The opponent surrendered." : type === "DENIED" ? "The duel invitation was rejected." : type === "TIMEOUT" ? "The duel timed out due to inactivity." : "Wins the battle!");
     ctx.shadowColor = themeColor;
     ctx.shadowBlur = 22;
     ctx.fillStyle = themeColor;
@@ -2255,9 +2503,11 @@ var RenderFight = class {
 
 // src/games/Fight.ts
 var Fight = class extends BaseGame {
-  opponentUser;
+  opponentUser = null;
   opponentMember = null;
   phase = "REQUEST";
+  isVsBoss = false;
+  bossProfile = null;
   // Player Stats
   p1;
   p2;
@@ -2268,13 +2518,6 @@ var Fight = class extends BaseGame {
     super(manager, options, "fight");
     this.btnPrefix = getRandomString(6, "fight_");
     this.defaultColor = this.resolveColor(options.embed?.color, 15548997);
-    const opp = options.opponent;
-    if (opp instanceof import_discord8.GuildMember) {
-      this.opponentMember = opp;
-      this.opponentUser = opp.user;
-    } else {
-      this.opponentUser = opp;
-    }
     const startHp = options.startHealth ?? 100;
     const startCoins = options.coins ?? 20;
     this.p1 = {
@@ -2282,24 +2525,50 @@ var Fight = class extends BaseGame {
       username: this.ctx.user.username,
       avatarUrl: this.ctx.user.displayAvatarURL({ extension: "png", size: 128 }),
       health: startHp,
+      maxHealth: startHp,
       coins: startCoins,
       lastAction: "Challenged opponent",
       activeEffects: []
     };
-    this.p2 = {
-      id: this.opponentUser.id,
-      username: this.opponentUser.username,
-      avatarUrl: this.opponentUser.displayAvatarURL({ extension: "png", size: 128 }),
-      health: startHp,
-      coins: startCoins,
-      lastAction: "Awaiting start",
-      activeEffects: []
-    };
+    const opp = options.opponent;
+    const isBotOrOmitted = !opp || (opp instanceof import_discord8.GuildMember ? opp.user.bot : opp.bot) || options.ai || options.boss;
+    if (isBotOrOmitted) {
+      this.isVsBoss = true;
+      const bossKey = options.boss || "dragon";
+      this.bossProfile = FIGHT_BOSSES[bossKey] || FIGHT_BOSSES["dragon"];
+      this.p2 = {
+        id: "weky_boss",
+        username: this.bossProfile.name,
+        avatarUrl: this.bossProfile.avatarUrl,
+        health: this.bossProfile.maxHealth,
+        maxHealth: this.bossProfile.maxHealth,
+        coins: this.bossProfile.coins,
+        lastAction: this.bossProfile.title,
+        activeEffects: []
+      };
+    } else {
+      if (opp instanceof import_discord8.GuildMember) {
+        this.opponentMember = opp;
+        this.opponentUser = opp.user;
+      } else {
+        this.opponentUser = opp;
+      }
+      this.p2 = {
+        id: this.opponentUser.id,
+        username: this.opponentUser.username,
+        avatarUrl: this.opponentUser.displayAvatarURL({ extension: "png", size: 128 }),
+        health: startHp,
+        maxHealth: startHp,
+        coins: startCoins,
+        lastAction: "Awaiting start",
+        activeEffects: []
+      };
+    }
     this.currentTurnId = this.p1.id;
     this.defaultTimeout = options.time || manager?.defaultTimeout || 6e4;
   }
   async start() {
-    if (this.opponentUser.id === this.ctx.userId) {
+    if (!this.isVsBoss && this.opponentUser && this.opponentUser.id === this.ctx.userId) {
       const msg = this.options.cannotFightYourselfMessage || "\u274C You cannot fight against yourself!";
       const container2 = this.createContainer(16711680).addTextDisplayComponents((t) => t.setContent(`## \u274C Error
 > ${msg}`));
@@ -2309,17 +2578,17 @@ var Fight = class extends BaseGame {
       });
       return;
     }
-    if (this.opponentUser.bot) {
-      const container2 = this.createContainer(16711680).addTextDisplayComponents((t) => t.setContent("## \u274C Error\n> You cannot fight against a bot!"));
-      await this.ctx.sendInitial({
-        components: [container2],
-        flags: import_discord8.MessageFlags.IsComponentsV2
-      });
-      return;
-    }
     this.isActive = true;
     this.manager._eventManager.register(this);
     this.emitStart();
+    if (this.isVsBoss && this.bossProfile) {
+      this.phase = "FIGHT";
+      this.currentTurnId = this.p1.id;
+      this.lastAnnouncement = this.bossProfile.dialogueIntro;
+      await this.updateBattleInterface();
+      this.resetTimeout(() => this.endGame("TIMEOUT"));
+      return;
+    }
     const buffer = await RenderFight.renderRequestCard({ username: this.p1.username, avatarUrl: this.p1.avatarUrl }, { username: this.p2.username, avatarUrl: this.p2.avatarUrl });
     const attachment = new import_discord8.AttachmentBuilder(buffer, { name: "fight-request.png" });
     const container = this.createGameContainer("request", { image: "fight-request.png" });
@@ -2395,6 +2664,44 @@ var Fight = class extends BaseGame {
         await this.endGame("WIN", activeFighter, targetFighter);
         return;
       }
+      if (this.isVsBoss) {
+        const bossAction = FightAI.decideAction(this.p2, this.p1, this.bossProfile || void 0);
+        const playerAnnouncement = this.lastAnnouncement;
+        if (bossAction === "special" && this.bossProfile) {
+          const res = this.bossProfile.specialMoveEffect(this.p2, this.p1);
+          this.p2.lastAction = this.bossProfile.specialMoveName;
+          this.lastAnnouncement = `${playerAnnouncement}
+
+${res.message}`;
+        } else if (bossAction === "heavy") {
+          this.handleHit(this.p2, this.p1, true);
+          this.lastAnnouncement = `${playerAnnouncement}
+
+${this.lastAnnouncement}`;
+        } else if (bossAction === "heal") {
+          this.handleHeal(this.p2);
+          this.lastAnnouncement = `${playerAnnouncement}
+
+${this.lastAnnouncement}`;
+        } else if (bossAction === "shield") {
+          this.handleShield(this.p2);
+          this.lastAnnouncement = `${playerAnnouncement}
+
+${this.lastAnnouncement}`;
+        } else {
+          this.handleHit(this.p2, this.p1, false);
+          this.lastAnnouncement = `${playerAnnouncement}
+
+${this.lastAnnouncement}`;
+        }
+        if (this.p1.health <= 0) {
+          await this.endGame("WIN", this.p2, this.p1);
+          return;
+        }
+        this.currentTurnId = this.p1.id;
+        await this.updateBattleInterface();
+        return;
+      }
       this.currentTurnId = targetFighter.id;
       await this.updateBattleInterface();
     }
@@ -2407,13 +2714,29 @@ var Fight = class extends BaseGame {
     await this.updateBattleInterface();
   }
   handleHit(attacker, defender, isHeavy) {
-    const maxDmg = this.options.damageMax ?? 24;
-    let damage = isHeavy ? Math.floor(Math.random() * 18) + 18 : Math.floor(Math.random() * (maxDmg - 10 + 1)) + 10;
-    if (isHeavy && Math.random() < 0.25) {
-      attacker.lastAction = "Missed Heavy Attack!";
-      this.lastAnnouncement = `\u{1F4A8} **${attacker.username}** swung hard but missed!`;
-      attacker.coins += 5;
-      return;
+    const isBoss = attacker.id === "weky_boss" && this.bossProfile;
+    let minDmg = 12;
+    let maxDmg = this.options.damageMax ?? 20;
+    if (isBoss && this.bossProfile) {
+      minDmg = this.bossProfile.damageMin;
+      maxDmg = this.bossProfile.damageMax;
+    }
+    let damage = 0;
+    if (isHeavy) {
+      const missChance = isBoss ? 0.08 : 0.14;
+      if (Math.random() < missChance) {
+        attacker.lastAction = "Missed Heavy Attack!";
+        this.lastAnnouncement = `\u{1F4A8} **${attacker.username}** swung hard but missed!`;
+        attacker.coins += 5;
+        return;
+      }
+      if (isBoss && this.bossProfile) {
+        damage = Math.floor(Math.random() * (Math.round(maxDmg * 1.35) - Math.round(minDmg * 1.35) + 1)) + Math.round(minDmg * 1.35);
+      } else {
+        damage = Math.floor(Math.random() * 11) + 20;
+      }
+    } else {
+      damage = Math.floor(Math.random() * (maxDmg - minDmg + 1)) + minDmg;
     }
     if (attacker.activeEffects?.includes("2x Damage")) {
       damage *= 2;
@@ -2429,14 +2752,15 @@ var Fight = class extends BaseGame {
     this.lastAnnouncement = `\u{1F4A5} **${attacker.username}** used ${isHeavy ? "Heavy Attack" : "Normal Attack"} dealing **${damage}** damage!`;
   }
   handleHeal(player) {
-    if (player.health >= 85) {
-      const highHpMsg = this.options.highHealthMessage || "You cannot heal if your HP is above 85!";
+    const maxHp = player.maxHealth || 100;
+    if (player.health >= maxHp * 0.85) {
+      const highHpMsg = this.options.highHealthMessage || "You cannot heal if your HP is above 85%!";
       this.lastAnnouncement = `\u26A0\uFE0F **${player.username}** tried to heal: ${highHpMsg}`;
       player.lastAction = "Heal failed (High HP)";
       return;
     }
-    const healAmount = Math.floor(Math.random() * 11) + 15;
-    player.health = Math.min(100, player.health + healAmount);
+    const healAmount = Math.floor(Math.random() * 11) + 16;
+    player.health = Math.min(maxHp, player.health + healAmount);
     player.coins += 5;
     player.lastAction = `Healed +${healAmount} HP`;
     this.lastAnnouncement = `\u{1F49A} **${player.username}** healed for **+${healAmount} HP**!`;
@@ -2473,11 +2797,19 @@ var Fight = class extends BaseGame {
       turnId: this.currentTurnId,
       announcement: this.lastAnnouncement
     });
-    await this.ctx.edit({
-      components: [container],
-      files: [attachment],
-      flags: import_discord8.MessageFlags.IsComponentsV2
-    });
+    if (!this.ctx.gameMessage) {
+      await this.ctx.sendInitial({
+        components: [container],
+        files: [attachment],
+        flags: import_discord8.MessageFlags.IsComponentsV2
+      });
+    } else {
+      await this.ctx.edit({
+        components: [container],
+        files: [attachment],
+        flags: import_discord8.MessageFlags.IsComponentsV2
+      });
+    }
   }
   async endGame(reason, winner, loser) {
     this.phase = "ENDED";
@@ -2495,11 +2827,19 @@ var Fight = class extends BaseGame {
       winnerId: winnerData.id,
       loserId: loserData?.id
     });
-    await this.ctx.edit({
-      components: [container],
-      files: [attachment],
-      flags: import_discord8.MessageFlags.IsComponentsV2
-    });
+    if (!this.ctx.gameMessage) {
+      await this.ctx.sendInitial({
+        components: [container],
+        files: [attachment],
+        flags: import_discord8.MessageFlags.IsComponentsV2
+      });
+    } else {
+      await this.ctx.edit({
+        components: [container],
+        files: [attachment],
+        flags: import_discord8.MessageFlags.IsComponentsV2
+      });
+    }
   }
   createGameContainer(state, details) {
     const stateColors = {
@@ -2513,23 +2853,33 @@ var Fight = class extends BaseGame {
     };
     const container = this.createContainer(stateColors[state]);
     let content = "";
+    const formatFighterName = (id) => {
+      if (!id) return "Unknown";
+      if (id === "weky_boss") return `**${this.p2.username} (Boss)**`;
+      return `<@${id}>`;
+    };
     switch (state) {
       case "request":
-        content = this.options.states?.request ? this.options.states.request.replace("{{challengerMention}}", `<@${this.p1.id}>`).replace("{{opponentMention}}", `<@${this.p2.id}>`) : `## \u2694\uFE0F Challenge!
-> <@${this.p1.id}> challenged <@${this.p2.id}> to a duel!`;
+        content = this.options.states?.request ? this.options.states.request.replace("{{challengerMention}}", `<@${this.p1.id}>`).replace("{{opponentMention}}", formatFighterName(this.p2.id)) : `## \u2694\uFE0F Challenge!
+> <@${this.p1.id}> challenged ${formatFighterName(this.p2.id)} to a duel!`;
         break;
       case "active":
+        const turnText = formatFighterName(details?.turnId || this.currentTurnId);
         content = this.options.states?.active ? this.options.states.active : `## \u2694\uFE0F Fighting...
-> \u{1F3AF} **Turn:** <@${details?.turnId || this.currentTurnId}>
+> \u{1F3AF} **Turn:** ${turnText}
 > ${details?.announcement || this.lastAnnouncement}`;
         break;
       case "won":
+        const winnerName = formatFighterName(details?.winnerId || this.p1.id);
+        const loserName = formatFighterName(details?.loserId || this.p2.id);
         content = this.options.states?.won ? this.options.states.won : `## \u{1F3C6} Fight Ended
-> \u{1F3C6} **<@${details?.winnerId || this.p1.id}>** knocked out <@${details?.loserId || this.p2.id}> and won the duel!`;
+> \u{1F3C6} ${winnerName} knocked out ${loserName} and won the duel!`;
         break;
       case "surrender":
+        const surrLoser = formatFighterName(details?.loserId || this.p2.id);
+        const surrWinner = formatFighterName(details?.winnerId || this.p1.id);
         content = this.options.states?.surrender ? this.options.states.surrender : `## \u{1F3F3}\uFE0F Surrendered
-> \u{1F3F3}\uFE0F **<@${details?.loserId || this.p2.id}>** surrendered! **<@${details?.winnerId || this.p1.id}>** is victorious!`;
+> \u{1F3F3}\uFE0F ${surrLoser} surrendered! ${surrWinner} is victorious!`;
         break;
       case "deny":
         content = this.options.states?.deny ? this.options.states.deny : `## \u{1F6AB} Denied
@@ -4477,6 +4827,51 @@ var QuickClick = class extends BaseGame {
 
 // src/games/RockPaperScissors.ts
 var import_discord16 = require("discord.js");
+
+// src/ai/RPSPredictor.ts
+var RPSPredictor = class {
+  static BEATS = {
+    rock: "scissors",
+    paper: "rock",
+    scissors: "paper"
+  };
+  static COUNTERS = {
+    rock: "paper",
+    paper: "scissors",
+    scissors: "rock"
+  };
+  /**
+   * Predicts the player's next move and returns the best counter.
+   * @param playerHistory Array of moves the player has previously made.
+   * @param lastPlayerOutcome Whether the player won, lost, or tied in the previous round.
+   * @param difficulty "easy" (random), "medium" (frequency counter), "hard" (heuristic predictor).
+   */
+  static getCounterMove(playerHistory = [], lastPlayerOutcome, difficulty = "hard") {
+    const allMoves = ["rock", "paper", "scissors"];
+    if (difficulty === "easy" || playerHistory.length === 0) {
+      return allMoves[Math.floor(Math.random() * allMoves.length)];
+    }
+    if (difficulty === "medium") {
+      const counts = { rock: 0, paper: 0, scissors: 0 };
+      for (const m of playerHistory) counts[m]++;
+      let mostPlayed = "rock";
+      for (const m of allMoves) {
+        if (counts[m] > counts[mostPlayed]) mostPlayed = m;
+      }
+      return this.COUNTERS[mostPlayed];
+    }
+    const lastMove = playerHistory[playerHistory.length - 1];
+    if (lastPlayerOutcome === "win") {
+      return this.COUNTERS[lastMove];
+    } else if (lastPlayerOutcome === "lose") {
+      const likelyMove = this.COUNTERS[lastMove];
+      return this.COUNTERS[likelyMove];
+    }
+    return this.COUNTERS[lastMove];
+  }
+};
+
+// src/games/RockPaperScissors.ts
 var RockPaperScissors = class extends BaseGame {
   opponentUser = null;
   isVsBot = true;
@@ -4484,11 +4879,13 @@ var RockPaperScissors = class extends BaseGame {
   p2Move = null;
   btnPrefix;
   gameTitle;
+  difficulty = "hard";
   constructor(manager, options) {
     super(manager, options, "rps");
     this.btnPrefix = getRandomString(6, "rps_");
     this.gameTitle = options.embed?.title || "Rock Paper Scissors";
     this.defaultColor = this.resolveColor(options.embed?.color);
+    this.difficulty = options.difficulty || "hard";
     if (options.opponent) {
       this.opponentUser = options.opponent instanceof import_discord16.GuildMember ? options.opponent.user : options.opponent;
       this.isVsBot = this.opponentUser.bot || this.opponentUser.id === this.ctx.client.user?.id;
@@ -4521,8 +4918,7 @@ var RockPaperScissors = class extends BaseGame {
       await interaction.deferUpdate().catch(() => {
       });
       this.p1Move = move;
-      const botMoves = ["rock", "paper", "scissors"];
-      this.p2Move = botMoves[Math.floor(Math.random() * botMoves.length)];
+      this.p2Move = RPSPredictor.getCounterMove([move], void 0, this.difficulty);
       await this.endGame("result");
     } else {
       if (userId !== this.ctx.userId && userId !== this.opponentUser.id) {
@@ -5162,24 +5558,157 @@ var Snake = class extends BaseGame {
 
 // src/games/TicTacToe.ts
 var import_discord19 = require("discord.js");
+
+// src/ai/TicTacToeAI.ts
+var TicTacToeAI = class {
+  static WINNING_COMBOS = [
+    [0, 1, 2],
+    [3, 4, 5],
+    [6, 7, 8],
+    [0, 3, 6],
+    [1, 4, 7],
+    [2, 5, 8],
+    [0, 4, 8],
+    [2, 4, 6]
+  ];
+  /**
+   * Finds the best move index (0-8) for the AI.
+   * @param board The current 3x3 board state.
+   * @param aiSymbol The symbol of the AI ('X' or 'O').
+   * @param difficulty AI difficulty level.
+   */
+  static getBestMove(board, aiSymbol = "O", difficulty = "hard") {
+    const humanSymbol = aiSymbol === "X" ? "O" : "X";
+    const availableMoves = this.getAvailableMoves(board);
+    if (availableMoves.length === 0) return -1;
+    if (availableMoves.length === 9) return 4;
+    if (difficulty === "easy") {
+      return availableMoves[Math.floor(Math.random() * availableMoves.length)];
+    }
+    if (difficulty === "medium") {
+      if (Math.random() < 0.5) {
+        return this.minimaxBestMove(board, aiSymbol, humanSymbol);
+      }
+      for (const move of availableMoves) {
+        board[move] = aiSymbol;
+        if (this.checkWinner(board) === aiSymbol) {
+          board[move] = null;
+          return move;
+        }
+        board[move] = null;
+      }
+      for (const move of availableMoves) {
+        board[move] = humanSymbol;
+        if (this.checkWinner(board) === humanSymbol) {
+          board[move] = null;
+          return move;
+        }
+        board[move] = null;
+      }
+      if (board[4] === null) return 4;
+      return availableMoves[Math.floor(Math.random() * availableMoves.length)];
+    }
+    return this.minimaxBestMove(board, aiSymbol, humanSymbol);
+  }
+  static minimaxBestMove(board, aiSymbol, humanSymbol) {
+    let bestScore = -Infinity;
+    let bestMove = -1;
+    for (const move of this.getAvailableMoves(board)) {
+      board[move] = aiSymbol;
+      const score = this.minimax(board, 0, false, aiSymbol, humanSymbol, -Infinity, Infinity);
+      board[move] = null;
+      if (score > bestScore) {
+        bestScore = score;
+        bestMove = move;
+      }
+    }
+    return bestMove;
+  }
+  static minimax(board, depth, isMaximizing, aiSymbol, humanSymbol, alpha, beta) {
+    const winner = this.checkWinner(board);
+    if (winner === aiSymbol) return 10 - depth;
+    if (winner === humanSymbol) return depth - 10;
+    if (this.isBoardFull(board)) return 0;
+    if (isMaximizing) {
+      let maxEval = -Infinity;
+      for (const move of this.getAvailableMoves(board)) {
+        board[move] = aiSymbol;
+        const evaluation = this.minimax(board, depth + 1, false, aiSymbol, humanSymbol, alpha, beta);
+        board[move] = null;
+        maxEval = Math.max(maxEval, evaluation);
+        alpha = Math.max(alpha, evaluation);
+        if (beta <= alpha) break;
+      }
+      return maxEval;
+    } else {
+      let minEval = Infinity;
+      for (const move of this.getAvailableMoves(board)) {
+        board[move] = humanSymbol;
+        const evaluation = this.minimax(board, depth + 1, true, aiSymbol, humanSymbol, alpha, beta);
+        board[move] = null;
+        minEval = Math.min(minEval, evaluation);
+        beta = Math.min(beta, evaluation);
+        if (beta <= alpha) break;
+      }
+      return minEval;
+    }
+  }
+  static checkWinner(board) {
+    for (const [a, b, c] of this.WINNING_COMBOS) {
+      if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+        return board[a];
+      }
+    }
+    return null;
+  }
+  static isBoardFull(board) {
+    return board.every((cell) => cell !== null);
+  }
+  static getAvailableMoves(board) {
+    const moves = [];
+    for (let i = 0; i < board.length; i++) {
+      if (board[i] === null) moves.push(i);
+    }
+    return moves;
+  }
+};
+
+// src/games/TicTacToe.ts
 var TicTacToe = class extends BaseGame {
   opponentUser;
   board = Array(9).fill(null);
   currentTurnId;
   btnPrefix;
   gameTitle;
+  isVsAi = false;
+  difficulty = "hard";
   constructor(manager, options) {
     super(manager, options, "tictactoe");
     this.btnPrefix = getRandomString(6, "ttt_");
-    this.opponentUser = options.opponent instanceof import_discord19.GuildMember ? options.opponent.user : options.opponent;
     this.gameTitle = options.embed?.title || "Tic Tac Toe";
     this.defaultColor = this.resolveColor(options.embed?.color);
     this.currentTurnId = this.ctx.userId;
     this.defaultTimeout = options.time || manager?.defaultTimeout || 6e4;
+    if (options.ai || !options.opponent) {
+      this.isVsAi = true;
+      this.difficulty = options.difficulty || "hard";
+      const botUser = this.ctx.client?.user;
+      this.opponentUser = botUser || {
+        id: "weky_ai",
+        username: `Weky AI (${this.difficulty})`,
+        bot: true
+      };
+    } else {
+      this.opponentUser = options.opponent instanceof import_discord19.GuildMember ? options.opponent.user : options.opponent;
+      if (this.opponentUser.bot || this.opponentUser.id === this.ctx.client?.user?.id) {
+        this.isVsAi = true;
+        this.difficulty = options.difficulty || "hard";
+      }
+    }
   }
   async start() {
-    if (this.opponentUser.id === this.ctx.userId) {
-      const container2 = this.createContainer(16711680).addTextDisplayComponents((t) => t.setContent("## \u274C Error\n> You cannot play Tic Tac Toe against yourself!"));
+    if (!this.isVsAi && this.opponentUser.id === this.ctx.userId) {
+      const container2 = this.createContainer(16711680).addTextDisplayComponents((t) => t.setContent("## \u274C Error\n> You cannot play Tic Tac Toe against yourself! Enable AI mode or invite an opponent."));
       await this.ctx.sendInitial({
         components: [container2],
         flags: import_discord19.MessageFlags.IsComponentsV2
@@ -5202,7 +5731,7 @@ var TicTacToe = class extends BaseGame {
     const customId = interaction.customId;
     if (!customId.startsWith(this.btnPrefix)) return;
     const userId = interaction.user.id;
-    if (userId !== this.ctx.userId && userId !== this.opponentUser.id) {
+    if (userId !== this.ctx.userId && (!this.isVsAi && userId !== this.opponentUser.id)) {
       ContextAdapter.replyEphemeral(interaction, "You are not participating in this Tic Tac Toe match!");
       return;
     }
@@ -5226,7 +5755,24 @@ var TicTacToe = class extends BaseGame {
       await this.endGame("tie");
       return;
     }
-    this.currentTurnId = this.currentTurnId === this.ctx.userId ? this.opponentUser.id : this.ctx.userId;
+    if (this.isVsAi) {
+      const aiMove = TicTacToeAI.getBestMove(this.board, "O", this.difficulty);
+      if (aiMove !== -1) {
+        this.board[aiMove] = "O";
+        const aiWinner = this.checkWinner();
+        if (aiWinner) {
+          await this.endGame("won", aiWinner);
+          return;
+        }
+        if (this.board.every((cell) => cell !== null)) {
+          await this.endGame("tie");
+          return;
+        }
+      }
+      this.currentTurnId = this.ctx.userId;
+    } else {
+      this.currentTurnId = this.currentTurnId === this.ctx.userId ? this.opponentUser.id : this.ctx.userId;
+    }
     const container = this.createGameContainer("active");
     await this.ctx.edit({
       components: [container],
@@ -5710,6 +6256,2418 @@ var WouldYouRather = class extends BaseGame {
   }
 };
 
+// src/hub/ArcadeHub.ts
+var import_discord22 = require("discord.js");
+var ARCADE_GAMES = [
+  { key: "2048", name: "2048 Arcade", emoji: "\u{1F522}", category: "Classic Arcade", description: "Slide and merge numbered tiles on a canvas grid" },
+  { key: "snake", name: "Retro Snake", emoji: "\u{1F40D}", category: "Classic Arcade", description: "Classic arcade snake with D-pad canvas controls" },
+  { key: "fight", name: "Fight RPG Duel / Boss", emoji: "\u2694\uFE0F", category: "PvP Duels", description: "Turn-based battle arena vs players or AI Bosses" },
+  { key: "tictactoe", name: "Tic Tac Toe (PvP / AI)", emoji: "\u274C", category: "PvP Duels", description: "Turn-based 3x3 grid with Minimax AI difficulty" },
+  { key: "rps", name: "Rock Paper Scissors", emoji: "\u2702\uFE0F", category: "PvP Duels", description: "Classic hand game with psychological AI counter" },
+  { key: "hangman", name: "Canvas Hangman", emoji: "\u{1FA93}", category: "Brain & Puzzles", description: "Guess words with photorealistic wooden canvas gallows" },
+  { key: "gtp", name: "Who's That Pok\xE9mon?", emoji: "\u26A1", category: "Brain & Puzzles", description: "Pok\xE9dex silhouette canvas quiz" },
+  { key: "calculator", name: "Scientific Calculator", emoji: "\u{1F4DF}", category: "Brain & Puzzles", description: "25-key keypad calculator with scientific mode" },
+  { key: "fasttype", name: "Fast Type Challenge", emoji: "\u2328\uFE0F", category: "Brain & Puzzles", description: "WPM typing test with anti-paste cheat detection" },
+  { key: "chaoswords", name: "Chaos Words", emoji: "\u{1F9E9}", category: "Brain & Puzzles", description: "Find scrambled words hidden in chaos text" },
+  { key: "shuffleguess", name: "Shuffle Guess", emoji: "\u{1F500}", category: "Brain & Puzzles", description: "Unscramble anagrams with live reshuffle" },
+  { key: "lieswatter", name: "Lie Swatter", emoji: "\u{1F9E0}", category: "Brain & Puzzles", description: "Rapid-fire fact or fiction trivia" },
+  { key: "gtn", name: "Guess The Number", emoji: "\u{1F3AF}", category: "Party & Social", description: "High/low numeric range clues in solo or channel mode" },
+  { key: "nhie", name: "Never Have I Ever", emoji: "\u{1F465}", category: "Party & Social", description: "Group confession voting party with live percentages" },
+  { key: "wyptb", name: "Will You Press The Button?", emoji: "\u{1F518}", category: "Party & Social", description: "Tempting perks coupled with hilarious consequences" },
+  { key: "wyr", name: "Would You Rather?", emoji: "\u{1F170}\uFE0F", category: "Party & Social", description: "Moral dilemma pitting Option A vs Option B" },
+  { key: "quickclick", name: "Quick Click", emoji: "\u23F1\uFE0F", category: "Party & Social", description: "Reaction speed measured down to milliseconds" }
+];
+var ArcadeHub = class extends BaseGame {
+  btnPrefix;
+  selectMenuId;
+  selectedCategory = "All";
+  constructor(manager, options) {
+    super(manager, options, "arcade_hub");
+    this.btnPrefix = getRandomString(6, "hub_");
+    this.selectMenuId = `${this.btnPrefix}select`;
+    this.defaultTimeout = options.time || manager?.defaultTimeout || 12e4;
+  }
+  async start() {
+    this.isActive = true;
+    this.manager._eventManager.register(this);
+    this.emitStart();
+    const container = this.createHubContainer();
+    await this.ctx.sendInitial({
+      components: [container],
+      flags: import_discord22.MessageFlags.IsComponentsV2
+    });
+    this.resetTimeout(() => this.endHub("timeout"));
+  }
+  async onInteraction(interaction) {
+    if (!this.isActive) return;
+    if (!("message" in interaction) || !interaction.message || interaction.message.id !== this.ctx.gameMessage?.id) return;
+    if (!this.isAuthorized(interaction)) return;
+    if (interaction.isStringSelectMenu() && interaction.customId === this.selectMenuId) {
+      await interaction.deferUpdate().catch(() => {
+      });
+      const selectedGameKey = interaction.values[0];
+      await this.launchGame(selectedGameKey);
+      return;
+    }
+    if (interaction.isButton()) {
+      const customId = interaction.customId;
+      if (!customId.startsWith(this.btnPrefix)) return;
+      await interaction.deferUpdate().catch(() => {
+      });
+      const action = customId.replace(this.btnPrefix, "");
+      if (action === "random") {
+        const available = ARCADE_GAMES.filter((g) => !this.options.exclude?.includes(g.key));
+        const picked = available[Math.floor(Math.random() * available.length)];
+        await this.launchGame(picked.key);
+      } else if (action === "close") {
+        await this.endHub("closed");
+      }
+    }
+  }
+  async launchGame(gameKey) {
+    this.isActive = false;
+    this.clearTimer();
+    this.destroy();
+    if (typeof this.options.onSelect === "function") {
+      await this.options.onSelect(gameKey, this.ctx);
+      return;
+    }
+    if (typeof this.manager.launchGameByKey === "function") {
+      await this.manager.launchGameByKey(gameKey, this.ctx);
+    }
+  }
+  async endHub(reason) {
+    this.isActive = false;
+    this.clearTimer();
+    this.destroy();
+    this.emitEnd(reason);
+    const container = this.createContainer(15548997);
+    const content = reason === "closed" ? this.options.texts?.closedNotice || `## \u{1F579}\uFE0F Arcade Closed
+> The Arcade Cabinet session has been closed.` : this.options.texts?.expiredNotice || `## \u23F1\uFE0F Arcade Expired
+> The Arcade Cabinet session expired due to inactivity.`;
+    container.addTextDisplayComponents((t) => t.setContent(this.applyEmbedDecorations(container, content)));
+    await this.ctx.edit({
+      components: [container],
+      flags: import_discord22.MessageFlags.IsComponentsV2
+    });
+  }
+  createHubContainer() {
+    const container = this.createContainer(this.defaultColor);
+    const title = this.options.title || this.options.embed?.title || "\u{1F579}\uFE0F Weky Mini-Arcade Cabinet";
+    const content = this.options.texts?.description || `## ${title}
+> Welcome to the unified **Discord Minigames Hub**! Choose any of the 17 games from the menu below to launch immediately.
+
+\u{1F47E} **Classic Arcade:** 2048, Snake
+\u2694\uFE0F **PvP Duels & Bosses:** Fight RPG, Tic-Tac-Toe, Rock Paper Scissors
+\u{1F9E0} **Brain & Trivia:** Hangman, Guess The Pok\xE9mon, Fast Type, Chaos Words, Shuffle Guess, Lie Swatter, Calculator
+\u{1F465} **Party & Social:** Never Have I Ever, Would You Rather, Will You Press The Button, Guess The Number, Quick Click
+
+*Select a game or hit **Random Game** to let fate decide!*`;
+    container.addTextDisplayComponents((t) => t.setContent(this.applyEmbedDecorations(container, content)));
+    const availableGames = ARCADE_GAMES.filter((g) => !this.options.exclude?.includes(g.key));
+    const selectPlaceholder = this.options.texts?.selectPlaceholder || "\u{1F3AE} Select a Minigame to Launch...";
+    const selectMenu = new import_discord22.StringSelectMenuBuilder().setCustomId(this.selectMenuId).setPlaceholder(selectPlaceholder).addOptions(
+      availableGames.map(
+        (g) => new import_discord22.StringSelectMenuOptionBuilder().setLabel(`${g.name} (${g.category})`).setValue(g.key).setDescription(g.description.slice(0, 100)).setEmoji(g.emoji)
+      )
+    );
+    const selectRow = new import_discord22.ActionRowBuilder().addComponents(selectMenu);
+    container.addActionRowComponents(selectRow);
+    const btnRandom = new import_discord22.ButtonBuilder().setCustomId(`${this.btnPrefix}random`).setLabel(this.options.texts?.randomButton || "\u{1F3B2} Surprise Me (Random Game)").setStyle(import_discord22.ButtonStyle.Primary);
+    const btnClose = new import_discord22.ButtonBuilder().setCustomId(`${this.btnPrefix}close`).setLabel(this.options.texts?.closeButton || "\u274C Close Arcade").setStyle(import_discord22.ButtonStyle.Secondary);
+    const btnRow = new import_discord22.ActionRowBuilder().addComponents(btnRandom, btnClose);
+    container.addActionRowComponents(btnRow);
+    return container;
+  }
+};
+
+// src/tournament/TournamentManager.ts
+var import_discord23 = require("discord.js");
+
+// src/tournament/RenderBracket.ts
+var import_canvas7 = require("@napi-rs/canvas");
+var RenderBracket = class {
+  /**
+   * Generates a high-definition tournament bracket image buffer.
+   */
+  static async render(options) {
+    const width = 1200;
+    const height = 700;
+    const canvas = (0, import_canvas7.createCanvas)(width, height);
+    const ctx = canvas.getContext("2d");
+    const bgGrad = ctx.createLinearGradient(0, 0, width, height);
+    bgGrad.addColorStop(0, "#0b0e17");
+    bgGrad.addColorStop(0.5, "#101426");
+    bgGrad.addColorStop(1, "#07090f");
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, width, height);
+    ctx.strokeStyle = "rgba(88, 101, 242, 0.08)";
+    ctx.lineWidth = 1;
+    for (let x = 0; x < width; x += 40) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, height);
+      ctx.stroke();
+    }
+    for (let y = 0; y < height; y += 40) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(width, y);
+      ctx.stroke();
+    }
+    const headerTitle = CanvasUtils.cleanText(options.title || "WEKY TOURNAMENT BRACKET") || "WEKY TOURNAMENT BRACKET";
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 32px sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillText(headerTitle, 50, 55);
+    ctx.fillStyle = "#5865F2";
+    ctx.font = "bold 16px sans-serif";
+    ctx.fillText(`GAME: ${options.gameName.toUpperCase()} \u2022 SINGLE ELIMINATION`, 50, 85);
+    const lineGrad = ctx.createLinearGradient(50, 95, width - 50, 95);
+    lineGrad.addColorStop(0, "#5865F2");
+    lineGrad.addColorStop(0.5, "#00ff88");
+    lineGrad.addColorStop(1, "transparent");
+    ctx.strokeStyle = lineGrad;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(50, 95);
+    ctx.lineTo(width - 50, 95);
+    ctx.stroke();
+    const numRounds = options.rounds;
+    const usableWidth = width - 120;
+    const colWidth = 230;
+    const colSpacing = (usableWidth - colWidth * numRounds) / Math.max(1, numRounds - 1);
+    const startY = 130;
+    const usableHeight = height - 160;
+    const roundNames = numRounds === 2 ? ["Semifinals", "Grand Finals"] : ["Quarterfinals", "Semifinals", "Grand Finals"];
+    const matchPositions = /* @__PURE__ */ new Map();
+    for (let r = 0; r < numRounds; r++) {
+      const roundMatches = options.matches.filter((m) => m.round === r + 1);
+      const colX = 60 + r * (colWidth + colSpacing);
+      ctx.fillStyle = "#a0a5b5";
+      ctx.font = "bold 14px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(roundNames[r] || `Round ${r + 1}`, colX + colWidth / 2, startY - 12);
+      const matchCount = roundMatches.length;
+      const slotHeight = usableHeight / matchCount;
+      for (let m = 0; m < matchCount; m++) {
+        const match = roundMatches[m];
+        const cardY = startY + m * slotHeight + (slotHeight - 90) / 2;
+        matchPositions.set(`${match.round}_${match.matchIndex}`, {
+          x: colX,
+          y: cardY + 45,
+          rightX: colX + colWidth
+        });
+        await this.drawMatchCard(ctx, colX, cardY, colWidth, 90, match);
+      }
+    }
+    ctx.lineWidth = 2;
+    for (let r = 1; r < numRounds; r++) {
+      const prevRoundMatches = options.matches.filter((m) => m.round === r);
+      for (const prevMatch of prevRoundMatches) {
+        const nextMatchIndex = Math.floor(prevMatch.matchIndex / 2);
+        const fromPos = matchPositions.get(`${r}_${prevMatch.matchIndex}`);
+        const toPos = matchPositions.get(`${r + 1}_${nextMatchIndex}`);
+        if (fromPos && toPos) {
+          const midX = fromPos.rightX + colSpacing / 2;
+          ctx.strokeStyle = prevMatch.winnerId ? "#00ff88" : "rgba(255, 255, 255, 0.2)";
+          ctx.beginPath();
+          ctx.moveTo(fromPos.rightX, fromPos.y);
+          ctx.lineTo(midX, fromPos.y);
+          ctx.lineTo(midX, toPos.y);
+          ctx.lineTo(toPos.x, toPos.y);
+          ctx.stroke();
+        }
+      }
+    }
+    if (options.champion) {
+      const champX = width - 260;
+      const champY = 45;
+      CanvasUtils.roundRectPath(ctx, champX - 10, 20, 240, 65, 12);
+      ctx.fillStyle = "rgba(0, 255, 136, 0.12)";
+      ctx.fill();
+      ctx.strokeStyle = "#00ff88";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = "#00ff88";
+      ctx.font = "bold 13px sans-serif";
+      ctx.textAlign = "left";
+      CanvasUtils.drawCrownIcon(ctx, champX + 16, 40, 12, 7, "#00ff88");
+      ctx.fillText("TOURNAMENT CHAMPION", champX + 28, 42);
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 18px sans-serif";
+      const cleanChamp = CanvasUtils.cleanText(options.champion.username) || options.champion.username;
+      ctx.fillText(cleanChamp.slice(0, 16), champX + 10, 68);
+    }
+    return canvas.toBuffer("image/png");
+  }
+  static async drawMatchCard(ctx, x, y, width, height, match) {
+    CanvasUtils.roundRectPath(ctx, x, y, width, height, 10);
+    ctx.fillStyle = "rgba(22, 27, 46, 0.95)";
+    ctx.fill();
+    const isWinnerP1 = Boolean(match.winnerId && match.p1 && match.winnerId === match.p1.id);
+    const isWinnerP2 = Boolean(match.winnerId && match.p2 && match.winnerId === match.p2.id);
+    const isCompleted = match.winnerId !== void 0;
+    ctx.strokeStyle = isCompleted ? "rgba(0, 255, 136, 0.4)" : "rgba(88, 101, 242, 0.35)";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    const slotH = height / 2;
+    await this.drawParticipantRow(ctx, x, y, width, slotH, match.p1, isWinnerP1, isCompleted && !isWinnerP1, match.scoreText);
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x + 10, y + slotH);
+    ctx.lineTo(x + width - 10, y + slotH);
+    ctx.stroke();
+    await this.drawParticipantRow(ctx, x, y + slotH, width, slotH, match.p2, isWinnerP2, isCompleted && !isWinnerP2, match.scoreText);
+  }
+  static async drawParticipantRow(ctx, x, y, width, height, participant, isWinner, isEliminated, scoreText) {
+    if (!participant) {
+      ctx.fillStyle = "#555b6e";
+      ctx.font = "italic 13px sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText("TBD / Waiting...", x + 16, y + height / 2 + 5);
+      return;
+    }
+    const avatarR = 12;
+    const avatarX = x + 20;
+    const avatarY = y + height / 2;
+    if (participant.avatarUrl) {
+      await CanvasUtils.drawCircularAvatar(ctx, participant.avatarUrl, avatarX, avatarY, avatarR, isWinner ? "#00ff88" : void 0, 1.5);
+    } else {
+      ctx.fillStyle = "#2c2f40";
+      ctx.beginPath();
+      ctx.arc(avatarX, avatarY, avatarR, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    if (isWinner) {
+      ctx.strokeStyle = "#00ff88";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(avatarX, avatarY, avatarR + 1, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.fillStyle = isWinner ? "#00ff88" : isEliminated ? "#666b7a" : "#e0e3ed";
+    ctx.font = isWinner ? "bold 13px sans-serif" : "13px sans-serif";
+    ctx.textAlign = "left";
+    const name = participant.username.length > 14 ? `${participant.username.slice(0, 13)}\u2026` : participant.username;
+    ctx.fillText(name, x + 40, y + height / 2 + 5);
+    if (isWinner) {
+      ctx.fillStyle = "#00ff88";
+      ctx.font = "bold 12px sans-serif";
+      ctx.textAlign = "right";
+      const winLabel = scoreText || (participant.score !== void 0 ? String(participant.score) : "WIN");
+      ctx.fillText(winLabel, x + width - 15, y + height / 2 + 5);
+    } else if (isEliminated) {
+      ctx.fillStyle = "#ff4444";
+      ctx.font = "12px sans-serif";
+      ctx.textAlign = "right";
+      const outLabel = participant.score !== void 0 ? String(participant.score) : "OUT";
+      ctx.fillText(outLabel, x + width - 15, y + height / 2 + 5);
+    }
+  }
+};
+
+// src/tournament/TournamentManager.ts
+var TournamentManager = class extends BaseGame {
+  btnPrefix;
+  participants = [];
+  matches = [];
+  numRounds = 2;
+  currentRound = 1;
+  champion;
+  isManualMode = false;
+  gameTitle;
+  // Ephemeral Sessions for preliminary rounds
+  activeSessions = /* @__PURE__ */ new Map();
+  // Grand Finals live session (played publicly in the channel)
+  gfSession;
+  gfAfkTimer;
+  constructor(manager, options) {
+    super(manager, options, "tournament");
+    this.defaultTimeout = options.time || 6e5;
+    this.btnPrefix = getRandomString(6, "tourn_");
+    this.gameTitle = options.game || "custom";
+    const rawGame = (options.game || "").toLowerCase();
+    this.isManualMode = Boolean(options.manual || rawGame === "custom" || !["rps", "tictactoe", "fight"].includes(rawGame));
+    const rawPlayers = options.players || [];
+    this.participants = rawPlayers.map((p) => {
+      const user = p instanceof import_discord23.GuildMember ? p.user : p;
+      return {
+        id: user.id,
+        username: user.username,
+        avatarUrl: user.displayAvatarURL ? user.displayAvatarURL({ extension: "png", size: 128 }) : void 0
+      };
+    });
+    this.setupBrackets();
+  }
+  setupBrackets() {
+    const count = this.participants.length;
+    const bracketSize = count <= 4 ? 4 : count <= 8 ? 8 : 16;
+    this.numRounds = Math.log2(bracketSize);
+    const round1Count = bracketSize / 2;
+    for (let i = 0; i < round1Count; i++) {
+      this.matches.push({
+        id: `1_${i}`,
+        round: 1,
+        matchIndex: i,
+        p1: this.participants[i * 2],
+        p2: this.participants[i * 2 + 1]
+      });
+    }
+    for (let r = 2; r <= this.numRounds; r++) {
+      const matchesInRound = Math.pow(2, this.numRounds - r);
+      for (let i = 0; i < matchesInRound; i++) {
+        this.matches.push({
+          id: `${r}_${i}`,
+          round: r,
+          matchIndex: i
+        });
+      }
+    }
+  }
+  async start() {
+    if (this.participants.length < 4) {
+      const errContainer = this.createContainer(15548997).addTextDisplayComponents(
+        (t) => t.setContent("## \u274C Tournament Error\n> Tournaments require a minimum of 4 players to generate a bracket!")
+      );
+      await this.ctx.sendInitial({
+        components: [errContainer],
+        flags: import_discord23.MessageFlags.IsComponentsV2
+      });
+      return;
+    }
+    this.isActive = true;
+    this.manager._eventManager.register(this);
+    this.emitStart();
+    await this.renderAndDisplay();
+    this.resetTournamentTimeout();
+  }
+  /**
+   * Resets the tournament inactivity timer (clock).
+   * Refreshes the full defaultTimeout (10 mins or options.time) whenever an interaction occurs.
+   */
+  resetTournamentTimeout() {
+    if (!this.isActive) return;
+    this.resetTimeout(() => this.endTournament("timeout"), this.defaultTimeout);
+  }
+  async onInteraction(interaction) {
+    if (!interaction.isButton() || !this.isActive) return;
+    const customId = interaction.customId;
+    if (!customId.startsWith(this.btnPrefix)) return;
+    this.resetTournamentTimeout();
+    const actionKey = customId.slice(this.btnPrefix.length);
+    if (actionKey === "abort") {
+      if (interaction.user.id !== this.ctx.userId) {
+        await ContextAdapter.replyEphemeral(interaction, "\u26A0\uFE0F Only the tournament organizer can cancel this tournament.");
+        return;
+      }
+      await interaction.deferUpdate().catch(() => {
+      });
+      await this.endTournament("aborted");
+      return;
+    }
+    if (actionKey === "refresh") {
+      await interaction.deferUpdate().catch(() => {
+      });
+      await this.renderAndDisplay();
+      return;
+    }
+    if (actionKey === "manual_menu") {
+      await this.handleManualMenu(interaction);
+      return;
+    }
+    if (actionKey.startsWith("adv_")) {
+      await this.handleManualAdvanceSelection(interaction, actionKey);
+      return;
+    }
+    if (actionKey === "join") {
+      await this.handlePlayerJoinMatch(interaction);
+      return;
+    }
+    if (actionKey.startsWith("m_")) {
+      await this.handleEphemeralMatchInteraction(interaction, actionKey);
+      return;
+    }
+    if (actionKey.startsWith("gf_")) {
+      await this.handleGrandFinalsInteraction(interaction, actionKey);
+      return;
+    }
+  }
+  /**
+   * Dispatches the manual advance modal/control menu to the organizer.
+   */
+  async handleManualMenu(interaction) {
+    if (interaction.user.id !== this.ctx.userId) {
+      await ContextAdapter.replyEphemeral(interaction, "\u26A0\uFE0F Only the tournament organizer can manually advance matches.");
+      return;
+    }
+    const currentMatches = this.matches.filter((m) => m.round === this.currentRound && !m.winnerId && m.p1 && m.p2);
+    if (currentMatches.length === 0) {
+      await ContextAdapter.replyEphemeral(interaction, "All matches in this round are already completed!");
+      return;
+    }
+    const container = this.createContainer(16766720).addTextDisplayComponents(
+      (t) => t.setContent(
+        `## \u{1F451} Manual Match Control Panel (Round ${this.currentRound})
+> **Discipline:** ${this.gameTitle.toUpperCase()}
+> Select a winner below to manually report their match outcome and advance them in the bracket:`
+      )
+    );
+    for (let i = 0; i < Math.min(4, currentMatches.length); i++) {
+      const m = currentMatches[i];
+      const row = new import_discord23.ActionRowBuilder().addComponents(
+        new import_discord23.ButtonBuilder().setCustomId(`${this.btnPrefix}adv_${m.id}_${m.p1.id}`).setLabel(`\u{1F3C6} Win: ${m.p1.username.slice(0, 16)} (M${m.matchIndex + 1})`).setStyle(import_discord23.ButtonStyle.Success),
+        new import_discord23.ButtonBuilder().setCustomId(`${this.btnPrefix}adv_${m.id}_${m.p2.id}`).setLabel(`\u{1F3C6} Win: ${m.p2.username.slice(0, 16)} (M${m.matchIndex + 1})`).setStyle(import_discord23.ButtonStyle.Primary)
+      );
+      container.addActionRowComponents((ar) => ar.addComponents(...row.components));
+    }
+    await interaction.reply({
+      components: [container],
+      flags: import_discord23.MessageFlags.Ephemeral | import_discord23.MessageFlags.IsComponentsV2
+    }).catch(() => {
+    });
+  }
+  /**
+   * Handles manual winner selection by the organizer.
+   */
+  async handleManualAdvanceSelection(interaction, actionKey) {
+    if (interaction.user.id !== this.ctx.userId) {
+      await ContextAdapter.replyEphemeral(interaction, "\u26A0\uFE0F Only the tournament organizer can manually advance matches.");
+      return;
+    }
+    const parts = actionKey.split("_");
+    const matchId = `${parts[1]}_${parts[2]}`;
+    const winnerId = parts[3];
+    const match = this.matches.find((m) => m.id === matchId);
+    if (!match || !match.p1 || !match.p2) {
+      await ContextAdapter.replyEphemeral(interaction, "Match not found or players not populated.");
+      return;
+    }
+    const winner = match.p1.id === winnerId ? match.p1 : match.p2;
+    const loser = match.p1.id === winnerId ? match.p2 : match.p1;
+    const outcome = `Declared Winner by Organizer (${winner.username} defeated ${loser.username})`;
+    await this.progressMatch(matchId, winnerId, outcome);
+    await interaction.update({
+      components: [
+        this.createContainer(5763719).addTextDisplayComponents(
+          (t) => t.setContent(`\u2705 **Match ${match.matchIndex + 1} Advanced!** <@${winnerId}> (${winner.username}) declared winner!`)
+        )
+      ],
+      flags: import_discord23.MessageFlags.Ephemeral | import_discord23.MessageFlags.IsComponentsV2
+    }).catch(() => {
+    });
+  }
+  /**
+   * Handles a player pressing "Play My Match" on the main bracket board.
+   */
+  async handlePlayerJoinMatch(interaction) {
+    const userId = interaction.user.id;
+    const isParticipant = this.participants.some((p) => p.id === userId);
+    if (!isParticipant) {
+      await ContextAdapter.replyEphemeral(interaction, "\u274C You are not a registered participant in this tournament.");
+      return;
+    }
+    if (this.isManualMode) {
+      await ContextAdapter.replyEphemeral(
+        interaction,
+        `\u2139\uFE0F This tournament is running in **Manual Progression Mode** (${this.gameTitle}). The organizer will report match outcomes on the bracket board!`
+      );
+      return;
+    }
+    if (this.currentRound === this.numRounds) {
+      await ContextAdapter.replyEphemeral(
+        interaction,
+        "\u{1F451} The Grand Finals is active LIVE directly on the tournament message in this channel! You do not need an ephemeral."
+      );
+      return;
+    }
+    const match = this.matches.find(
+      (m) => m.round === this.currentRound && (m.p1?.id === userId || m.p2?.id === userId)
+    );
+    if (!match || !match.p1 || !match.p2) {
+      const earlierLoss = this.matches.some(
+        (m) => m.round < this.currentRound && (m.p1?.id === userId || m.p2?.id === userId) && m.winnerId && m.winnerId !== userId
+      );
+      if (earlierLoss) {
+        await ContextAdapter.replyEphemeral(interaction, "\u274C You have been eliminated from the tournament. Thanks for participating!");
+      } else {
+        await ContextAdapter.replyEphemeral(interaction, "\u23F3 Your match for this round is waiting for opponents to qualify.");
+      }
+      return;
+    }
+    if (match.winnerId) {
+      if (match.winnerId === userId) {
+        await ContextAdapter.replyEphemeral(
+          interaction,
+          `\u2705 You have already won your match for Round ${this.currentRound} (${match.outcomeDetail || "Victory"})! Waiting for other matches in this round to finish.`
+        );
+      } else {
+        await ContextAdapter.replyEphemeral(
+          interaction,
+          `\u274C You were defeated in Round ${this.currentRound} (${match.outcomeDetail || "Defeated"}). Good game!`
+        );
+      }
+      return;
+    }
+    let session = this.activeSessions.get(match.id);
+    if (!session) {
+      session = this.createMatchSession(match);
+      this.activeSessions.set(match.id, session);
+    }
+    const isP1 = match.p1.id === userId;
+    if (isP1) {
+      session.p1Ready = true;
+      session.p1Interaction = interaction;
+    } else {
+      session.p2Ready = true;
+      session.p2Interaction = interaction;
+    }
+    const opponent = isP1 ? match.p2 : match.p1;
+    const oppReady = isP1 ? session.p2Ready : session.p1Ready;
+    if (!oppReady) {
+      if (!session.readyTimeoutTimer) {
+        session.readyTimeoutTimer = setTimeout(async () => {
+          await this.handleWalkover(session, userId, "ready_timeout");
+        }, 6e4);
+      }
+      const waitContainer = this.createContainer(5793266).addTextDisplayComponents(
+        (t) => t.setContent(
+          `## \u2694\uFE0F Match Found: You vs <@${opponent.id}>
+> **Discipline:** ${this.gameTitle.toUpperCase()} \u2022 **Round ${session.round}**
+
+\u23F3 **You are Ready!**
+> Waiting for your opponent <@${opponent.id}> to click **"\u2694\uFE0F Play My Match"** on the tournament board...
+
+> \u23F0 *If your opponent does not join within 60 seconds, you will win by default (Walkover).*`
+        )
+      );
+      await interaction.reply({
+        components: [waitContainer],
+        flags: import_discord23.MessageFlags.Ephemeral | import_discord23.MessageFlags.IsComponentsV2
+      }).catch(() => {
+      });
+      return;
+    }
+    if (session.readyTimeoutTimer) {
+      clearTimeout(session.readyTimeoutTimer);
+      session.readyTimeoutTimer = void 0;
+    }
+    session.status = "in_progress";
+    this.resetSessionAfkTimer(session);
+    const p1Container = this.renderMatchContainer(session, session.p1.id);
+    const p2Container = this.renderMatchContainer(session, session.p2.id);
+    const currentPContainer = isP1 ? p1Container : p2Container;
+    const waitingPContainer = isP1 ? p2Container : p1Container;
+    const waitingInteraction = isP1 ? session.p2Interaction : session.p1Interaction;
+    await interaction.reply({
+      components: [currentPContainer],
+      flags: import_discord23.MessageFlags.Ephemeral | import_discord23.MessageFlags.IsComponentsV2
+    }).catch(() => {
+    });
+    if (waitingInteraction) {
+      await waitingInteraction.editReply({
+        components: [waitingPContainer],
+        flags: import_discord23.MessageFlags.IsComponentsV2
+      }).catch(() => {
+      });
+    }
+    await this.renderAndDisplay();
+  }
+  /**
+   * Handles user interaction inside an ephemeral preliminary match.
+   */
+  async handleEphemeralMatchInteraction(interaction, actionKey) {
+    const parts = actionKey.split("_");
+    const matchId = `${parts[1]}_${parts[2]}`;
+    const gameType = parts[3];
+    const subAction = parts.slice(4).join("_");
+    const session = this.activeSessions.get(matchId);
+    if (!session || session.status !== "in_progress") {
+      await interaction.deferUpdate().catch(() => {
+      });
+      return;
+    }
+    const userId = interaction.user.id;
+    if (userId !== session.p1.id && userId !== session.p2.id) {
+      await ContextAdapter.replyEphemeral(interaction, "\u26A0\uFE0F You are not a player in this match.");
+      return;
+    }
+    if (userId === session.p1.id) session.p1Interaction = interaction;
+    else session.p2Interaction = interaction;
+    let moveMade = false;
+    if (gameType === "ttt") {
+      if (userId !== session.currentTurnId) {
+        await ContextAdapter.replyEphemeral(interaction, "\u23F3 It's not your turn! Wait for your opponent.");
+        return;
+      }
+      const cellIdx = parseInt(subAction, 10);
+      if (session.tttBoard && session.tttBoard[cellIdx] === null) {
+        session.tttBoard[cellIdx] = userId === session.p1.id ? "X" : "O";
+        moveMade = true;
+        const winResult = this.checkTTTWin(session.tttBoard);
+        if (winResult) {
+          session.winnerId = winResult.mark === "X" ? session.p1.id : session.p2.id;
+          session.outcomeDetail = `Connected 3-in-a-row across ${winResult.line}`;
+          session.scoreText = "3-IN-A-ROW";
+          session.match.outcomeDetail = session.outcomeDetail;
+          session.match.scoreText = session.scoreText;
+        } else if (session.tttBoard.every((c) => c !== null)) {
+          session.tttBoard = Array(9).fill(null);
+          session.currentTurnId = session.currentTurnId === session.p1.id ? session.p2.id : session.p1.id;
+        } else {
+          session.currentTurnId = session.currentTurnId === session.p1.id ? session.p2.id : session.p1.id;
+        }
+      }
+    } else if (gameType === "rps") {
+      const move = subAction;
+      if (userId === session.p1.id && !session.rpsP1Choice) {
+        session.rpsP1Choice = move;
+        moveMade = true;
+      } else if (userId === session.p2.id && !session.rpsP2Choice) {
+        session.rpsP2Choice = move;
+        moveMade = true;
+      }
+      if (session.rpsP1Choice && session.rpsP2Choice) {
+        const result = this.checkRPSWinner(session.rpsP1Choice, session.rpsP2Choice);
+        if (result === "p1") {
+          session.winnerId = session.p1.id;
+          session.outcomeDetail = `${session.rpsP1Choice.toUpperCase()} defeated ${session.rpsP2Choice.toUpperCase()}`;
+          session.scoreText = `${session.rpsP1Choice.toUpperCase()} W`;
+        } else if (result === "p2") {
+          session.winnerId = session.p2.id;
+          session.outcomeDetail = `${session.rpsP2Choice.toUpperCase()} defeated ${session.rpsP1Choice.toUpperCase()}`;
+          session.scoreText = `${session.rpsP2Choice.toUpperCase()} W`;
+        } else {
+          session.rpsMessage = `\u26A1 Tie! Both players selected **${session.rpsP1Choice.toUpperCase()}**! Sudden death replay:`;
+          session.rpsP1Choice = void 0;
+          session.rpsP2Choice = void 0;
+        }
+        if (session.winnerId) {
+          session.match.outcomeDetail = session.outcomeDetail;
+          session.match.scoreText = session.scoreText;
+        }
+      }
+    } else if (gameType === "fight") {
+      if (userId !== session.currentTurnId) {
+        await ContextAdapter.replyEphemeral(interaction, "\u23F3 It's not your turn!");
+        return;
+      }
+      this.executeFightAction(session, userId, subAction);
+      moveMade = true;
+    }
+    if (!moveMade && !session.winnerId) {
+      await interaction.deferUpdate().catch(() => {
+      });
+      return;
+    }
+    if (session.winnerId) {
+      if (session.afkTimer) clearTimeout(session.afkTimer);
+      session.status = "completed";
+      this.advanceWinnerInBracket(session.match, session.winnerId);
+      const otherUserId2 = userId === session.p1.id ? session.p2.id : session.p1.id;
+      const otherInteraction2 = userId === session.p1.id ? session.p2Interaction : session.p1Interaction;
+      const clickerResult = this.renderMatchResultContainer(session, userId);
+      const otherResult = this.renderMatchResultContainer(session, otherUserId2);
+      await interaction.update({
+        components: [clickerResult],
+        flags: import_discord23.MessageFlags.IsComponentsV2
+      }).catch(() => {
+      });
+      if (otherInteraction2) {
+        await otherInteraction2.editReply({
+          components: [otherResult],
+          flags: import_discord23.MessageFlags.IsComponentsV2
+        }).catch(() => {
+        });
+      }
+      await this.renderAndDisplay();
+      await this.checkRoundCompletion();
+      return;
+    }
+    this.resetSessionAfkTimer(session);
+    const isP1 = userId === session.p1.id;
+    const clickerContainer = this.renderMatchContainer(session, userId);
+    const otherUserId = isP1 ? session.p2.id : session.p1.id;
+    const otherContainer = this.renderMatchContainer(session, otherUserId);
+    const otherInteraction = isP1 ? session.p2Interaction : session.p1Interaction;
+    await interaction.update({
+      components: [clickerContainer],
+      flags: import_discord23.MessageFlags.IsComponentsV2
+    }).catch(() => {
+    });
+    if (otherInteraction) {
+      await otherInteraction.editReply({
+        components: [otherContainer],
+        flags: import_discord23.MessageFlags.IsComponentsV2
+      }).catch(() => {
+      });
+    }
+  }
+  /**
+   * Handles user interaction in the live, public Grand Finals in the channel.
+   */
+  async handleGrandFinalsInteraction(interaction, actionKey) {
+    const finalMatch = this.matches.find((m) => m.round === this.numRounds);
+    if (!finalMatch || !finalMatch.p1 || !finalMatch.p2 || !this.gfSession) {
+      await interaction.deferUpdate().catch(() => {
+      });
+      return;
+    }
+    const userId = interaction.user.id;
+    if (userId !== finalMatch.p1.id && userId !== finalMatch.p2.id) {
+      await ContextAdapter.replyEphemeral(interaction, "\u26A0\uFE0F Only the Grand Finalists can make moves in the championship match!");
+      return;
+    }
+    const parts = actionKey.split("_");
+    const gameType = parts[1];
+    const subAction = parts.slice(2).join("_");
+    const session = this.gfSession;
+    let moveMade = false;
+    if (gameType === "ttt") {
+      if (userId !== session.currentTurnId) {
+        await ContextAdapter.replyEphemeral(interaction, "\u23F3 It's not your turn!");
+        return;
+      }
+      const cellIdx = parseInt(subAction, 10);
+      if (session.tttBoard && session.tttBoard[cellIdx] === null) {
+        session.tttBoard[cellIdx] = userId === session.p1.id ? "X" : "O";
+        moveMade = true;
+        const winResult = this.checkTTTWin(session.tttBoard);
+        if (winResult) {
+          session.winnerId = winResult.mark === "X" ? session.p1.id : session.p2.id;
+          session.outcomeDetail = `Grand Finals Victory: 3-in-a-row across ${winResult.line}!`;
+          session.scoreText = "CHAMPION";
+        } else if (session.tttBoard.every((c) => c !== null)) {
+          session.tttBoard = Array(9).fill(null);
+          session.currentTurnId = session.currentTurnId === session.p1.id ? session.p2.id : session.p1.id;
+        } else {
+          session.currentTurnId = session.currentTurnId === session.p1.id ? session.p2.id : session.p1.id;
+        }
+      }
+    } else if (gameType === "rps") {
+      const move = subAction;
+      if (userId === session.p1.id && !session.rpsP1Choice) {
+        session.rpsP1Choice = move;
+        moveMade = true;
+      } else if (userId === session.p2.id && !session.rpsP2Choice) {
+        session.rpsP2Choice = move;
+        moveMade = true;
+      }
+      if (session.rpsP1Choice && session.rpsP2Choice) {
+        const result = this.checkRPSWinner(session.rpsP1Choice, session.rpsP2Choice);
+        if (result === "p1") {
+          session.winnerId = session.p1.id;
+          session.outcomeDetail = `Championship Move: ${session.rpsP1Choice.toUpperCase()} defeated ${session.rpsP2Choice.toUpperCase()}!`;
+          session.scoreText = "CHAMPION";
+        } else if (result === "p2") {
+          session.winnerId = session.p2.id;
+          session.outcomeDetail = `Championship Move: ${session.rpsP2Choice.toUpperCase()} defeated ${session.rpsP1Choice.toUpperCase()}!`;
+          session.scoreText = "CHAMPION";
+        } else {
+          session.rpsMessage = `\u26A1 Tie! Both finalists selected **${session.rpsP1Choice.toUpperCase()}**! Sudden death replay:`;
+          session.rpsP1Choice = void 0;
+          session.rpsP2Choice = void 0;
+        }
+      }
+    } else if (gameType === "fight") {
+      if (userId !== session.currentTurnId) {
+        await ContextAdapter.replyEphemeral(interaction, "\u23F3 It's not your turn!");
+        return;
+      }
+      this.executeFightAction(session, userId, subAction);
+      moveMade = true;
+    }
+    if (!moveMade && !session.winnerId) {
+      await interaction.deferUpdate().catch(() => {
+      });
+      return;
+    }
+    if (session.winnerId) {
+      if (this.gfAfkTimer) clearTimeout(this.gfAfkTimer);
+      const winner = session.winnerId === session.p1.id ? session.p1 : session.p2;
+      this.champion = winner;
+      finalMatch.winnerId = winner.id;
+      finalMatch.outcomeDetail = session.outcomeDetail;
+      finalMatch.scoreText = session.scoreText || "CHAMPION";
+      await interaction.deferUpdate().catch(() => {
+      });
+      this.clearAllTimers();
+      this.isActive = false;
+      await this.renderAndDisplay(true);
+      this.emitEnd("finished");
+      this.destroy();
+      return;
+    }
+    this.resetGrandFinalsAfkTimer();
+    const updatedContainer = this.renderGrandFinalsContainer();
+    await interaction.update({
+      components: [updatedContainer],
+      flags: import_discord23.MessageFlags.IsComponentsV2
+    }).catch(() => {
+    });
+  }
+  /**
+   * Handles Walkover / Forfeit if a player is AFK.
+   */
+  async handleWalkover(session, winningUserId, reason) {
+    if (session.status === "completed") return;
+    if (session.readyTimeoutTimer) clearTimeout(session.readyTimeoutTimer);
+    if (session.afkTimer) clearTimeout(session.afkTimer);
+    session.status = "completed";
+    session.winnerId = winningUserId;
+    const outcome = reason === "ready_timeout" ? "Walkover (Opponent 60s AFK)" : "Turn Timeout (Opponent 45s Inactivity)";
+    session.outcomeDetail = outcome;
+    session.scoreText = "WALKOVER";
+    session.match.outcomeDetail = outcome;
+    session.match.scoreText = "WALKOVER";
+    this.advanceWinnerInBracket(session.match, winningUserId);
+    const opponentId = winningUserId === session.p1.id ? session.p2.id : session.p1.id;
+    const winnerInteraction = winningUserId === session.p1.id ? session.p1Interaction : session.p2Interaction;
+    const loserInteraction = winningUserId === session.p1.id ? session.p2Interaction : session.p1Interaction;
+    const winContainer = this.createContainer(5763719).addTextDisplayComponents(
+      (t) => t.setContent(
+        `## \u{1F3C6} WALKOVER VICTORY!
+> Your opponent <@${opponentId}> was inactive (${outcome}).
+
+\u2694\uFE0F **Match Outcome:** ${outcome}
+\u{1F389} **You have ADVANCED to the next round by forfeit!**
+> Return to the tournament board in the channel to view the updated bracket.`
+      )
+    );
+    const loseContainer = this.createContainer(15548997).addTextDisplayComponents(
+      (t) => t.setContent(
+        `## \u23F0 MATCH FORFEITED
+> You were disqualified from Round ${session.round} due to inactivity (${outcome}).
+
+\u2694\uFE0F **Match Outcome:** ${outcome}
+\u{1F44B} Thank you for playing! You can continue watching the tournament in the channel.`
+      )
+    );
+    if (winnerInteraction) {
+      await winnerInteraction.editReply({
+        components: [winContainer],
+        flags: import_discord23.MessageFlags.IsComponentsV2
+      }).catch(() => {
+      });
+    }
+    if (loserInteraction) {
+      await loserInteraction.editReply({
+        components: [loseContainer],
+        flags: import_discord23.MessageFlags.IsComponentsV2
+      }).catch(() => {
+      });
+    }
+    await this.renderAndDisplay();
+    await this.checkRoundCompletion();
+  }
+  /**
+   * Advances the winner into the next bracket node.
+   */
+  advanceWinnerInBracket(match, winnerId) {
+    match.winnerId = winnerId;
+    const winner = match.p1?.id === winnerId ? match.p1 : match.p2;
+    if (!winner) return;
+    const nextRound = match.round + 1;
+    if (nextRound <= this.numRounds) {
+      const nextMatchIndex = Math.floor(match.matchIndex / 2);
+      const isP1Slot = match.matchIndex % 2 === 0;
+      const nextMatch = this.matches.find((m) => m.round === nextRound && m.matchIndex === nextMatchIndex);
+      if (nextMatch) {
+        if (isP1Slot) nextMatch.p1 = winner;
+        else nextMatch.p2 = winner;
+      }
+    } else {
+      this.champion = winner;
+    }
+  }
+  /**
+   * Manually advances a specific match with a winner and optional outcome detail text.
+   * Works for ANY game or bracket type.
+   */
+  async progressMatch(matchId, winnerId, outcomeDetail = "Manual Advance") {
+    const match = this.matches.find((m) => m.id === matchId);
+    if (!match || !match.p1 || !match.p2) return;
+    match.winnerId = winnerId;
+    match.outcomeDetail = outcomeDetail;
+    match.scoreText = "WIN";
+    const session = this.activeSessions.get(match.id);
+    if (session) {
+      session.status = "completed";
+      session.winnerId = winnerId;
+      session.outcomeDetail = outcomeDetail;
+      session.scoreText = "WIN";
+      if (session.readyTimeoutTimer) clearTimeout(session.readyTimeoutTimer);
+      if (session.afkTimer) clearTimeout(session.afkTimer);
+    }
+    this.advanceWinnerInBracket(match, winnerId);
+    this.resetTournamentTimeout();
+    await this.renderAndDisplay();
+    await this.checkRoundCompletion();
+  }
+  /**
+   * Manually advances the next pending match in the current round.
+   */
+  async progressNextMatch(winnerId, outcomeDetail = "Manual Advance") {
+    const nextPending = this.matches.find((m) => m.round === this.currentRound && !m.winnerId && m.p1 && m.p2);
+    if (!nextPending) return null;
+    const chosenWinner = winnerId || (Math.random() < 0.5 ? nextPending.p1.id : nextPending.p2.id);
+    await this.progressMatch(nextPending.id, chosenWinner, outcomeDetail);
+    return nextPending;
+  }
+  /**
+   * Static helper to generate a visual tournament progress bracket image manually without running live games.
+   */
+  static async generateBracketProgress(options) {
+    const rounds = options.rounds || (options.matches.length > 0 ? Math.max(...options.matches.map((m) => m.round)) : 2);
+    const bracketMatches = options.matches.map((m) => ({
+      id: `${m.round}_${m.matchIndex}`,
+      round: m.round,
+      matchIndex: m.matchIndex,
+      p1: { id: `p_${m.p1Username}`, username: m.p1Username, avatarUrl: m.p1AvatarUrl },
+      p2: { id: `p_${m.p2Username}`, username: m.p2Username, avatarUrl: m.p2AvatarUrl },
+      winnerId: m.winnerUsername ? `p_${m.winnerUsername}` : void 0,
+      scoreText: m.scoreText,
+      outcomeDetail: m.outcomeDetail
+    }));
+    const champion = options.championUsername ? { id: `p_${options.championUsername}`, username: options.championUsername } : void 0;
+    return RenderBracket.render({
+      title: options.title || "TOURNAMENT BRACKET",
+      gameName: options.gameName || "CHAMPIONSHIP",
+      rounds,
+      matches: bracketMatches,
+      champion
+    });
+  }
+  getMatches() {
+    return this.matches;
+  }
+  getPendingMatches() {
+    return this.matches.filter((m) => m.round === this.currentRound && !m.winnerId && m.p1 && m.p2);
+  }
+  /**
+   * Checks if all matches in the active round are done, advancing to the next round or Grand Finals.
+   */
+  async checkRoundCompletion() {
+    const currentMatches = this.matches.filter((m) => m.round === this.currentRound);
+    const allDone = currentMatches.every((m) => m.winnerId !== void 0);
+    if (allDone) {
+      this.resetTournamentTimeout();
+      if (this.currentRound < this.numRounds) {
+        this.currentRound++;
+        if (this.currentRound === this.numRounds) {
+          this.initGrandFinals();
+        }
+        await this.renderAndDisplay();
+      } else {
+        const finalsMatch = this.matches.find((m) => m.round === this.numRounds);
+        if (finalsMatch?.winnerId) {
+          this.champion = finalsMatch.winnerId === finalsMatch.p1?.id ? finalsMatch.p1 : finalsMatch.p2;
+        }
+        this.clearAllTimers();
+        this.isActive = false;
+        await this.renderAndDisplay(true);
+        this.emitEnd("finished");
+        this.destroy();
+      }
+    }
+  }
+  /**
+   * Initializes the Grand Finals session when preliminary rounds complete.
+   */
+  initGrandFinals() {
+    const finalsMatch = this.matches.find((m) => m.round === this.numRounds);
+    if (!finalsMatch || !finalsMatch.p1 || !finalsMatch.p2) return;
+    this.gfSession = {
+      match: finalsMatch,
+      p1: finalsMatch.p1,
+      p2: finalsMatch.p2,
+      currentTurnId: finalsMatch.p1.id,
+      tttBoard: Array(9).fill(null),
+      fightP1Hp: 100,
+      fightP2Hp: 100,
+      fightP1Coins: 20,
+      fightP2Coins: 20
+    };
+    if (!this.isManualMode) {
+      this.resetGrandFinalsAfkTimer();
+    }
+  }
+  resetSessionAfkTimer(session) {
+    if (session.afkTimer) clearTimeout(session.afkTimer);
+    session.afkTimer = setTimeout(async () => {
+      const winningUser = session.currentTurnId === session.p1.id ? session.p2.id : session.p1.id;
+      await this.handleWalkover(session, winningUser, "turn_timeout");
+    }, 45e3);
+  }
+  resetGrandFinalsAfkTimer() {
+    if (this.gfAfkTimer) clearTimeout(this.gfAfkTimer);
+    this.gfAfkTimer = setTimeout(async () => {
+      if (!this.gfSession || !this.isActive) return;
+      const winningUser = this.gfSession.currentTurnId === this.gfSession.p1.id ? this.gfSession.p2 : this.gfSession.p1;
+      this.champion = winningUser;
+      const finalMatch = this.matches.find((m) => m.round === this.numRounds);
+      if (finalMatch) {
+        finalMatch.winnerId = winningUser.id;
+        finalMatch.outcomeDetail = "Walkover (Opponent 60s AFK)";
+        finalMatch.scoreText = "CHAMPION";
+      }
+      this.clearAllTimers();
+      this.isActive = false;
+      await this.renderAndDisplay(true);
+      this.emitEnd("finished");
+      this.destroy();
+    }, 6e4);
+  }
+  createMatchSession(match) {
+    return {
+      match,
+      round: match.round,
+      p1: match.p1,
+      p2: match.p2,
+      status: "waiting_opponent",
+      p1Ready: false,
+      p2Ready: false,
+      currentTurnId: match.p1.id,
+      tttBoard: Array(9).fill(null),
+      fightP1Hp: 100,
+      fightP2Hp: 100,
+      fightP1Coins: 20,
+      fightP2Coins: 20
+    };
+  }
+  checkTTTWin(board) {
+    const lines = [
+      [0, 1, 2, "Top Row"],
+      [3, 4, 5, "Middle Row"],
+      [6, 7, 8, "Bottom Row"],
+      [0, 3, 6, "Left Column"],
+      [1, 4, 7, "Center Column"],
+      [2, 5, 8, "Right Column"],
+      [0, 4, 8, "Diagonal (Top-Left to Bottom-Right)"],
+      [2, 4, 6, "Diagonal (Top-Right to Bottom-Left)"]
+    ];
+    for (const [a, b, c, line] of lines) {
+      if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+        return { mark: board[a], line };
+      }
+    }
+    return null;
+  }
+  checkRPSWinner(p1Choice, p2Choice) {
+    if (p1Choice === p2Choice) return "draw";
+    if (p1Choice === "rock" && p2Choice === "scissors" || p1Choice === "scissors" && p2Choice === "paper" || p1Choice === "paper" && p2Choice === "rock") {
+      return "p1";
+    }
+    return "p2";
+  }
+  executeFightAction(session, attackerId, action) {
+    const isP1 = session.p1.id === attackerId;
+    let attackerHp = isP1 ? session.fightP1Hp : session.fightP2Hp;
+    let defenderHp = isP1 ? session.fightP2Hp : session.fightP1Hp;
+    let attackerCoins = isP1 ? session.fightP1Coins : session.fightP2Coins;
+    let defenderShield = isP1 ? session.fightP2Shield : session.fightP1Shield;
+    const attackerName = isP1 ? session.p1.username : session.p2.username;
+    if (action === "attack") {
+      let dmg = Math.floor(Math.random() * 9) + 14;
+      if (defenderShield) {
+        dmg = Math.floor(dmg / 2);
+        if (isP1) session.fightP2Shield = false;
+        else session.fightP1Shield = false;
+      }
+      defenderHp = Math.max(0, defenderHp - dmg);
+      attackerCoins += 10;
+      session.fightCombatLog = `\u{1F4A5} **${attackerName}** used Normal Attack dealing **${dmg}** damage!`;
+    } else if (action === "heavy") {
+      if (Math.random() < 0.14) {
+        attackerCoins += 5;
+        session.fightCombatLog = `\u{1F4A8} **${attackerName}** swung hard but missed!`;
+      } else {
+        let dmg = Math.floor(Math.random() * 11) + 22;
+        if (defenderShield) {
+          dmg = Math.floor(dmg / 2);
+          if (isP1) session.fightP2Shield = false;
+          else session.fightP1Shield = false;
+        }
+        defenderHp = Math.max(0, defenderHp - dmg);
+        attackerCoins += 15;
+        session.fightCombatLog = `\u{1F4A5} **${attackerName}** landed a HEAVY CRIT dealing **${dmg}** damage!`;
+      }
+    } else if (action === "heal") {
+      const healAmount = Math.floor(Math.random() * 11) + 16;
+      attackerHp = Math.min(100, attackerHp + healAmount);
+      attackerCoins += 5;
+      session.fightCombatLog = `\u{1F49A} **${attackerName}** drank an elixir and healed **+${healAmount} HP**!`;
+    } else if (action === "shield") {
+      if (attackerCoins >= 25) {
+        attackerCoins -= 25;
+        if (isP1) session.fightP1Shield = true;
+        else session.fightP2Shield = true;
+        session.fightCombatLog = `\u{1F6E1}\uFE0F **${attackerName}** activated a Shield (-50% next damage)!`;
+      } else {
+        session.fightCombatLog = `\u274C **${attackerName}** did not have enough coins for a Shield!`;
+      }
+    }
+    if (isP1) {
+      session.fightP1Hp = attackerHp;
+      session.fightP2Hp = defenderHp;
+      session.fightP1Coins = attackerCoins;
+    } else {
+      session.fightP2Hp = attackerHp;
+      session.fightP1Hp = defenderHp;
+      session.fightP2Coins = attackerCoins;
+    }
+    if (defenderHp <= 0) {
+      session.winnerId = attackerId;
+      const attackName = action === "heavy" ? "Heavy Strike" : "Normal Attack";
+      const outcome = `Knockout with ${attackName}! (Winner HP: ${attackerHp}/100)`;
+      session.outcomeDetail = outcome;
+      session.scoreText = `KO (${attackerHp} HP)`;
+      session.match.outcomeDetail = outcome;
+      session.match.scoreText = session.scoreText;
+    } else {
+      session.currentTurnId = isP1 ? session.p2.id : session.p1.id;
+    }
+  }
+  /**
+   * Renders the interactive match container for an ephemeral match session.
+   */
+  renderMatchContainer(session, viewingUserId) {
+    const isP1 = viewingUserId === session.p1.id;
+    const isMyTurn = session.currentTurnId === viewingUserId;
+    const opponent = isP1 ? session.p2 : session.p1;
+    const game = this.options.game || "custom";
+    const container = this.createContainer(isMyTurn ? 63487 : 5793266);
+    let text = `## \u2694\uFE0F Tournament Match \u2022 Round ${session.round}
+### <@${session.p1.id}> vs <@${session.p2.id}>
+> **Discipline:** ${this.gameTitle.toUpperCase()} \u2022 **Opponent:** <@${opponent.id}>
+
+`;
+    if (game === "tictactoe") {
+      text += isMyTurn ? `\u{1F449} **It's YOUR turn (${isP1 ? "\u274C X" : "\u2B55 O"})!** Select an available square below:
+` : `\u23F3 **Waiting for <@${session.currentTurnId}> to make a move...**
+`;
+      text += `> \u23F0 *45s turn timeout (inactivity forfeits match)*`;
+      container.addTextDisplayComponents((t) => t.setContent(text));
+      for (let r = 0; r < 3; r++) {
+        const row = new import_discord23.ActionRowBuilder();
+        for (let c = 0; c < 3; c++) {
+          const idx = r * 3 + c;
+          const cell = session.tttBoard?.[idx];
+          const btn = new import_discord23.ButtonBuilder().setCustomId(`${this.btnPrefix}m_${session.match.id}_ttt_${idx}`);
+          if (cell === "X") {
+            btn.setLabel("X").setStyle(import_discord23.ButtonStyle.Danger).setDisabled(true);
+          } else if (cell === "O") {
+            btn.setLabel("O").setStyle(import_discord23.ButtonStyle.Success).setDisabled(true);
+          } else {
+            btn.setLabel("-").setStyle(import_discord23.ButtonStyle.Secondary).setDisabled(!isMyTurn);
+          }
+          row.addComponents(btn);
+        }
+        container.addActionRowComponents((ar) => ar.addComponents(...row.components));
+      }
+    } else if (game === "rps") {
+      const myChoice = isP1 ? session.rpsP1Choice : session.rpsP2Choice;
+      if (session.rpsMessage) {
+        text += `> ${session.rpsMessage}
+
+`;
+      }
+      text += myChoice ? `\u2705 **You picked ${myChoice.toUpperCase()}!** Waiting for your opponent...
+` : `\u{1F449} **Choose your move secretly below:**
+`;
+      text += `> \u23F0 *45s move timeout*`;
+      container.addTextDisplayComponents((t) => t.setContent(text));
+      const row = new import_discord23.ActionRowBuilder().addComponents(
+        new import_discord23.ButtonBuilder().setCustomId(`${this.btnPrefix}m_${session.match.id}_rps_rock`).setLabel("\u{1FAA8} Rock").setStyle(myChoice === "rock" ? import_discord23.ButtonStyle.Primary : import_discord23.ButtonStyle.Secondary).setDisabled(Boolean(myChoice)),
+        new import_discord23.ButtonBuilder().setCustomId(`${this.btnPrefix}m_${session.match.id}_rps_paper`).setLabel("\u{1F4C4} Paper").setStyle(myChoice === "paper" ? import_discord23.ButtonStyle.Primary : import_discord23.ButtonStyle.Secondary).setDisabled(Boolean(myChoice)),
+        new import_discord23.ButtonBuilder().setCustomId(`${this.btnPrefix}m_${session.match.id}_rps_scissors`).setLabel("\u2702\uFE0F Scissors").setStyle(myChoice === "scissors" ? import_discord23.ButtonStyle.Primary : import_discord23.ButtonStyle.Secondary).setDisabled(Boolean(myChoice))
+      );
+      container.addActionRowComponents((ar) => ar.addComponents(...row.components));
+    } else if (game === "fight") {
+      const myHp = isP1 ? session.fightP1Hp : session.fightP2Hp;
+      const oppHp = isP1 ? session.fightP2Hp : session.fightP1Hp;
+      const myCoins = isP1 ? session.fightP1Coins : session.fightP2Coins;
+      const hasShield = isP1 ? session.fightP1Shield : session.fightP2Shield;
+      if (session.fightCombatLog) {
+        text += `> ${session.fightCombatLog}
+
+`;
+      }
+      text += `\u{1F4CA} **Your HP:** ${myHp} / 100 \u2022 **Coins:** \xA2${myCoins} ${hasShield ? "(\u{1F6E1}\uFE0F Shield Active)" : ""}
+\u{1F3AF} **Opponent HP:** ${oppHp} / 100
+
+`;
+      text += isMyTurn ? `\u{1F449} **It's YOUR turn!** Select an action below:
+` : `\u23F3 **Waiting for <@${session.currentTurnId}>'s action...**
+`;
+      text += `> \u23F0 *45s turn timeout*`;
+      container.addTextDisplayComponents((t) => t.setContent(text));
+      const row = new import_discord23.ActionRowBuilder().addComponents(
+        new import_discord23.ButtonBuilder().setCustomId(`${this.btnPrefix}m_${session.match.id}_fight_attack`).setLabel("\u2694\uFE0F Attack").setStyle(import_discord23.ButtonStyle.Primary).setDisabled(!isMyTurn),
+        new import_discord23.ButtonBuilder().setCustomId(`${this.btnPrefix}m_${session.match.id}_fight_heavy`).setLabel("\u{1F4A5} Heavy Strike").setStyle(import_discord23.ButtonStyle.Danger).setDisabled(!isMyTurn),
+        new import_discord23.ButtonBuilder().setCustomId(`${this.btnPrefix}m_${session.match.id}_fight_heal`).setLabel("\u{1F49A} Heal").setStyle(import_discord23.ButtonStyle.Success).setDisabled(!isMyTurn || myHp >= 85),
+        new import_discord23.ButtonBuilder().setCustomId(`${this.btnPrefix}m_${session.match.id}_fight_shield`).setLabel("\u{1F6E1}\uFE0F Shield (\xA225)").setStyle(import_discord23.ButtonStyle.Secondary).setDisabled(!isMyTurn || myCoins < 25 || hasShield)
+      );
+      container.addActionRowComponents((ar) => ar.addComponents(...row.components));
+    }
+    return container;
+  }
+  /**
+   * Renders the outcome container shown to players when an ephemeral match concludes,
+   * with explicit detail on how the player won or was defeated.
+   */
+  renderMatchResultContainer(session, viewingUserId) {
+    const won = session.winnerId === viewingUserId;
+    const opponent = viewingUserId === session.p1.id ? session.p2 : session.p1;
+    const container = this.createContainer(won ? 5763719 : 15548997);
+    const outcome = session.outcomeDetail || session.match.outcomeDetail || "Standard Match Victory";
+    let content = "";
+    if (won) {
+      content = `## \u{1F389} MATCH VICTORY!
+> **Congratulations <@${viewingUserId}>!** You defeated <@${opponent.id}> in Round ${session.round}!
+
+\u2694\uFE0F **Winning Play / Outcome:**
+> \u2022 ${outcome}
+
+\u{1F3C6} **You have ADVANCED to the next round!**
+> Check the updated bracket board in the channel to see your next matchup.`;
+    } else {
+      content = `## \u274C TOURNAMENT ELIMINATION
+> You were defeated by <@${opponent.id}> in Round ${session.round}.
+
+\u2694\uFE0F **Defeat Reason / Deciding Play:**
+> \u2022 ${outcome}
+
+\u{1F44B} **Thank you for playing!** You can continue spectating the remaining matches in the channel.`;
+    }
+    container.addTextDisplayComponents((t) => t.setContent(content));
+    return container;
+  }
+  /**
+   * Renders the interactive container for the live Grand Finals in the main channel.
+   */
+  renderGrandFinalsContainer() {
+    const finalMatch = this.matches.find((m) => m.round === this.numRounds);
+    const session = this.gfSession;
+    const game = this.options.game || "custom";
+    const container = this.createContainer(16766720);
+    let text = `## \u{1F451} GRAND FINALS: <@${finalMatch.p1.id}> vs <@${finalMatch.p2.id}>
+> **Discipline:** ${this.gameTitle.toUpperCase()} \u2022 **THE CHAMPIONSHIP MATCH**
+> \u{1F3C6} *The final game is played LIVE here in the channel!*
+
+`;
+    if (this.isManualMode) {
+      text += `\u{1F449} **Organizer:** Use the manual advance button below to crown the final champion!`;
+      container.addTextDisplayComponents((t) => t.setContent(text));
+    } else if (game === "tictactoe") {
+      const isP1Turn = session.currentTurnId === finalMatch.p1.id;
+      text += `\u{1F449} **Current Turn:** <@${session.currentTurnId}> (${isP1Turn ? "\u274C X" : "\u2B55 O"})
+> \u23F0 *60s turn limit (inactivity forfeits the championship)*`;
+      container.addTextDisplayComponents((t) => t.setContent(text));
+      for (let r = 0; r < 3; r++) {
+        const row = new import_discord23.ActionRowBuilder();
+        for (let c = 0; c < 3; c++) {
+          const idx = r * 3 + c;
+          const cell = session.tttBoard?.[idx];
+          const btn = new import_discord23.ButtonBuilder().setCustomId(`${this.btnPrefix}gf_ttt_${idx}`);
+          if (cell === "X") {
+            btn.setLabel("X").setStyle(import_discord23.ButtonStyle.Danger).setDisabled(true);
+          } else if (cell === "O") {
+            btn.setLabel("O").setStyle(import_discord23.ButtonStyle.Success).setDisabled(true);
+          } else {
+            btn.setLabel("-").setStyle(import_discord23.ButtonStyle.Secondary);
+          }
+          row.addComponents(btn);
+        }
+        container.addActionRowComponents((ar) => ar.addComponents(...row.components));
+      }
+    } else if (game === "rps") {
+      if (session.rpsMessage) {
+        text += `> ${session.rpsMessage}
+
+`;
+      }
+      text += `\u{1F449} **Both finalists: choose your move below!**
+> \u2022 <@${finalMatch.p1.id}>: ${session.rpsP1Choice ? "\u2705 Locked In" : "\u23F3 Deciding..."}
+> \u2022 <@${finalMatch.p2.id}>: ${session.rpsP2Choice ? "\u2705 Locked In" : "\u23F3 Deciding..."}
+`;
+      container.addTextDisplayComponents((t) => t.setContent(text));
+      const row = new import_discord23.ActionRowBuilder().addComponents(
+        new import_discord23.ButtonBuilder().setCustomId(`${this.btnPrefix}gf_rps_rock`).setLabel("\u{1FAA8} Rock").setStyle(import_discord23.ButtonStyle.Primary),
+        new import_discord23.ButtonBuilder().setCustomId(`${this.btnPrefix}gf_rps_paper`).setLabel("\u{1F4C4} Paper").setStyle(import_discord23.ButtonStyle.Primary),
+        new import_discord23.ButtonBuilder().setCustomId(`${this.btnPrefix}gf_rps_scissors`).setLabel("\u2702\uFE0F Scissors").setStyle(import_discord23.ButtonStyle.Primary)
+      );
+      container.addActionRowComponents((ar) => ar.addComponents(...row.components));
+    } else if (game === "fight") {
+      if (session.fightCombatLog) {
+        text += `> ${session.fightCombatLog}
+
+`;
+      }
+      text += `\u{1F4CA} **<@${finalMatch.p1.id}>:** ${session.fightP1Hp} HP \u2022 \xA2${session.fightP1Coins} ${session.fightP1Shield ? "(\u{1F6E1}\uFE0F Shield)" : ""}
+\u{1F4CA} **<@${finalMatch.p2.id}>:** ${session.fightP2Hp} HP \u2022 \xA2${session.fightP2Coins} ${session.fightP2Shield ? "(\u{1F6E1}\uFE0F Shield)" : ""}
+
+\u{1F449} **Current Turn:** <@${session.currentTurnId}>
+> \u23F0 *60s turn limit*`;
+      container.addTextDisplayComponents((t) => t.setContent(text));
+      const isP1 = session.currentTurnId === finalMatch.p1.id;
+      const curHp = isP1 ? session.fightP1Hp : session.fightP2Hp;
+      const curCoins = isP1 ? session.fightP1Coins : session.fightP2Coins;
+      const curShield = isP1 ? session.fightP1Shield : session.fightP2Shield;
+      const row = new import_discord23.ActionRowBuilder().addComponents(
+        new import_discord23.ButtonBuilder().setCustomId(`${this.btnPrefix}gf_fight_attack`).setLabel("\u2694\uFE0F Attack").setStyle(import_discord23.ButtonStyle.Primary),
+        new import_discord23.ButtonBuilder().setCustomId(`${this.btnPrefix}gf_fight_heavy`).setLabel("\u{1F4A5} Heavy Strike").setStyle(import_discord23.ButtonStyle.Danger),
+        new import_discord23.ButtonBuilder().setCustomId(`${this.btnPrefix}gf_fight_heal`).setLabel("\u{1F49A} Heal").setStyle(import_discord23.ButtonStyle.Success).setDisabled(curHp >= 85),
+        new import_discord23.ButtonBuilder().setCustomId(`${this.btnPrefix}gf_fight_shield`).setLabel("\u{1F6E1}\uFE0F Shield (\xA225)").setStyle(import_discord23.ButtonStyle.Secondary).setDisabled(curCoins < 25 || curShield)
+      );
+      container.addActionRowComponents((ar) => ar.addComponents(...row.components));
+    }
+    const controlsRow = new import_discord23.ActionRowBuilder();
+    if (this.isManualMode) {
+      controlsRow.addComponents(
+        new import_discord23.ButtonBuilder().setCustomId(`${this.btnPrefix}manual_menu`).setLabel(this.options.texts?.crownChampionButton || "\u{1F451} Advance / Crown Champion").setStyle(import_discord23.ButtonStyle.Success)
+      );
+    }
+    controlsRow.addComponents(
+      new import_discord23.ButtonBuilder().setCustomId(`${this.btnPrefix}abort`).setLabel(this.options.texts?.abortButton || "Abort Tournament").setStyle(import_discord23.ButtonStyle.Danger)
+    );
+    container.addActionRowComponents((ar) => ar.addComponents(...controlsRow.components));
+    return container;
+  }
+  /**
+   * Renders and updates the main tournament channel message.
+   */
+  async renderAndDisplay(isFinished = false) {
+    const buffer = await RenderBracket.render({
+      gameName: this.gameTitle,
+      rounds: this.numRounds,
+      matches: this.matches,
+      champion: this.champion,
+      title: this.options.title || this.options.embed?.title
+    });
+    const attachment = new import_discord23.AttachmentBuilder(buffer, { name: "tournament-bracket.png" });
+    if (isFinished && this.champion) {
+      const finishContainer = this.createContainer(5763719);
+      const finalsMatch = this.matches.find((m) => m.round === this.numRounds);
+      const outcome = finalsMatch?.outcomeDetail ? `
+> \u2694\uFE0F **Championship Outcome:** ${finalsMatch.outcomeDetail}` : "";
+      const content2 = `## \u{1F3C6} ${this.options.title || "Championship Tournament"}
+> **Discipline:** ${this.gameTitle.toUpperCase()} \u2022 **Rounds:** ${this.numRounds} \u2022 **Players:** ${this.participants.length}
+
+\u{1F389} **TOURNAMENT COMPLETE!**
+> \u{1F451} **CHAMPION:** <@${this.champion.id}> (${this.champion.username}) takes 1st place!${outcome}
+
+Congratulations to all contenders and champions!`;
+      finishContainer.addTextDisplayComponents((t) => t.setContent(this.applyEmbedDecorations(finishContainer, content2)));
+      finishContainer.addMediaGalleryComponents((m) => m.addItems((item) => item.setURL("attachment://tournament-bracket.png")));
+      await this.deliverMessage([finishContainer], [attachment]);
+      return;
+    }
+    if (this.currentRound === this.numRounds && this.gfSession) {
+      const gfContainer = this.renderGrandFinalsContainer();
+      gfContainer.addMediaGalleryComponents((m) => m.addItems((item) => item.setURL("attachment://tournament-bracket.png")));
+      await this.deliverMessage([gfContainer], [attachment]);
+      return;
+    }
+    const currentMatches = this.matches.filter((m) => m.round === this.currentRound);
+    const container = this.createContainer(this.defaultColor);
+    let content = `## \u{1F3C6} ${this.options.title || "Championship Tournament"}
+> **Discipline:** ${this.gameTitle.toUpperCase()} \u2022 **Round:** ${this.currentRound} of ${this.numRounds} \u2022 **Players:** ${this.participants.length}
+
+\u2694\uFE0F **Active Matches (Round ${this.currentRound}):**
+`;
+    for (let i = 0; i < currentMatches.length; i++) {
+      const m = currentMatches[i];
+      const p1Text = m.p1 ? `<@${m.p1.id}>` : "TBD";
+      const p2Text = m.p2 ? `<@${m.p2.id}>` : "TBD";
+      let statusBadge = "\u23F3 Waiting for Players";
+      if (m.winnerId) {
+        const winnerName = m.winnerId === m.p1?.id ? m.p1?.username : m.p2?.username;
+        const outcome = m.outcomeDetail ? ` \u2022 ${m.outcomeDetail}` : "";
+        statusBadge = `\u2705 **${winnerName} Won**${outcome}`;
+      } else {
+        const sess = this.activeSessions.get(m.id);
+        if (sess?.status === "in_progress") {
+          statusBadge = "\u{1F525} **In Progress**";
+        } else if (sess?.p1Ready || sess?.p2Ready) {
+          statusBadge = "\u23F3 1/2 Ready";
+        }
+      }
+      content += `> \u2022 **Match ${i + 1}:** ${p1Text} vs ${p2Text} [${statusBadge}]
+`;
+    }
+    if (this.isManualMode) {
+      content += `
+\u{1F449} **Organizer:** Click **"\u{1F451} Advance Match"** below to record match results!`;
+    } else {
+      content += `
+\u{1F449} **Players:** Click **"\u2694\uFE0F Play My Match"** below to enter your private game!`;
+    }
+    container.addTextDisplayComponents((t) => t.setContent(this.applyEmbedDecorations(container, content)));
+    container.addMediaGalleryComponents((m) => m.addItems((item) => item.setURL("attachment://tournament-bracket.png")));
+    const buttonsRow = new import_discord23.ActionRowBuilder();
+    if (this.isManualMode) {
+      buttonsRow.addComponents(
+        new import_discord23.ButtonBuilder().setCustomId(`${this.btnPrefix}manual_menu`).setLabel(this.options.texts?.manualAdvanceButton || "\u{1F451} Advance Match").setStyle(import_discord23.ButtonStyle.Success)
+      );
+    } else {
+      buttonsRow.addComponents(
+        new import_discord23.ButtonBuilder().setCustomId(`${this.btnPrefix}join`).setLabel(this.options.texts?.playButton || "\u2694\uFE0F Play My Match").setStyle(import_discord23.ButtonStyle.Success)
+      );
+    }
+    buttonsRow.addComponents(
+      new import_discord23.ButtonBuilder().setCustomId(`${this.btnPrefix}refresh`).setLabel(this.options.texts?.refreshButton || "\u{1F504} Refresh Bracket").setStyle(import_discord23.ButtonStyle.Secondary),
+      new import_discord23.ButtonBuilder().setCustomId(`${this.btnPrefix}abort`).setLabel(this.options.texts?.abortButton || "Abort").setStyle(import_discord23.ButtonStyle.Danger)
+    );
+    container.addActionRowComponents((r) => r.addComponents(...buttonsRow.components));
+    await this.deliverMessage([container], [attachment]);
+  }
+  async deliverMessage(components, files) {
+    if (!this.ctx.gameMessage) {
+      await this.ctx.sendInitial({
+        components,
+        files,
+        flags: import_discord23.MessageFlags.IsComponentsV2
+      });
+    } else {
+      await this.ctx.edit({
+        components,
+        files,
+        flags: import_discord23.MessageFlags.IsComponentsV2
+      });
+    }
+  }
+  clearAllTimers() {
+    this.clearTimer();
+    if (this.gfAfkTimer) {
+      clearTimeout(this.gfAfkTimer);
+      this.gfAfkTimer = void 0;
+    }
+    for (const session of this.activeSessions.values()) {
+      if (session.readyTimeoutTimer) {
+        clearTimeout(session.readyTimeoutTimer);
+        session.readyTimeoutTimer = void 0;
+      }
+      if (session.afkTimer) {
+        clearTimeout(session.afkTimer);
+        session.afkTimer = void 0;
+      }
+    }
+  }
+  async endTournament(reason) {
+    this.isActive = false;
+    this.clearAllTimers();
+    this.destroy();
+    this.emitEnd(reason);
+    const container = this.createContainer(15548997).addTextDisplayComponents(
+      (t) => t.setContent(`## \u{1F3C6} Tournament Ended
+> The tournament was ${reason === "aborted" ? "cancelled by organizer" : "ended due to inactivity"}.`)
+    );
+    await this.ctx.edit({
+      components: [container],
+      flags: import_discord23.MessageFlags.IsComponentsV2
+    });
+  }
+};
+
+// src/leaderboard/LeaderboardManager.ts
+var LeaderboardManager = class _LeaderboardManager {
+  players = /* @__PURE__ */ new Map();
+  defaultElo;
+  defaultKFactor;
+  pointing;
+  storageAdapter;
+  wekyManager;
+  constructor(options = {}) {
+    this.defaultElo = options.defaultElo ?? 1200;
+    this.defaultKFactor = options.kFactor ?? 32;
+    this.storageAdapter = options.storageAdapter;
+    this.pointing = options.pointing;
+    this.wekyManager = options.wekyManager;
+  }
+  /**
+   * Calculates ELO rating adjustments using the standard international FIDE ELO formula.
+   *
+   * @param playerElo Rating of Player 1
+   * @param opponentElo Rating of Player 2
+   * @param outcome 1 for player 1 win, 0.5 for draw, 0 for player 1 loss
+   * @param kFactor Weight factor (default: 32)
+   */
+  static calculateElo(playerElo, opponentElo, outcome, kFactor = 32) {
+    const expectedP1 = 1 / (1 + Math.pow(10, (opponentElo - playerElo) / 400));
+    const expectedP2 = 1 - expectedP1;
+    const actualP1 = outcome;
+    const actualP2 = 1 - outcome;
+    const p1Change = Math.round(kFactor * (actualP1 - expectedP1));
+    const p2Change = Math.round(kFactor * (actualP2 - expectedP2));
+    return {
+      p1Change,
+      p2Change,
+      p1NewElo: Math.max(100, playerElo + p1Change),
+      p2NewElo: Math.max(100, opponentElo + p2Change)
+    };
+  }
+  /**
+   * Retrieves or initializes stats for a player.
+   */
+  async getPlayer(userId, username = "Unknown Player", avatarUrl) {
+    if (this.storageAdapter) {
+      const stored = await this.storageAdapter.get(userId);
+      if (stored) {
+        if (username !== "Unknown Player") stored.username = username;
+        if (avatarUrl) stored.avatarUrl = avatarUrl;
+        return stored;
+      }
+    }
+    let player = this.players.get(userId);
+    if (!player) {
+      player = {
+        id: userId,
+        username,
+        avatarUrl,
+        elo: this.defaultElo,
+        wins: 0,
+        losses: 0,
+        draws: 0,
+        winStreak: 0,
+        highestStreak: 0,
+        scores: {},
+        lastPlayed: Date.now()
+      };
+      this.players.set(userId, player);
+      if (this.storageAdapter) {
+        await this.storageAdapter.set(userId, player);
+      }
+    } else {
+      if (username !== "Unknown Player") player.username = username;
+      if (avatarUrl) player.avatarUrl = avatarUrl;
+    }
+    return player;
+  }
+  /**
+   * Records a 1v1 match outcome between two players and updates their ratings and streaks.
+   * If custom pointing is configured (or passed in options), it executes the developer formula;
+   * otherwise it defaults to international FIDE ELO.
+   */
+  async recordMatch(p1Id, p2Id, result, options = {}) {
+    const p1 = await this.getPlayer(p1Id, options.p1Username, options.p1Avatar);
+    const p2 = await this.getPlayer(p2Id, options.p2Username, options.p2Avatar);
+    const oldP1Elo = p1.elo;
+    const oldP2Elo = p2.elo;
+    const pointing = options.pointing || this.pointing;
+    let eloResult;
+    if (pointing?.calculateMatchPoints) {
+      const customRes = pointing.calculateMatchPoints({
+        p1,
+        p2,
+        result,
+        game: options.game,
+        kFactor: options.kFactor ?? this.defaultKFactor
+      });
+      eloResult = {
+        p1Change: customRes.p1Change,
+        p2Change: customRes.p2Change ?? 0,
+        p1NewElo: customRes.p1NewElo ?? Math.max(0, p1.elo + customRes.p1Change),
+        p2NewElo: customRes.p2NewElo ?? Math.max(0, p2.elo + (customRes.p2Change ?? 0))
+      };
+    } else if (pointing?.winPoints !== void 0) {
+      const p1Bonus = result === "p1" ? p1.winStreak * (pointing.streakBonus || 0) : 0;
+      const p2Bonus = result === "p2" ? p2.winStreak * (pointing.streakBonus || 0) : 0;
+      const p1Change = result === "p1" ? pointing.winPoints + p1Bonus : result === "draw" ? pointing.drawPoints ?? 0 : -(pointing.lossPoints ?? 0);
+      const p2Change = result === "p2" ? pointing.winPoints + p2Bonus : result === "draw" ? pointing.drawPoints ?? 0 : -(pointing.lossPoints ?? 0);
+      eloResult = {
+        p1Change,
+        p2Change,
+        p1NewElo: Math.max(0, p1.elo + p1Change),
+        p2NewElo: Math.max(0, p2.elo + p2Change)
+      };
+    } else {
+      const k = options.kFactor ?? this.defaultKFactor;
+      const outcome = result === "p1" ? 1 : result === "draw" ? 0.5 : 0;
+      eloResult = _LeaderboardManager.calculateElo(p1.elo, p2.elo, outcome, k);
+    }
+    p1.elo = eloResult.p1NewElo;
+    p2.elo = eloResult.p2NewElo;
+    p1.lastPlayed = Date.now();
+    p2.lastPlayed = Date.now();
+    if (result === "p1") {
+      p1.wins++;
+      p1.winStreak++;
+      if (p1.winStreak > p1.highestStreak) p1.highestStreak = p1.winStreak;
+      p2.losses++;
+      p2.winStreak = 0;
+    } else if (result === "p2") {
+      p2.wins++;
+      p2.winStreak++;
+      if (p2.winStreak > p2.highestStreak) p2.highestStreak = p2.winStreak;
+      p1.losses++;
+      p1.winStreak = 0;
+    } else {
+      p1.draws++;
+      p2.draws++;
+      p1.winStreak = 0;
+      p2.winStreak = 0;
+    }
+    if (this.storageAdapter) {
+      await this.storageAdapter.set(p1.id, p1);
+      await this.storageAdapter.set(p2.id, p2);
+    }
+    if (this.wekyManager && typeof this.wekyManager.emit === "function") {
+      this.wekyManager.emit("leaderboardUpdate", {
+        userId: p1.id,
+        username: p1.username,
+        game: options.game || "pvp",
+        oldValue: oldP1Elo,
+        newValue: p1.elo,
+        change: eloResult.p1Change,
+        isWin: result === "p1",
+        streak: p1.winStreak
+      });
+      this.wekyManager.emit("leaderboardUpdate", {
+        userId: p2.id,
+        username: p2.username,
+        game: options.game || "pvp",
+        oldValue: oldP2Elo,
+        newValue: p2.elo,
+        change: eloResult.p2Change,
+        isWin: result === "p2",
+        streak: p2.winStreak
+      });
+    }
+    return eloResult;
+  }
+  /**
+   * Records a solo arcade score (e.g. 2048, Snake, FastType).
+   * Updates player's personal best if beaten.
+   */
+  async recordScore(userId, game, score, options = {}) {
+    const player = await this.getPlayer(userId, options.username, options.avatarUrl);
+    const previousBest = player.scores[game] || 0;
+    const pointing = options.pointing || this.pointing;
+    const finalScore = pointing?.calculateSoloPoints ? pointing.calculateSoloPoints({ player, game, score }) : score;
+    const isPersonalBest = finalScore > previousBest;
+    if (isPersonalBest || player.scores[game] === void 0) {
+      player.scores[game] = finalScore;
+    }
+    player.lastPlayed = Date.now();
+    if (this.storageAdapter) {
+      await this.storageAdapter.set(player.id, player);
+    }
+    if (this.wekyManager && typeof this.wekyManager.emit === "function") {
+      this.wekyManager.emit("leaderboardUpdate", {
+        userId: player.id,
+        username: player.username,
+        game,
+        oldValue: previousBest,
+        newValue: player.scores[game],
+        change: finalScore - previousBest,
+        isWin: isPersonalBest,
+        streak: player.winStreak
+      });
+    }
+    return {
+      isPersonalBest,
+      previousBest,
+      newBest: player.scores[game],
+      awardedPoints: finalScore
+    };
+  }
+  /**
+   * Exports all leaderboard player records as a raw JSON serializable array (for web dashboards).
+   */
+  async exportData() {
+    const all = this.storageAdapter ? await this.storageAdapter.getAll() : Array.from(this.players.values());
+    return JSON.parse(JSON.stringify(all));
+  }
+  /**
+   * Imports or merges an external array of player records into the leaderboard (e.g. from a web dashboard database).
+   */
+  async importData(data) {
+    for (const player of data) {
+      this.players.set(player.id, player);
+      if (this.storageAdapter) {
+        await this.storageAdapter.set(player.id, player);
+      }
+    }
+  }
+  /**
+   * Returns top players sorted by ELO rating.
+   */
+  async getTopByElo(limit = 10) {
+    const all = this.storageAdapter ? await this.storageAdapter.getAll() : Array.from(this.players.values());
+    return all.sort((a, b) => b.elo - a.elo).slice(0, limit);
+  }
+  /**
+   * Returns top players for a specific solo minigame by high score.
+   */
+  async getTopByScore(game, limit = 10) {
+    const all = this.storageAdapter ? await this.storageAdapter.getAll() : Array.from(this.players.values());
+    return all.filter((p) => p.scores[game] !== void 0).sort((a, b) => (b.scores[game] || 0) - (a.scores[game] || 0)).slice(0, limit).map((player, index) => ({
+      rank: index + 1,
+      player,
+      score: player.scores[game] || 0
+    }));
+  }
+  /**
+   * Clears all in-memory leaderboard records.
+   */
+  reset() {
+    this.players.clear();
+  }
+};
+
+// src/canvas/RenderLeaderboard.ts
+var import_canvas8 = require("@napi-rs/canvas");
+var RenderLeaderboard = class {
+  static async render(options) {
+    const entries = options.entries.slice(0, 10);
+    const width = 1e3;
+    const rowHeight = 54;
+    const headerHeight = 175;
+    const padding = 28;
+    const height = Math.max(540, headerHeight + entries.length * (rowHeight + 10) + padding + 35);
+    const canvas = (0, import_canvas8.createCanvas)(width, height);
+    const ctx = canvas.getContext("2d");
+    const bgGrad = ctx.createLinearGradient(0, 0, width, height);
+    bgGrad.addColorStop(0, "#080b12");
+    bgGrad.addColorStop(0.4, "#0d1322");
+    bgGrad.addColorStop(1, "#06080d");
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, width, height);
+    const aura = ctx.createRadialGradient(width / 2, 80, 20, width / 2, 80, 480);
+    aura.addColorStop(0, "rgba(88, 101, 242, 0.16)");
+    aura.addColorStop(0.5, "rgba(0, 247, 255, 0.05)");
+    aura.addColorStop(1, "rgba(0, 0, 0, 0)");
+    ctx.fillStyle = aura;
+    ctx.fillRect(0, 0, width, 320);
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.025)";
+    ctx.lineWidth = 1;
+    for (let x = 0; x < width; x += 40) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, height);
+      ctx.stroke();
+    }
+    for (let y = 0; y < height; y += 40) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(width, y);
+      ctx.stroke();
+    }
+    CanvasUtils.fillRoundedRect(ctx, 12, 12, width - 24, height - 24, 20, "transparent", "rgba(88, 101, 242, 0.2)", 1.5);
+    const headerTitle = CanvasUtils.cleanText(options.title || "ARCADE CHAMPIONSHIP");
+    const headerSub = CanvasUtils.cleanText(
+      options.subtitle || (options.gameName ? `TOP PLAYERS \u2022 ${options.gameName.toUpperCase()}` : "GLOBAL LEADERBOARD \u2022 REAL-TIME")
+    );
+    const topBarGrad = ctx.createLinearGradient(padding + 20, 0, width - padding - 20, 0);
+    topBarGrad.addColorStop(0, "#5865f2");
+    topBarGrad.addColorStop(0.5, "#00f7ff");
+    topBarGrad.addColorStop(1, "#ffd700");
+    ctx.fillStyle = topBarGrad;
+    ctx.fillRect(padding + 20, 20, width - (padding + 20) * 2, 3);
+    const categoryBadge = CanvasUtils.cleanText(options.texts?.categoryBadge || "HALL OF FAME");
+    CanvasUtils.fillRoundedRect(ctx, padding + 14, 34, 160, 28, 14, "rgba(88, 101, 242, 0.22)", "#5865f2", 1.2);
+    CanvasUtils.drawStarIcon(ctx, padding + 32, 48, 5, 6, 3, "#5865f2");
+    ctx.fillStyle = "#5865f2";
+    ctx.font = "bold 12px sans-serif";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText(categoryBadge, padding + 45, 48);
+    ctx.save();
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 34px sans-serif";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.shadowColor = "rgba(255, 255, 255, 0.35)";
+    ctx.shadowBlur = 12;
+    ctx.fillText(headerTitle, padding + 14, 94);
+    ctx.restore();
+    ctx.save();
+    ctx.fillStyle = "#8a91a0";
+    ctx.font = "bold 13px sans-serif";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText(headerSub, padding + 16, 125);
+    ctx.restore();
+    const countBadge = options.texts?.topContendersBadge ? CanvasUtils.cleanText(options.texts.topContendersBadge.replace(/\{\{count\}\}/g, String(entries.length))) : `${entries.length} TOP CONTENDERS`;
+    CanvasUtils.fillRoundedRect(ctx, width - padding - 180, 80, 165, 30, 15, "rgba(255, 255, 255, 0.04)", "rgba(255, 255, 255, 0.12)", 1);
+    ctx.fillStyle = "#00f7ff";
+    ctx.font = "bold 11px monospace";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(countBadge, width - padding - 98, 95);
+    const colY = 152;
+    ctx.fillStyle = "#555b6a";
+    ctx.font = "bold 11px sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillText(CanvasUtils.cleanText(options.texts?.rankColumn || "RANK"), padding + 20, colY);
+    ctx.fillText(CanvasUtils.cleanText(options.texts?.playerColumn || "PLAYER"), padding + 115, colY);
+    ctx.fillText(CanvasUtils.cleanText(options.texts?.recordColumn || "RECORD / STREAK"), width - 390, colY);
+    ctx.textAlign = "right";
+    ctx.fillText(CanvasUtils.cleanText(options.texts?.scoreColumn || "SCORE / ELO"), width - padding - 24, colY);
+    const startY = headerHeight;
+    for (let i = 0; i < entries.length; i++) {
+      const entry = entries[i];
+      const y = startY + i * (rowHeight + 10);
+      const isTop1 = entry.rank === 1;
+      const isTop2 = entry.rank === 2;
+      const isTop3 = entry.rank === 3;
+      let cardBg = "rgba(18, 24, 38, 0.65)";
+      let cardBorder = "rgba(255, 255, 255, 0.07)";
+      let rankColor = "#ffffff";
+      let rankBg = "rgba(255, 255, 255, 0.08)";
+      let scoreColor = "#00f7ff";
+      if (isTop1) {
+        cardBg = "rgba(255, 215, 0, 0.11)";
+        cardBorder = "rgba(255, 215, 0, 0.75)";
+        rankColor = "#0a0c12";
+        rankBg = "#ffd700";
+        scoreColor = "#ffd700";
+      } else if (isTop2) {
+        cardBg = "rgba(200, 215, 235, 0.09)";
+        cardBorder = "rgba(200, 215, 235, 0.65)";
+        rankColor = "#0a0c12";
+        rankBg = "#c5d2e0";
+        scoreColor = "#e6edf5";
+      } else if (isTop3) {
+        cardBg = "rgba(205, 127, 50, 0.09)";
+        cardBorder = "rgba(205, 127, 50, 0.65)";
+        rankColor = "#ffffff";
+        rankBg = "#cd7f32";
+        scoreColor = "#e8a05c";
+      }
+      CanvasUtils.fillRoundedRect(ctx, padding + 10, y, width - (padding + 10) * 2, rowHeight, 12, cardBg, cardBorder, isTop1 ? 2 : 1.2);
+      const badgeW = 38;
+      const badgeH = 28;
+      const badgeX = padding + 22;
+      const badgeY = y + (rowHeight - badgeH) / 2;
+      CanvasUtils.fillRoundedRect(ctx, badgeX, badgeY, badgeW, badgeH, 7, rankBg);
+      ctx.fillStyle = rankColor;
+      ctx.font = "bold 13px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      if (isTop1) {
+        CanvasUtils.drawCrownIcon(ctx, badgeX + badgeW / 2, badgeY + 7, 12, 7, "#7a5901");
+        ctx.fillText("1", badgeX + badgeW / 2, badgeY + badgeH / 2 + 5);
+      } else {
+        ctx.fillText(`#${entry.rank}`, badgeX + badgeW / 2, badgeY + badgeH / 2);
+      }
+      const avatarRadius = 19;
+      const avatarX = padding + 90;
+      const avatarY = y + rowHeight / 2;
+      if (entry.avatarUrl) {
+        const borderColor = isTop1 ? "#ffd700" : isTop2 ? "#c5d2e0" : isTop3 ? "#cd7f32" : "#5865f2";
+        await CanvasUtils.drawCircularAvatar(ctx, entry.avatarUrl, avatarX, avatarY, avatarRadius, borderColor, 2.5);
+      } else {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(avatarX, avatarY, avatarRadius, 0, Math.PI * 2);
+        ctx.fillStyle = "#252b38";
+        ctx.fill();
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
+        ctx.stroke();
+        ctx.restore();
+      }
+      ctx.fillStyle = isTop1 ? "#ffd700" : "#ffffff";
+      ctx.font = isTop1 ? "bold 18px sans-serif" : "bold 16px sans-serif";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      const maxNameLen = 17;
+      const cleanName = CanvasUtils.cleanText(entry.username) || entry.username;
+      const displayName = cleanName.length > maxNameLen ? cleanName.slice(0, maxNameLen - 1) + "\u2026" : cleanName;
+      ctx.fillText(displayName, avatarX + avatarRadius + 14, y + rowHeight / 2);
+      const statsX = width - 390;
+      if (entry.streak && entry.streak > 1) {
+        CanvasUtils.fillRoundedRect(ctx, statsX, y + (rowHeight - 24) / 2, 105, 24, 12, "rgba(255, 107, 0, 0.18)", "#ff6b00", 1);
+        CanvasUtils.drawFlameIcon(ctx, statsX + 16, y + rowHeight / 2, 6, "#ff8c38");
+        ctx.fillStyle = "#ff8c38";
+        ctx.font = "bold 11px sans-serif";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "middle";
+        const streakText = options.texts?.streakSuffix || "STREAK";
+        ctx.fillText(`${entry.streak} ${streakText}`, statsX + 27, y + rowHeight / 2);
+        if (entry.stats) {
+          ctx.fillStyle = "#7c8392";
+          ctx.font = "12px sans-serif";
+          ctx.textAlign = "left";
+          ctx.fillText(CanvasUtils.cleanText(entry.stats), statsX + 115, y + rowHeight / 2);
+        }
+      } else {
+        ctx.fillStyle = "#8e95a5";
+        ctx.font = "14px sans-serif";
+        ctx.textAlign = "left";
+        ctx.fillText(CanvasUtils.cleanText(entry.stats) || "\u2014", statsX, y + rowHeight / 2);
+      }
+      const scoreStr = typeof entry.scoreOrElo === "number" ? entry.scoreOrElo.toLocaleString() : String(entry.scoreOrElo);
+      ctx.save();
+      ctx.fillStyle = scoreColor;
+      ctx.font = "bold 19px monospace";
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+      if (isTop1) {
+        ctx.shadowColor = "rgba(255, 215, 0, 0.4)";
+        ctx.shadowBlur = 8;
+      }
+      ctx.fillText(scoreStr, width - padding - 28, y + rowHeight / 2);
+      ctx.restore();
+    }
+    const footerY = height - 16;
+    ctx.fillStyle = "#484f60";
+    ctx.font = "11px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const footer = CanvasUtils.cleanText(options.texts?.footer || "Powered by @m3rcena/weky \u2022 Modern Discord Minigames Engine");
+    ctx.fillText(footer, width / 2, footerY);
+    return canvas.toBuffer("image/png");
+  }
+};
+
+// src/canvas/RenderShareCard.ts
+var import_canvas9 = require("@napi-rs/canvas");
+var RenderShareCard = class {
+  static async render(options) {
+    const width = 840;
+    const height = 480;
+    const canvas = (0, import_canvas9.createCanvas)(width, height);
+    const ctx = canvas.getContext("2d");
+    const accent = options.accentColor || "#00f7ff";
+    const padding = 28;
+    const bgGrad = ctx.createLinearGradient(0, 0, width, height);
+    bgGrad.addColorStop(0, "#070a12");
+    bgGrad.addColorStop(0.45, "#0d1526");
+    bgGrad.addColorStop(1, "#05070d");
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, width, height);
+    const leftAura = ctx.createRadialGradient(160, 220, 20, 160, 220, 280);
+    leftAura.addColorStop(0, "rgba(0, 247, 255, 0.12)");
+    leftAura.addColorStop(0.6, "rgba(88, 101, 242, 0.05)");
+    leftAura.addColorStop(1, "rgba(0, 0, 0, 0)");
+    ctx.fillStyle = leftAura;
+    ctx.fillRect(0, 0, width, height);
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.03)";
+    ctx.lineWidth = 1;
+    for (let x = 0; x < width; x += 40) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, height);
+      ctx.stroke();
+    }
+    for (let y = 0; y < height; y += 40) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(width, y);
+      ctx.stroke();
+    }
+    CanvasUtils.fillRoundedRect(ctx, 14, 14, width - 28, height - 28, 20, "transparent", accent, 1.8);
+    const drawBracket = (cx, cy, dx, dy) => {
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy + dy * 16);
+      ctx.lineTo(cx, cy);
+      ctx.lineTo(cx + dx * 16, cy);
+      ctx.stroke();
+    };
+    drawBracket(24, 24, 1, 1);
+    drawBracket(width - 24, 24, -1, 1);
+    drawBracket(24, height - 24, 1, -1);
+    drawBracket(width - 24, height - 24, -1, -1);
+    CanvasUtils.fillRoundedRect(ctx, padding + 16, padding + 2, 170, 28, 14, "rgba(88, 101, 242, 0.22)", "#5865f2", 1.2);
+    ctx.fillStyle = "#5865f2";
+    ctx.font = "bold 12px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(options.gameName.toUpperCase(), padding + 16 + 170 / 2, padding + 16);
+    const verifiedText = CanvasUtils.cleanText(options.texts?.verifiedStamp || "VERIFIED COMPETITIVE MATCH");
+    ctx.font = "bold 12px sans-serif";
+    const textWidth = ctx.measureText(verifiedText).width;
+    const textRight = width - padding - 18;
+    const textLeft = textRight - textWidth;
+    CanvasUtils.drawCheckmarkIcon(ctx, textLeft - 13, padding + 16, 7, "#57f287", "#070a12");
+    ctx.fillStyle = "#57f287";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+    ctx.fillText(verifiedText, textRight, padding + 16);
+    const headline = CanvasUtils.cleanText(options.headline || "MATCH PERFORMANCE PASS");
+    ctx.save();
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 26px sans-serif";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.shadowColor = "rgba(255, 255, 255, 0.3)";
+    ctx.shadowBlur = 10;
+    ctx.fillText(headline, padding + 16, padding + 58);
+    ctx.restore();
+    const profileW = 230;
+    const profileH = 320;
+    const profileX = padding + 16;
+    const profileY = padding + 85;
+    CanvasUtils.fillRoundedRect(ctx, profileX, profileY, profileW, profileH, 16, "rgba(16, 22, 36, 0.75)", "rgba(255, 255, 255, 0.08)", 1.2);
+    const avatarX = profileX + profileW / 2;
+    const avatarY = profileY + 75;
+    const avatarRadius = 52;
+    if (options.avatarUrl) {
+      await CanvasUtils.drawCircularAvatar(ctx, options.avatarUrl, avatarX, avatarY, avatarRadius, accent, 4);
+    } else {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(avatarX, avatarY, avatarRadius, 0, Math.PI * 2);
+      ctx.fillStyle = "#252b38";
+      ctx.fill();
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 4;
+      ctx.shadowColor = accent;
+      ctx.shadowBlur = 12;
+      ctx.stroke();
+      ctx.restore();
+    }
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 22px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const maxName = 14;
+    const rawUser = CanvasUtils.cleanText(options.username) || options.username;
+    const displayName = rawUser.length > maxName ? rawUser.slice(0, maxName - 1) + "\u2026" : rawUser;
+    ctx.fillText(displayName, avatarX, avatarY + avatarRadius + 26);
+    const rawBadge = CanvasUtils.cleanText(options.rankBadge || "ARCADE PRO") || "ARCADE PRO";
+    CanvasUtils.fillRoundedRect(ctx, avatarX - 75, avatarY + avatarRadius + 46, 150, 26, 13, "rgba(255, 215, 0, 0.16)", "#ffd700", 1.2);
+    CanvasUtils.drawStarIcon(ctx, avatarX - 56, avatarY + avatarRadius + 59, 5, 5, 2.5, "#ffd700");
+    ctx.fillStyle = "#ffd700";
+    ctx.font = "bold 12px sans-serif";
+    ctx.fillText(rawBadge, avatarX + 8, avatarY + avatarRadius + 59);
+    ctx.fillStyle = "#656e80";
+    ctx.font = "bold 10px monospace";
+    ctx.fillText(CanvasUtils.cleanText(options.texts?.authenticatedSub || "WEKY AUTHENTICATED"), avatarX, avatarY + avatarRadius + 92);
+    const rightX = profileX + profileW + 20;
+    const rightW = width - rightX - padding - 16;
+    CanvasUtils.fillRoundedRect(ctx, rightX, profileY, rightW, 95, 14, "rgba(18, 26, 44, 0.85)", "rgba(0, 247, 255, 0.35)", 1.5);
+    ctx.fillStyle = "#7b8599";
+    ctx.font = "bold 11px sans-serif";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    ctx.fillText(CanvasUtils.cleanText(options.texts?.primaryHighlight || "PRIMARY HIGHLIGHT"), rightX + 22, profileY + 16);
+    const cleanPrimaryScore = CanvasUtils.cleanText(options.primaryScore) || options.primaryScore;
+    ctx.save();
+    ctx.fillStyle = accent;
+    ctx.font = "bold 38px monospace";
+    ctx.shadowColor = accent;
+    ctx.shadowBlur = 14;
+    ctx.fillText(cleanPrimaryScore, rightX + 22, profileY + 38);
+    ctx.restore();
+    const defaultStats = [
+      { label: "RANK TIER", value: rawBadge, color: "#ffd700" },
+      { label: "STREAK", value: "ACTIVE STREAK", color: "#ff8c38" },
+      { label: "ENGINE", value: "WEKY 14.28", color: "#00f7ff" },
+      { label: "STATUS", value: "VERIFIED MATCH", color: "#57f287" }
+    ];
+    const statsToRender = (options.stats && options.stats.length >= 2 ? options.stats : defaultStats).slice(0, 4);
+    const cardW = (rightW - 14) / 2;
+    const cardH = 74;
+    const gridY = profileY + 115;
+    for (let i = 0; i < statsToRender.length; i++) {
+      const stat = statsToRender[i];
+      const col = i % 2;
+      const row = Math.floor(i / 2);
+      const cardX = rightX + col * (cardW + 14);
+      const cardY = gridY + row * (cardH + 12);
+      CanvasUtils.fillRoundedRect(ctx, cardX, cardY, cardW, cardH, 10, "rgba(16, 22, 36, 0.7)", "rgba(255, 255, 255, 0.08)", 1);
+      ctx.fillStyle = "#656e80";
+      ctx.font = "bold 11px sans-serif";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+      ctx.fillText(CanvasUtils.cleanText(stat.label).toUpperCase(), cardX + 16, cardY + 14);
+      ctx.fillStyle = stat.color || "#ffffff";
+      ctx.font = "bold 18px monospace";
+      ctx.fillText(CanvasUtils.cleanText(stat.value), cardX + 16, cardY + 38);
+    }
+    const bottomY = height - 26;
+    ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+    for (let bx = padding + 16; bx < padding + 220; bx += 4) {
+      const bH = bx % 8 === 0 ? 14 : bx % 6 === 0 ? 10 : 6;
+      ctx.fillRect(bx, bottomY - bH / 2, 2, bH);
+    }
+    ctx.fillStyle = "#4a5263";
+    ctx.font = "11px monospace";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+    const footerText = CanvasUtils.cleanText(options.texts?.footer || "WEKY-PASSPORT \u2022 AUTHENTICATED BY @M3RCENA/WEKY ENGINE");
+    ctx.fillText(footerText, width - padding - 18, bottomY);
+    return canvas.toBuffer("image/png");
+  }
+};
+
+// src/soundboard/SoundboardManager.ts
+var SoundboardManager = class {
+  client;
+  config;
+  constructor(client, config = {}) {
+    this.client = client;
+    this.config = {
+      enabled: config.enabled ?? false,
+      sounds: config.sounds || {}
+    };
+  }
+  /**
+   * Safely plays a soundboard sound in the given voice channel with diagnostic details.
+   */
+  async playSoundWithResult(channelId, soundTypeOrId, sourceGuildId) {
+    if (!this.config.enabled) {
+      return { success: false, error: "Soundboard integration is disabled in WekyManager configuration." };
+    }
+    if (!channelId) {
+      return { success: false, error: "A valid Voice Channel ID is required to trigger soundboard playback." };
+    }
+    const soundId = this.config.sounds?.[soundTypeOrId] || soundTypeOrId;
+    if (!soundId) {
+      return { success: false, error: `No sound ID found for '${soundTypeOrId}'.` };
+    }
+    try {
+      if (this.client.rest && typeof this.client.rest.post === "function") {
+        const body = { sound_id: soundId };
+        if (sourceGuildId) body.source_guild_id = sourceGuildId;
+        await this.client.rest.post(`/channels/${channelId}/send-soundboard-sound`, {
+          body
+        });
+        return { success: true, soundId };
+      }
+      return { success: false, error: "Discord.js REST client is unavailable." };
+    } catch (err) {
+      const errMsg = err?.rawError?.message || err?.message || "Failed to dispatch soundboard sound.";
+      return { success: false, error: errMsg, soundId };
+    }
+  }
+  /**
+   * Safely plays a soundboard sound in the given voice channel.
+   * If soundboard is disabled or bot lacks permissions, fails silently without crashing.
+   */
+  async playSound(channelId, soundTypeOrId, sourceGuildId) {
+    const res = await this.playSoundWithResult(channelId, soundTypeOrId, sourceGuildId);
+    return res.success;
+  }
+};
+
+// src/bridge/WekyBridge.ts
+var WekyBridge = class {
+  sessions = /* @__PURE__ */ new Map();
+  wekyManager;
+  constructor(wekyManager) {
+    this.wekyManager = wekyManager;
+  }
+  /**
+   * Registers an active game session into the cross-platform bridge.
+   */
+  registerSession(session) {
+    session.createdAt = session.createdAt || Date.now();
+    session.lastUpdated = Date.now();
+    this.sessions.set(session.id, session);
+    if (this.wekyManager && typeof this.wekyManager.emit === "function") {
+      this.wekyManager.emit("bridgeSync", {
+        sessionId: session.id,
+        game: session.game,
+        state: session.state,
+        source: session.platform,
+        timestamp: Date.now()
+      });
+    }
+  }
+  /**
+   * Unregisters a game session upon termination.
+   */
+  unregisterSession(sessionId) {
+    this.sessions.delete(sessionId);
+  }
+  /**
+   * Retrieves a session by ID.
+   */
+  getSession(sessionId) {
+    return this.sessions.get(sessionId);
+  }
+  /**
+   * Returns all active, uncompleted sessions.
+   */
+  getActiveSessions() {
+    return Array.from(this.sessions.values()).filter((s) => !s.isGameOver);
+  }
+  /**
+   * Returns all registered sessions regardless of status.
+   */
+  getAllSessions() {
+    return Array.from(this.sessions.values());
+  }
+  /**
+   * Returns all sessions where a specific user is a participant.
+   */
+  getSessionsForPlayer(playerId) {
+    return Array.from(this.sessions.values()).filter((s) => s.players.some((p) => p.id === playerId));
+  }
+  /**
+   * Updates state for a session and synchronizes it with bridge listeners.
+   */
+  syncState(sessionId, newState, source = "internal") {
+    const session = this.sessions.get(sessionId);
+    if (!session) return;
+    session.state = newState;
+    session.lastUpdated = Date.now();
+    if (this.wekyManager && typeof this.wekyManager.emit === "function") {
+      this.wekyManager.emit("bridgeSync", {
+        sessionId: session.id,
+        game: session.game,
+        state: newState,
+        source,
+        timestamp: Date.now()
+      });
+    }
+  }
+  /**
+   * Dispatches a cross-platform move to an active game session.
+   * Can be invoked from Web Dashboards, REST APIs, or Discord bots.
+   */
+  async dispatchMove(sessionId, move) {
+    const session = this.sessions.get(sessionId);
+    if (!session) {
+      return { success: false, state: null, error: `Session "${sessionId}" not found` };
+    }
+    if (session.isGameOver) {
+      return { success: false, state: session.state, error: "Session has already ended" };
+    }
+    let result;
+    if (session.onMove) {
+      result = await session.onMove(move);
+    } else if (session.engine && typeof session.engine.action === "function") {
+      const engineRes = session.engine.action(move.playerId, move.action, move.payload);
+      result = {
+        success: engineRes.success,
+        state: session.engine.getState(),
+        nextTurnId: session.engine.getState().currentTurn,
+        isGameOver: engineRes.isGameOver,
+        winnerId: engineRes.winnerId,
+        announcement: engineRes.announcement
+      };
+    } else {
+      return { success: false, state: session.state, error: "No move handler registered for session" };
+    }
+    if (result.success) {
+      session.state = result.state ?? session.state;
+      session.lastUpdated = Date.now();
+      if (result.nextTurnId) session.currentTurnId = result.nextTurnId;
+      if (result.isGameOver) {
+        session.isGameOver = true;
+        session.winnerId = result.winnerId;
+      }
+      if (this.wekyManager && typeof this.wekyManager.emit === "function") {
+        this.wekyManager.emit("crossPlatformMove", {
+          sessionId: session.id,
+          game: session.game,
+          playerId: move.playerId,
+          action: move.action,
+          payload: move.payload,
+          platform: move.sourcePlatform
+        });
+        this.wekyManager.emit("bridgeSync", {
+          sessionId: session.id,
+          game: session.game,
+          state: session.state,
+          source: move.sourcePlatform,
+          timestamp: Date.now()
+        });
+      }
+    }
+    return result;
+  }
+  /**
+   * Ends an active game session and flags it as completed.
+   */
+  endSession(sessionId, outcome = {}) {
+    const session = this.sessions.get(sessionId);
+    if (!session) return;
+    session.isGameOver = true;
+    session.winnerId = outcome.winnerId;
+    session.lastUpdated = Date.now();
+  }
+  /**
+   * Renders a live visual snapshot of the session (Canvas image Buffer or Data URL).
+   */
+  async renderSessionSnapshot(sessionId) {
+    const session = this.sessions.get(sessionId);
+    if (!session) return null;
+    if (session.renderSnapshot) {
+      return await session.renderSnapshot();
+    }
+    if (session.engine && typeof session.engine.renderDataURL === "function") {
+      return await session.engine.renderDataURL();
+    }
+    if (session.engine && typeof session.engine.renderBuffer === "function") {
+      return await session.engine.renderBuffer();
+    }
+    return null;
+  }
+  /**
+   * Returns a high-level overview of live games, active sessions, and leaderboard data for Web Dashboards.
+   */
+  async getDashboardOverview() {
+    const activeSessions = this.getActiveSessions().map((s) => ({
+      id: s.id,
+      game: s.game,
+      platform: s.platform,
+      players: s.players.map((p) => ({ id: p.id, username: p.username, platform: p.platform })),
+      currentTurnId: s.currentTurnId,
+      lastUpdated: s.lastUpdated,
+      isGameOver: s.isGameOver
+    }));
+    let topContenders = [];
+    let totalPlayers = 0;
+    if (this.wekyManager && this.wekyManager.leaderboard) {
+      const top = await this.wekyManager.leaderboard.getTopByElo(5);
+      topContenders = top.map((p, index) => ({
+        rank: index + 1,
+        username: p.username,
+        elo: p.elo,
+        wins: p.wins,
+        winStreak: p.winStreak
+      }));
+      const allPlayers = await this.wekyManager.leaderboard.exportData();
+      totalPlayers = allPlayers.length;
+    }
+    return {
+      activeGamesCount: activeSessions.length,
+      totalLeaderboardPlayers: totalPlayers,
+      activeSessions,
+      topContenders
+    };
+  }
+  /**
+   * Exports full state dump of active sessions and leaderboard data for external database syncing.
+   */
+  async exportAllState() {
+    const sessions = Array.from(this.sessions.values()).map((s) => ({
+      ...s,
+      engine: void 0,
+      // Strip non-serializable objects
+      onMove: void 0,
+      renderSnapshot: void 0
+    }));
+    let leaderboard;
+    if (this.wekyManager?.leaderboard) {
+      leaderboard = await this.wekyManager.leaderboard.exportData();
+    }
+    return { sessions, leaderboard };
+  }
+  /**
+   * Imports state dump from an external database or dashboard backend.
+   */
+  async importAllState(data) {
+    if (data.sessions) {
+      for (const s of data.sessions) {
+        this.sessions.set(s.id, s);
+      }
+    }
+    if (data.leaderboard && this.wekyManager?.leaderboard) {
+      await this.wekyManager.leaderboard.importData(data.leaderboard);
+    }
+  }
+};
+
 // src/utils/Notifier.ts
 var yellow = (s) => `\x1B[33m${s}\x1B[39m`;
 var green = (s) => `\x1B[32m${s}\x1B[39m`;
@@ -5797,6 +8755,9 @@ var WekyManager = class extends import_events.EventEmitter {
   embedColor;
   unauthorizedMessage;
   notifyUpdates = true;
+  soundboard;
+  leaderboard;
+  bridge;
   /**
    * Initializes the WekyManager.
    * @param client The Discord.js Client instance.
@@ -5805,11 +8766,12 @@ var WekyManager = class extends import_events.EventEmitter {
    */
   constructor(client, options, notifyUpdatesParam) {
     super();
-    if (!client || !(client instanceof import_discord22.Client) && typeof client.on !== "function") {
+    if (!client || !(client instanceof import_discord24.Client) && typeof client.on !== "function") {
       throw new TypeError("[WekyManager] A valid Discord.js Client instance is required.");
     }
     this._client = client;
     this._eventManager = new EventManager(this._client);
+    this.bridge = new WekyBridge(this);
     if (typeof options === "boolean") {
       this.notifyUpdates = options;
     } else if (typeof options === "string") {
@@ -5828,10 +8790,32 @@ var WekyManager = class extends import_events.EventEmitter {
         this.notifyUpdates = options.notifyUpdates;
       }
     }
+    const sbConfig = options && typeof options === "object" ? options.soundboard : void 0;
+    this.soundboard = new SoundboardManager(this._client, sbConfig);
+    const lbConfig = options && typeof options === "object" ? options.leaderboard : void 0;
+    this.leaderboard = new LeaderboardManager({ ...lbConfig, wekyManager: this });
     if (this.notifyUpdates) {
       checkPackageUpdates(version, false).catch(() => {
       });
     }
+  }
+  on(event, listener) {
+    return super.on(event, listener);
+  }
+  once(event, listener) {
+    return super.once(event, listener);
+  }
+  emit(event, ...args) {
+    return super.emit(event, ...args);
+  }
+  off(event, listener) {
+    return super.off(event, listener);
+  }
+  addListener(event, listener) {
+    return super.addListener(event, listener);
+  }
+  removeListener(event, listener) {
+    return super.removeListener(event, listener);
   }
   /**
    * Manually checks for newer versions of @m3rcena/weky.
@@ -5969,6 +8953,99 @@ var WekyManager = class extends import_events.EventEmitter {
     const game = new TicTacToe(this, options);
     await game.start();
   }
+  /**
+   * Starts a new **Arcade Hub** central minigames launcher cabinet.
+   */
+  async createArcadeHub(options) {
+    const hub = new ArcadeHub(this, options);
+    await hub.start();
+  }
+  /**
+   * Starts a new automated or manual **Tournament** bracket championship (4 to 16 players).
+   */
+  async createTournament(options) {
+    const tournament = new TournamentManager(this, options);
+    await tournament.start();
+    return tournament;
+  }
+  /**
+   * Generates tournament bracket progress manually for any game or custom competition.
+   */
+  async generateTournamentProgress(options) {
+    return TournamentManager.generateBracketProgress(options);
+  }
+  /**
+   * Generates a tournament bracket canvas chart image buffer.
+   */
+  async renderTournamentBracket(options) {
+    return RenderBracket.render(options);
+  }
+  /**
+   * Generates a high-score arcade leaderboard card image buffer.
+   */
+  async renderLeaderboard(options) {
+    return RenderLeaderboard.render(options);
+  }
+  /**
+   * Generates a "Share & Flex" gamer score card image buffer.
+   */
+  async renderShareCard(options) {
+    return RenderShareCard.render(options);
+  }
+  /**
+   * Launches any minigame by key (used by ArcadeHub and custom launchers).
+   */
+  async launchGameByKey(gameKey, contextOrOptions) {
+    const rawContext = contextOrOptions instanceof ContextAdapter ? contextOrOptions.raw : contextOrOptions?.context || contextOrOptions?.interaction || contextOrOptions?.message || contextOrOptions;
+    const baseOpts = {
+      context: rawContext,
+      ...typeof contextOrOptions === "object" && !(contextOrOptions instanceof ContextAdapter) ? contextOrOptions : {}
+    };
+    switch (gameKey.toLowerCase()) {
+      case "2048":
+        return this.create2048(baseOpts);
+      case "calculator":
+        return this.createCalculator(baseOpts);
+      case "chaoswords":
+        return this.createChaosWords(baseOpts);
+      case "fasttype":
+        return this.createFastType(baseOpts);
+      case "fight":
+        return this.createFight({ ...baseOpts, ai: true });
+      case "gtn":
+      case "guessthenumber":
+        return this.createGuessTheNumber(baseOpts);
+      case "gtp":
+      case "guessthepokemon":
+        return this.createGuessThePokemon(baseOpts);
+      case "hangman":
+        return this.createHangman(baseOpts);
+      case "lieswatter":
+        return this.createLieSwatter(baseOpts);
+      case "nhie":
+      case "neverhaveiever":
+        return this.createNeverHaveIEver(baseOpts);
+      case "quickclick":
+        return this.createQuickClick(baseOpts);
+      case "rps":
+      case "rockpaperscissors":
+        return this.createRPS(baseOpts);
+      case "shuffleguess":
+        return this.createShuffleGuess(baseOpts);
+      case "snake":
+        return this.createSnake(baseOpts);
+      case "tictactoe":
+        return this.createTicTacToe({ ...baseOpts, ai: true });
+      case "wyptb":
+      case "willyoupressthebutton":
+        return this.createWillYouPressTheButton(baseOpts);
+      case "wyr":
+      case "wouldyourather":
+        return this.createWouldYouRather(baseOpts);
+      default:
+        throw new Error(`[WekyManager] Unknown game key: ${gameKey}`);
+    }
+  }
   /* -------------------------------------------------------------------------- */
   /* UTILITY HELPERS                                                            */
   /* -------------------------------------------------------------------------- */
@@ -5995,7 +9072,7 @@ var WekyManager = class extends import_events.EventEmitter {
    * Builds an EmbedBuilder instance with defaults applied.
    */
   _createEmbed(embedOptions = {}, noFields = false) {
-    const embed = new import_discord22.EmbedBuilder();
+    const embed = new import_discord24.EmbedBuilder();
     if (embedOptions.title) embed.setTitle(embedOptions.title);
     if (embedOptions.description) embed.setDescription(embedOptions.description);
     if (embedOptions.url) embed.setURL(embedOptions.url);
@@ -6018,6 +9095,27 @@ var WekyManager = class extends import_events.EventEmitter {
       embed.setFields(embedOptions.fields);
     }
     return embed;
+  }
+  /* -------------------------------------------------------------------------- */
+  /* CROSS-PLATFORM BRIDGE & DASHBOARD GATEWAY                                  */
+  /* -------------------------------------------------------------------------- */
+  /**
+   * Retrieves dashboard overview metrics, live sessions, and leaderboard data for Web Dashboards.
+   */
+  async getDashboardOverview() {
+    return await this.bridge.getDashboardOverview();
+  }
+  /**
+   * Dispatches a cross-platform move from Web Dashboard, REST API, or Discord.
+   */
+  async dispatchCrossPlatformMove(sessionId, move) {
+    return await this.bridge.dispatchMove(sessionId, move);
+  }
+  /**
+   * Registers an external or hybrid game session with the cross-platform bridge.
+   */
+  registerCrossPlatformSession(session) {
+    this.bridge.registerSession(session);
   }
 };
 
@@ -7045,6 +10143,8 @@ var WekyEngine = class _WekyEngine {
 };
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
+  ARCADE_GAMES,
+  ArcadeHub,
   BaseGame,
   COMMON_WORDS,
   Calculator,
@@ -7054,8 +10154,10 @@ var WekyEngine = class _WekyEngine {
   ContextAdapter,
   EASY_SENTENCES,
   EventManager,
+  FIGHT_BOSSES,
   FastType,
   Fight,
+  FightAI,
   FightEngine,
   Game2048,
   Game2048Engine,
@@ -7065,6 +10167,7 @@ var WekyEngine = class _WekyEngine {
   HARD_SENTENCES,
   Hangman,
   HangmanEngine,
+  LeaderboardManager,
   LieSwatter,
   MEDIUM_SENTENCES,
   MathEvaluator,
@@ -7072,21 +10175,29 @@ var WekyEngine = class _WekyEngine {
   NeverHaveIEver,
   POPULAR_POKEMONS,
   QuickClick,
+  RPSPredictor,
   Render2048,
+  RenderBracket,
   RenderFight,
   RenderHangman,
+  RenderLeaderboard,
   RenderPokemon,
+  RenderShareCard,
   RenderSnake,
   RockPaperScissors,
   ShuffleGuess,
   Snake,
   SnakeEngine,
+  SoundboardManager,
   TRIVIA_FACTS,
   TicTacToe,
+  TicTacToeAI,
   TicTacToeEngine,
+  TournamentManager,
   VERSION,
   WYPTB_DILEMMAS,
   WYR_DILEMMAS,
+  WekyBridge,
   WekyCanvas,
   WekyEngine,
   WekyManager,
@@ -7114,6 +10225,94 @@ var WekyEngine = class _WekyEngine {
   stripAnsi,
   version
 });
+/**
+ * Strongly-Typed Event Payloads and Event Map for WekyManager.
+ *
+ * @copyright 2026 M3rcena Development. All rights reserved.
+ * @license Apache-2.0
+ */
+/**
+ * Fight RPG AI & Boss Engine
+ * Pre-configured tactical bosses and automated decision trees.
+ *
+ * @copyright 2026 M3rcena Development. All rights reserved.
+ * @license Apache-2.0
+ */
+/**
+ * Rock Paper Scissors Psychological AI Engine
+ * Uses win-stay / lose-shift psychological heuristic tracking
+ * to intelligently counter human move habits.
+ *
+ * @copyright 2026 M3rcena Development. All rights reserved.
+ * @license Apache-2.0
+ */
+/**
+ * TicTacToe AI Engine
+ * Implements Minimax with depth penalty for optimal play,
+ * plus medium and easy heuristic modes.
+ *
+ * @copyright 2026 M3rcena Development. All rights reserved.
+ * @license Apache-2.0
+ */
+/**
+ * Arcade Hub Interface
+ * A centralized, categorized launcher for all 17 Weky minigames.
+ *
+ * @copyright 2026 M3rcena Development. All rights reserved.
+ * @license Apache-2.0
+ */
+/**
+ * Canvas Tournament Bracket Renderer
+ * Generates an eSports-style visual bracket chart using @napi-rs/canvas.
+ *
+ * @copyright 2026 M3rcena Development. All rights reserved.
+ * @license Apache-2.0
+ */
+/**
+ * Automated & Manual Tournament Manager
+ * Manages player brackets, automated dual-ephemeral matches, manual winner progression,
+ * detailed victory/defeat outcome tracking, live public Grand Finals, and visual bracket updates.
+ *
+ * @copyright 2026 M3rcena Development. All rights reserved.
+ * @license Apache-2.0
+ */
+/**
+ * ELO & High-Score Leaderboard Engine
+ * Provides plug-and-play ELO rating calculations, streak tracking, and score storage.
+ *
+ * @copyright 2026 M3rcena Development. All rights reserved.
+ * @license Apache-2.0
+ */
+/**
+ * Canvas Leaderboard Renderer
+ * Generates an eSports-grade High-Score poster using @napi-rs/canvas.
+ *
+ * @copyright 2026 M3rcena Development. All rights reserved.
+ * @license Apache-2.0
+ */
+/**
+ * "Share & Flex" Gamer Score Card Generator
+ * Generates an eSports-grade holographic match victory / performance pass using @napi-rs/canvas.
+ *
+ * @copyright 2026 M3rcena Development. All rights reserved.
+ * @license Apache-2.0
+ */
+/**
+ * Soundboard & Audio Integration
+ * Plays Discord soundboard sounds on key minigame events.
+ *
+ * @copyright 2026 M3rcena Development. All rights reserved.
+ * @license Apache-2.0
+ */
+/**
+ * Weky Cross-Platform Bridge & Dashboard Gateway
+ * Connects Discord minigame instances with Headless Engines and Web Dashboards,
+ * enabling real-time game state synchronization, cross-platform move execution,
+ * and unified leaderboard data access.
+ *
+ * @copyright 2026 M3rcena Development. All rights reserved.
+ * @license Apache-2.0
+ */
 /**
  * Utility functions for update checking and terminal box notifications.
  *

@@ -212,7 +212,9 @@ export interface FightPowerUp {
  * Fight Game Options
  */
 export interface FightTypes extends BaseGameOptions {
-  opponent: GuildMember | User;
+  opponent?: GuildMember | User;
+  ai?: boolean;
+  boss?: "dragon" | "cyber_knight" | "shadow_goblin";
   startHealth?: number;
   damageMax?: number;
   coins?: number;
@@ -588,6 +590,7 @@ export type WYRTypes = WouldYouRatherTypes;
  */
 export interface RPSTypes extends BaseGameOptions {
   opponent?: GuildMember | User;
+  difficulty?: "easy" | "medium" | "hard";
   buttons?: {
     rock?: string;
     paper?: string;
@@ -602,6 +605,8 @@ export interface RPSTypes extends BaseGameOptions {
  */
 export interface TicTacToeTypes extends BaseGameOptions {
   opponent?: GuildMember | User;
+  ai?: boolean;
+  difficulty?: "easy" | "medium" | "hard" | "unbeatable";
   emojis?: {
     x?: string;
     o?: string;
@@ -636,3 +641,10 @@ export interface IMinigame {
 }
 
 export type { WekyManagerOptions } from "./WekyManager.js";
+export type { ArcadeHubOptions, ArcadeGameEntry } from "../hub/ArcadeHub.js";
+export type { TournamentOptions } from "../tournament/TournamentManager.js";
+export type { BracketParticipant, BracketMatch, BracketRenderOptions } from "../tournament/RenderBracket.js";
+export type { LeaderboardPlayer, EloChangeResult, LeaderboardStorageAdapter, LeaderboardManagerOptions } from "../leaderboard/LeaderboardManager.js";
+export type { LeaderboardEntry, RenderLeaderboardOptions } from "../canvas/RenderLeaderboard.js";
+export type { ShareCardStat, RenderShareCardOptions } from "../canvas/RenderShareCard.js";
+export type { SoundboardConfig } from "../soundboard/SoundboardManager.js";

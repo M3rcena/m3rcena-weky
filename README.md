@@ -28,23 +28,121 @@
 
 ---
 
-## ⚡ What's New in v14.27.0?
+## ⚡ What's New in v14.28.0?
 
-> **Versioning Notice**: `@m3rcena/weky` strictly mirrors the version numbering of **`discord.js`** (currently `14.27.0`). Whenever Discord.js releases updates, `@m3rcena/weky` releases an identical version to ensure 100% API parity, zero peer-dependency conflicts, and instantaneous support for Discord's newest features like **Components V2**.
+> **Versioning Notice**: `@m3rcena/weky` strictly mirrors the version numbering of **`discord.js`** (now `14.28.0`). Whenever Discord.js releases updates, `@m3rcena/weky` releases an identical version to ensure 100% API parity, zero peer-dependency conflicts, and instantaneous support for Discord's newest features like **Components V2**.
 
-The original `weky` relied on external backend servers and database round-trips for rendering canvas images and managing states. **Version 14.27.0 is a complete, ground-up rewrite designed for maximum speed, security, and developer ergonomics.**
+Version 14.28.0 introduces 6 major, ground-breaking features that elevate Discord gaming beyond simple bot commands:
 
-| Feature               | ❌ Old Version                         | 🚀 @m3rcena/weky v14.27.0                                     |
-| :-------------------- | :------------------------------------- | :------------------------------------------------------------ |
-| **Components System** | Deprecated legacy embeds & action rows | **Components V2 (`ContainerBuilder`, `MediaGalleryBuilder`)** |
-| **Canvas Rendering**  | External HTTP server / base64          | **Native `@napi-rs/canvas` (Rust-powered, <10ms in-memory)**  |
-| **Backend / DB**      | Required Express API & Postgres        | **100% Standalone (Zero server or database required)**        |
-| **Context System**    | Fragile defer hacks, frequent crashes  | **Universal ContextAdapter (Auto-handles Slash & Prefix)**    |
-| **Discord.js APIs**   | Deprecated `ephemeral` & `fetchReply`  | **100% Modern DJS v14.27+ (`flags`, `withResponse: true`)**   |
-| **Safety**            | Risky math expressions                 | **100% Safe AST-Free Math Parser (Zero `eval`)**              |
-| **Games Included**    | 15 minigames                           | **17 Polished Minigames (incl. RPS & Tic-Tac-Toe)**           |
-| **Module Support**    | CJS / ESM issues                       | **Seamless Dual ESM + CommonJS + Full `.d.ts`**               |
-| **Dashboard Ready**   | Discord bot only                       | **Headless Engines (`WekyEngine`) & Standalone Canvas Hub**   |
+1. 🕹️ **The Arcade Hub (`weky.createArcadeHub`)**: Centralized launcher grouping all 17 minigames into 4 clean categories with dropdown menus and random pickers.
+2. 🏆 **Automated Tournament & Canvas Bracket Engine (`weky.createTournament`)**: Single-elimination eSports tournaments (4 to 16 players) with live `@napi-rs/canvas` bracket charts.
+3. 🤖 **Intelligent AI Opponents & RPG Boss Duels**: Play solo against Minimax TicTacToe AI, psychological RPS predictors, or battle 3 unique RPG bosses (*Dragon Sovereign*, *Cyber Knight*, *Shadow Goblin*) in Fight!
+4. 🔊 **Discord Soundboard & Audio SFX (`weky.soundboard`)**: Safe REST soundboard sound dispatcher for victories, defeats, and match actions.
+5. 📈 **Plug-and-Play ELO & Canvas Leaderboards (`weky.leaderboard`, `weky.renderLeaderboard`)**: Mathematical ELO rating calculation and neon high-score poster generation.
+6. 🎟️ **"Share & Flex" Gamer Score Cards (`weky.renderShareCard`)**: Collectible holographic gamer victory tickets with custom stats and rank badges.
+
+---
+
+## 🌟 v14.28.0 Spotlight Features & Examples
+
+### 🕹️ 1. The Arcade Hub Launcher
+
+Launch a complete arcade cabinet interface in one line of code! Players can browse games by category (*Classic Arcade*, *PvP Duels*, *Brain & Puzzles*, *Party & Social*) or click "🎲 Random Game":
+
+```typescript
+// /arcade Slash Command or Message
+await weky.createArcadeHub({
+  context: interaction, // or message
+  title: "Official Community Arcade Cabinet",
+});
+```
+
+### 🏆 2. Automated Tournaments & Canvas Brackets
+
+Organize seamless 4 to 16-player championships with auto-generated visual brackets:
+
+```typescript
+await weky.createTournament({
+  context: interaction,
+  game: "tictactoe", // "tictactoe" | "rps" | "fight"
+  players: [player1, player2, player3, player4], // User or GuildMember array
+  title: "Autumn Invitational Cup 🏆",
+});
+```
+
+### 🤖 3. Intelligent AI Opponents & Boss Fights
+
+No opponent online? Play solo against intelligent AI engines!
+
+```typescript
+// Unbeatable Minimax Tic Tac Toe
+await weky.createTicTacToe({
+  context: interaction,
+  ai: true,
+  difficulty: "unbeatable", // "easy" | "medium" | "hard" | "unbeatable"
+});
+
+// Turn-Based RPG Fight vs Dragon Sovereign Boss
+await weky.createFight({
+  context: interaction,
+  ai: true,
+  boss: "dragon", // "dragon" | "cyber_knight" | "shadow_goblin"
+});
+
+// Psychological Rock Paper Scissors
+await weky.createRPS({
+  context: interaction,
+  difficulty: "hard", // Heuristic win-stay / lose-shift predictor
+});
+```
+
+### 📈 4. Plug-and-Play ELO & Canvas Leaderboards
+
+Calculate ELO ratings with standard FIDE formulas and render high-res arcade posters:
+
+```typescript
+// 1. Record a 1v1 match outcome
+const eloResult = await weky.leaderboard.recordMatch(
+  winner.id,
+  loser.id,
+  "p1",
+  { p1Username: winner.username, p2Username: loser.username }
+);
+console.log(`Winner ELO: ${eloResult.p1NewElo} (+${eloResult.p1Change})`);
+
+// 2. Render an eSports-style High-Score Poster
+const buffer = await weky.renderLeaderboard({
+  title: "GLOBAL TOURNAMENT RANKINGS",
+  subtitle: "SEASON 1 • TOP PLAYERS",
+  entries: [
+    { rank: 1, username: "Alice", scoreOrElo: "1,485 ELO", streak: 5 },
+    { rank: 2, username: "Bob", scoreOrElo: "1,420 ELO", stats: "14W - 2L" },
+  ],
+});
+```
+
+### 🎟️ 5. "Share & Flex" Gamer Score Cards
+
+Generate collectible gamer passports and victory tickets:
+
+```typescript
+const ticketBuffer = await weky.renderShareCard({
+  username: interaction.user.username,
+  avatarUrl: interaction.user.displayAvatarURL({ extension: "png" }),
+  gameName: "Retro Snake",
+  headline: "NEW RECORD ACHIEVED! 🏆",
+  primaryScore: "28,450 PTS",
+  rankBadge: "GRANDMASTER",
+  stats: [
+    { label: "DIFFICULTY", value: "INSANE", color: "#ff4444" },
+    { label: "APPLES", value: "94", color: "#57f287" },
+    { label: "TIME", value: "11m 40s", color: "#00f7ff" },
+    { label: "ACCURACY", value: "99.1%", color: "#ffd700" },
+  ],
+});
+```
+
+---
 
 ---
 

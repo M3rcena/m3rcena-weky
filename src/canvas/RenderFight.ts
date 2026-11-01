@@ -12,6 +12,14 @@ export interface FightPlayerInfo {
   activeEffects?: string[];
 }
 
+export interface FightCardCustomTexts {
+  title?: string;
+  subtitle?: string;
+  vsText?: string;
+  hpLabel?: string;
+  coinLabel?: string;
+}
+
 export class RenderFight {
   /**
    * Sanitizes text for Canvas rendering by stripping markdown asterisks,
@@ -46,7 +54,7 @@ export class RenderFight {
   /**
    * Renders the initial Fight Challenge / Request card.
    */
-  public static async renderRequestCard(challenger: { username: string; avatarUrl: string }, opponent: { username: string; avatarUrl: string }): Promise<Buffer> {
+  public static async renderRequestCard(challenger: { username: string; avatarUrl: string }, opponent: { username: string; avatarUrl: string }, customTexts?: FightCardCustomTexts): Promise<Buffer> {
     const W = 900;
     const H = 520;
     const canvas = new Canvas(W, H);
@@ -87,7 +95,8 @@ export class RenderFight {
     ctx.fillStyle = "#00f5a0";
     ctx.shadowColor = "rgba(0, 245, 160, 0.6)";
     ctx.shadowBlur = 18;
-    ctx.fillText("DUEL CHALLENGE", W / 2, 75);
+    const reqTitle = CanvasUtils.cleanText(customTexts?.title || "DUEL CHALLENGE");
+    ctx.fillText(reqTitle, W / 2, 75);
     ctx.restore();
 
     // Avatars
@@ -105,7 +114,8 @@ export class RenderFight {
     ctx.fillStyle = "#ffffff";
     ctx.shadowColor = "rgba(255, 255, 255, 0.6)";
     ctx.shadowBlur = 12;
-    ctx.fillText("VS", vsX, vsY + 2);
+    const vsText = CanvasUtils.cleanText(customTexts?.vsText || "VS");
+    ctx.fillText(vsText, vsX, vsY + 2);
     ctx.restore();
 
     // Player Cards
@@ -129,7 +139,8 @@ export class RenderFight {
     ctx.font = "15px sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("Awaiting opponent to accept duel...", W / 2, 455);
+    const reqSub = CanvasUtils.cleanText(customTexts?.subtitle || "Awaiting opponent to accept duel...");
+    ctx.fillText(reqSub, W / 2, 455);
 
     return canvas.toBuffer("image/png");
   }
@@ -137,7 +148,13 @@ export class RenderFight {
   /**
    * Renders the dynamic Battle Arena card with health bars, coins, and current turn indicators.
    */
-  public static async renderBattleCard(player1: FightPlayerInfo, player2: FightPlayerInfo, currentTurnUserId: string, announcement: string = "Battle in progress!"): Promise<Buffer> {
+  public static async renderBattleCard(
+    player1: FightPlayerInfo,
+    player2: FightPlayerInfo,
+    currentTurnUserId: string,
+    announcement: string = "Battle in progress!",
+    customTexts?: FightCardCustomTexts
+  ): Promise<Buffer> {
     const W = 900;
     const H = 620;
     const canvas = new Canvas(W, H);
@@ -162,7 +179,7 @@ export class RenderFight {
     }
 
     // Announcement Banner (Top)
-    const cleanAnnouncement = this.cleanText(announcement, [player1, player2]) || "Duel in progress!";
+    const cleanAnnouncement = this.cleanText(customTexts?.title || announcement, [player1, player2]) || "Duel in progress!";
     CanvasUtils.fillRoundedRect(ctx, 40, 24, W - 80, 60, 16, "rgba(18, 22, 30, 0.88)", "rgba(255, 255, 255, 0.12)", 1.5);
 
     ctx.save();
@@ -180,8 +197,8 @@ export class RenderFight {
     const isP1Turn = player1.id === currentTurnUserId;
     const isP2Turn = player2.id === currentTurnUserId;
 
-    await this.drawFighterPanel(ctx, player1, 45, 110, 365, 475, isP1Turn, "#00f5a0");
-    await this.drawFighterPanel(ctx, player2, 490, 110, 365, 475, isP2Turn, "#ff2d55");
+    await this.drawFighterPanel(ctx, player1, 45, 110, 365, 475, isP1Turn, "#00f5a0", customTexts);
+    await this.drawFighterPanel(ctx, player2, 490, 110, 365, 475, isP2Turn, "#ff2d55", customTexts);
 
     // Center "VS" Shield
     const vsX = W / 2;
@@ -192,13 +209,14 @@ export class RenderFight {
     ctx.fillStyle = "rgba(255, 255, 255, 0.75)";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("VS", vsX, vsY + 1);
+    const vsLabel = CanvasUtils.cleanText(customTexts?.vsText || "VS");
+    ctx.fillText(vsLabel, vsX, vsY + 1);
     ctx.restore();
 
     return canvas.toBuffer("image/png");
   }
 
-  private static async drawFighterPanel(ctx: SKRSContext2D, player: FightPlayerInfo, x: number, y: number, w: number, h: number, isTurn: boolean, themeColor: string): Promise<void> {
+  private static async drawFighterPanel(ctx: SKRSContext2D, player: FightPlayerInfo, x: number, y: number, w: number, h: number, isTurn: boolean, themeColor: string, customTexts?: FightCardCustomTexts): Promise<void> {
     const borderColor = isTurn ? themeColor : "rgba(255, 255, 255, 0.08)";
     const borderWidth = isTurn ? 2.5 : 1;
 
@@ -227,8 +245,10 @@ export class RenderFight {
     const truncated = player.username.length > 15 ? player.username.slice(0, 14) + "…" : player.username;
     ctx.fillText(truncated, x + w / 2, nameY);
 
-    // Health Bar Container
-    const hp = Math.max(0, Math.min(100, player.health));
+    // Health Bar Container (Scaled to maxHealth)
+    const maxHp = player.maxHealth || 100;
+    const currentHp = Math.max(0, Math.min(maxHp, player.health));
+    const hpRatio = maxHp > 0 ? currentHp / maxHp : 0;
     const hpY = nameY + 28;
     const barW = w - 44;
     const barX = x + 22;
@@ -238,13 +258,13 @@ export class RenderFight {
     CanvasUtils.fillRoundedRect(ctx, barX, hpY, barW, barH, 13, "#212530", "rgba(255,255,255,0.06)", 1);
 
     // Dynamic gradient HP fill
-    if (hp > 0) {
-      const fillW = Math.max(barH, (barW * hp) / 100);
+    if (currentHp > 0) {
+      const fillW = Math.max(barH, barW * hpRatio);
       const hpGrad = ctx.createLinearGradient(barX, hpY, barX + fillW, hpY);
-      if (hp > 50) {
+      if (hpRatio > 0.5) {
         hpGrad.addColorStop(0, "#00f5a0");
         hpGrad.addColorStop(1, "#00b862");
-      } else if (hp > 25) {
+      } else if (hpRatio > 0.25) {
         hpGrad.addColorStop(0, "#ffb700");
         hpGrad.addColorStop(1, "#ff7700");
       } else {
@@ -255,15 +275,17 @@ export class RenderFight {
     }
 
     // Health Text
+    const hpLabel = CanvasUtils.cleanText(customTexts?.hpLabel || "HP");
     ctx.fillStyle = "#ffffff";
     ctx.font = "bold 13px sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(`${hp} / 100 HP`, x + w / 2, hpY + barH / 2 + 1);
+    ctx.fillText(`${currentHp} / ${maxHp} ${hpLabel}`, x + w / 2, hpY + barH / 2 + 1);
 
     // Coins Counter (Vector Coin - No Tofu Box!)
     const statsY = hpY + 48;
-    const coinStr = `${player.coins} Coins`;
+    const coinLabel = CanvasUtils.cleanText(customTexts?.coinLabel || "Coins");
+    const coinStr = `${player.coins} ${coinLabel}`;
     ctx.font = "bold 16px sans-serif";
     const textW = ctx.measureText(coinStr).width;
     const totalCoinW = 20 + 8 + textW;
@@ -301,7 +323,7 @@ export class RenderFight {
   /**
    * Renders the Victory or Game Over card.
    */
-  public static async renderOutcomeCard(winner: { username: string; avatarUrl: string }, loser?: { username: string; avatarUrl: string }, type: "WIN" | "SURRENDER" | "DENIED" | "TIMEOUT" = "WIN"): Promise<Buffer> {
+  public static async renderOutcomeCard(winner: { username: string; avatarUrl: string }, loser?: { username: string; avatarUrl: string }, type: "WIN" | "SURRENDER" | "DENIED" | "TIMEOUT" = "WIN", customTexts?: FightCardCustomTexts): Promise<Buffer> {
     const W = 900;
     const H = 540;
     const canvas = new Canvas(W, H);
@@ -344,18 +366,8 @@ export class RenderFight {
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
-    let titleText = "VICTORY";
-    let subtitleText = "Wins the battle!";
-    if (type === "SURRENDER") {
-      titleText = "SURRENDER";
-      subtitleText = "The opponent surrendered.";
-    } else if (type === "DENIED") {
-      titleText = "CHALLENGE DECLINED";
-      subtitleText = "The duel invitation was rejected.";
-    } else if (type === "TIMEOUT") {
-      titleText = "TIME'S UP";
-      subtitleText = "The duel timed out due to inactivity.";
-    }
+    let titleText = customTexts?.title || (type === "SURRENDER" ? "SURRENDER" : type === "DENIED" ? "CHALLENGE DECLINED" : type === "TIMEOUT" ? "TIME'S UP" : "VICTORY");
+    let subtitleText = customTexts?.subtitle || (type === "SURRENDER" ? "The opponent surrendered." : type === "DENIED" ? "The duel invitation was rejected." : type === "TIMEOUT" ? "The duel timed out due to inactivity." : "Wins the battle!");
 
     ctx.shadowColor = themeColor;
     ctx.shadowBlur = 22;

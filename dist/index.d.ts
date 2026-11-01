@@ -1,9 +1,9 @@
-import { Client, ColorResolvable, EmbedBuilder, ChatInputCommandInteraction, ButtonInteraction, Message, EmbedFooterData, Interaction, GuildTextBasedChannel, GuildMember, User, ButtonStyle, Guild, TextBasedChannel, ActionRowBuilder, ContainerBuilder, AttachmentBuilder, MessageFlags, MediaGalleryBuilder } from 'discord.js';
+import { Client, User, GuildMember, Interaction, ColorResolvable, EmbedBuilder, ChatInputCommandInteraction, ButtonInteraction, Message, EmbedFooterData, GuildTextBasedChannel, ButtonStyle, Guild, TextBasedChannel, ActionRowBuilder, ContainerBuilder, AttachmentBuilder, MessageFlags, MediaGalleryBuilder } from 'discord.js';
 import { EventEmitter } from 'events';
 import { SKRSContext2D } from '@napi-rs/canvas';
 
-declare const version = "14.27.0-1";
-declare const VERSION = "14.27.0-1";
+declare const version = "14.28.0";
+declare const VERSION = "14.28.0";
 
 interface PokemonData {
     id: number;
@@ -34,6 +34,886 @@ declare class EventManager {
 }
 
 /**
+ * Strongly-Typed Event Payloads and Event Map for WekyManager.
+ *
+ * @copyright 2026 M3rcena Development. All rights reserved.
+ * @license Apache-2.0
+ */
+
+interface GameStartEvent {
+    /** The minigame key (e.g. "fight", "tictactoe", "snake", "tournament") */
+    game: string;
+    /** The Discord user who started the game */
+    user: User | GuildMember;
+    /** The channel ID where the game was launched */
+    channelId?: string;
+    /** Timestamp when game started */
+    timestamp: number;
+}
+interface GameOverEvent {
+    /** The minigame key */
+    game: string;
+    /** The Discord user who played */
+    user: User | GuildMember;
+    /** Game outcome string (e.g. "won", "lost", "draw", "timeout", "aborted", "finished") */
+    outcome: string;
+    /** Score or final points achieved */
+    score: number;
+    /** Duration of the game in milliseconds */
+    timeElapsed: number;
+    /** Timestamp when game finished */
+    timestamp: number;
+}
+interface GameErrorEvent {
+    /** The minigame key */
+    game: string;
+    /** The error object or reason */
+    error: any;
+    /** Context adapter or interaction context */
+    context?: any;
+}
+interface UnauthorizedClickEvent {
+    /** The minigame key */
+    game: string;
+    /** The user who attempted the unauthorized button click */
+    user: User;
+    /** The Discord interaction */
+    interaction: Interaction;
+}
+interface LeaderboardUpdateEvent {
+    /** The player user ID */
+    userId: string;
+    /** The player's username */
+    username: string;
+    /** Minigame key or category */
+    game: string;
+    /** Rating or score before this update */
+    oldValue: number;
+    /** Rating or score after this update */
+    newValue: number;
+    /** Change delta (+ or -) */
+    change: number;
+    /** Whether the match was a victory for this player */
+    isWin: boolean;
+    /** Current active win streak */
+    streak: number;
+}
+interface TournamentMatchEvent {
+    /** Unique tournament ID */
+    tournamentId: string;
+    /** Current bracket round number (1, 2, 3...) */
+    round: number;
+    /** Match identifier (e.g. "1_0") */
+    matchId: string;
+    /** Player 1 details */
+    p1: {
+        id: string;
+        username: string;
+        avatarUrl?: string;
+    };
+    /** Player 2 details */
+    p2: {
+        id: string;
+        username: string;
+        avatarUrl?: string;
+    };
+    /** Winner ID if completed */
+    winnerId?: string;
+    /** Detailed match summary or defeat reason */
+    outcomeDetail?: string;
+    /** Short score text (e.g. "3-1", "WIN") */
+    scoreText?: string;
+}
+interface TournamentEndEvent {
+    /** Unique tournament ID */
+    tournamentId: string;
+    /** Crowned champion details if finished normally */
+    champion?: {
+        id: string;
+        username: string;
+        avatarUrl?: string;
+    };
+    /** Reason tournament finished ("finished", "timeout", "aborted") */
+    reason: "finished" | "timeout" | "aborted" | string;
+    /** Duration in milliseconds */
+    duration: number;
+}
+interface CrossPlatformMoveEvent {
+    /** Session identifier */
+    sessionId: string;
+    /** Game key */
+    game: string;
+    /** Player ID making the move */
+    playerId: string;
+    /** Move action key */
+    action: string;
+    /** Additional action payload */
+    payload?: any;
+    /** Platform origin of the move */
+    platform: "discord" | "dashboard" | "web" | "api";
+}
+interface BridgeSyncEvent {
+    /** Session identifier */
+    sessionId: string;
+    /** Minigame key */
+    game: string;
+    /** Serialized game state */
+    state: any;
+    /** Originating system */
+    source: string;
+    /** Timestamp */
+    timestamp: number;
+}
+/**
+ * Type-safe map associating WekyManager event names with their exact parameter tuples.
+ */
+interface WekyEvents {
+    gameStart: [event: GameStartEvent];
+    gameOver: [event: GameOverEvent];
+    gameError: [event: GameErrorEvent];
+    unauthorizedClick: [event: UnauthorizedClickEvent];
+    leaderboardUpdate: [event: LeaderboardUpdateEvent];
+    tournamentMatchStart: [event: TournamentMatchEvent];
+    tournamentMatchEnd: [event: TournamentMatchEvent];
+    tournamentEnd: [event: TournamentEndEvent];
+    crossPlatformMove: [event: CrossPlatformMoveEvent];
+    bridgeSync: [event: BridgeSyncEvent];
+}
+
+/**
+ * Arcade Hub Interface
+ * A centralized, categorized launcher for all 17 Weky minigames.
+ *
+ * @copyright 2026 M3rcena Development. All rights reserved.
+ * @license Apache-2.0
+ */
+
+interface ArcadeHubCustomTexts {
+    /** Custom description text */
+    description?: string;
+    /** Select menu placeholder (default: "🎮 Select a Minigame to Launch...") */
+    selectPlaceholder?: string;
+    /** Label for random game button (default: "🎲 Random Game") */
+    randomButton?: string;
+    /** Label for close button (default: "Close Cabinet") */
+    closeButton?: string;
+    /** Notice shown when closed by user */
+    closedNotice?: string;
+    /** Notice shown when expired due to inactivity */
+    expiredNotice?: string;
+}
+interface ArcadeHubOptions extends BaseGameOptions {
+    /** Optional custom banner image URL */
+    bannerUrl?: string;
+    /** Custom title for the arcade launcher */
+    title?: string;
+    /** Games to exclude from the launcher */
+    exclude?: string[];
+    /** Custom callback when a game is selected */
+    onSelect?: (gameKey: string, context: ContextAdapter) => Promise<void> | void;
+    /** Optional custom text labels */
+    texts?: ArcadeHubCustomTexts;
+}
+interface ArcadeGameEntry {
+    key: string;
+    name: string;
+    emoji: string;
+    category: "Classic Arcade" | "PvP Duels" | "Brain & Puzzles" | "Party & Social";
+    description: string;
+}
+declare const ARCADE_GAMES: ArcadeGameEntry[];
+declare class ArcadeHub extends BaseGame<ArcadeHubOptions> {
+    private btnPrefix;
+    private selectMenuId;
+    private selectedCategory;
+    constructor(manager: any, options: ArcadeHubOptions);
+    start(): Promise<void>;
+    onInteraction(interaction: Interaction): Promise<void>;
+    private launchGame;
+    private endHub;
+    private createHubContainer;
+}
+
+/**
+ * Canvas Tournament Bracket Renderer
+ * Generates an eSports-style visual bracket chart using @napi-rs/canvas.
+ *
+ * @copyright 2026 M3rcena Development. All rights reserved.
+ * @license Apache-2.0
+ */
+interface BracketParticipant {
+    id: string;
+    username: string;
+    avatarUrl?: string;
+    score?: number;
+}
+interface BracketMatch {
+    id: string;
+    round: number;
+    matchIndex: number;
+    p1?: BracketParticipant;
+    p2?: BracketParticipant;
+    winnerId?: string;
+    scoreText?: string;
+    outcomeDetail?: string;
+}
+interface BracketRenderOptions {
+    title?: string;
+    gameName: string;
+    rounds: number;
+    matches: BracketMatch[];
+    champion?: BracketParticipant;
+}
+declare class RenderBracket {
+    /**
+     * Generates a high-definition tournament bracket image buffer.
+     */
+    static render(options: BracketRenderOptions): Promise<Buffer>;
+    private static drawMatchCard;
+    private static drawParticipantRow;
+}
+
+/**
+ * Automated & Manual Tournament Manager
+ * Manages player brackets, automated dual-ephemeral matches, manual winner progression,
+ * detailed victory/defeat outcome tracking, live public Grand Finals, and visual bracket updates.
+ *
+ * @copyright 2026 M3rcena Development. All rights reserved.
+ * @license Apache-2.0
+ */
+
+interface TournamentCustomTexts {
+    /** Label for the play match button (default: "⚔️ Play My Match") */
+    playButton?: string;
+    /** Label for the bracket refresh button (default: "🔄 Refresh Bracket") */
+    refreshButton?: string;
+    /** Label for the abort button (default: "Abort Tournament") */
+    abortButton?: string;
+    /** Label for manual advance button (default: "👑 Advance Match") */
+    manualAdvanceButton?: string;
+    /** Label for crowning champion button in finals (default: "👑 Advance / Crown Champion") */
+    crownChampionButton?: string;
+    /** Header title for active bracket (default: "🏆 {{title}} • Round {{round}}") */
+    bracketHeader?: string;
+    /** Header title for grand finals (default: "👑 {{title}} • Grand Finals") */
+    finalsHeader?: string;
+    /** Header title when champion is crowned (default: "🏆 TOURNAMENT CHAMPION CROWNED!") */
+    championHeader?: string;
+}
+interface TournamentOptions extends BaseGameOptions {
+    /** Tournament discipline ("rps", "tictactoe", "fight", or custom game name) */
+    game?: "rps" | "tictactoe" | "fight" | "custom" | string;
+    /** Participant array (4 to 16 players) */
+    players: (User | GuildMember)[];
+    /** Tournament title */
+    title?: string;
+    /** When true, tournament progress is manually advanced by the organizer rather than game-specific */
+    manual?: boolean;
+    /** Optional custom text labels and headers */
+    texts?: TournamentCustomTexts;
+}
+interface TournamentMatchSession {
+    match: BracketMatch;
+    round: number;
+    p1: BracketParticipant;
+    p2: BracketParticipant;
+    status: "waiting_opponent" | "in_progress" | "completed";
+    p1Ready: boolean;
+    p2Ready: boolean;
+    p1Interaction?: any;
+    p2Interaction?: any;
+    readyTimeoutTimer?: NodeJS.Timeout;
+    afkTimer?: NodeJS.Timeout;
+    currentTurnId: string;
+    winnerId?: string;
+    outcomeDetail?: string;
+    scoreText?: string;
+    tttBoard?: (string | null)[];
+    rpsP1Choice?: "rock" | "paper" | "scissors";
+    rpsP2Choice?: "rock" | "paper" | "scissors";
+    rpsMessage?: string;
+    fightP1Hp?: number;
+    fightP2Hp?: number;
+    fightP1Coins?: number;
+    fightP2Coins?: number;
+    fightP1Shield?: boolean;
+    fightP2Shield?: boolean;
+    fightCombatLog?: string;
+}
+interface GrandFinalsSession {
+    match: BracketMatch;
+    p1: BracketParticipant;
+    p2: BracketParticipant;
+    currentTurnId: string;
+    winnerId?: string;
+    outcomeDetail?: string;
+    scoreText?: string;
+    afkTimer?: NodeJS.Timeout;
+    tttBoard?: (string | null)[];
+    rpsP1Choice?: "rock" | "paper" | "scissors";
+    rpsP2Choice?: "rock" | "paper" | "scissors";
+    rpsMessage?: string;
+    fightP1Hp?: number;
+    fightP2Hp?: number;
+    fightP1Coins?: number;
+    fightP2Coins?: number;
+    fightP1Shield?: boolean;
+    fightP2Shield?: boolean;
+    fightCombatLog?: string;
+}
+interface ManualMatchInput {
+    round: number;
+    matchIndex: number;
+    p1Username: string;
+    p1AvatarUrl?: string;
+    p2Username: string;
+    p2AvatarUrl?: string;
+    winnerUsername?: string;
+    scoreText?: string;
+    outcomeDetail?: string;
+}
+interface ManualTournamentOptions {
+    title?: string;
+    gameName?: string;
+    rounds?: number;
+    players?: string[];
+    matches: ManualMatchInput[];
+    championUsername?: string;
+}
+declare class TournamentManager extends BaseGame<TournamentOptions> {
+    private btnPrefix;
+    private participants;
+    private matches;
+    private numRounds;
+    private currentRound;
+    private champion?;
+    private isManualMode;
+    private gameTitle;
+    private activeSessions;
+    private gfSession?;
+    private gfAfkTimer?;
+    constructor(manager: any, options: TournamentOptions);
+    private setupBrackets;
+    start(): Promise<void>;
+    /**
+     * Resets the tournament inactivity timer (clock).
+     * Refreshes the full defaultTimeout (10 mins or options.time) whenever an interaction occurs.
+     */
+    private resetTournamentTimeout;
+    onInteraction(interaction: Interaction): Promise<void>;
+    /**
+     * Dispatches the manual advance modal/control menu to the organizer.
+     */
+    private handleManualMenu;
+    /**
+     * Handles manual winner selection by the organizer.
+     */
+    private handleManualAdvanceSelection;
+    /**
+     * Handles a player pressing "Play My Match" on the main bracket board.
+     */
+    private handlePlayerJoinMatch;
+    /**
+     * Handles user interaction inside an ephemeral preliminary match.
+     */
+    private handleEphemeralMatchInteraction;
+    /**
+     * Handles user interaction in the live, public Grand Finals in the channel.
+     */
+    private handleGrandFinalsInteraction;
+    /**
+     * Handles Walkover / Forfeit if a player is AFK.
+     */
+    private handleWalkover;
+    /**
+     * Advances the winner into the next bracket node.
+     */
+    private advanceWinnerInBracket;
+    /**
+     * Manually advances a specific match with a winner and optional outcome detail text.
+     * Works for ANY game or bracket type.
+     */
+    progressMatch(matchId: string, winnerId: string, outcomeDetail?: string): Promise<void>;
+    /**
+     * Manually advances the next pending match in the current round.
+     */
+    progressNextMatch(winnerId?: string, outcomeDetail?: string): Promise<BracketMatch | null>;
+    /**
+     * Static helper to generate a visual tournament progress bracket image manually without running live games.
+     */
+    static generateBracketProgress(options: ManualTournamentOptions): Promise<Buffer>;
+    getMatches(): BracketMatch[];
+    getPendingMatches(): BracketMatch[];
+    /**
+     * Checks if all matches in the active round are done, advancing to the next round or Grand Finals.
+     */
+    private checkRoundCompletion;
+    /**
+     * Initializes the Grand Finals session when preliminary rounds complete.
+     */
+    private initGrandFinals;
+    private resetSessionAfkTimer;
+    private resetGrandFinalsAfkTimer;
+    private createMatchSession;
+    private checkTTTWin;
+    private checkRPSWinner;
+    private executeFightAction;
+    /**
+     * Renders the interactive match container for an ephemeral match session.
+     */
+    private renderMatchContainer;
+    /**
+     * Renders the outcome container shown to players when an ephemeral match concludes,
+     * with explicit detail on how the player won or was defeated.
+     */
+    private renderMatchResultContainer;
+    /**
+     * Renders the interactive container for the live Grand Finals in the main channel.
+     */
+    private renderGrandFinalsContainer;
+    /**
+     * Renders and updates the main tournament channel message.
+     */
+    private renderAndDisplay;
+    private deliverMessage;
+    private clearAllTimers;
+    private endTournament;
+}
+
+/**
+ * ELO & High-Score Leaderboard Engine
+ * Provides plug-and-play ELO rating calculations, streak tracking, and score storage.
+ *
+ * @copyright 2026 M3rcena Development. All rights reserved.
+ * @license Apache-2.0
+ */
+interface LeaderboardPlayer {
+    id: string;
+    username: string;
+    avatarUrl?: string;
+    elo: number;
+    wins: number;
+    losses: number;
+    draws: number;
+    winStreak: number;
+    highestStreak: number;
+    scores: Record<string, number>;
+    lastPlayed: number;
+}
+interface EloChangeResult {
+    p1Change: number;
+    p2Change: number;
+    p1NewElo: number;
+    p2NewElo: number;
+}
+interface LeaderboardStorageAdapter {
+    get(userId: string): Promise<LeaderboardPlayer | undefined> | LeaderboardPlayer | undefined;
+    set(userId: string, data: LeaderboardPlayer): Promise<void> | void;
+    getAll(): Promise<LeaderboardPlayer[]> | LeaderboardPlayer[];
+}
+interface CustomPointingMatchContext {
+    p1: LeaderboardPlayer;
+    p2: LeaderboardPlayer;
+    result: "p1" | "p2" | "draw";
+    game?: string;
+    kFactor?: number;
+}
+interface CustomPointingScoreContext {
+    player: LeaderboardPlayer;
+    game: string;
+    score: number;
+}
+type CustomPointingMatchHandler = (ctx: CustomPointingMatchContext) => EloChangeResult | {
+    p1Change: number;
+    p2Change: number;
+    p1NewElo?: number;
+    p2NewElo?: number;
+};
+type CustomPointingScoreHandler = (ctx: CustomPointingScoreContext) => number;
+interface LeaderboardPointingOptions {
+    /** Optional custom pointing calculation function for PvP matches */
+    calculateMatchPoints?: CustomPointingMatchHandler;
+    /** Optional flat points awarded on a victory */
+    winPoints?: number;
+    /** Optional flat points deducted on a defeat */
+    lossPoints?: number;
+    /** Optional flat points awarded on a draw */
+    drawPoints?: number;
+    /** Optional bonus points awarded per active streak number */
+    streakBonus?: number;
+    /** Optional custom pointing calculation function for solo game scores */
+    calculateSoloPoints?: CustomPointingScoreHandler;
+}
+interface LeaderboardManagerOptions {
+    /** Default starting ELO for new players (default: 1200) */
+    defaultElo?: number;
+    /** Default K-factor for ELO variance (default: 32) */
+    kFactor?: number;
+    /** Custom persistent storage adapter (e.g. Database, Quick.db, Enmap, SQLite) */
+    storageAdapter?: LeaderboardStorageAdapter;
+    /** Optional developer-defined custom pointing formula (falls back to standard FIDE ELO if omitted) */
+    pointing?: LeaderboardPointingOptions;
+    /** Optional reference to WekyManager for event telemetry */
+    wekyManager?: any;
+}
+declare class LeaderboardManager {
+    private players;
+    defaultElo: number;
+    defaultKFactor: number;
+    pointing?: LeaderboardPointingOptions;
+    private storageAdapter?;
+    wekyManager?: any;
+    constructor(options?: LeaderboardManagerOptions);
+    /**
+     * Calculates ELO rating adjustments using the standard international FIDE ELO formula.
+     *
+     * @param playerElo Rating of Player 1
+     * @param opponentElo Rating of Player 2
+     * @param outcome 1 for player 1 win, 0.5 for draw, 0 for player 1 loss
+     * @param kFactor Weight factor (default: 32)
+     */
+    static calculateElo(playerElo: number, opponentElo: number, outcome: 1 | 0.5 | 0, kFactor?: number): EloChangeResult;
+    /**
+     * Retrieves or initializes stats for a player.
+     */
+    getPlayer(userId: string, username?: string, avatarUrl?: string): Promise<LeaderboardPlayer>;
+    /**
+     * Records a 1v1 match outcome between two players and updates their ratings and streaks.
+     * If custom pointing is configured (or passed in options), it executes the developer formula;
+     * otherwise it defaults to international FIDE ELO.
+     */
+    recordMatch(p1Id: string, p2Id: string, result: "p1" | "p2" | "draw", options?: {
+        p1Username?: string;
+        p2Username?: string;
+        p1Avatar?: string;
+        p2Avatar?: string;
+        game?: string;
+        kFactor?: number;
+        pointing?: LeaderboardPointingOptions;
+    }): Promise<EloChangeResult>;
+    /**
+     * Records a solo arcade score (e.g. 2048, Snake, FastType).
+     * Updates player's personal best if beaten.
+     */
+    recordScore(userId: string, game: string, score: number, options?: {
+        username?: string;
+        avatarUrl?: string;
+        pointing?: LeaderboardPointingOptions;
+    }): Promise<{
+        isPersonalBest: boolean;
+        previousBest: number;
+        newBest: number;
+        awardedPoints: number;
+    }>;
+    /**
+     * Exports all leaderboard player records as a raw JSON serializable array (for web dashboards).
+     */
+    exportData(): Promise<LeaderboardPlayer[]>;
+    /**
+     * Imports or merges an external array of player records into the leaderboard (e.g. from a web dashboard database).
+     */
+    importData(data: LeaderboardPlayer[]): Promise<void>;
+    /**
+     * Returns top players sorted by ELO rating.
+     */
+    getTopByElo(limit?: number): Promise<LeaderboardPlayer[]>;
+    /**
+     * Returns top players for a specific solo minigame by high score.
+     */
+    getTopByScore(game: string, limit?: number): Promise<{
+        rank: number;
+        player: LeaderboardPlayer;
+        score: number;
+    }[]>;
+    /**
+     * Clears all in-memory leaderboard records.
+     */
+    reset(): void;
+}
+
+/**
+ * Canvas Leaderboard Renderer
+ * Generates an eSports-grade High-Score poster using @napi-rs/canvas.
+ *
+ * @copyright 2026 M3rcena Development. All rights reserved.
+ * @license Apache-2.0
+ */
+interface LeaderboardEntry {
+    rank: number;
+    userId?: string;
+    username: string;
+    avatarUrl?: string;
+    scoreOrElo: number | string;
+    stats?: string;
+    streak?: number;
+}
+interface LeaderboardCustomTexts {
+    /** Text shown in top-left badge pill (default: "HALL OF FAME") */
+    categoryBadge?: string;
+    /** Text template shown in top-right contenders badge (default: "${count} TOP CONTENDERS") */
+    topContendersBadge?: string;
+    /** Column header for rank (default: "RANK") */
+    rankColumn?: string;
+    /** Column header for player (default: "PLAYER") */
+    playerColumn?: string;
+    /** Column header for record / streak (default: "RECORD / STREAK") */
+    recordColumn?: string;
+    /** Column header for score / elo (default: "SCORE / ELO") */
+    scoreColumn?: string;
+    /** Streak pill suffix (default: "STREAK") */
+    streakSuffix?: string;
+    /** Footer branding watermark (default: "Powered by @m3rcena/weky • Modern Discord Minigames Engine") */
+    footer?: string;
+}
+interface RenderLeaderboardOptions {
+    title?: string;
+    subtitle?: string;
+    gameName?: string;
+    entries: LeaderboardEntry[];
+    accentColor?: string;
+    texts?: LeaderboardCustomTexts;
+}
+declare class RenderLeaderboard {
+    static render(options: RenderLeaderboardOptions): Promise<Buffer>;
+}
+
+/**
+ * "Share & Flex" Gamer Score Card Generator
+ * Generates an eSports-grade holographic match victory / performance pass using @napi-rs/canvas.
+ *
+ * @copyright 2026 M3rcena Development. All rights reserved.
+ * @license Apache-2.0
+ */
+interface ShareCardStat {
+    label: string;
+    value: string;
+    color?: string;
+}
+interface ShareCardCustomTexts {
+    /** Verified stamp in top right (default: "VERIFIED COMPETITIVE MATCH") */
+    verifiedStamp?: string;
+    /** Subtitle under avatar (default: "WEKY AUTHENTICATED") */
+    authenticatedSub?: string;
+    /** Label for top right highlight box (default: "PRIMARY HIGHLIGHT") */
+    primaryHighlight?: string;
+    /** Bottom footer watermark (default: "WEKY-PASSPORT • AUTHENTICATED BY @M3RCENA/WEKY ENGINE") */
+    footer?: string;
+}
+interface RenderShareCardOptions {
+    /** The player's username */
+    username: string;
+    /** Avatar image URL */
+    avatarUrl?: string;
+    /** Minigame title or discipline (e.g. "Snake Arcade", "Fight RPG", "TicTacToe") */
+    gameName: string;
+    /** Main outcome or highlight (e.g. "VICTORY 👑", "HIGH SCORE 🌟", "MATCH COMPLETE") */
+    headline?: string;
+    /** Primary metric (e.g. "28,450 PTS" or "VICTORY (+32 ELO)") */
+    primaryScore: string;
+    /** Rank badge or tier (e.g. "GRANDMASTER", "DIAMOND TIER", "ARCADE PRO") */
+    rankBadge?: string;
+    /** Additional 2 to 4 key statistics to display in the metric grid */
+    stats?: ShareCardStat[];
+    /** Optional custom theme accent color (hex) */
+    accentColor?: string;
+    /** Optional custom text labels */
+    texts?: ShareCardCustomTexts;
+}
+declare class RenderShareCard {
+    static render(options: RenderShareCardOptions): Promise<Buffer>;
+}
+
+/**
+ * Soundboard & Audio Integration
+ * Plays Discord soundboard sounds on key minigame events.
+ *
+ * @copyright 2026 M3rcena Development. All rights reserved.
+ * @license Apache-2.0
+ */
+
+interface SoundboardConfig {
+    enabled?: boolean;
+    sounds?: {
+        victory?: string;
+        defeat?: string;
+        countdown?: string;
+        action?: string;
+    };
+}
+interface SoundboardPlayResult {
+    success: boolean;
+    error?: string;
+    soundId?: string;
+}
+declare class SoundboardManager {
+    private client;
+    private config;
+    constructor(client: Client, config?: SoundboardConfig);
+    /**
+     * Safely plays a soundboard sound in the given voice channel with diagnostic details.
+     */
+    playSoundWithResult(channelId: string, soundTypeOrId: "victory" | "defeat" | "countdown" | "action" | string, sourceGuildId?: string): Promise<SoundboardPlayResult>;
+    /**
+     * Safely plays a soundboard sound in the given voice channel.
+     * If soundboard is disabled or bot lacks permissions, fails silently without crashing.
+     */
+    playSound(channelId: string, soundTypeOrId: "victory" | "defeat" | "countdown" | "action" | string, sourceGuildId?: string): Promise<boolean>;
+}
+
+/**
+ * Weky Cross-Platform Bridge & Dashboard Gateway
+ * Connects Discord minigame instances with Headless Engines and Web Dashboards,
+ * enabling real-time game state synchronization, cross-platform move execution,
+ * and unified leaderboard data access.
+ *
+ * @copyright 2026 M3rcena Development. All rights reserved.
+ * @license Apache-2.0
+ */
+
+interface BridgePlayer {
+    id: string;
+    username: string;
+    avatarUrl?: string;
+    platform: "discord" | "dashboard" | "web" | "api";
+}
+interface CrossPlatformMove {
+    playerId: string;
+    action: string;
+    payload?: any;
+    sourcePlatform: "discord" | "dashboard" | "web" | "api";
+}
+interface BridgeMoveResult {
+    success: boolean;
+    state: any;
+    nextTurnId?: string;
+    isGameOver?: boolean;
+    winnerId?: string;
+    announcement?: string;
+    error?: string;
+}
+interface BridgeSession<TState = any> {
+    /** Unique session ID */
+    id: string;
+    /** Minigame key (e.g. "tictactoe", "fight", "snake", "2048") */
+    game: string;
+    /** Platform hosting or participating in the match */
+    platform: "discord" | "dashboard" | "hybrid";
+    /** Players participating in this session */
+    players: BridgePlayer[];
+    /** Current player turn ID (if turn-based) */
+    currentTurnId?: string;
+    /** Current serializable game state */
+    state: TState;
+    /** Optional linked Headless Engine instance */
+    engine?: any;
+    /** Arbitrary session metadata */
+    metadata?: Record<string, any>;
+    /** Creation timestamp */
+    createdAt: number;
+    /** Last update timestamp */
+    lastUpdated: number;
+    /** Whether the session has concluded */
+    isGameOver: boolean;
+    /** Winner ID if concluded */
+    winnerId?: string;
+    /** Callback invoked when a cross-platform move is dispatched */
+    onMove?: (move: CrossPlatformMove) => Promise<BridgeMoveResult> | BridgeMoveResult;
+    /** Callback to render current canvas snapshot */
+    renderSnapshot?: () => Promise<Buffer | string> | Buffer | string;
+}
+interface DashboardOverview {
+    activeGamesCount: number;
+    totalLeaderboardPlayers: number;
+    activeSessions: {
+        id: string;
+        game: string;
+        platform: "discord" | "dashboard" | "hybrid";
+        players: {
+            id: string;
+            username: string;
+            platform: string;
+        }[];
+        currentTurnId?: string;
+        lastUpdated: number;
+        isGameOver: boolean;
+    }[];
+    topContenders: {
+        rank: number;
+        username: string;
+        elo: number;
+        wins: number;
+        winStreak: number;
+    }[];
+}
+declare class WekyBridge {
+    private sessions;
+    wekyManager?: any;
+    constructor(wekyManager?: any);
+    /**
+     * Registers an active game session into the cross-platform bridge.
+     */
+    registerSession(session: BridgeSession): void;
+    /**
+     * Unregisters a game session upon termination.
+     */
+    unregisterSession(sessionId: string): void;
+    /**
+     * Retrieves a session by ID.
+     */
+    getSession(sessionId: string): BridgeSession | undefined;
+    /**
+     * Returns all active, uncompleted sessions.
+     */
+    getActiveSessions(): BridgeSession[];
+    /**
+     * Returns all registered sessions regardless of status.
+     */
+    getAllSessions(): BridgeSession[];
+    /**
+     * Returns all sessions where a specific user is a participant.
+     */
+    getSessionsForPlayer(playerId: string): BridgeSession[];
+    /**
+     * Updates state for a session and synchronizes it with bridge listeners.
+     */
+    syncState(sessionId: string, newState: any, source?: string): void;
+    /**
+     * Dispatches a cross-platform move to an active game session.
+     * Can be invoked from Web Dashboards, REST APIs, or Discord bots.
+     */
+    dispatchMove(sessionId: string, move: CrossPlatformMove): Promise<BridgeMoveResult>;
+    /**
+     * Ends an active game session and flags it as completed.
+     */
+    endSession(sessionId: string, outcome?: {
+        winnerId?: string;
+        reason?: string;
+    }): void;
+    /**
+     * Renders a live visual snapshot of the session (Canvas image Buffer or Data URL).
+     */
+    renderSessionSnapshot(sessionId: string): Promise<Buffer | string | null>;
+    /**
+     * Returns a high-level overview of live games, active sessions, and leaderboard data for Web Dashboards.
+     */
+    getDashboardOverview(): Promise<DashboardOverview>;
+    /**
+     * Exports full state dump of active sessions and leaderboard data for external database syncing.
+     */
+    exportAllState(): Promise<{
+        sessions: BridgeSession[];
+        leaderboard?: LeaderboardPlayer[];
+    }>;
+    /**
+     * Imports state dump from an external database or dashboard backend.
+     */
+    importAllState(data: {
+        sessions?: BridgeSession[];
+        leaderboard?: LeaderboardPlayer[];
+    }): Promise<void>;
+}
+
+/**
  * Options for initializing the WekyManager.
  */
 interface WekyManagerOptions {
@@ -45,6 +925,10 @@ interface WekyManagerOptions {
     unauthorizedMessage?: string;
     /** Whether to log a notification box in the console if a new version of the package is available (default: true) */
     notifyUpdates?: boolean;
+    /** Soundboard configuration for triggering Discord soundboard audio */
+    soundboard?: SoundboardConfig;
+    /** Leaderboard & ELO rating configuration */
+    leaderboard?: LeaderboardManagerOptions;
 }
 /**
  * Main manager class for the `@m3rcena/weky` Discord minigames engine.
@@ -61,6 +945,9 @@ declare class WekyManager extends EventEmitter {
     embedColor?: ColorResolvable;
     unauthorizedMessage?: string;
     notifyUpdates: boolean;
+    soundboard: SoundboardManager;
+    leaderboard: LeaderboardManager;
+    bridge: WekyBridge;
     /**
      * Initializes the WekyManager.
      * @param client The Discord.js Client instance.
@@ -68,6 +955,18 @@ declare class WekyManager extends EventEmitter {
      * @param notifyUpdatesParam Legacy parameter for update notifications.
      */
     constructor(client: Client, options?: WekyManagerOptions | string | boolean, notifyUpdatesParam?: boolean);
+    on<K extends keyof WekyEvents>(event: K, listener: (...args: WekyEvents[K]) => void): this;
+    on(event: string | symbol, listener: (...args: any[]) => void): this;
+    once<K extends keyof WekyEvents>(event: K, listener: (...args: WekyEvents[K]) => void): this;
+    once(event: string | symbol, listener: (...args: any[]) => void): this;
+    emit<K extends keyof WekyEvents>(event: K, ...args: WekyEvents[K]): boolean;
+    emit(event: string | symbol, ...args: any[]): boolean;
+    off<K extends keyof WekyEvents>(event: K, listener: (...args: WekyEvents[K]) => void): this;
+    off(event: string | symbol, listener: (...args: any[]) => void): this;
+    addListener<K extends keyof WekyEvents>(event: K, listener: (...args: WekyEvents[K]) => void): this;
+    addListener(event: string | symbol, listener: (...args: any[]) => void): this;
+    removeListener<K extends keyof WekyEvents>(event: K, listener: (...args: WekyEvents[K]) => void): this;
+    removeListener(event: string | symbol, listener: (...args: any[]) => void): this;
     /**
      * Manually checks for newer versions of @m3rcena/weky.
      */
@@ -144,6 +1043,34 @@ declare class WekyManager extends EventEmitter {
      * Starts a new interactive **Tic Tac Toe** match.
      */
     createTicTacToe(options: TicTacToeTypes): Promise<void>;
+    /**
+     * Starts a new **Arcade Hub** central minigames launcher cabinet.
+     */
+    createArcadeHub(options: ArcadeHubOptions): Promise<void>;
+    /**
+     * Starts a new automated or manual **Tournament** bracket championship (4 to 16 players).
+     */
+    createTournament(options: TournamentOptions): Promise<TournamentManager>;
+    /**
+     * Generates tournament bracket progress manually for any game or custom competition.
+     */
+    generateTournamentProgress(options: ManualTournamentOptions): Promise<Buffer>;
+    /**
+     * Generates a tournament bracket canvas chart image buffer.
+     */
+    renderTournamentBracket(options: BracketRenderOptions): Promise<Buffer>;
+    /**
+     * Generates a high-score arcade leaderboard card image buffer.
+     */
+    renderLeaderboard(options: RenderLeaderboardOptions): Promise<Buffer>;
+    /**
+     * Generates a "Share & Flex" gamer score card image buffer.
+     */
+    renderShareCard(options: RenderShareCardOptions): Promise<Buffer>;
+    /**
+     * Launches any minigame by key (used by ArcadeHub and custom launchers).
+     */
+    launchGameByKey(gameKey: string, contextOrOptions: any): Promise<void>;
     _getContextUserID(context: any): string;
     getRandomString(length?: number, prefix?: string): string;
     convertTime(timeMs: number): string;
@@ -153,6 +1080,18 @@ declare class WekyManager extends EventEmitter {
      * Builds an EmbedBuilder instance with defaults applied.
      */
     _createEmbed(embedOptions?: Partial<Embeds>, noFields?: boolean): EmbedBuilder;
+    /**
+     * Retrieves dashboard overview metrics, live sessions, and leaderboard data for Web Dashboards.
+     */
+    getDashboardOverview(): Promise<DashboardOverview>;
+    /**
+     * Dispatches a cross-platform move from Web Dashboard, REST API, or Discord.
+     */
+    dispatchCrossPlatformMove(sessionId: string, move: CrossPlatformMove): Promise<BridgeMoveResult>;
+    /**
+     * Registers an external or hybrid game session with the cross-platform bridge.
+     */
+    registerCrossPlatformSession(session: BridgeSession): void;
 }
 
 /**
@@ -354,7 +1293,9 @@ interface FightPowerUp {
  * Fight Game Options
  */
 interface FightTypes extends BaseGameOptions {
-    opponent: GuildMember | User;
+    opponent?: GuildMember | User;
+    ai?: boolean;
+    boss?: "dragon" | "cyber_knight" | "shadow_goblin";
     startHealth?: number;
     damageMax?: number;
     coins?: number;
@@ -715,6 +1656,7 @@ type WYRTypes = WouldYouRatherTypes;
  */
 interface RPSTypes extends BaseGameOptions {
     opponent?: GuildMember | User;
+    difficulty?: "easy" | "medium" | "hard";
     buttons?: {
         rock?: string;
         paper?: string;
@@ -728,6 +1670,8 @@ interface RPSTypes extends BaseGameOptions {
  */
 interface TicTacToeTypes extends BaseGameOptions {
     opponent?: GuildMember | User;
+    ai?: boolean;
+    difficulty?: "easy" | "medium" | "hard" | "unbeatable";
     emojis?: {
         x?: string;
         o?: string;
@@ -856,11 +1800,11 @@ declare abstract class BaseGame<T extends BaseGameOptions> implements IMinigame 
      */
     applyEmbedDecorations(container: ContainerBuilder, content: string): string;
     /**
-     * Emits the gameStart lifecycle event on WekyManager.
+     * Emits the gameStart lifecycle event on WekyManager and registers session with the bridge.
      */
     protected emitStart(): void;
     /**
-     * Emits the gameOver lifecycle event on WekyManager.
+     * Emits the gameOver lifecycle event on WekyManager and updates the bridge session.
      */
     protected emitEnd(outcome: string, score?: number): void;
     /**
@@ -943,6 +1887,8 @@ declare class Fight extends BaseGame<FightTypes> {
     private opponentUser;
     private opponentMember;
     private phase;
+    private isVsBoss;
+    private bossProfile;
     private p1;
     private p2;
     private currentTurnId;
@@ -1098,6 +2044,7 @@ declare class RockPaperScissors extends BaseGame<RPSTypes> {
     private p2Move;
     private btnPrefix;
     private gameTitle;
+    private difficulty;
     constructor(manager: any, options: RPSTypes);
     start(): Promise<void>;
     onInteraction(interaction: Interaction): Promise<void>;
@@ -1154,6 +2101,8 @@ declare class TicTacToe extends BaseGame<TicTacToeTypes> {
     private currentTurnId;
     private btnPrefix;
     private gameTitle;
+    private isVsAi;
+    private difficulty;
     constructor(manager: any, options: TicTacToeTypes);
     start(): Promise<void>;
     onInteraction(interaction: Interaction): Promise<void>;
@@ -1220,6 +2169,13 @@ interface FightPlayerInfo {
     lastAction?: string;
     activeEffects?: string[];
 }
+interface FightCardCustomTexts {
+    title?: string;
+    subtitle?: string;
+    vsText?: string;
+    hpLabel?: string;
+    coinLabel?: string;
+}
 declare class RenderFight {
     /**
      * Sanitizes text for Canvas rendering by stripping markdown asterisks,
@@ -1239,11 +2195,11 @@ declare class RenderFight {
     }, opponent: {
         username: string;
         avatarUrl: string;
-    }): Promise<Buffer>;
+    }, customTexts?: FightCardCustomTexts): Promise<Buffer>;
     /**
      * Renders the dynamic Battle Arena card with health bars, coins, and current turn indicators.
      */
-    static renderBattleCard(player1: FightPlayerInfo, player2: FightPlayerInfo, currentTurnUserId: string, announcement?: string): Promise<Buffer>;
+    static renderBattleCard(player1: FightPlayerInfo, player2: FightPlayerInfo, currentTurnUserId: string, announcement?: string, customTexts?: FightCardCustomTexts): Promise<Buffer>;
     private static drawFighterPanel;
     /**
      * Renders the Victory or Game Over card.
@@ -1254,7 +2210,7 @@ declare class RenderFight {
     }, loser?: {
         username: string;
         avatarUrl: string;
-    }, type?: "WIN" | "SURRENDER" | "DENIED" | "TIMEOUT"): Promise<Buffer>;
+    }, type?: "WIN" | "SURRENDER" | "DENIED" | "TIMEOUT", customTexts?: FightCardCustomTexts): Promise<Buffer>;
 }
 
 /**
@@ -1738,6 +2694,86 @@ declare class WekyEngine {
     static ticTacToe: typeof WekyEngine.createTicTacToe;
 }
 
+/**
+ * TicTacToe AI Engine
+ * Implements Minimax with depth penalty for optimal play,
+ * plus medium and easy heuristic modes.
+ *
+ * @copyright 2026 M3rcena Development. All rights reserved.
+ * @license Apache-2.0
+ */
+type TicTacToeCell = "X" | "O" | null;
+type TicTacToeDifficulty = "easy" | "medium" | "hard" | "unbeatable";
+declare class TicTacToeAI {
+    private static readonly WINNING_COMBOS;
+    /**
+     * Finds the best move index (0-8) for the AI.
+     * @param board The current 3x3 board state.
+     * @param aiSymbol The symbol of the AI ('X' or 'O').
+     * @param difficulty AI difficulty level.
+     */
+    static getBestMove(board: TicTacToeCell[], aiSymbol?: "X" | "O", difficulty?: TicTacToeDifficulty): number;
+    private static minimaxBestMove;
+    private static minimax;
+    static checkWinner(board: TicTacToeCell[]): TicTacToeCell;
+    static isBoardFull(board: TicTacToeCell[]): boolean;
+    static getAvailableMoves(board: TicTacToeCell[]): number[];
+}
+
+/**
+ * Fight RPG AI & Boss Engine
+ * Pre-configured tactical bosses and automated decision trees.
+ *
+ * @copyright 2026 M3rcena Development. All rights reserved.
+ * @license Apache-2.0
+ */
+interface BossProfile {
+    id: string;
+    name: string;
+    title: string;
+    avatarUrl: string;
+    maxHealth: number;
+    damageMin: number;
+    damageMax: number;
+    coins: number;
+    dialogueIntro: string;
+    dialogueVictory: string;
+    dialogueDefeat: string;
+    specialMoveName: string;
+    specialMoveEffect: (boss: any, player: any) => {
+        damage: number;
+        message: string;
+    };
+}
+declare const FIGHT_BOSSES: Record<string, BossProfile>;
+declare class FightAI {
+    /**
+     * Decides the tactical action for the AI/Boss on its turn.
+     */
+    static decideAction(aiPlayer: any, humanPlayer: any, bossProfile?: BossProfile): "attack" | "heavy" | "heal" | "shield" | "special";
+}
+
+/**
+ * Rock Paper Scissors Psychological AI Engine
+ * Uses win-stay / lose-shift psychological heuristic tracking
+ * to intelligently counter human move habits.
+ *
+ * @copyright 2026 M3rcena Development. All rights reserved.
+ * @license Apache-2.0
+ */
+type RPSMove = "rock" | "paper" | "scissors";
+declare class RPSPredictor {
+    private static readonly BEATS;
+    private static readonly COUNTERS;
+    /**
+     * Predicts the player's next move and returns the best counter.
+     * @param playerHistory Array of moves the player has previously made.
+     * @param lastPlayerOutcome Whether the player won, lost, or tied in the previous round.
+     * @param difficulty "easy" (random), "medium" (frequency counter), "hard" (heuristic predictor).
+     */
+    static getCounterMove(playerHistory?: RPSMove[], lastPlayerOutcome?: "win" | "lose" | "tie", difficulty?: "easy" | "medium" | "hard"): RPSMove;
+}
+
 declare class CanvasUtils {
     /**
      * Draws a rounded rectangle path.
@@ -1760,6 +2796,26 @@ declare class CanvasUtils {
      * Completely avoids server font emoji missing tofu glyphs.
      */
     static drawCoinIcon(ctx: SKRSContext2D, x: number, y: number, r?: number): void;
+    /**
+     * Safely cleans text by stripping Unicode emojis and symbols that render as tofu `[?]` boxes on Linux servers.
+     */
+    static cleanText(text?: string | null): string;
+    /**
+     * Draws a crisp vector checkmark badge at (cx, cy).
+     */
+    static drawCheckmarkIcon(ctx: SKRSContext2D, cx: number, cy: number, radius?: number, bgColor?: string, checkColor?: string): void;
+    /**
+     * Draws a vector 5-point star icon at (cx, cy).
+     */
+    static drawStarIcon(ctx: SKRSContext2D, cx: number, cy: number, spikes?: number, outerRadius?: number, innerRadius?: number, color?: string): void;
+    /**
+     * Draws a sleek vector flame icon at (cx, cy).
+     */
+    static drawFlameIcon(ctx: SKRSContext2D, cx: number, cy: number, size?: number, color?: string): void;
+    /**
+     * Draws a clean vector crown icon at (cx, cy).
+     */
+    static drawCrownIcon(ctx: SKRSContext2D, cx: number, cy: number, width?: number, height?: number, color?: string): void;
 }
 
 declare class Render2048 {
@@ -1921,5 +2977,5 @@ declare function getRandomHangmanWord(category?: string): {
     category: string;
 };
 
-export { BaseGame, COMMON_WORDS, Calculator, CalculatorEngine, CanvasUtils, ChaosWords, ContextAdapter, EASY_SENTENCES, EventManager, FastType, Fight, FightEngine, Game2048, Game2048Engine, GuessTheNumber, GuessThePokemon, HANGMAN_CATEGORIES, HARD_SENTENCES, Hangman, HangmanEngine, LieSwatter, MEDIUM_SENTENCES, MathEvaluator, NEVER_HAVE_I_EVER_PROMPTS, NeverHaveIEver, POPULAR_POKEMONS, QuickClick, Render2048, RenderFight, RenderHangman, RenderPokemon, RenderSnake, RockPaperScissors, ShuffleGuess, Snake, SnakeEngine, TRIVIA_FACTS, TicTacToe, TicTacToeEngine, VERSION, WYPTB_DILEMMAS, WYR_DILEMMAS, WekyCanvas, WekyEngine, WekyManager, WillYouPressTheButton, WouldYouRather, boxConsole, checkPackageUpdates, clamp, compareSemver, fetchLatestVersion, fetchRandomPokemon, formatTime, getRandomHangmanWord, getRandomNHIE, getRandomSentence, getRandomString, getRandomTriviaFact, getRandomWYPTB, getRandomWYR, getRandomWord, getRandomWords, safeResolveColor, shuffleArray, shuffleString, stripAnsi, version };
-export type { Author, BaseGameOptions, BotDataTypes, CalcTypes, CalculatorState, ChaosTypes, ChaosWordsTypes, ContextSendOptions, CustomOptions, DilemmaData, Embeds, EvaluationResult, FastTypeTypes, Fields, FightEngineOptions, FightPlayerInfo, FightPowerUp, FightState, FightTypes, Game2048EngineOptions, Game2048State, GameContextInput, GameControlItem, GameControlRow, GuessTheNumberTypes, GuessThePokemonData, GuessThePokemonTypes, HangmanEngineOptions, HangmanState, HangmanTypes, IMinigame, LieSwatterTypes, NeverHaveIEverTypes, PlayerData, Point, PokemonData, PokemonEntry, PowerUp, QuickClickTypes, RPSTypes, ShuffleGuessTypes, SnakeEngineOptions, SnakeGameTypes, SnakeState, SnakeTypes, TicTacToeEngineOptions, TicTacToeState, TicTacToeTypes, TriviaFact, Types2048, WYPTBDilemma, WYPTBTypes, WYRDilemma, WYRTypes, WekyManagerOptions, WillYouPressTheButtonTypes, WouldYouRatherTypes };
+export { ARCADE_GAMES, ArcadeHub, BaseGame, COMMON_WORDS, Calculator, CalculatorEngine, CanvasUtils, ChaosWords, ContextAdapter, EASY_SENTENCES, EventManager, FIGHT_BOSSES, FastType, Fight, FightAI, FightEngine, Game2048, Game2048Engine, GuessTheNumber, GuessThePokemon, HANGMAN_CATEGORIES, HARD_SENTENCES, Hangman, HangmanEngine, LeaderboardManager, LieSwatter, MEDIUM_SENTENCES, MathEvaluator, NEVER_HAVE_I_EVER_PROMPTS, NeverHaveIEver, POPULAR_POKEMONS, QuickClick, RPSPredictor, Render2048, RenderBracket, RenderFight, RenderHangman, RenderLeaderboard, RenderPokemon, RenderShareCard, RenderSnake, RockPaperScissors, ShuffleGuess, Snake, SnakeEngine, SoundboardManager, TRIVIA_FACTS, TicTacToe, TicTacToeAI, TicTacToeEngine, TournamentManager, VERSION, WYPTB_DILEMMAS, WYR_DILEMMAS, WekyBridge, WekyCanvas, WekyEngine, WekyManager, WillYouPressTheButton, WouldYouRather, boxConsole, checkPackageUpdates, clamp, compareSemver, fetchLatestVersion, fetchRandomPokemon, formatTime, getRandomHangmanWord, getRandomNHIE, getRandomSentence, getRandomString, getRandomTriviaFact, getRandomWYPTB, getRandomWYR, getRandomWord, getRandomWords, safeResolveColor, shuffleArray, shuffleString, stripAnsi, version };
+export type { ArcadeGameEntry, ArcadeHubCustomTexts, ArcadeHubOptions, Author, BaseGameOptions, BossProfile, BotDataTypes, BracketMatch, BracketParticipant, BracketRenderOptions, BridgeMoveResult, BridgePlayer, BridgeSession, BridgeSyncEvent, CalcTypes, CalculatorState, ChaosTypes, ChaosWordsTypes, ContextSendOptions, CrossPlatformMove, CrossPlatformMoveEvent, CustomOptions, CustomPointingMatchContext, CustomPointingMatchHandler, CustomPointingScoreContext, CustomPointingScoreHandler, DashboardOverview, DilemmaData, EloChangeResult, Embeds, EvaluationResult, FastTypeTypes, Fields, FightCardCustomTexts, FightEngineOptions, FightPlayerInfo, FightPowerUp, FightState, FightTypes, Game2048EngineOptions, Game2048State, GameContextInput, GameControlItem, GameControlRow, GameErrorEvent, GameOverEvent, GameStartEvent, GrandFinalsSession, GuessTheNumberTypes, GuessThePokemonData, GuessThePokemonTypes, HangmanEngineOptions, HangmanState, HangmanTypes, IMinigame, LeaderboardCustomTexts, LeaderboardEntry, LeaderboardManagerOptions, LeaderboardPlayer, LeaderboardPointingOptions, LeaderboardStorageAdapter, LeaderboardUpdateEvent, LieSwatterTypes, ManualMatchInput, ManualTournamentOptions, NeverHaveIEverTypes, PlayerData, Point, PokemonData, PokemonEntry, PowerUp, QuickClickTypes, RPSTypes, RenderLeaderboardOptions, RenderShareCardOptions, ShareCardCustomTexts, ShareCardStat, ShuffleGuessTypes, SnakeEngineOptions, SnakeGameTypes, SnakeState, SnakeTypes, SoundboardConfig, TicTacToeDifficulty, TicTacToeEngineOptions, TicTacToeState, TicTacToeTypes, TournamentCustomTexts, TournamentEndEvent, TournamentMatchEvent, TournamentMatchSession, TournamentOptions, TriviaFact, Types2048, UnauthorizedClickEvent, WYPTBDilemma, WYPTBTypes, WYRDilemma, WYRTypes, WekyEvents, WekyManagerOptions, WillYouPressTheButtonTypes, WouldYouRatherTypes };
