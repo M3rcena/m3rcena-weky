@@ -4,8 +4,9 @@
 
 | Version  | Supported          |
 | -------- | ------------------ |
-| ^14.27.0 | :white_check_mark: |
-| 14.x.x   | :x:                |
+| ^14.28.0 | :white_check_mark: |
+| 14.27.x  | :x:                |
+| < 14.27  | :x:                |
 | 11.x.x   | :x:                |
 | 10.x.x   | :x:                |
 | 9.x.x    | :x:                |
@@ -14,4 +15,4 @@
 
 ## Reporting a Vulnerability
 
-Please report (suspected) security vulnerabilities to [d4rk.s0ul](https://discord.com/users/682983233851228161/) via Discord. You will receive a response from us within 24 hours. If the issue is confirmed, we will release a patch as soon as possible depending on complexity but historically within a few days.
+Please report (suspected) security vulnerabilities to [d4rk.s0ul](https://discord.com/users/682983233851228161/) via Discord or via Github Private Vulnerability menu. You will receive a response from us within 24 hours. If the issue is confirmed, we will release a patch as soon as possible depending on complexity but historically within a few days.

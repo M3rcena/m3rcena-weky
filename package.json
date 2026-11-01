@@ -58,7 +58,7 @@
   },
   "homepage": "https://github.com/M3rcena/m3rcena-weky#readme",
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0"
   },
   "dependencies": {
     "@discordjs/voice": "^0.19.2",
