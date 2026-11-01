@@ -142,6 +142,102 @@ export class Game2048 extends BaseGame<Types2048> {
       files: [attachment],
       flags: MessageFlags.IsComponentsV2,
     });
+    this.syncBridgeState();
+  }
+
+  /**
+   * Returns serializable 2048 board state for Cross-Platform Bridge & Web Dashboard.
+   */
+  public override getSerializableState(): any {
+    return {
+      board: this.board.map((row) => [...row]),
+      score: this.score,
+      hasWon: this.hasWon,
+      isGameOver: this.isGameOver,
+      isActive: this.isActive,
+      title: this.gameTitle,
+    };
+  }
+
+  /**
+   * Executes a directional cross-platform move from Bridge / Dashboard.
+   */
+  public override async handleCrossPlatformMove(move: any): Promise<any> {
+    if (!this.isActive) {
+      return { success: false, state: this.getSerializableState(), error: "2048 session is not active" };
+    }
+
+    if (move.playerId !== this.ctx.userId) {
+      return { success: false, state: this.getSerializableState(), error: "Only the player who started 2048 can make moves" };
+    }
+
+    const rawDir = (move.action || move.payload?.direction || "").toUpperCase();
+    const dirMap: Record<string, "UP" | "DOWN" | "LEFT" | "RIGHT"> = {
+      UP: "UP",
+      DOWN: "DOWN",
+      LEFT: "LEFT",
+      RIGHT: "RIGHT",
+      U: "UP",
+      D: "DOWN",
+      L: "LEFT",
+      R: "RIGHT",
+      ARROWUP: "UP",
+      ARROWDOWN: "DOWN",
+      ARROWLEFT: "LEFT",
+      ARROWRIGHT: "RIGHT",
+    };
+
+    const direction = dirMap[rawDir];
+    if (!direction) {
+      return { success: false, state: this.getSerializableState(), error: `Invalid direction "${rawDir}"` };
+    }
+
+    this.resetTimeout(() => this.endGame("timeout"));
+    const moved = this.move(direction);
+
+    if (!moved) {
+      return { success: false, state: this.getSerializableState(), error: "No tiles can move in that direction" };
+    }
+
+    const buffer = await this.renderBoardImage();
+    const attachment = new AttachmentBuilder(buffer, { name: "2048-board.png" });
+
+    if (this.hasWon) {
+      await this.endGame("won", { image: "2048-board.png", score: this.score }, attachment);
+      this.syncBridgeState();
+      return {
+        success: true,
+        state: this.getSerializableState(),
+        isGameOver: true,
+        winnerId: this.ctx.userId,
+        soundKey: "victory",
+      };
+    }
+
+    if (this.isGameOver) {
+      await this.endGame("gameover", { image: "2048-board.png", score: this.score }, attachment);
+      this.syncBridgeState();
+      return {
+        success: true,
+        state: this.getSerializableState(),
+        isGameOver: true,
+        soundKey: "defeat",
+      };
+    }
+
+    const container = this.createGameContainer("active", { image: "2048-board.png", score: this.score });
+    await this.ctx.edit({
+      components: [container],
+      files: [attachment],
+      flags: MessageFlags.IsComponentsV2,
+    });
+    this.syncBridgeState();
+
+    return {
+      success: true,
+      state: this.getSerializableState(),
+      soundKey: "action",
+    };
   }
 
   private move(direction: "UP" | "DOWN" | "LEFT" | "RIGHT"): boolean {
@@ -253,6 +349,7 @@ export class Game2048 extends BaseGame<Types2048> {
       files,
       flags: MessageFlags.IsComponentsV2,
     });
+    this.syncBridgeState();
   }
 
   private createGameContainer(state: "loading" | "active" | "won" | "gameover" | "quit" | "timeout" | "error", details?: { error?: string; image?: string; score?: number }): ContainerBuilder {

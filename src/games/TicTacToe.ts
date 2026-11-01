@@ -130,6 +130,125 @@ export class TicTacToe extends BaseGame<TicTacToeTypes> {
       components: [container],
       flags: MessageFlags.IsComponentsV2,
     });
+    this.syncBridgeState();
+  }
+
+  /**
+   * Returns serializable game state for Cross-Platform Bridge & Web Dashboard.
+   */
+  public override getSerializableState(): any {
+    return {
+      board: [...this.board],
+      currentTurnId: this.currentTurnId,
+      isVsAi: this.isVsAi,
+      difficulty: this.difficulty,
+      p1: { id: this.ctx.userId, username: this.ctx.user?.username || "Player", symbol: "X" },
+      p2: { id: this.opponentUser.id, username: this.opponentUser.username || "Opponent", symbol: "O" },
+      isActive: this.isActive,
+      title: this.gameTitle,
+    };
+  }
+
+  /**
+   * Executes a cross-platform move dispatched from the Bridge or Web Dashboard.
+   */
+  public override async handleCrossPlatformMove(move: any): Promise<any> {
+    if (!this.isActive) {
+      return { success: false, state: this.getSerializableState(), error: "Game is not active" };
+    }
+
+    const userId = move.playerId;
+    if (userId !== this.ctx.userId && (!this.isVsAi && userId !== this.opponentUser.id)) {
+      return { success: false, state: this.getSerializableState(), error: "You are not participating in this game" };
+    }
+
+    if (userId !== this.currentTurnId) {
+      return { success: false, state: this.getSerializableState(), error: "Not your turn" };
+    }
+
+    const index = typeof move.payload === "number" ? move.payload : parseInt(move.payload?.cellIndex ?? move.payload?.index, 10);
+    if (isNaN(index) || index < 0 || index > 8 || this.board[index] !== null) {
+      return { success: false, state: this.getSerializableState(), error: "Invalid cell or cell already taken" };
+    }
+
+    this.resetTimeout(() => this.endGame("timeout"));
+
+    const symbol: Cell = userId === this.ctx.userId ? "X" : "O";
+    this.board[index] = symbol;
+
+    const winner = this.checkWinner();
+    if (winner) {
+      await this.endGame("won", winner);
+      this.syncBridgeState();
+      return {
+        success: true,
+        state: this.getSerializableState(),
+        isGameOver: true,
+        winnerId: winner === "X" ? this.ctx.userId : this.opponentUser.id,
+        soundKey: "victory",
+      };
+    }
+
+    if (this.board.every((cell) => cell !== null)) {
+      await this.endGame("tie");
+      this.syncBridgeState();
+      return {
+        success: true,
+        state: this.getSerializableState(),
+        isGameOver: true,
+        announcement: "Tie game!",
+        soundKey: "tie",
+      };
+    }
+
+    if (this.isVsAi) {
+      const aiMove = TicTacToeAI.getBestMove(this.board, "O", this.difficulty);
+      if (aiMove !== -1) {
+        this.board[aiMove] = "O";
+        const aiWinner = this.checkWinner();
+        if (aiWinner) {
+          await this.endGame("won", aiWinner);
+          this.syncBridgeState();
+          return {
+            success: true,
+            state: this.getSerializableState(),
+            isGameOver: true,
+            winnerId: "weky_ai",
+            soundKey: "defeat",
+          };
+        }
+        if (this.board.every((cell) => cell !== null)) {
+          await this.endGame("tie");
+          this.syncBridgeState();
+          return {
+            success: true,
+            state: this.getSerializableState(),
+            isGameOver: true,
+            announcement: "Tie game!",
+            soundKey: "tie",
+          };
+        }
+      }
+      this.currentTurnId = this.ctx.userId;
+    } else {
+      this.currentTurnId = this.currentTurnId === this.ctx.userId ? this.opponentUser.id : this.ctx.userId;
+    }
+
+    const container = this.createGameContainer("active");
+    await this.ctx.edit({
+      components: [container],
+      flags: MessageFlags.IsComponentsV2,
+    });
+
+    this.syncBridgeState();
+
+    return {
+      success: true,
+      state: this.getSerializableState(),
+      nextTurnId: this.currentTurnId,
+      isGameOver: false,
+      soundKey: "action",
+    };
   }
 
   private checkWinner(): Cell {
@@ -171,6 +290,7 @@ export class TicTacToe extends BaseGame<TicTacToeTypes> {
       components: [container],
       flags: MessageFlags.IsComponentsV2,
     });
+    this.syncBridgeState();
   }
 
   private createGameContainer(state: "active" | "won" | "tie" | "timeout", winningSymbol?: Cell): ContainerBuilder {

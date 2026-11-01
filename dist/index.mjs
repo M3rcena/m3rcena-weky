@@ -338,6 +338,15 @@ var BaseGame = class {
 		return finalContent;
 	}
 	/**
+	* Synchronizes current game state with the bridge and connected dashboards.
+	*/
+	syncBridgeState(customState) {
+		if (this.manager?.bridge && typeof this.manager.bridge.syncState === "function") {
+			const state = customState || (typeof this.getSerializableState === "function" ? this.getSerializableState() : { active: this.isActive });
+			this.manager.bridge.syncState(this.id, state);
+		}
+	}
+	/**
 	* Emits the gameStart lifecycle event on WekyManager and registers session with the bridge.
 	*/
 	emitStart() {
@@ -349,24 +358,46 @@ var BaseGame = class {
 				channelId: this.ctx.channel?.id,
 				timestamp: this.startTime
 			});
-			if (this.manager.bridge && typeof this.manager.bridge.registerSession === "function") this.manager.bridge.registerSession({
-				id: this.id,
-				game: this.gameKey,
-				platform: "discord",
-				players: [{
+			if (this.manager.bridge && typeof this.manager.bridge.registerSession === "function") {
+				const players = [{
 					id: this.ctx.userId,
 					username: this.ctx.user?.username || "Player",
 					avatarUrl: this.ctx.user?.displayAvatarURL ? this.ctx.user.displayAvatarURL({ extension: "png" }) : void 0,
 					platform: "discord"
-				}],
-				state: {
+				}];
+				const opp = this.options?.opponent;
+				if (opp) {
+					const oppUser = opp.user || opp;
+					if (oppUser?.id && oppUser.id !== this.ctx.userId) players.push({
+						id: oppUser.id,
+						username: oppUser.username || "Opponent",
+						avatarUrl: typeof oppUser.displayAvatarURL === "function" ? oppUser.displayAvatarURL({ extension: "png" }) : void 0,
+						platform: "discord"
+					});
+				}
+				const initialState = typeof this.getSerializableState === "function" ? this.getSerializableState() : {
 					active: true,
 					startTime: this.startTime
-				},
-				createdAt: this.startTime,
-				lastUpdated: Date.now(),
-				isGameOver: false
-			});
+				};
+				this.manager.bridge.registerSession({
+					id: this.id,
+					game: this.gameKey,
+					platform: "discord",
+					players,
+					state: initialState,
+					createdAt: this.startTime,
+					lastUpdated: Date.now(),
+					isGameOver: false,
+					onMove: async (move) => {
+						if (typeof this.handleCrossPlatformMove === "function") return await this.handleCrossPlatformMove(move);
+						return {
+							success: false,
+							state: null,
+							error: `Game ${this.gameKey} does not support cross-platform moves.`
+						};
+					}
+				});
+			}
 			if (this.manager.soundboard && typeof this.manager.soundboard.triggerSound === "function") {
 				const targetUserIds = [];
 				if (this.ctx.user?.id) targetUserIds.push(this.ctx.user.id);
@@ -2740,6 +2771,130 @@ var Fight = class extends BaseGame {
 			files: [attachment],
 			flags: MessageFlags.IsComponentsV2
 		});
+		this.syncBridgeState();
+	}
+	/**
+	* Returns serializable battle state for Cross-Platform Bridge & Web Dashboard.
+	*/
+	getSerializableState() {
+		return {
+			p1: { ...this.p1 },
+			p2: { ...this.p2 },
+			currentTurnId: this.currentTurnId,
+			phase: this.phase,
+			lastAnnouncement: this.lastAnnouncement,
+			isVsBoss: this.isVsBoss,
+			isActive: this.isActive
+		};
+	}
+	/**
+	* Executes a cross-platform battle action from Bridge / Dashboard.
+	*/
+	async handleCrossPlatformMove(move) {
+		if (!this.isActive || this.phase !== "FIGHT") return {
+			success: false,
+			state: this.getSerializableState(),
+			error: "Battle is not actively in FIGHT phase"
+		};
+		const userId = move.playerId;
+		if (userId !== this.currentTurnId) return {
+			success: false,
+			state: this.getSerializableState(),
+			error: "Not your turn in battle"
+		};
+		const currentFighter = userId === this.p1.id ? this.p1 : this.p2;
+		const targetFighter = userId === this.p1.id ? this.p2 : this.p1;
+		const action = move.action?.toLowerCase();
+		this.resetTimeout(() => this.endGame("TIMEOUT"));
+		let soundKey = "hit";
+		if (action === "attack") {
+			this.handleHit(currentFighter, targetFighter, false);
+			soundKey = "punch";
+		} else if (action === "heavy") {
+			this.handleHit(currentFighter, targetFighter, true);
+			soundKey = "hit";
+		} else if (action === "heal") {
+			this.handleHeal(currentFighter);
+			soundKey = "heal";
+		} else if (action === "shield") {
+			this.handleShield(currentFighter);
+			soundKey = "shield";
+		} else if (action === "doubledamage" || action === "double_damage") {
+			this.handleDoubleDamage(currentFighter);
+			soundKey = "powerup";
+		} else if (action === "surrender") {
+			await this.endGame("SURRENDER", targetFighter, currentFighter);
+			this.syncBridgeState();
+			return {
+				success: true,
+				state: this.getSerializableState(),
+				isGameOver: true,
+				winnerId: targetFighter.id
+			};
+		} else return {
+			success: false,
+			state: this.getSerializableState(),
+			error: `Unknown action "${action}"`
+		};
+		if (targetFighter.health <= 0) {
+			await this.endGame("WIN", currentFighter, targetFighter);
+			this.syncBridgeState();
+			return {
+				success: true,
+				state: this.getSerializableState(),
+				isGameOver: true,
+				winnerId: currentFighter.id,
+				soundKey: "victory"
+			};
+		}
+		if (this.isVsBoss && targetFighter.id === "weky_boss") {
+			const bossAction = FightAI.decideAction(this.p2, this.p1);
+			const playerAnnouncement = this.lastAnnouncement;
+			if (bossAction === "heavy") {
+				this.handleHit(this.p2, this.p1, true);
+				this.lastAnnouncement = `${playerAnnouncement}\n\n${this.lastAnnouncement}`;
+			} else if (bossAction === "heal") {
+				this.handleHeal(this.p2);
+				this.lastAnnouncement = `${playerAnnouncement}\n\n${this.lastAnnouncement}`;
+			} else if (bossAction === "shield") {
+				this.handleShield(this.p2);
+				this.lastAnnouncement = `${playerAnnouncement}\n\n${this.lastAnnouncement}`;
+			} else {
+				this.handleHit(this.p2, this.p1, false);
+				this.lastAnnouncement = `${playerAnnouncement}\n\n${this.lastAnnouncement}`;
+			}
+			if (this.p1.health <= 0) {
+				await this.endGame("WIN", this.p2, this.p1);
+				this.syncBridgeState();
+				return {
+					success: true,
+					state: this.getSerializableState(),
+					isGameOver: true,
+					winnerId: this.p2.id,
+					soundKey: "defeat"
+				};
+			}
+			this.currentTurnId = this.p1.id;
+			await this.updateBattleInterface();
+			this.syncBridgeState();
+			return {
+				success: true,
+				state: this.getSerializableState(),
+				nextTurnId: this.currentTurnId,
+				isGameOver: false,
+				soundKey
+			};
+		}
+		this.currentTurnId = targetFighter.id;
+		await this.updateBattleInterface();
+		this.syncBridgeState();
+		return {
+			success: true,
+			state: this.getSerializableState(),
+			nextTurnId: this.currentTurnId,
+			isGameOver: false,
+			soundKey
+		};
 	}
 	async endGame(reason, winner, loser) {
 		this.phase = "ENDED";
@@ -2779,6 +2934,7 @@ var Fight = class extends BaseGame {
 			files: [attachment],
 			flags: MessageFlags.IsComponentsV2
 		});
+		this.syncBridgeState();
 	}
 	createGameContainer(state, details) {
 		const stateColors = {
@@ -3119,6 +3275,105 @@ var Game2048 = class extends BaseGame {
 			files: [attachment],
 			flags: MessageFlags.IsComponentsV2
 		});
+		this.syncBridgeState();
+	}
+	/**
+	* Returns serializable 2048 board state for Cross-Platform Bridge & Web Dashboard.
+	*/
+	getSerializableState() {
+		return {
+			board: this.board.map((row) => [...row]),
+			score: this.score,
+			hasWon: this.hasWon,
+			isGameOver: this.isGameOver,
+			isActive: this.isActive,
+			title: this.gameTitle
+		};
+	}
+	/**
+	* Executes a directional cross-platform move from Bridge / Dashboard.
+	*/
+	async handleCrossPlatformMove(move) {
+		if (!this.isActive) return {
+			success: false,
+			state: this.getSerializableState(),
+			error: "2048 session is not active"
+		};
+		if (move.playerId !== this.ctx.userId) return {
+			success: false,
+			state: this.getSerializableState(),
+			error: "Only the player who started 2048 can make moves"
+		};
+		const rawDir = (move.action || move.payload?.direction || "").toUpperCase();
+		const direction = {
+			UP: "UP",
+			DOWN: "DOWN",
+			LEFT: "LEFT",
+			RIGHT: "RIGHT",
+			U: "UP",
+			D: "DOWN",
+			L: "LEFT",
+			R: "RIGHT",
+			ARROWUP: "UP",
+			ARROWDOWN: "DOWN",
+			ARROWLEFT: "LEFT",
+			ARROWRIGHT: "RIGHT"
+		}[rawDir];
+		if (!direction) return {
+			success: false,
+			state: this.getSerializableState(),
+			error: `Invalid direction "${rawDir}"`
+		};
+		this.resetTimeout(() => this.endGame("timeout"));
+		if (!this.move(direction)) return {
+			success: false,
+			state: this.getSerializableState(),
+			error: "No tiles can move in that direction"
+		};
+		const buffer = await this.renderBoardImage();
+		const attachment = new AttachmentBuilder(buffer, { name: "2048-board.png" });
+		if (this.hasWon) {
+			await this.endGame("won", {
+				image: "2048-board.png",
+				score: this.score
+			}, attachment);
+			this.syncBridgeState();
+			return {
+				success: true,
+				state: this.getSerializableState(),
+				isGameOver: true,
+				winnerId: this.ctx.userId,
+				soundKey: "victory"
+			};
+		}
+		if (this.isGameOver) {
+			await this.endGame("gameover", {
+				image: "2048-board.png",
+				score: this.score
+			}, attachment);
+			this.syncBridgeState();
+			return {
+				success: true,
+				state: this.getSerializableState(),
+				isGameOver: true,
+				soundKey: "defeat"
+			};
+		}
+		const container = this.createGameContainer("active", {
+			image: "2048-board.png",
+			score: this.score
+		});
+		await this.ctx.edit({
+			components: [container],
+			files: [attachment],
+			flags: MessageFlags.IsComponentsV2
+		});
+		this.syncBridgeState();
+		return {
+			success: true,
+			state: this.getSerializableState(),
+			soundKey: "action"
+		};
 	}
 	move(direction) {
 		let moved = false;
@@ -3208,6 +3463,7 @@ var Game2048 = class extends BaseGame {
 			files,
 			flags: MessageFlags.IsComponentsV2
 		});
+		this.syncBridgeState();
 	}
 	createGameContainer(state, details) {
 		const stateColors = {
@@ -5612,6 +5868,126 @@ var TicTacToe = class extends BaseGame {
 			components: [container],
 			flags: MessageFlags.IsComponentsV2
 		});
+		this.syncBridgeState();
+	}
+	/**
+	* Returns serializable game state for Cross-Platform Bridge & Web Dashboard.
+	*/
+	getSerializableState() {
+		return {
+			board: [...this.board],
+			currentTurnId: this.currentTurnId,
+			isVsAi: this.isVsAi,
+			difficulty: this.difficulty,
+			p1: {
+				id: this.ctx.userId,
+				username: this.ctx.user?.username || "Player",
+				symbol: "X"
+			},
+			p2: {
+				id: this.opponentUser.id,
+				username: this.opponentUser.username || "Opponent",
+				symbol: "O"
+			},
+			isActive: this.isActive,
+			title: this.gameTitle
+		};
+	}
+	/**
+	* Executes a cross-platform move dispatched from the Bridge or Web Dashboard.
+	*/
+	async handleCrossPlatformMove(move) {
+		if (!this.isActive) return {
+			success: false,
+			state: this.getSerializableState(),
+			error: "Game is not active"
+		};
+		const userId = move.playerId;
+		if (userId !== this.ctx.userId && !this.isVsAi && userId !== this.opponentUser.id) return {
+			success: false,
+			state: this.getSerializableState(),
+			error: "You are not participating in this game"
+		};
+		if (userId !== this.currentTurnId) return {
+			success: false,
+			state: this.getSerializableState(),
+			error: "Not your turn"
+		};
+		const index = typeof move.payload === "number" ? move.payload : parseInt(move.payload?.cellIndex ?? move.payload?.index, 10);
+		if (isNaN(index) || index < 0 || index > 8 || this.board[index] !== null) return {
+			success: false,
+			state: this.getSerializableState(),
+			error: "Invalid cell or cell already taken"
+		};
+		this.resetTimeout(() => this.endGame("timeout"));
+		const symbol = userId === this.ctx.userId ? "X" : "O";
+		this.board[index] = symbol;
+		const winner = this.checkWinner();
+		if (winner) {
+			await this.endGame("won", winner);
+			this.syncBridgeState();
+			return {
+				success: true,
+				state: this.getSerializableState(),
+				isGameOver: true,
+				winnerId: winner === "X" ? this.ctx.userId : this.opponentUser.id,
+				soundKey: "victory"
+			};
+		}
+		if (this.board.every((cell) => cell !== null)) {
+			await this.endGame("tie");
+			this.syncBridgeState();
+			return {
+				success: true,
+				state: this.getSerializableState(),
+				isGameOver: true,
+				announcement: "Tie game!",
+				soundKey: "tie"
+			};
+		}
+		if (this.isVsAi) {
+			const aiMove = TicTacToeAI.getBestMove(this.board, "O", this.difficulty);
+			if (aiMove !== -1) {
+				this.board[aiMove] = "O";
+				const aiWinner = this.checkWinner();
+				if (aiWinner) {
+					await this.endGame("won", aiWinner);
+					this.syncBridgeState();
+					return {
+						success: true,
+						state: this.getSerializableState(),
+						isGameOver: true,
+						winnerId: "weky_ai",
+						soundKey: "defeat"
+					};
+				}
+				if (this.board.every((cell) => cell !== null)) {
+					await this.endGame("tie");
+					this.syncBridgeState();
+					return {
+						success: true,
+						state: this.getSerializableState(),
+						isGameOver: true,
+						announcement: "Tie game!",
+						soundKey: "tie"
+					};
+				}
+			}
+			this.currentTurnId = this.ctx.userId;
+		} else this.currentTurnId = this.currentTurnId === this.ctx.userId ? this.opponentUser.id : this.ctx.userId;
+		const container = this.createGameContainer("active");
+		await this.ctx.edit({
+			components: [container],
+			flags: MessageFlags.IsComponentsV2
+		});
+		this.syncBridgeState();
+		return {
+			success: true,
+			state: this.getSerializableState(),
+			nextTurnId: this.currentTurnId,
+			isGameOver: false,
+			soundKey: "action"
+		};
 	}
 	checkWinner() {
 		for (const [a, b, c] of [
@@ -5670,6 +6046,7 @@ var TicTacToe = class extends BaseGame {
 			components: [container],
 			flags: MessageFlags.IsComponentsV2
 		});
+		this.syncBridgeState();
 	}
 	createGameContainer(state, winningSymbol) {
 		let stateColor = this.defaultColor;

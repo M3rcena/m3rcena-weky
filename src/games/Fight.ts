@@ -352,6 +352,134 @@ export class Fight extends BaseGame<FightTypes> {
         flags: MessageFlags.IsComponentsV2,
       });
     }
+    this.syncBridgeState();
+  }
+
+  /**
+   * Returns serializable battle state for Cross-Platform Bridge & Web Dashboard.
+   */
+  public override getSerializableState(): any {
+    return {
+      p1: { ...this.p1 },
+      p2: { ...this.p2 },
+      currentTurnId: this.currentTurnId,
+      phase: this.phase,
+      lastAnnouncement: this.lastAnnouncement,
+      isVsBoss: this.isVsBoss,
+      isActive: this.isActive,
+    };
+  }
+
+  /**
+   * Executes a cross-platform battle action from Bridge / Dashboard.
+   */
+  public override async handleCrossPlatformMove(move: any): Promise<any> {
+    if (!this.isActive || this.phase !== "FIGHT") {
+      return { success: false, state: this.getSerializableState(), error: "Battle is not actively in FIGHT phase" };
+    }
+
+    const userId = move.playerId;
+    if (userId !== this.currentTurnId) {
+      return { success: false, state: this.getSerializableState(), error: "Not your turn in battle" };
+    }
+
+    const currentFighter = userId === this.p1.id ? this.p1 : this.p2;
+    const targetFighter = userId === this.p1.id ? this.p2 : this.p1;
+    const action = move.action?.toLowerCase();
+
+    this.resetTimeout(() => this.endGame("TIMEOUT"));
+
+    let soundKey = "hit";
+    if (action === "attack") {
+      this.handleHit(currentFighter, targetFighter, false);
+      soundKey = "punch";
+    } else if (action === "heavy") {
+      this.handleHit(currentFighter, targetFighter, true);
+      soundKey = "hit";
+    } else if (action === "heal") {
+      this.handleHeal(currentFighter);
+      soundKey = "heal";
+    } else if (action === "shield") {
+      this.handleShield(currentFighter);
+      soundKey = "shield";
+    } else if (action === "doubledamage" || action === "double_damage") {
+      this.handleDoubleDamage(currentFighter);
+      soundKey = "powerup";
+    } else if (action === "surrender") {
+      await this.endGame("SURRENDER", targetFighter, currentFighter);
+      this.syncBridgeState();
+      return { success: true, state: this.getSerializableState(), isGameOver: true, winnerId: targetFighter.id };
+    } else {
+      return { success: false, state: this.getSerializableState(), error: `Unknown action "${action}"` };
+    }
+
+    // Check if target died
+    if (targetFighter.health <= 0) {
+      await this.endGame("WIN", currentFighter, targetFighter);
+      this.syncBridgeState();
+      return {
+        success: true,
+        state: this.getSerializableState(),
+        isGameOver: true,
+        winnerId: currentFighter.id,
+        soundKey: "victory",
+      };
+    }
+
+    // If opponent is Boss, execute AI turn immediately
+    if (this.isVsBoss && targetFighter.id === "weky_boss") {
+      const bossAction = FightAI.decideAction(this.p2, this.p1);
+      const playerAnnouncement = this.lastAnnouncement;
+
+      if (bossAction === "heavy") {
+        this.handleHit(this.p2, this.p1, true);
+        this.lastAnnouncement = `${playerAnnouncement}\n\n${this.lastAnnouncement}`;
+      } else if (bossAction === "heal") {
+        this.handleHeal(this.p2);
+        this.lastAnnouncement = `${playerAnnouncement}\n\n${this.lastAnnouncement}`;
+      } else if (bossAction === "shield") {
+        this.handleShield(this.p2);
+        this.lastAnnouncement = `${playerAnnouncement}\n\n${this.lastAnnouncement}`;
+      } else {
+        this.handleHit(this.p2, this.p1, false);
+        this.lastAnnouncement = `${playerAnnouncement}\n\n${this.lastAnnouncement}`;
+      }
+
+      if (this.p1.health <= 0) {
+        await this.endGame("WIN", this.p2, this.p1);
+        this.syncBridgeState();
+        return {
+          success: true,
+          state: this.getSerializableState(),
+          isGameOver: true,
+          winnerId: this.p2.id,
+          soundKey: "defeat",
+        };
+      }
+
+      this.currentTurnId = this.p1.id;
+      await this.updateBattleInterface();
+      this.syncBridgeState();
+      return {
+        success: true,
+        state: this.getSerializableState(),
+        nextTurnId: this.currentTurnId,
+        isGameOver: false,
+        soundKey,
+      };
+    }
+
+    this.currentTurnId = targetFighter.id;
+    await this.updateBattleInterface();
+    this.syncBridgeState();
+
+    return {
+      success: true,
+      state: this.getSerializableState(),
+      nextTurnId: this.currentTurnId,
+      isGameOver: false,
+      soundKey,
+    };
   }
 
   private async endGame(reason: "WIN" | "SURRENDER" | "DENIED" | "TIMEOUT", winner?: FightPlayerInfo, loser?: FightPlayerInfo): Promise<void> {
@@ -399,6 +527,7 @@ export class Fight extends BaseGame<FightTypes> {
         flags: MessageFlags.IsComponentsV2,
       });
     }
+    this.syncBridgeState();
   }
 
   private createGameContainer(state: "request" | "active" | "won" | "surrender" | "deny" | "timeout" | "error", details?: { image?: string; error?: string; turnId?: string; announcement?: string; winnerId?: string; loserId?: string }): ContainerBuilder {

@@ -141,6 +141,26 @@ export abstract class BaseGame<T extends BaseGameOptions> implements IMinigame {
   }
 
   /**
+   * Returns a serializable representation of current game state for Bridge/Dashboard sync.
+   */
+  public getSerializableState?(): any;
+
+  /**
+   * Handles an incoming cross-platform action dispatched from the Bridge/Dashboard.
+   */
+  public handleCrossPlatformMove?(move: any): Promise<any> | any;
+
+  /**
+   * Synchronizes current game state with the bridge and connected dashboards.
+   */
+  public syncBridgeState(customState?: any): void {
+    if (this.manager?.bridge && typeof this.manager.bridge.syncState === "function") {
+      const state = customState || (typeof this.getSerializableState === "function" ? this.getSerializableState() : { active: this.isActive });
+      this.manager.bridge.syncState(this.id, state);
+    }
+  }
+
+  /**
    * Emits the gameStart lifecycle event on WekyManager and registers session with the bridge.
    */
   protected emitStart(): void {
@@ -155,22 +175,47 @@ export abstract class BaseGame<T extends BaseGameOptions> implements IMinigame {
         });
       }
       if (this.manager.bridge && typeof this.manager.bridge.registerSession === "function") {
+        const players: Array<{ id: string; username: string; avatarUrl?: string; platform: "discord" | "dashboard" }> = [
+          {
+            id: this.ctx.userId,
+            username: this.ctx.user?.username || "Player",
+            avatarUrl: this.ctx.user?.displayAvatarURL ? this.ctx.user.displayAvatarURL({ extension: "png" }) : undefined,
+            platform: "discord",
+          },
+        ];
+
+        const opp = (this.options as any)?.opponent;
+        if (opp) {
+          const oppUser = opp.user || opp;
+          if (oppUser?.id && oppUser.id !== this.ctx.userId) {
+            players.push({
+              id: oppUser.id,
+              username: oppUser.username || "Opponent",
+              avatarUrl: typeof oppUser.displayAvatarURL === "function" ? oppUser.displayAvatarURL({ extension: "png" }) : undefined,
+              platform: "discord",
+            });
+          }
+        }
+
+        const initialState = typeof this.getSerializableState === "function"
+          ? this.getSerializableState()
+          : { active: true, startTime: this.startTime };
+
         this.manager.bridge.registerSession({
           id: this.id,
           game: this.gameKey,
           platform: "discord",
-          players: [
-            {
-              id: this.ctx.userId,
-              username: this.ctx.user?.username || "Player",
-              avatarUrl: this.ctx.user?.displayAvatarURL ? this.ctx.user.displayAvatarURL({ extension: "png" }) : undefined,
-              platform: "discord",
-            },
-          ],
-          state: { active: true, startTime: this.startTime },
+          players,
+          state: initialState,
           createdAt: this.startTime,
           lastUpdated: Date.now(),
           isGameOver: false,
+          onMove: async (move: any) => {
+            if (typeof this.handleCrossPlatformMove === "function") {
+              return await this.handleCrossPlatformMove(move);
+            }
+            return { success: false, state: null, error: `Game ${this.gameKey} does not support cross-platform moves.` };
+          },
         });
       }
       if (this.manager.soundboard && typeof this.manager.soundboard.triggerSound === "function") {

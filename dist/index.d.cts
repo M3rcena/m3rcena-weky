@@ -1942,6 +1942,18 @@ export declare abstract class BaseGame<T extends BaseGameOptions> implements IMi
    */
   applyEmbedDecorations(container: ContainerBuilder, content: string): string;
   /**
+   * Returns a serializable representation of current game state for Bridge/Dashboard sync.
+   */
+  getSerializableState?(): any;
+  /**
+   * Handles an incoming cross-platform action dispatched from the Bridge/Dashboard.
+   */
+  handleCrossPlatformMove?(move: any): Promise<any> | any;
+  /**
+   * Synchronizes current game state with the bridge and connected dashboards.
+   */
+  syncBridgeState(customState?: any): void;
+  /**
    * Emits the gameStart lifecycle event on WekyManager and registers session with the bridge.
    */
   protected emitStart(): void;
@@ -2041,6 +2053,14 @@ export declare class Fight extends BaseGame<FightTypes> {
   private handleShield;
   private handleDoubleDamage;
   private updateBattleInterface;
+  /**
+   * Returns serializable battle state for Cross-Platform Bridge & Web Dashboard.
+   */
+  getSerializableState(): any;
+  /**
+   * Executes a cross-platform battle action from Bridge / Dashboard.
+   */
+  handleCrossPlatformMove(move: any): Promise<any>;
   private endGame;
   private createGameContainer;
 }
@@ -2066,6 +2086,14 @@ export declare class Game2048 extends BaseGame<Types2048> {
   private spawnTile;
   private renderBoardImage;
   onInteraction(interaction: Interaction): Promise<void>;
+  /**
+   * Returns serializable 2048 board state for Cross-Platform Bridge & Web Dashboard.
+   */
+  getSerializableState(): any;
+  /**
+   * Executes a directional cross-platform move from Bridge / Dashboard.
+   */
+  handleCrossPlatformMove(move: any): Promise<any>;
   private move;
   private transpose;
   private checkWon;
@@ -2233,6 +2261,14 @@ export declare class TicTacToe extends BaseGame<TicTacToeTypes> {
   constructor(manager: any, options: TicTacToeTypes);
   start(): Promise<void>;
   onInteraction(interaction: Interaction): Promise<void>;
+  /**
+   * Returns serializable game state for Cross-Platform Bridge & Web Dashboard.
+   */
+  getSerializableState(): any;
+  /**
+   * Executes a cross-platform move dispatched from the Bridge or Web Dashboard.
+   */
+  handleCrossPlatformMove(move: any): Promise<any>;
   private checkWinner;
   private endGame;
   private createGameContainer;
