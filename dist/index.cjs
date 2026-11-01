@@ -11617,6 +11617,30 @@ var WekyEcoConnector = class extends node_events.EventEmitter {
 		};
 		this.initListeners();
 	}
+	on(event, listener) {
+		return super.on(event, listener);
+	}
+	once(event, listener) {
+		return super.once(event, listener);
+	}
+	emit(event, ...args) {
+		return super.emit(event, ...args);
+	}
+	off(event, listener) {
+		return super.off(event, listener);
+	}
+	addListener(event, listener) {
+		return super.addListener(event, listener);
+	}
+	removeListener(event, listener) {
+		return super.removeListener(event, listener);
+	}
+	prependListener(event, listener) {
+		return super.prependListener(event, listener);
+	}
+	prependOnceListener(event, listener) {
+		return super.prependOnceListener(event, listener);
+	}
 	initListeners() {
 		if (typeof this.weky.on === "function") {
 			this.weky.on("gameOver", async (event) => {
@@ -12074,6 +12098,12 @@ var WekyManager = class extends events.EventEmitter {
 	}
 	removeListener(event, listener) {
 		return super.removeListener(event, listener);
+	}
+	prependListener(event, listener) {
+		return super.prependListener(event, listener);
+	}
+	prependOnceListener(event, listener) {
+		return super.prependOnceListener(event, listener);
 	}
 	/**
 	* Manually checks for newer versions of @m3rcena/weky.

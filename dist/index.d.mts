@@ -1136,6 +1136,29 @@ interface RewardDistributionResult {
   scoreBonus?: number;
   wagerWon?: number;
 }
+interface WagerResolvedEvent {
+  wager: WagerRecord;
+  winnerId: string;
+  loserId: string;
+  payout: number;
+  houseFee: number;
+}
+interface WagerRefundedEvent {
+  wager: WagerRecord;
+  reason: string;
+}
+/**
+ * Type-safe map of events emitted by WekyEcoConnector.
+ */
+interface WekyEcoConnectorEvents {
+  wagerCreated: [wager: WagerRecord];
+  wagerResolved: [event: WagerResolvedEvent];
+  wagerRefunded: [event: WagerRefundedEvent];
+  reward: [result: RewardDistributionResult];
+  penalty: [result: RewardDistributionResult];
+  tournamentReward: [result: RewardDistributionResult];
+  error: [error: any];
+}
 export declare class WekyEcoConnector extends EventEmitter$1 {
   readonly weky: WekyManager;
   readonly eco: any;
@@ -1143,6 +1166,22 @@ export declare class WekyEcoConnector extends EventEmitter$1 {
   private activeWagers;
   private userToWagerMap;
   constructor(weky: WekyManager, eco: any, options?: WekyEcoConnectorOptions);
+  on<K extends keyof WekyEcoConnectorEvents>(event: K, listener: (...args: WekyEcoConnectorEvents[K]) => void): this;
+  on(event: string | symbol, listener: (...args: any[]) => void): this;
+  once<K extends keyof WekyEcoConnectorEvents>(event: K, listener: (...args: WekyEcoConnectorEvents[K]) => void): this;
+  once(event: string | symbol, listener: (...args: any[]) => void): this;
+  emit<K extends keyof WekyEcoConnectorEvents>(event: K, ...args: WekyEcoConnectorEvents[K]): boolean;
+  emit(event: string | symbol, ...args: any[]): boolean;
+  off<K extends keyof WekyEcoConnectorEvents>(event: K, listener: (...args: WekyEcoConnectorEvents[K]) => void): this;
+  off(event: string | symbol, listener: (...args: any[]) => void): this;
+  addListener<K extends keyof WekyEcoConnectorEvents>(event: K, listener: (...args: WekyEcoConnectorEvents[K]) => void): this;
+  addListener(event: string | symbol, listener: (...args: any[]) => void): this;
+  removeListener<K extends keyof WekyEcoConnectorEvents>(event: K, listener: (...args: WekyEcoConnectorEvents[K]) => void): this;
+  removeListener(event: string | symbol, listener: (...args: any[]) => void): this;
+  prependListener<K extends keyof WekyEcoConnectorEvents>(event: K, listener: (...args: WekyEcoConnectorEvents[K]) => void): this;
+  prependListener(event: string | symbol, listener: (...args: any[]) => void): this;
+  prependOnceListener<K extends keyof WekyEcoConnectorEvents>(event: K, listener: (...args: WekyEcoConnectorEvents[K]) => void): this;
+  prependOnceListener(event: string | symbol, listener: (...args: any[]) => void): this;
   private initListeners;
   /**
    * Creates and escrows a PvP wager match between two players.
@@ -1259,6 +1298,10 @@ export declare class WekyManager extends EventEmitter {
   addListener(event: string | symbol, listener: (...args: any[]) => void): this;
   removeListener<K extends keyof WekyEvents>(event: K, listener: (...args: WekyEvents[K]) => void): this;
   removeListener(event: string | symbol, listener: (...args: any[]) => void): this;
+  prependListener<K extends keyof WekyEvents>(event: K, listener: (...args: WekyEvents[K]) => void): this;
+  prependListener(event: string | symbol, listener: (...args: any[]) => void): this;
+  prependOnceListener<K extends keyof WekyEvents>(event: K, listener: (...args: WekyEvents[K]) => void): this;
+  prependOnceListener(event: string | symbol, listener: (...args: any[]) => void): this;
   /**
    * Manually checks for newer versions of @m3rcena/weky.
    */
@@ -3386,5 +3429,5 @@ export declare function getRandomHangmanWord(category?: string): {
   word: string;
   category: string;
 };
-export { type ArcadeGameEntry, type ArcadeHubCustomTexts, type ArcadeHubOptions, type BossProfile, type BracketMatch, type BracketParticipant, type BracketRenderOptions, type BridgeMoveResult, type BridgePlayer, type BridgeSession, type CalculatorState, type ContextSendOptions, type CrossPlatformMove, type CustomPointingMatchContext, type CustomPointingMatchHandler, type CustomPointingScoreContext, type CustomPointingScoreHandler, type DashboardOverview, type DashboardSoundEntry, type EloChangeResult, type EvaluationResult, type FightCardCustomTexts, type FightEngineOptions, type FightPlayerInfo, type FightState, type Game2048EngineOptions, type Game2048State, type GameRewardRule, type GrandFinalsSession, type HangmanEngineOptions, type HangmanState, type LeaderboardCustomTexts, type LeaderboardEntry, type LeaderboardManagerOptions, type LeaderboardPlayer, type LeaderboardPointingOptions, type LeaderboardStorageAdapter, M3rcenaBridge, type ManualMatchInput, type ManualTournamentOptions, type PrismaWekyStorageOptions, type RenderLeaderboardOptions, type RenderShareCardOptions, type RewardDistributionResult, type ShareCardCustomTexts, type ShareCardStat, type SnakeEngineOptions, type SnakeState, type SoundboardConfig, type SoundboardPlayOptions, type SoundboardPlayResult, type SqliteWekyStorageOptions, type TicTacToeDifficulty, type TicTacToeEngineOptions, type TicTacToeState, type TournamentCustomTexts, type TournamentMatchSession, type TournamentOptions, type WagerCreateResult, type WagerRecord, type WekyEcoConnectorOptions, type WekyManagerOptions };
+export { type ArcadeGameEntry, type ArcadeHubCustomTexts, type ArcadeHubOptions, type BossProfile, type BracketMatch, type BracketParticipant, type BracketRenderOptions, type BridgeMoveResult, type BridgePlayer, type BridgeSession, type CalculatorState, type ContextSendOptions, type CrossPlatformMove, type CustomPointingMatchContext, type CustomPointingMatchHandler, type CustomPointingScoreContext, type CustomPointingScoreHandler, type DashboardOverview, type DashboardSoundEntry, type EloChangeResult, type EvaluationResult, type FightCardCustomTexts, type FightEngineOptions, type FightPlayerInfo, type FightState, type Game2048EngineOptions, type Game2048State, type GameRewardRule, type GrandFinalsSession, type HangmanEngineOptions, type HangmanState, type LeaderboardCustomTexts, type LeaderboardEntry, type LeaderboardManagerOptions, type LeaderboardPlayer, type LeaderboardPointingOptions, type LeaderboardStorageAdapter, M3rcenaBridge, type ManualMatchInput, type ManualTournamentOptions, type PrismaWekyStorageOptions, type RenderLeaderboardOptions, type RenderShareCardOptions, type RewardDistributionResult, type ShareCardCustomTexts, type ShareCardStat, type SnakeEngineOptions, type SnakeState, type SoundboardConfig, type SoundboardPlayOptions, type SoundboardPlayResult, type SqliteWekyStorageOptions, type TicTacToeDifficulty, type TicTacToeEngineOptions, type TicTacToeState, type TournamentCustomTexts, type TournamentMatchSession, type TournamentOptions, type WagerCreateResult, type WagerRecord, type WagerRefundedEvent, type WagerResolvedEvent, type WekyEcoConnectorEvents, type WekyEcoConnectorOptions, type WekyManagerOptions };
 //# sourceMappingURL=index.d.mts.map

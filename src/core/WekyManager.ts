@@ -205,6 +205,18 @@ export class WekyManager extends EventEmitter {
     return super.removeListener(event, listener);
   }
 
+  public override prependListener<K extends keyof WekyEvents>(event: K, listener: (...args: WekyEvents[K]) => void): this;
+  public override prependListener(event: string | symbol, listener: (...args: any[]) => void): this;
+  public override prependListener(event: string | symbol, listener: (...args: any[]) => void): this {
+    return super.prependListener(event, listener);
+  }
+
+  public override prependOnceListener<K extends keyof WekyEvents>(event: K, listener: (...args: WekyEvents[K]) => void): this;
+  public override prependOnceListener(event: string | symbol, listener: (...args: any[]) => void): this;
+  public override prependOnceListener(event: string | symbol, listener: (...args: any[]) => void): this {
+    return super.prependOnceListener(event, listener);
+  }
+
   /**
    * Manually checks for newer versions of @m3rcena/weky.
    */

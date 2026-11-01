@@ -75,6 +75,9 @@ export {
   type WagerRecord,
   type WagerCreateResult,
   type RewardDistributionResult,
+  type WagerResolvedEvent,
+  type WagerRefundedEvent,
+  type WekyEcoConnectorEvents,
 } from "./connector/WekyEcoConnector.js";
 
 // Share & Flex Gamer Cards
