@@ -38,15 +38,25 @@ export class ContextAdapter {
       this.guild = context.guild ?? null;
       this.channel = context.channel as TextBasedChannel;
       this.client = context.client;
-    } else {
+    } else if (typeof (context as any)?.reply === "function") {
       // Interaction (ChatInputCommand, Button, SelectMenu, etc.)
       this.isInteraction = true;
       this.isMessage = false;
-      this.user = context.user || context.author;
+      this.user = context.user || (context as any).author;
       this.userId = this.user?.id || context.member?.id;
       this.member = (context.member as GuildMember) ?? null;
       this.guild = context.guild ?? null;
       this.channel = context.channel as TextBasedChannel;
+      this.client = context.client;
+    } else {
+      // Custom / Headless / Dashboard Context or Channel-based context
+      this.isInteraction = false;
+      this.isMessage = true;
+      this.user = context.user || (context as any).author;
+      this.userId = this.user?.id || (context.member as any)?.id;
+      this.member = ((context.member as GuildMember) ?? null);
+      this.guild = context.guild ?? null;
+      this.channel = (context.channel || (typeof (context as any).send === "function" ? context : null)) as TextBasedChannel;
       this.client = context.client;
     }
 
@@ -77,6 +87,12 @@ export class ContextAdapter {
    * Handles interaction replies (using withResponse: true), deferred states, and message channels transparently.
    */
   public async sendInitial(options: ContextSendOptions): Promise<Message> {
+    if (typeof (this.raw as any)?.sendInitial === "function") {
+      const msg = await (this.raw as any).sendInitial(options);
+      this.gameMessage = msg;
+      return msg;
+    }
+
     const resolvedFlags = this.resolveFlags(options);
     const isV2 = !!((resolvedFlags ?? 0) & MessageFlags.IsComponentsV2);
 
@@ -150,6 +166,11 @@ export class ContextAdapter {
    * Updates the game message safely with Components V2 support.
    */
   public async edit(options: ContextSendOptions): Promise<void> {
+    if (typeof (this.raw as any)?.edit === "function") {
+      await (this.raw as any).edit(options);
+      return;
+    }
+
     if (!this.gameMessage) {
       await this.sendInitial(options);
       return;

@@ -126,7 +126,7 @@ var ContextAdapter = class ContextAdapter {
 			this.guild = context.guild ?? null;
 			this.channel = context.channel;
 			this.client = context.client;
-		} else {
+		} else if (typeof context?.reply === "function") {
 			this.isInteraction = true;
 			this.isMessage = false;
 			this.user = context.user || context.author;
@@ -134,6 +134,15 @@ var ContextAdapter = class ContextAdapter {
 			this.member = context.member ?? null;
 			this.guild = context.guild ?? null;
 			this.channel = context.channel;
+			this.client = context.client;
+		} else {
+			this.isInteraction = false;
+			this.isMessage = true;
+			this.user = context.user || context.author;
+			this.userId = this.user?.id || context.member?.id;
+			this.member = context.member ?? null;
+			this.guild = context.guild ?? null;
+			this.channel = context.channel || (typeof context.send === "function" ? context : null);
 			this.client = context.client;
 		}
 		if (!this.user || !this.channel) throw new Error("[ContextAdapter] Invalid Discord context: unable to resolve user or channel.");
@@ -155,6 +164,11 @@ var ContextAdapter = class ContextAdapter {
 	* Handles interaction replies (using withResponse: true), deferred states, and message channels transparently.
 	*/
 	async sendInitial(options) {
+		if (typeof this.raw?.sendInitial === "function") {
+			const msg = await this.raw.sendInitial(options);
+			this.gameMessage = msg;
+			return msg;
+		}
 		const resolvedFlags = this.resolveFlags(options);
 		const isV2 = !!((resolvedFlags ?? 0) & discord_js.MessageFlags.IsComponentsV2);
 		if (this.isInteraction) {
@@ -212,6 +226,10 @@ var ContextAdapter = class ContextAdapter {
 	* Updates the game message safely with Components V2 support.
 	*/
 	async edit(options) {
+		if (typeof this.raw?.edit === "function") {
+			await this.raw.edit(options);
+			return;
+		}
 		if (!this.gameMessage) {
 			await this.sendInitial(options);
 			return;
