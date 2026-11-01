@@ -59,10 +59,117 @@ async function runTests() {
   assert(hub !== undefined, "ArcadeHub instance created");
 
   let launchedGame = "";
-  manager.create2048 = async () => { launchedGame = "2048"; };
-  await manager.launchGameByKey("2048", mockContext);
-  assert(launchedGame === "2048", "manager.launchGameByKey routed to 2048");
-  console.log("  ✓ Arcade Hub catalog, filtering, and launchGameByKey verified\n");
+  let launchedGameOpts: any = null;
+  manager.create2048 = async (opts: any) => { launchedGame = "2048"; launchedGameOpts = opts; };
+  manager.createTicTacToe = async (opts: any) => { launchedGame = "tictactoe"; launchedGameOpts = opts; };
+  manager.createFight = async (opts: any) => { launchedGame = "fight"; launchedGameOpts = opts; };
+
+  // 1a. Test gameOptions inheritance when launched from Arcade
+  await manager.launchGameByKey("tictactoe", {
+    context: mockContext,
+    gameOptions: {
+      tictactoe: {
+        difficulty: "unbeatable",
+        texts: {
+          title: "CUSTOM ARCADE TIC TAC TOE",
+          playerTurn: "Your move, arcade warrior!",
+        },
+      },
+    },
+  });
+  assert(launchedGame === "tictactoe", "manager.launchGameByKey routed to tictactoe");
+  assert(launchedGameOpts.difficulty === "unbeatable", "Passed custom difficulty from gameOptions");
+  assert(launchedGameOpts.texts?.title === "CUSTOM ARCADE TIC TAC TOE", "Passed custom game texts from gameOptions");
+
+  // 1b. Test Arcade Hub Interactive Pre-Launch Configuration Screen
+  const interactiveHub = new ArcadeHub(manager, {
+    context: mockContext,
+    configureBeforeLaunch: true,
+    gameOptions: {
+      fight: {
+        startHealth: 250,
+        texts: { customAnnouncement: "Boss arena entered!" },
+      },
+    },
+    texts: {
+      setupTitle: "CHOOSE YOUR DESTINY: {game}",
+      startButton: "ENTER ARENA",
+    },
+  });
+
+  // Emulate selecting 'fight' from select menu
+  interactiveHub["isActive"] = true;
+  interactiveHub["ctx"].gameMessage = { id: "msg_1" } as any;
+
+  const mockSelectInteraction: any = {
+    isStringSelectMenu: () => true,
+    isButton: () => false,
+    customId: interactiveHub["selectMenuId"],
+    values: ["fight"],
+    deferUpdate: async () => {},
+    user: mockContext.author,
+    message: { id: "msg_1" },
+  };
+  await interactiveHub.onInteraction(mockSelectInteraction);
+  assert(interactiveHub["state"] === "CONFIG", "Hub entered CONFIG state on selection");
+  assert(interactiveHub["pendingGameKey"] === "fight", "Hub set pendingGameKey to fight");
+  assert(interactiveHub["pendingConfig"].startHealth === 250, "Inherited startHealth from gameOptions");
+
+  // Emulate clicking boss change button (Cyber Knight)
+  const mockBossBtnInteraction: any = {
+    isStringSelectMenu: () => false,
+    isButton: () => true,
+    customId: `${interactiveHub["btnPrefix"]}cfg_boss_cyber_knight`,
+    deferUpdate: async () => {},
+    user: mockContext.author,
+    message: { id: "msg_1" },
+  };
+  await interactiveHub.onInteraction(mockBossBtnInteraction);
+  assert(interactiveHub["pendingConfig"].boss === "cyber_knight", "pendingConfig updated boss to cyber_knight");
+
+  // Emulate switching to PvP mode & selecting a friend
+  const mockPvpModeInteraction: any = {
+    isStringSelectMenu: () => false,
+    isButton: () => true,
+    customId: `${interactiveHub["btnPrefix"]}cfg_mode_pvp`,
+    deferUpdate: async () => {},
+    user: mockContext.author,
+    message: { id: "msg_1" },
+  };
+  await interactiveHub.onInteraction(mockPvpModeInteraction);
+  assert(interactiveHub["pendingConfig"].mode === "pvp", "Switched to PvP mode");
+  assert(interactiveHub["pendingConfig"].ai === false, "AI opponent disabled for PvP");
+
+  const friendUser = { id: "friend_123", username: "GamerFriend" };
+  const mockUserSelectInteraction: any = {
+    isStringSelectMenu: () => false,
+    isUserSelectMenu: () => true,
+    isButton: () => false,
+    customId: `${interactiveHub["btnPrefix"]}cfg_user_select`,
+    users: { first: () => friendUser },
+    deferUpdate: async () => {},
+    user: mockContext.author,
+    message: { id: "msg_1" },
+  };
+  await interactiveHub.onInteraction(mockUserSelectInteraction);
+  assert(interactiveHub["pendingConfig"].opponent === friendUser, "PvP opponent set to GamerFriend");
+
+  // Emulate clicking Start Button in PvP mode
+  const mockStartBtnInteraction: any = {
+    isStringSelectMenu: () => false,
+    isButton: () => true,
+    customId: `${interactiveHub["btnPrefix"]}cfg_start`,
+    deferUpdate: async () => {},
+    user: mockContext.author,
+    message: { id: "msg_1" },
+  };
+  await interactiveHub.onInteraction(mockStartBtnInteraction);
+  assert(launchedGame === "fight", "Launched PvP fight duel");
+  assert(launchedGameOpts.opponent === friendUser, "Launched against chosen PvP player");
+  assert(launchedGameOpts.ai === false, "AI is disabled for PvP match");
+  assert(launchedGameOpts.startHealth === 250, "Carried custom startHealth from gameOptions");
+
+  console.log("  ✓ Arcade Hub catalog, gameOptions text customization, PvP/Boss selection, and interactive setup screen verified\n");
 
   // --------------------------------------------------------------------------
   // 2. Automated Tournaments & Canvas Bracket Renderer
@@ -264,15 +371,52 @@ async function runTests() {
   const script = soundboard.generateDashboardAudioScript();
   assert(script.includes("WekyAudio") && script.includes("manifest"), "Client script contains audio player");
 
-  // Verify Event Triggering
+  // Verify Event Triggering & Player-Scoped Targeting
   let capturedDashboardSound: any = null;
   manager.on("dashboardSound", (event) => {
     capturedDashboardSound = event;
   });
 
-  const eventRes = soundboard.triggerSound("hit", { game: "fight", sessionId: "sess_123" });
+  const eventRes = soundboard.triggerSound("hit", {
+    game: "fight",
+    sessionId: "sess_123",
+    userId: "user_1",
+    username: "Player1",
+    targetUserIds: ["user_1", "user_2"],
+  });
   assert(eventRes !== null && eventRes.soundKey === "hit", "triggerSound emitted event payload");
   assert(capturedDashboardSound?.soundKey === "hit", "dashboardSound event caught by WekyManager");
+  assert(capturedDashboardSound?.userId === "user_1", "dashboardSound event carries userId");
+  assert(capturedDashboardSound?.username === "Player1", "dashboardSound event carries username");
+  assert(capturedDashboardSound?.targetUserIds?.length === 2, "dashboardSound carries targetUserIds for scoped delivery");
+
+  // Verify Active Dashboard Presence Filtering (requireActiveDashboardUser)
+  const presenceBoard = new SoundboardManager({} as any, {
+    enabled: true,
+    requireActiveDashboardUser: true,
+  }, manager);
+
+  let presenceCaptured: any = null;
+  manager.on("dashboardSound", (ev) => {
+    presenceCaptured = ev;
+  });
+
+  // User is not on dashboard -> should skip audio
+  const skippedRes = presenceBoard.triggerSound("action", { userId: "offline_user_99" });
+  assert(skippedRes === null, "Skipped triggering sound when user is not active on dashboard");
+
+  // User connects to dashboard
+  presenceBoard.setDashboardUserOnline("online_user_42", true);
+  assert(presenceBoard.isUserOnDashboard("online_user_42"), "User recognized as online on dashboard");
+  assert(presenceBoard.getActiveDashboardUsers().includes("online_user_42"), "Active dashboard users list populated");
+
+  // User is online on dashboard -> sound triggers
+  const onlineRes = presenceBoard.triggerSound("heal", { userId: "online_user_42" });
+  assert(onlineRes !== null && onlineRes.soundKey === "heal", "Sound triggered for active dashboard user");
+
+  // User disconnects
+  presenceBoard.setDashboardUserOnline("online_user_42", false);
+  assert(!presenceBoard.isUserOnDashboard("online_user_42"), "User removed when disconnecting from dashboard");
 
   const playRes = await soundboard.playSoundWithResult("victory");
   assert(playRes.success && playRes.platform === "dashboard", "playSoundWithResult returns dashboard confirmation");

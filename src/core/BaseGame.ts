@@ -174,9 +174,17 @@ export abstract class BaseGame<T extends BaseGameOptions> implements IMinigame {
         });
       }
       if (this.manager.soundboard && typeof this.manager.soundboard.triggerSound === "function") {
+        const targetUserIds: string[] = [];
+        if (this.ctx.user?.id) targetUserIds.push(this.ctx.user.id);
+        const opponent = (this.options as any)?.opponent;
+        if (opponent?.id) targetUserIds.push(opponent.id);
+
         this.manager.soundboard.triggerSound("gamestart", {
           sessionId: this.id,
           game: this.gameKey,
+          userId: this.ctx.user?.id,
+          username: this.ctx.user?.username,
+          targetUserIds: targetUserIds.length > 0 ? targetUserIds : undefined,
         });
       }
     }
@@ -206,9 +214,18 @@ export abstract class BaseGame<T extends BaseGameOptions> implements IMinigame {
         const isWin = outcome === "WIN" || outcome === "won";
         const isLoss = outcome === "LOSE" || outcome === "lost" || outcome === "loss" || outcome === "gameover";
         const soundKey = isWin ? "victory" : isLoss ? "defeat" : outcome === "tie" ? "tie" : "action";
+
+        const targetUserIds: string[] = [];
+        if (this.ctx.user?.id) targetUserIds.push(this.ctx.user.id);
+        const opponent = (this.options as any)?.opponent;
+        if (opponent?.id) targetUserIds.push(opponent.id);
+
         this.manager.soundboard.triggerSound(soundKey, {
           sessionId: this.id,
           game: this.gameKey,
+          userId: this.ctx.user?.id,
+          username: this.ctx.user?.username,
+          targetUserIds: targetUserIds.length > 0 ? targetUserIds : undefined,
         });
       }
     }

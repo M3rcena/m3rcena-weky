@@ -1,4 +1,4 @@
-import { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, Client, ContainerBuilder, EmbedBuilder, Events, GuildMember, LabelBuilder, MediaGalleryBuilder, Message, MessageFlags, ModalBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, TextDisplayBuilder, TextInputBuilder, TextInputStyle, resolveColor } from "discord.js";
+import { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, Client, ContainerBuilder, EmbedBuilder, Events, GuildMember, LabelBuilder, MediaGalleryBuilder, Message, MessageFlags, ModalBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, TextDisplayBuilder, TextInputBuilder, TextInputStyle, UserSelectMenuBuilder, resolveColor } from "discord.js";
 import { randomBytes } from "crypto";
 import { EventEmitter } from "events";
 import { Canvas, createCanvas, loadImage } from "@napi-rs/canvas";
@@ -366,10 +366,19 @@ var BaseGame = class {
 				lastUpdated: Date.now(),
 				isGameOver: false
 			});
-			if (this.manager.soundboard && typeof this.manager.soundboard.triggerSound === "function") this.manager.soundboard.triggerSound("gamestart", {
-				sessionId: this.id,
-				game: this.gameKey
-			});
+			if (this.manager.soundboard && typeof this.manager.soundboard.triggerSound === "function") {
+				const targetUserIds = [];
+				if (this.ctx.user?.id) targetUserIds.push(this.ctx.user.id);
+				const opponent = this.options?.opponent;
+				if (opponent?.id) targetUserIds.push(opponent.id);
+				this.manager.soundboard.triggerSound("gamestart", {
+					sessionId: this.id,
+					game: this.gameKey,
+					userId: this.ctx.user?.id,
+					username: this.ctx.user?.username,
+					targetUserIds: targetUserIds.length > 0 ? targetUserIds : void 0
+				});
+			}
 		}
 	}
 	/**
@@ -393,9 +402,16 @@ var BaseGame = class {
 			});
 			if (this.manager.soundboard && typeof this.manager.soundboard.triggerSound === "function") {
 				const soundKey = outcome === "WIN" || outcome === "won" ? "victory" : outcome === "LOSE" || outcome === "lost" || outcome === "loss" || outcome === "gameover" ? "defeat" : outcome === "tie" ? "tie" : "action";
+				const targetUserIds = [];
+				if (this.ctx.user?.id) targetUserIds.push(this.ctx.user.id);
+				const opponent = this.options?.opponent;
+				if (opponent?.id) targetUserIds.push(opponent.id);
 				this.manager.soundboard.triggerSound(soundKey, {
 					sessionId: this.id,
-					game: this.gameKey
+					game: this.gameKey,
+					userId: this.ctx.user?.id,
+					username: this.ctx.user?.username,
+					targetUserIds: targetUserIds.length > 0 ? targetUserIds : void 0
 				});
 			}
 		}
@@ -6105,6 +6121,8 @@ var WouldYouRather = class extends BaseGame {
 /**
 * Arcade Hub Interface
 * A centralized, categorized launcher for all 17 Weky minigames.
+* Supports deep game customization, custom text dictionaries, and an
+* optional interactive pre-launch setup screen for difficulty, bosses, and modes.
 *
 * @copyright 2026 M3rcena Development. All rights reserved.
 * @license Apache-2.0
@@ -6233,7 +6251,9 @@ const ARCADE_GAMES = [
 var ArcadeHub = class extends BaseGame {
 	btnPrefix;
 	selectMenuId;
-	selectedCategory = "All";
+	state = "SELECT";
+	pendingGameKey;
+	pendingConfig = {};
 	constructor(manager, options) {
 		super(manager, options, "arcade_hub");
 		this.btnPrefix = getRandomString(6, "hub_");
@@ -6255,9 +6275,35 @@ var ArcadeHub = class extends BaseGame {
 		if (!this.isActive) return;
 		if (!("message" in interaction) || !interaction.message || interaction.message.id !== this.ctx.gameMessage?.id) return;
 		if (!this.isAuthorized(interaction)) return;
+		if ("isUserSelectMenu" in interaction && typeof interaction.isUserSelectMenu === "function" && interaction.isUserSelectMenu()) {
+			if (interaction.customId === `${this.btnPrefix}cfg_user_select`) {
+				await interaction.deferUpdate().catch(() => {});
+				const selectedUser = interaction.users.first();
+				if (selectedUser) {
+					this.pendingConfig.opponent = selectedUser;
+					this.pendingConfig.ai = false;
+					this.pendingConfig.mode = "pvp";
+				}
+				const container = this.createConfigContainer();
+				await this.ctx.edit({
+					components: [container],
+					flags: MessageFlags.IsComponentsV2
+				});
+				return;
+			}
+		}
 		if (interaction.isStringSelectMenu() && interaction.customId === this.selectMenuId) {
 			await interaction.deferUpdate().catch(() => {});
 			const selectedGameKey = interaction.values[0];
+			if (this.options.configureBeforeLaunch) {
+				this.openConfigScreen(selectedGameKey);
+				const container = this.createConfigContainer();
+				await this.ctx.edit({
+					components: [container],
+					flags: MessageFlags.IsComponentsV2
+				});
+				return;
+			}
 			await this.launchGame(selectedGameKey);
 			return;
 		}
@@ -6269,19 +6315,84 @@ var ArcadeHub = class extends BaseGame {
 			if (action === "random") {
 				const available = ARCADE_GAMES.filter((g) => !this.options.exclude?.includes(g.key));
 				const picked = available[Math.floor(Math.random() * available.length)];
+				if (this.options.configureBeforeLaunch) {
+					this.openConfigScreen(picked.key);
+					const container = this.createConfigContainer();
+					await this.ctx.edit({
+						components: [container],
+						flags: MessageFlags.IsComponentsV2
+					});
+					return;
+				}
 				await this.launchGame(picked.key);
 			} else if (action === "close") await this.endHub("closed");
+			else if (action === "cfg_start") {
+				if (this.pendingGameKey) await this.launchGame(this.pendingGameKey, this.pendingConfig);
+			} else if (action === "cfg_back") {
+				this.state = "SELECT";
+				this.pendingGameKey = void 0;
+				this.pendingConfig = {};
+				const container = this.createHubContainer();
+				await this.ctx.edit({
+					components: [container],
+					flags: MessageFlags.IsComponentsV2
+				});
+			} else if (action.startsWith("cfg_mode_")) {
+				const mode = action.replace("cfg_mode_", "");
+				this.pendingConfig.mode = mode;
+				if (mode === "pvp") this.pendingConfig.ai = false;
+				else {
+					this.pendingConfig.ai = true;
+					delete this.pendingConfig.opponent;
+				}
+				const container = this.createConfigContainer();
+				await this.ctx.edit({
+					components: [container],
+					flags: MessageFlags.IsComponentsV2
+				});
+			} else if (action.startsWith("cfg_")) {
+				const parts = action.replace("cfg_", "").split("_");
+				const param = parts[0];
+				const val = parts.slice(1).join("_");
+				if (param === "gridSize") this.pendingConfig.gridSize = Number(val);
+				else if (param === "publicGame") this.pendingConfig.publicGame = val === "true";
+				else this.pendingConfig[param] = val;
+				const container = this.createConfigContainer();
+				await this.ctx.edit({
+					components: [container],
+					flags: MessageFlags.IsComponentsV2
+				});
+			}
 		}
 	}
-	async launchGame(gameKey) {
+	openConfigScreen(gameKey) {
+		this.state = "CONFIG";
+		this.pendingGameKey = gameKey;
+		const baseOpts = this.options.gameOptions?.[gameKey] || {};
+		this.pendingConfig = { ...baseOpts };
+		if (gameKey === "tictactoe" && !this.pendingConfig.difficulty) this.pendingConfig.difficulty = "medium";
+		else if (gameKey === "fight" && !this.pendingConfig.boss) this.pendingConfig.boss = "dragon";
+		else if (gameKey === "fasttype" && !this.pendingConfig.difficulty) this.pendingConfig.difficulty = "medium";
+		else if (gameKey === "hangman" && !this.pendingConfig.category) this.pendingConfig.category = "Animals";
+		else if (gameKey === "rps" && !this.pendingConfig.difficulty) this.pendingConfig.difficulty = "hard";
+		else if (gameKey === "snake" && !this.pendingConfig.gridSize) this.pendingConfig.gridSize = 15;
+	}
+	async launchGame(gameKey, overrides = {}) {
 		this.isActive = false;
 		this.clearTimer();
 		this.destroy();
+		const finalOptions = {
+			...this.options.gameOptions?.[gameKey] || {},
+			...overrides
+		};
 		if (typeof this.options.onSelect === "function") {
 			await this.options.onSelect(gameKey, this.ctx);
 			return;
 		}
-		if (typeof this.manager.launchGameByKey === "function") await this.manager.launchGameByKey(gameKey, this.ctx);
+		if (typeof this.manager.launchGameByKey === "function") await this.manager.launchGameByKey(gameKey, {
+			context: this.ctx,
+			...finalOptions
+		});
 	}
 	async endHub(reason) {
 		this.isActive = false;
@@ -6299,7 +6410,7 @@ var ArcadeHub = class extends BaseGame {
 	createHubContainer() {
 		const container = this.createContainer(this.defaultColor);
 		const title = this.options.title || this.options.embed?.title || "🕹️ Weky Mini-Arcade Cabinet";
-		const content = this.options.texts?.description || `## ${title}\n> Welcome to the unified **Discord Minigames Hub**! Choose any of the 17 games from the menu below to launch immediately.\n\n👾 **Classic Arcade:** 2048, Snake\n⚔️ **PvP Duels & Bosses:** Fight RPG, Tic-Tac-Toe, Rock Paper Scissors\n🧠 **Brain & Trivia:** Hangman, Guess The Pokémon, Fast Type, Chaos Words, Shuffle Guess, Lie Swatter, Calculator\n👥 **Party & Social:** Never Have I Ever, Would You Rather, Will You Press The Button, Guess The Number, Quick Click\n\n*Select a game or hit **Random Game** to let fate decide!*`;
+		const content = this.options.texts?.description || `## ${title}\n> Welcome to the unified **Discord Minigames Hub**! Choose any of the 17 games from the menu below to launch immediately.\n\n👾 **Classic Arcade:** 2048, Snake\n⚔️ **PvP Duels & Bosses:** Fight RPG, Tic-Tac-Toe, Rock Paper Scissors\n🧠 **Brain & Trivia:** Hangman, Guess The Pokémon, Fast Type, Chaos Words, Shuffle Guess, Lie Swatter, Calculator\n👥 **Party & Social:** Never Have I Ever, Would You Rather, Will You Press The Button, Guess The Number, Quick Click\n\n*Select a game or hit **Surprise Me** to let fate decide!*`;
 		container.addTextDisplayComponents((t) => t.setContent(this.applyEmbedDecorations(container, content)));
 		const availableGames = ARCADE_GAMES.filter((g) => !this.options.exclude?.includes(g.key));
 		const selectPlaceholder = this.options.texts?.selectPlaceholder || "🎮 Select a Minigame to Launch...";
@@ -6310,6 +6421,80 @@ var ArcadeHub = class extends BaseGame {
 		const btnClose = new ButtonBuilder().setCustomId(`${this.btnPrefix}close`).setLabel(this.options.texts?.closeButton || "❌ Close Arcade").setStyle(ButtonStyle.Secondary);
 		const btnRow = new ActionRowBuilder().addComponents(btnRandom, btnClose);
 		container.addActionRowComponents(btnRow);
+		return container;
+	}
+	createConfigContainer() {
+		const container = this.createContainer(this.defaultColor);
+		const gameKey = this.pendingGameKey;
+		const gameInfo = ARCADE_GAMES.find((g) => g.key === gameKey) || {
+			key: gameKey,
+			name: gameKey.toUpperCase(),
+			category: "Arcade",
+			emoji: "🎮",
+			description: "Launch this arcade minigame."
+		};
+		const title = this.options.texts?.setupTitle?.replace("{game}", gameInfo.name) || `🕹️ Match Setup: ${gameInfo.name} ${gameInfo.emoji}`;
+		const isPvP = this.pendingConfig.mode === "pvp" || !this.pendingConfig.ai && this.pendingConfig.opponent;
+		const configDetails = [];
+		if ([
+			"fight",
+			"tictactoe",
+			"rps"
+		].includes(gameKey)) {
+			if (isPvP) configDetails.push(`**Mode:** \`⚔️ PvP Duel (${this.pendingConfig.opponent ? `@${this.pendingConfig.opponent.username}` : "Select Opponent Below"})\``);
+			else configDetails.push(`**Mode:** \`🤖 Solo vs ${gameKey === "fight" ? "Boss" : "AI"}\``);
+		}
+		if (!isPvP && this.pendingConfig.difficulty) configDetails.push(`**Difficulty:** \`${this.pendingConfig.difficulty}\``);
+		if (!isPvP && this.pendingConfig.boss) configDetails.push(`**Target Boss:** \`${this.pendingConfig.boss.replace(/_/g, " ").toUpperCase()}\``);
+		if (this.pendingConfig.category) configDetails.push(`**Category:** \`${this.pendingConfig.category}\``);
+		if (this.pendingConfig.gridSize) configDetails.push(`**Grid Size:** \`${this.pendingConfig.gridSize}x${this.pendingConfig.gridSize}\``);
+		if (this.pendingConfig.publicGame !== void 0) configDetails.push(`**Mode:** \`${this.pendingConfig.publicGame ? "Public / Channel" : "Solo"}\``);
+		let content = `## ${title}\n> **Discipline:** ${gameInfo.category} • ${gameInfo.description}\n\n`;
+		if (configDetails.length > 0) content += `### ⚙️ Current Settings:\n> ${configDetails.join(" • ")}\n\n`;
+		content += this.options.texts?.setupDescription || `*Configure your match settings below, then press **${this.options.texts?.startButton || "▶️ Launch Game"}**!*`;
+		container.addTextDisplayComponents((t) => t.setContent(this.applyEmbedDecorations(container, content)));
+		if ([
+			"fight",
+			"tictactoe",
+			"rps"
+		].includes(gameKey)) {
+			const modeRow = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`${this.btnPrefix}cfg_mode_solo`).setLabel(gameKey === "fight" ? "🐉 Solo vs Boss" : "🤖 Solo vs AI").setStyle(!isPvP ? ButtonStyle.Success : ButtonStyle.Secondary), new ButtonBuilder().setCustomId(`${this.btnPrefix}cfg_mode_pvp`).setLabel("⚔️ Duel a Friend (PvP)").setStyle(isPvP ? ButtonStyle.Success : ButtonStyle.Secondary));
+			container.addActionRowComponents(modeRow);
+			if (isPvP) {
+				const userSelect = new UserSelectMenuBuilder().setCustomId(`${this.btnPrefix}cfg_user_select`).setPlaceholder(this.pendingConfig.opponent ? `Challenging @${this.pendingConfig.opponent.username} (Click to change)` : "👥 Select a friend / opponent to duel...");
+				const userRow = new ActionRowBuilder().addComponents(userSelect);
+				container.addActionRowComponents(userRow);
+			}
+		}
+		if (!isPvP && gameKey === "tictactoe") {
+			const currentDiff = this.pendingConfig.difficulty || "medium";
+			const diffRow = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`${this.btnPrefix}cfg_difficulty_easy`).setLabel("🟢 Easy").setStyle(currentDiff === "easy" ? ButtonStyle.Success : ButtonStyle.Secondary), new ButtonBuilder().setCustomId(`${this.btnPrefix}cfg_difficulty_medium`).setLabel("🟡 Medium").setStyle(currentDiff === "medium" ? ButtonStyle.Success : ButtonStyle.Secondary), new ButtonBuilder().setCustomId(`${this.btnPrefix}cfg_difficulty_hard`).setLabel("🔴 Hard").setStyle(currentDiff === "hard" ? ButtonStyle.Success : ButtonStyle.Secondary), new ButtonBuilder().setCustomId(`${this.btnPrefix}cfg_difficulty_unbeatable`).setLabel("⚡ Minimax").setStyle(currentDiff === "unbeatable" ? ButtonStyle.Success : ButtonStyle.Secondary));
+			container.addActionRowComponents(diffRow);
+		} else if (!isPvP && gameKey === "fight") {
+			const currentBoss = this.pendingConfig.boss || "dragon";
+			const bossRow = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`${this.btnPrefix}cfg_boss_dragon`).setLabel("🐉 Dragon Sovereign").setStyle(currentBoss === "dragon" ? ButtonStyle.Success : ButtonStyle.Secondary), new ButtonBuilder().setCustomId(`${this.btnPrefix}cfg_boss_cyber_knight`).setLabel("⚔️ Cyber Knight").setStyle(currentBoss === "cyber_knight" ? ButtonStyle.Success : ButtonStyle.Secondary), new ButtonBuilder().setCustomId(`${this.btnPrefix}cfg_boss_shadow_goblin`).setLabel("👺 Shadow Goblin").setStyle(currentBoss === "shadow_goblin" ? ButtonStyle.Success : ButtonStyle.Secondary));
+			container.addActionRowComponents(bossRow);
+		} else if (gameKey === "fasttype") {
+			const currentDiff = this.pendingConfig.difficulty || "medium";
+			const diffRow = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`${this.btnPrefix}cfg_difficulty_easy`).setLabel("🟢 Easy").setStyle(currentDiff === "easy" ? ButtonStyle.Success : ButtonStyle.Secondary), new ButtonBuilder().setCustomId(`${this.btnPrefix}cfg_difficulty_medium`).setLabel("🟡 Medium").setStyle(currentDiff === "medium" ? ButtonStyle.Success : ButtonStyle.Secondary), new ButtonBuilder().setCustomId(`${this.btnPrefix}cfg_difficulty_hard`).setLabel("🔴 Hard").setStyle(currentDiff === "hard" ? ButtonStyle.Success : ButtonStyle.Secondary));
+			container.addActionRowComponents(diffRow);
+		} else if (gameKey === "hangman") {
+			const currentCat = this.pendingConfig.category || "Animals";
+			const catRow = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`${this.btnPrefix}cfg_category_Animals`).setLabel("🐾 Animals").setStyle(currentCat === "Animals" ? ButtonStyle.Success : ButtonStyle.Secondary), new ButtonBuilder().setCustomId(`${this.btnPrefix}cfg_category_Technology`).setLabel("💻 Tech").setStyle(currentCat === "Technology" ? ButtonStyle.Success : ButtonStyle.Secondary), new ButtonBuilder().setCustomId(`${this.btnPrefix}cfg_category_Gaming`).setLabel("🎮 Gaming").setStyle(currentCat === "Gaming" ? ButtonStyle.Success : ButtonStyle.Secondary), new ButtonBuilder().setCustomId(`${this.btnPrefix}cfg_category_Food`).setLabel("🍕 Food").setStyle(currentCat === "Food" ? ButtonStyle.Success : ButtonStyle.Secondary), new ButtonBuilder().setCustomId(`${this.btnPrefix}cfg_category_Countries`).setLabel("🌍 Countries").setStyle(currentCat === "Countries" ? ButtonStyle.Success : ButtonStyle.Secondary));
+			container.addActionRowComponents(catRow);
+		} else if (!isPvP && gameKey === "rps") {
+			const currentDiff = this.pendingConfig.difficulty || "hard";
+			const rpsRow = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`${this.btnPrefix}cfg_difficulty_easy`).setLabel("🤖 Casual AI").setStyle(currentDiff === "easy" ? ButtonStyle.Success : ButtonStyle.Secondary), new ButtonBuilder().setCustomId(`${this.btnPrefix}cfg_difficulty_hard`).setLabel("🧠 Predictor AI").setStyle(currentDiff === "hard" ? ButtonStyle.Success : ButtonStyle.Secondary));
+			container.addActionRowComponents(rpsRow);
+		} else if (gameKey === "snake") {
+			const currentGrid = this.pendingConfig.gridSize || 15;
+			const snakeRow = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`${this.btnPrefix}cfg_gridSize_15`).setLabel("Classic (15x15)").setStyle(currentGrid === 15 ? ButtonStyle.Success : ButtonStyle.Secondary), new ButtonBuilder().setCustomId(`${this.btnPrefix}cfg_gridSize_18`).setLabel("Large Grid (18x18)").setStyle(currentGrid === 18 ? ButtonStyle.Success : ButtonStyle.Secondary));
+			container.addActionRowComponents(snakeRow);
+		}
+		const startBtn = new ButtonBuilder().setCustomId(`${this.btnPrefix}cfg_start`).setLabel(this.options.texts?.startButton || "▶️ Launch Game").setStyle(ButtonStyle.Primary);
+		const backBtn = new ButtonBuilder().setCustomId(`${this.btnPrefix}cfg_back`).setLabel(this.options.texts?.backButton || "◀️ Back to Cabinet").setStyle(ButtonStyle.Secondary);
+		const ctrlRow = new ActionRowBuilder().addComponents(startBtn, backBtn);
+		container.addActionRowComponents(ctrlRow);
 		return container;
 	}
 };
@@ -8260,6 +8445,7 @@ const DEFAULT_DISCORD_SOUNDS = Object.values(DEFAULT_DASHBOARD_SOUNDS).map((s) =
 var SoundboardManager = class {
 	client;
 	config;
+	activeDashboardUsers = /* @__PURE__ */ new Set();
 	wekyManager;
 	constructor(client, config = {}, wekyManager) {
 		this.client = client;
@@ -8267,7 +8453,8 @@ var SoundboardManager = class {
 		this.config = {
 			enabled: config.enabled ?? true,
 			volume: typeof config.volume === "number" ? Math.max(0, Math.min(1, config.volume)) : .8,
-			sounds: config.sounds || {}
+			sounds: config.sounds || {},
+			requireActiveDashboardUser: config.requireActiveDashboardUser ?? false
 		};
 	}
 	/**
@@ -8362,15 +8549,52 @@ var SoundboardManager = class {
 		return path$1.join(dir, `${soundKey}.mp3`);
 	}
 	/**
+	* Registers or unregisters a user as actively connected/present on the web dashboard.
+	* Web dashboards can invoke this via WebSockets/SSE to notify Weky that a user is actively listening.
+	*/
+	setDashboardUserOnline(userId, isOnline = true) {
+		if (isOnline) this.activeDashboardUsers.add(userId);
+		else this.activeDashboardUsers.delete(userId);
+	}
+	/**
+	* Checks whether a specific user is currently active/online on the web dashboard.
+	*/
+	isUserOnDashboard(userId) {
+		return this.activeDashboardUsers.has(userId);
+	}
+	/**
+	* Returns an array of user IDs currently registered as active on the web dashboard.
+	*/
+	getActiveDashboardUsers() {
+		return Array.from(this.activeDashboardUsers);
+	}
+	/**
+	* Clears all registered active dashboard users.
+	*/
+	clearActiveDashboardUsers() {
+		this.activeDashboardUsers.clear();
+	}
+	/**
 	* Triggers a dashboard audio sound cue, dispatching a `dashboardSound` lifecycle event.
+	* If `requireActiveDashboardUser: true` is configured, sounds will only be triggered if
+	* the player (or one of the target users) is currently active on the web dashboard.
 	*/
 	triggerSound(soundKey, meta = {}) {
 		if (!this.config.enabled) return null;
+		if (this.config.requireActiveDashboardUser) {
+			const targets = meta.targetUserIds || (meta.userId ? [meta.userId] : []);
+			if (targets.length > 0) {
+				if (!targets.some((id) => this.isUserOnDashboard(id))) return null;
+			} else if (this.activeDashboardUsers.size === 0) return null;
+		}
 		const soundUrl = this.getSoundUrl(soundKey);
 		const volume = typeof meta.volume === "number" ? Math.max(0, Math.min(1, meta.volume)) : this.volume;
 		const eventPayload = {
 			sessionId: meta.sessionId,
 			game: meta.game,
+			userId: meta.userId,
+			username: meta.username,
+			targetUserIds: meta.targetUserIds || (meta.userId ? [meta.userId] : void 0),
 			soundKey,
 			soundUrl,
 			volume,
@@ -8591,9 +8815,14 @@ var WekyBridge = class {
 				const soundUrl = this.wekyManager.soundboard.getSoundUrl(soundKey);
 				result.soundKey = soundKey;
 				result.soundUrl = soundUrl;
+				const targetUserIds = session.players.map((p) => p.id);
+				const movingPlayer = session.players.find((p) => p.id === move.playerId);
 				this.wekyManager.soundboard.triggerSound(soundKey, {
 					sessionId: session.id,
-					game: session.game
+					game: session.game,
+					userId: move.playerId,
+					username: movingPlayer?.username,
+					targetUserIds
 				});
 			}
 			if (this.wekyManager && typeof this.wekyManager.emit === "function") {
@@ -8696,6 +8925,19 @@ var WekyBridge = class {
 	async importAllState(data) {
 		if (data.sessions) for (const s of data.sessions) this.sessions.set(s.id, s);
 		if (data.leaderboard && this.wekyManager?.leaderboard) await this.wekyManager.leaderboard.importData(data.leaderboard);
+	}
+	/**
+	* Notifies the bridge/soundboard that a user is actively connected on the web dashboard.
+	*/
+	setDashboardUserOnline(userId, isOnline = true) {
+		if (this.wekyManager?.soundboard && typeof this.wekyManager.soundboard.setDashboardUserOnline === "function") this.wekyManager.soundboard.setDashboardUserOnline(userId, isOnline);
+	}
+	/**
+	* Returns whether a user is currently verified as online/active on the web dashboard.
+	*/
+	isUserOnDashboard(userId) {
+		if (this.wekyManager?.soundboard && typeof this.wekyManager.soundboard.isUserOnDashboard === "function") return this.wekyManager.soundboard.isUserOnDashboard(userId);
+		return false;
 	}
 };
 // src/utils/Notifier.ts
@@ -9019,9 +9261,13 @@ var WekyManager = class extends EventEmitter {
 	* Launches any minigame by key (used by ArcadeHub and custom launchers).
 	*/
 	async launchGameByKey(gameKey, contextOrOptions) {
+		const rawContext = contextOrOptions instanceof ContextAdapter ? contextOrOptions.raw : contextOrOptions?.context || contextOrOptions?.interaction || contextOrOptions?.message || contextOrOptions;
+		const specificGameOpts = contextOrOptions?.gameOptions?.[gameKey.toLowerCase()] || contextOrOptions?.gameConfigs?.[gameKey.toLowerCase()] || {};
 		const baseOpts = {
-			context: contextOrOptions instanceof ContextAdapter ? contextOrOptions.raw : contextOrOptions?.context || contextOrOptions?.interaction || contextOrOptions?.message || contextOrOptions,
-			...typeof contextOrOptions === "object" && !(contextOrOptions instanceof ContextAdapter) ? contextOrOptions : {}
+			context: rawContext,
+			...specificGameOpts,
+			...typeof contextOrOptions === "object" && !(contextOrOptions instanceof ContextAdapter) ? contextOrOptions : {},
+			...specificGameOpts
 		};
 		switch (gameKey.toLowerCase()) {
 			case "2048": return this.create2048(baseOpts);
@@ -9029,8 +9275,9 @@ var WekyManager = class extends EventEmitter {
 			case "chaoswords": return this.createChaosWords(baseOpts);
 			case "fasttype": return this.createFastType(baseOpts);
 			case "fight": return this.createFight({
-				...baseOpts,
-				ai: true
+				ai: baseOpts.opponent ? false : baseOpts.ai ?? true,
+				boss: baseOpts.boss || "dragon",
+				...baseOpts
 			});
 			case "gtn":
 			case "guessthenumber": return this.createGuessTheNumber(baseOpts);
@@ -9046,8 +9293,9 @@ var WekyManager = class extends EventEmitter {
 			case "shuffleguess": return this.createShuffleGuess(baseOpts);
 			case "snake": return this.createSnake(baseOpts);
 			case "tictactoe": return this.createTicTacToe({
-				...baseOpts,
-				ai: true
+				ai: baseOpts.opponent ? false : baseOpts.ai ?? true,
+				difficulty: baseOpts.difficulty || "medium",
+				...baseOpts
 			});
 			case "wyptb":
 			case "willyoupressthebutton": return this.createWillYouPressTheButton(baseOpts);

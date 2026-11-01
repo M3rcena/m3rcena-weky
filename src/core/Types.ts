@@ -641,7 +641,7 @@ export interface IMinigame {
 }
 
 export type { WekyManagerOptions } from "./WekyManager.js";
-export type { ArcadeHubOptions, ArcadeGameEntry } from "../hub/ArcadeHub.js";
+export type { ArcadeHubOptions, ArcadeGameEntry, ArcadeHubCustomTexts } from "../hub/ArcadeHub.js";
 export type { TournamentOptions } from "../tournament/TournamentManager.js";
 export type { BracketParticipant, BracketMatch, BracketRenderOptions } from "../tournament/RenderBracket.js";
 export type { LeaderboardPlayer, EloChangeResult, LeaderboardStorageAdapter, LeaderboardManagerOptions } from "../leaderboard/LeaderboardManager.js";

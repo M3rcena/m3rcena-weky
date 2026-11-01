@@ -138,6 +138,12 @@ export interface DashboardSoundEvent {
   sessionId?: string;
   /** Minigame key (e.g. "fight", "snake", "2048") */
   game?: string;
+  /** Primary user ID playing or triggering the action */
+  userId?: string;
+  /** Username of the primary player */
+  username?: string;
+  /** Target user IDs who should hear this sound on their dashboard (e.g. player and opponent in PvP) */
+  targetUserIds?: string[];
   /** Audio cue key (e.g. "victory", "defeat", "action", "hit", "heal", "eat") */
   soundKey: string;
   /** MP3 audio URL */

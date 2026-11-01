@@ -29,8 +29,8 @@ const commands = [
     .addStringOption((opt) => opt.setName("difficulty").setDescription("Difficulty level").addChoices({ name: "Easy", value: "easy" }, { name: "Medium", value: "medium" }, { name: "Hard", value: "hard" })),
   new SlashCommandBuilder()
     .setName("fight")
-    .setDescription("Challenge someone to an RPG turn-based duel!")
-    .addUserOption((opt) => opt.setName("opponent").setDescription("Target opponent").setRequired(true)),
+    .setDescription("Challenge someone to an RPG turn-based duel (or duel a Boss)!")
+    .addUserOption((opt) => opt.setName("opponent").setDescription("Target opponent (leave blank for Boss)").setRequired(false)),
   new SlashCommandBuilder()
     .setName("gtn")
     .setDescription("Guess The Number")
@@ -167,8 +167,9 @@ client.once(Events.ClientReady, async (c) => {
     console.error(`[Weky Event] ❌ Error in "${game}":`, error);
   });
 
-  weky.on("dashboardSound", ({ soundKey, soundUrl, volume, game }) => {
-    console.log(`[Weky Audio] 🔊 Dashboard MP3 Triggered: "${soundKey}" (vol: ${volume}) for "${game || "general"}" -> ${soundUrl}`);
+  weky.on("dashboardSound", ({ soundKey, soundUrl, volume, game, username, userId }) => {
+    const playerTag = username ? `@${username} (${userId})` : "General";
+    console.log(`[Weky Audio] 🔊 Dashboard MP3 Cue: "${soundKey}" (vol: ${volume}) for ${playerTag} in "${game || "general"}" -> ${soundUrl}`);
   });
 
   weky.on("unauthorizedClick", ({ game, user }) => {
@@ -215,8 +216,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
       const difficulty = (interaction.options.getString("difficulty") as any) || "medium";
       await weky.createFastType({ context: interaction, difficulty });
     } else if (commandName === "fight") {
-      const opponent = interaction.options.getUser("opponent", true);
-      await weky.createFight({ context: interaction, opponent });
+      const opponent = interaction.options.getUser("opponent");
+      await weky.createFight({ context: interaction, opponent: opponent || undefined });
     } else if (commandName === "gtn") {
       const isPublic = interaction.options.getBoolean("public") ?? false;
       await weky.createGuessTheNumber({ context: interaction, publicGame: isPublic });
@@ -247,7 +248,22 @@ client.on(Events.InteractionCreate, async (interaction) => {
       const difficulty = (interaction.options.getString("difficulty") as any) || "unbeatable";
       await weky.createTicTacToe({ context: interaction, opponent, ai: !opponent, difficulty });
     } else if (commandName === "arcade") {
-      await weky.createArcadeHub({ context: interaction });
+      await weky.createArcadeHub({
+        context: interaction,
+        configureBeforeLaunch: true,
+        gameOptions: {
+          tictactoe: {
+            embed: { title: "Arcade Arena TicTacToe" },
+          },
+          fight: {
+            embed: { title: "Arcade Colosseum Boss Fight" },
+            startHealth: 150,
+          },
+          snake: {
+            gridSize: 15,
+          },
+        },
+      });
     } else if (commandName === "boss") {
       const boss = interaction.options.getString("boss") || "dragon";
       await weky.createFight({ context: interaction, ai: true, boss: boss as any });
@@ -431,7 +447,17 @@ client.on(Events.MessageCreate, async (msg) => {
       const opponent = msg.mentions.users.first();
       await weky.createTicTacToe({ context: msg, opponent, ai: !opponent });
     }
-    if (command === "arcade") await weky.createArcadeHub({ context: msg });
+    if (command === "arcade") {
+      await weky.createArcadeHub({
+        context: msg,
+        configureBeforeLaunch: true,
+        gameOptions: {
+          tictactoe: { embed: { title: "Arcade Arena TicTacToe" } },
+          fight: { embed: { title: "Arcade Colosseum Boss Fight" }, startHealth: 150 },
+          snake: { gridSize: 15 },
+        },
+      });
+    }
     if (command === "boss") await weky.createFight({ context: msg, ai: true, boss: (args[0] as any) || "dragon" });
     if (command === "tournament" || command === "tourn") {
       const mentions = Array.from(msg.mentions.users.values());

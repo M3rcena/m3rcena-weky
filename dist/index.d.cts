@@ -163,6 +163,12 @@ export interface DashboardSoundEvent {
   sessionId?: string;
   /** Minigame key (e.g. "fight", "snake", "2048") */
   game?: string;
+  /** Primary user ID playing or triggering the action */
+  userId?: string;
+  /** Username of the primary player */
+  username?: string;
+  /** Target user IDs who should hear this sound on their dashboard (e.g. player and opponent in PvP) */
+  targetUserIds?: string[];
   /** Audio cue key (e.g. "victory", "defeat", "action", "hit", "heal", "eat") */
   soundKey: string;
   /** MP3 audio URL */
@@ -189,18 +195,26 @@ export interface WekyEvents {
   dashboardSound: [event: DashboardSoundEvent];
 }
 interface ArcadeHubCustomTexts {
-  /** Custom description text */
+  /** Custom description text for main arcade screen */
   description?: string;
   /** Select menu placeholder (default: "🎮 Select a Minigame to Launch...") */
   selectPlaceholder?: string;
-  /** Label for random game button (default: "🎲 Random Game") */
+  /** Label for random game button (default: "🎲 Surprise Me (Random Game)") */
   randomButton?: string;
-  /** Label for close button (default: "Close Cabinet") */
+  /** Label for close button (default: "❌ Close Arcade") */
   closeButton?: string;
   /** Notice shown when closed by user */
   closedNotice?: string;
   /** Notice shown when expired due to inactivity */
   expiredNotice?: string;
+  /** Setup screen title template (default: "🕹️ Match Setup: {game}") */
+  setupTitle?: string;
+  /** Setup screen description text */
+  setupDescription?: string;
+  /** Start button label on setup screen (default: "▶️ Launch Game") */
+  startButton?: string;
+  /** Back button label on setup screen (default: "◀️ Back to Cabinet") */
+  backButton?: string;
 }
 interface ArcadeHubOptions extends BaseGameOptions {
   /** Optional custom banner image URL */
@@ -211,6 +225,25 @@ interface ArcadeHubOptions extends BaseGameOptions {
   exclude?: string[];
   /** Custom callback when a game is selected */
   onSelect?: (gameKey: string, context: ContextAdapter) => Promise<void> | void;
+  /**
+   * Game-specific options and text customizations passed down to minigames
+   * when launched from the Arcade Hub.
+   *
+   * Example:
+   * ```typescript
+   * gameOptions: {
+   *   tictactoe: { difficulty: "unbeatable", texts: { playerTurn: "Your move!" } },
+   *   fight: { boss: "dragon", startHealth: 200 },
+   *   snake: { gridSize: 18 }
+   * }
+   * ```
+   */
+  gameOptions?: Record<string, any>;
+  /**
+   * When true, displays an interactive setup screen (difficulty, opponent, boss, mode)
+   * with buttons before launching the selected game.
+   */
+  configureBeforeLaunch?: boolean;
   /** Optional custom text labels */
   texts?: ArcadeHubCustomTexts;
 }
@@ -225,13 +258,17 @@ export declare const ARCADE_GAMES: ArcadeGameEntry[];
 export declare class ArcadeHub extends BaseGame<ArcadeHubOptions> {
   private btnPrefix;
   private selectMenuId;
-  private selectedCategory;
+  private state;
+  private pendingGameKey?;
+  private pendingConfig;
   constructor(manager: any, options: ArcadeHubOptions);
   start(): Promise<void>;
   onInteraction(interaction: Interaction): Promise<void>;
+  private openConfigScreen;
   private launchGame;
   private endHub;
   private createHubContainer;
+  private createConfigContainer;
 }
 /**
  * Canvas Tournament Bracket Renderer
@@ -722,6 +759,13 @@ interface SoundboardConfig {
   volume?: number;
   /** Custom developer MP3 URLs or relative asset paths mapped to sound event keys */
   sounds?: Record<string, string>;
+  /**
+   * When enabled, soundboard audio events will only be triggered and emitted if the player
+   * (or at least one target player) is verified as actively online on the web dashboard.
+   * If players are only interacting inside Discord text channels without an open dashboard tab, the sound is skipped.
+   * (default: false)
+   */
+  requireActiveDashboardUser?: boolean;
 }
 interface SoundboardPlayOptions {
   /** Volume override for this playback event (0.0 to 1.0) */
@@ -730,6 +774,12 @@ interface SoundboardPlayOptions {
   sessionId?: string;
   /** Associated minigame key */
   game?: string;
+  /** Primary user ID playing or triggering the action */
+  userId?: string;
+  /** Username of the primary player */
+  username?: string;
+  /** Target user IDs who should hear this sound on their dashboard (e.g. player and opponent in PvP) */
+  targetUserIds?: string[];
   [key: string]: any;
 }
 interface SoundboardPlayResult {
@@ -751,6 +801,7 @@ export declare const DEFAULT_DISCORD_SOUNDS: {
 export declare class SoundboardManager {
   private client;
   private config;
+  private activeDashboardUsers;
   wekyManager?: any;
   constructor(client: Client, config?: SoundboardConfig, wekyManager?: any);
   /**
@@ -792,13 +843,28 @@ export declare class SoundboardManager {
    */
   getLocalSoundPath(soundKey: string): string;
   /**
-   * Triggers a dashboard audio sound cue, dispatching a `dashboardSound` lifecycle event.
+   * Registers or unregisters a user as actively connected/present on the web dashboard.
+   * Web dashboards can invoke this via WebSockets/SSE to notify Weky that a user is actively listening.
    */
-  triggerSound(soundKey: string, meta?: {
-    sessionId?: string;
-    game?: string;
-    volume?: number;
-  }): DashboardSoundEvent | null;
+  setDashboardUserOnline(userId: string, isOnline?: boolean): void;
+  /**
+   * Checks whether a specific user is currently active/online on the web dashboard.
+   */
+  isUserOnDashboard(userId: string): boolean;
+  /**
+   * Returns an array of user IDs currently registered as active on the web dashboard.
+   */
+  getActiveDashboardUsers(): string[];
+  /**
+   * Clears all registered active dashboard users.
+   */
+  clearActiveDashboardUsers(): void;
+  /**
+   * Triggers a dashboard audio sound cue, dispatching a `dashboardSound` lifecycle event.
+   * If `requireActiveDashboardUser: true` is configured, sounds will only be triggered if
+   * the player (or one of the target users) is currently active on the web dashboard.
+   */
+  triggerSound(soundKey: string, meta?: SoundboardPlayOptions): DashboardSoundEvent | null;
   /**
    * Returns a ready-to-use HTML/JavaScript client-side script snippet that web dashboards
    * can include to automatically play MP3 sounds on user interactions and WebSocket events.
@@ -967,6 +1033,14 @@ export declare class WekyBridge {
     sessions?: BridgeSession[];
     leaderboard?: LeaderboardPlayer[];
   }): Promise<void>;
+  /**
+   * Notifies the bridge/soundboard that a user is actively connected on the web dashboard.
+   */
+  setDashboardUserOnline(userId: string, isOnline?: boolean): void;
+  /**
+   * Returns whether a user is currently verified as online/active on the web dashboard.
+   */
+  isUserOnDashboard(userId: string): boolean;
 }
 /**
  * Options for initializing the WekyManager.

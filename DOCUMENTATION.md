@@ -34,9 +34,10 @@ This document covers everything you need to know: architecture, installation, ev
    - [6.1. The Arcade Hub Launcher (`createArcadeHub`)](#61-the-arcade-hub-launcher)
    - [6.2. Automated Tournaments & Canvas Brackets (`createTournament`)](#62-automated-tournaments--canvas-brackets)
    - [6.3. Intelligent AI Opponents & RPG Bosses](#63-intelligent-ai-opponents--rpg-bosses)
-   - [6.4. Discord Soundboard SFX (`SoundboardManager`)](#64-discord-soundboard-sfx)
+   - [6.4. Dashboard Audio & MP3 Soundboard Engine (`SoundboardManager`)](#64-dashboard-audio--mp3-soundboard-engine-soundboardmanager)
    - [6.5. Plug-and-Play ELO & Canvas Leaderboards (`LeaderboardManager`)](#65-plug-and-play-elo--canvas-leaderboards)
    - [6.6. 'Share & Flex' Gamer Score Cards (`RenderShareCard`)](#66-share--flex-gamer-score-cards)
+   - [6.7. Cross-Platform Bridge & Headless Dashboard Gateway (`WekyBridge`)](#67-cross-platform-bridge--headless-dashboard-gateway-wekybridge)
 7. [Headless Game Engines (`WekyEngine`) for Web Dashboards](#7-headless-game-engines-wekyengine-for-web-dashboards)
 8. [Standalone Canvas Hub (`WekyCanvas`)](#8-standalone-canvas-hub-wekycanvas)
 9. [Safe Mathematical Evaluator (`MathEvaluator`)](#9-safe-mathematical-evaluator-mathevaluator)
@@ -48,9 +49,9 @@ This document covers everything you need to know: architecture, installation, ev
 
 ## 1. Architecture & Design Principles
 
-`@m3rcena/weky` v14.27.0 is a complete re-engineering of the original `weky` library:
+`@m3rcena/weky` v14.28.0 is a complete re-engineering of the original `weky` library:
 
-- **Strict Discord.js Version Alignment:** We mirror the Discord.js version numbering (e.g., `14.27.0`). This guarantees exact API parity, zero peer-dependency conflicts, and instant support for Discord's newest features.
+- **Strict Discord.js Version Alignment:** We mirror the Discord.js version numbering (e.g., `14.28.0`). This guarantees exact API parity, zero peer-dependency conflicts, and instant support for Discord's newest features.
 - **Components V2 Native:** Built from the ground up for Discord Components V2 using `ContainerBuilder`, `MediaGalleryBuilder`, and `MessageFlags.IsComponentsV2`.
 - **Rust-Powered Canvas (`@napi-rs/canvas`):** Generates photorealistic high-definition game cards in memory in under 10 milliseconds.
 - **Zero External Server/Database Dependencies:** All state machines, image generation, and data pools run locally inside your bot or app.
@@ -676,22 +677,57 @@ await weky.createWouldYouRather({
 
 #### Options (`ArcadeHubOptions`)
 
-| Option        | Type                                                            | Default                         | Description                         |
-| :------------ | :-------------------------------------------------------------- | :------------------------------ | :---------------------------------- |
-| `context`     | `GameContextInput`                                              | **Required**                    | The Interaction or Message          |
-| `title`       | `string`                                                        | `"🕹️ Weky Mini-Arcade Cabinet"` | Custom header title                 |
-| `bannerUrl`   | `string`                                                        | `undefined`                     | Optional banner image URL           |
-| `exclude`     | `string[]`                                                      | `[]`                            | Minigame keys to exclude            |
-| `onSelect`    | `(gameKey: string, context: ContextAdapter) => Promise<void>`   | `undefined`                     | Custom callback when a game is chosen|
-| `time`        | `number`                                                        | `120000`                        | Inactivity timeout (ms)             |
+| Option                  | Type                                                            | Default                         | Description                         |
+| :---------------------- | :-------------------------------------------------------------- | :------------------------------ | :---------------------------------- |
+| `context`               | `GameContextInput`                                              | **Required**                    | The Interaction or Message          |
+| `title`                 | `string`                                                        | `"🕹️ Weky Mini-Arcade Cabinet"` | Custom header title                 |
+| `bannerUrl`             | `string`                                                        | `undefined`                     | Optional banner image URL           |
+| `exclude`               | `string[]`                                                      | `[]`                            | Minigame keys to exclude            |
+| `gameOptions`           | `Record<string, any>`                                           | `{}`                            | Game-specific options & text dicts  |
+| `configureBeforeLaunch` | `boolean`                                                       | `false`                         | Interactive setup screen (buttons)  |
+| `onSelect`              | `(gameKey: string, context: ContextAdapter) => Promise<void>`   | `undefined`                     | Custom callback when a game is chosen|
+| `texts`                 | `ArcadeHubCustomTexts`                                          | `{}`                            | Custom button & notice labels       |
+| `time`                  | `number`                                                        | `120000`                        | Inactivity timeout (ms)             |
 
-#### Code Example
+#### Code Example: Interactive Setup & Deep Game Text Customization
 
 ```typescript
 await weky.createArcadeHub({
   context: interaction,
-  title: "Community Arcade Hub",
-  exclude: ["calculator"], // Exclude specific games if desired
+  title: "Official Discord Championship Arcade",
+  // 1. Enable interactive match setup with buttons before launch:
+  configureBeforeLaunch: true,
+  // 2. Customize texts and settings for games launched from the arcade:
+  gameOptions: {
+    tictactoe: {
+      difficulty: "unbeatable", // Default AI difficulty
+      embed: { title: "Arcade Coliseum TicTacToe" },
+      texts: {
+        playerTurn: "It's your turn, champion!",
+        botTurn: "The Minimax AI is plotting...",
+      },
+    },
+    fight: {
+      startHealth: 250,
+      damageMax: 40,
+      boss: "dragon",
+      embed: { title: "Dragon Slayer Boss Gauntlet" },
+    },
+    snake: {
+      gridSize: 18, // Large canvas grid
+    },
+    fasttype: {
+      difficulty: "hard",
+    },
+  },
+  // 3. Customize cabinet labels:
+  texts: {
+    selectPlaceholder: "🎯 Choose Your Battle Discipline...",
+    randomButton: "🎲 Spin the Wheel (Random Game)",
+    setupTitle: "🕹️ Match Configuration: {game}",
+    startButton: "⚔️ Enter the Arena",
+    backButton: "◀️ Return to Cabinet",
+  },
 });
 ```
 
@@ -830,11 +866,13 @@ When games are played or synchronized via `WekyBridge`, the engine automatically
 ```typescript
 import { WekyManager, DEFAULT_DASHBOARD_SOUNDS } from "@m3rcena/weky";
 
-// 1. Initialize with optional custom MP3 URLs or volume:
+// 1. Initialize with optional presence filtering or custom MP3 URLs:
 const weky = new WekyManager(client, {
   soundboard: {
     enabled: true,
     volume: 0.8,
+    // Only emit audio cues if the user is verified as online/active on the dashboard:
+    requireActiveDashboardUser: true,
     sounds: {
       victory: "https://your-dashboard.com/sounds/victory.mp3", // Custom override
       hit: "/assets/sounds/hit.mp3",
@@ -842,14 +880,20 @@ const weky = new WekyManager(client, {
   },
 });
 
-// 2. Listen to real-time audio cues (e.g. for WebSockets to dash frontend):
-weky.on("dashboardSound", ({ soundKey, soundUrl, volume, game }) => {
-  console.log(`[Dashboard Audio] ${soundKey} (${volume * 100}%) -> ${soundUrl}`);
-  // Broadcast to connected web dashboard clients via WebSocket
-  wsServer.broadcast(JSON.stringify({ type: "sound", soundUrl, volume }));
+// 2. Track dashboard presence (e.g., when a user connects/disconnects via WebSocket):
+weky.soundboard.setDashboardUserOnline(user.id, true);  // User opened web tab
+weky.soundboard.setDashboardUserOnline(user.id, false); // User closed web tab
+
+// 3. User-Scoped Audio Delivery (Listen to real-time audio cues):
+// Events carry userId, username, and targetUserIds so the dashboard knows EXACTLY who should hear the sound!
+weky.on("dashboardSound", ({ soundKey, soundUrl, volume, game, userId, targetUserIds }) => {
+  // Scoped routing: Only transmit the audio cue to the specific user's browser socket!
+  for (const targetId of targetUserIds || [userId]) {
+    userSocketMap.get(targetId)?.emit("play_sound", { soundKey, soundUrl, volume });
+  }
 });
 
-// 3. Web Dashboard Client Integration:
+// 4. Web Dashboard Client Integration:
 // Get the audio manifest for preloading:
 const manifest = weky.soundboard.getAudioManifest();
 
@@ -939,6 +983,33 @@ const shareCardBuffer = await weky.renderShareCard({
     { label: "HEALTH REMAINING", value: "72%", color: "#00f7ff" },
   ],
 });
+```
+
+---
+
+### 6.7. Cross-Platform Bridge & Headless Dashboard Gateway (`WekyBridge`)
+
+`WekyBridge` acts as a bidirectional synchronization layer between active Discord bot game sessions and external web dashboards or REST/WebSocket backends:
+
+- **Unified Session Registry**: Query active game sessions across both Discord and web.
+- **Cross-Platform Move Dispatch**: Web players can play moves (`bridge.dispatchMove(...)`) that update Discord games and trigger targeted audio events.
+- **Presence Tracking**: Notify Weky when players open the web dashboard (`bridge.setDashboardUserOnline(userId, true/false)`).
+- **State Export & Import**: Sync full live match states and leaderboards with external databases (MongoDB, PostgreSQL, Redis).
+
+```typescript
+// 1. Get the unified dashboard overview:
+const overview = await weky.bridge.getDashboardOverview();
+console.log(`Active games: ${overview.activeGamesCount}`);
+
+// 2. Dispatch a cross-platform move from a web client:
+const result = await weky.bridge.dispatchMove(sessionId, {
+  playerId: user.id,
+  action: "hit",
+  sourcePlatform: "dashboard",
+});
+
+// 3. Mark user online when they connect via WebSocket:
+weky.bridge.setDashboardUserOnline(user.id, true);
 ```
 
 ---

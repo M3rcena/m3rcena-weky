@@ -27,6 +27,13 @@ export interface SoundboardConfig {
   volume?: number;
   /** Custom developer MP3 URLs or relative asset paths mapped to sound event keys */
   sounds?: Record<string, string>;
+  /**
+   * When enabled, soundboard audio events will only be triggered and emitted if the player
+   * (or at least one target player) is verified as actively online on the web dashboard.
+   * If players are only interacting inside Discord text channels without an open dashboard tab, the sound is skipped.
+   * (default: false)
+   */
+  requireActiveDashboardUser?: boolean;
 }
 
 export interface SoundboardPlayOptions {
@@ -36,6 +43,12 @@ export interface SoundboardPlayOptions {
   sessionId?: string;
   /** Associated minigame key */
   game?: string;
+  /** Primary user ID playing or triggering the action */
+  userId?: string;
+  /** Username of the primary player */
+  username?: string;
+  /** Target user IDs who should hear this sound on their dashboard (e.g. player and opponent in PvP) */
+  targetUserIds?: string[];
   [key: string]: any;
 }
 
@@ -139,6 +152,7 @@ export const DEFAULT_DISCORD_SOUNDS = Object.values(DEFAULT_DASHBOARD_SOUNDS).ma
 export class SoundboardManager {
   private client: Client;
   private config: SoundboardConfig;
+  private activeDashboardUsers: Set<string> = new Set();
   public wekyManager?: any;
 
   constructor(client: Client, config: SoundboardConfig = {}, wekyManager?: any) {
@@ -148,6 +162,7 @@ export class SoundboardManager {
       enabled: config.enabled ?? true,
       volume: typeof config.volume === "number" ? Math.max(0, Math.min(1, config.volume)) : 0.8,
       sounds: config.sounds || {},
+      requireActiveDashboardUser: config.requireActiveDashboardUser ?? false,
     };
   }
 
@@ -268,13 +283,63 @@ export class SoundboardManager {
   }
 
   /**
+   * Registers or unregisters a user as actively connected/present on the web dashboard.
+   * Web dashboards can invoke this via WebSockets/SSE to notify Weky that a user is actively listening.
+   */
+  public setDashboardUserOnline(userId: string, isOnline: boolean = true): void {
+    if (isOnline) {
+      this.activeDashboardUsers.add(userId);
+    } else {
+      this.activeDashboardUsers.delete(userId);
+    }
+  }
+
+  /**
+   * Checks whether a specific user is currently active/online on the web dashboard.
+   */
+  public isUserOnDashboard(userId: string): boolean {
+    return this.activeDashboardUsers.has(userId);
+  }
+
+  /**
+   * Returns an array of user IDs currently registered as active on the web dashboard.
+   */
+  public getActiveDashboardUsers(): string[] {
+    return Array.from(this.activeDashboardUsers);
+  }
+
+  /**
+   * Clears all registered active dashboard users.
+   */
+  public clearActiveDashboardUsers(): void {
+    this.activeDashboardUsers.clear();
+  }
+
+  /**
    * Triggers a dashboard audio sound cue, dispatching a `dashboardSound` lifecycle event.
+   * If `requireActiveDashboardUser: true` is configured, sounds will only be triggered if
+   * the player (or one of the target users) is currently active on the web dashboard.
    */
   public triggerSound(
     soundKey: string,
-    meta: { sessionId?: string; game?: string; volume?: number } = {}
+    meta: SoundboardPlayOptions = {}
   ): DashboardSoundEvent | null {
     if (!this.config.enabled) return null;
+
+    // Filter by active dashboard presence if requireActiveDashboardUser is enabled
+    if (this.config.requireActiveDashboardUser) {
+      const targets = meta.targetUserIds || (meta.userId ? [meta.userId] : []);
+      if (targets.length > 0) {
+        const hasOnlineTarget = targets.some((id) => this.isUserOnDashboard(id));
+        if (!hasOnlineTarget) {
+          // No target users are currently on the dashboard, skip triggering sound
+          return null;
+        }
+      } else if (this.activeDashboardUsers.size === 0) {
+        // No dashboard users are active at all
+        return null;
+      }
+    }
 
     const soundUrl = this.getSoundUrl(soundKey);
     const volume = typeof meta.volume === "number" ? Math.max(0, Math.min(1, meta.volume)) : this.volume;
@@ -282,6 +347,9 @@ export class SoundboardManager {
     const eventPayload: DashboardSoundEvent = {
       sessionId: meta.sessionId,
       game: meta.game,
+      userId: meta.userId,
+      username: meta.username,
+      targetUserIds: meta.targetUserIds || (meta.userId ? [meta.userId] : undefined),
       soundKey,
       soundUrl,
       volume,

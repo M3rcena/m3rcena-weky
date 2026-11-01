@@ -231,9 +231,15 @@ export class WekyBridge {
         result.soundKey = soundKey;
         result.soundUrl = soundUrl;
 
+        const targetUserIds = session.players.map((p) => p.id);
+        const movingPlayer = session.players.find((p) => p.id === move.playerId);
+
         this.wekyManager.soundboard.triggerSound(soundKey, {
           sessionId: session.id,
           game: session.game,
+          userId: move.playerId,
+          username: movingPlayer?.username,
+          targetUserIds,
         });
       }
 
@@ -361,6 +367,25 @@ export class WekyBridge {
     if (data.leaderboard && this.wekyManager?.leaderboard) {
       await this.wekyManager.leaderboard.importData(data.leaderboard);
     }
+  }
+
+  /**
+   * Notifies the bridge/soundboard that a user is actively connected on the web dashboard.
+   */
+  public setDashboardUserOnline(userId: string, isOnline: boolean = true): void {
+    if (this.wekyManager?.soundboard && typeof this.wekyManager.soundboard.setDashboardUserOnline === "function") {
+      this.wekyManager.soundboard.setDashboardUserOnline(userId, isOnline);
+    }
+  }
+
+  /**
+   * Returns whether a user is currently verified as online/active on the web dashboard.
+   */
+  public isUserOnDashboard(userId: string): boolean {
+    if (this.wekyManager?.soundboard && typeof this.wekyManager.soundboard.isUserOnDashboard === "function") {
+      return this.wekyManager.soundboard.isUserOnDashboard(userId);
+    }
+    return false;
   }
 }
 

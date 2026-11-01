@@ -378,11 +378,18 @@ export class WekyManager extends EventEmitter {
           contextOrOptions?.message ||
           contextOrOptions;
 
+    const specificGameOpts =
+      contextOrOptions?.gameOptions?.[gameKey.toLowerCase()] ||
+      contextOrOptions?.gameConfigs?.[gameKey.toLowerCase()] ||
+      {};
+
     const baseOpts = {
       context: rawContext,
+      ...specificGameOpts,
       ...(typeof contextOrOptions === "object" && !(contextOrOptions instanceof ContextAdapter)
         ? contextOrOptions
         : {}),
+      ...specificGameOpts,
     };
 
     switch (gameKey.toLowerCase()) {
@@ -395,7 +402,11 @@ export class WekyManager extends EventEmitter {
       case "fasttype":
         return this.createFastType(baseOpts);
       case "fight":
-        return this.createFight({ ...baseOpts, ai: true });
+        return this.createFight({
+          ai: baseOpts.opponent ? false : (baseOpts.ai ?? true),
+          boss: baseOpts.boss || "dragon",
+          ...baseOpts,
+        });
       case "gtn":
       case "guessthenumber":
         return this.createGuessTheNumber(baseOpts);
@@ -419,7 +430,11 @@ export class WekyManager extends EventEmitter {
       case "snake":
         return this.createSnake(baseOpts);
       case "tictactoe":
-        return this.createTicTacToe({ ...baseOpts, ai: true });
+        return this.createTicTacToe({
+          ai: baseOpts.opponent ? false : (baseOpts.ai ?? true),
+          difficulty: baseOpts.difficulty || "medium",
+          ...baseOpts,
+        });
       case "wyptb":
       case "willyoupressthebutton":
         return this.createWillYouPressTheButton(baseOpts);

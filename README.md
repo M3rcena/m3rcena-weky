@@ -32,14 +32,15 @@
 
 > **Versioning Notice**: `@m3rcena/weky` strictly mirrors the version numbering of **`discord.js`** (now `14.28.0`). Whenever Discord.js releases updates, `@m3rcena/weky` releases an identical version to ensure 100% API parity, zero peer-dependency conflicts, and instantaneous support for Discord's newest features like **Components V2**.
 
-Version 14.28.0 introduces 6 major, ground-breaking features that elevate Discord gaming beyond simple bot commands:
+Version 14.28.0 introduces 7 major, ground-breaking features that elevate Discord gaming beyond simple bot commands:
 
-1. 🕹️ **The Arcade Hub (`weky.createArcadeHub`)**: Centralized launcher grouping all 17 minigames into 4 clean categories with dropdown menus and random pickers.
-2. 🏆 **Automated Tournament & Canvas Bracket Engine (`weky.createTournament`)**: Single-elimination eSports tournaments (4 to 16 players) with live `@napi-rs/canvas` bracket charts.
+1. 🕹️ **The Arcade Hub (`weky.createArcadeHub`)**: Centralized launcher grouping all 17 minigames into 4 clean categories with dropdown menus, in-arcade game customization (`gameOptions`), and interactive pre-launch match setup screens (`configureBeforeLaunch: true`) with difficulty, boss, and PvP opponent selection.
+2. 🏆 **Automated Tournament & Canvas Bracket Engine (`weky.createTournament`)**: Single-elimination eSports tournaments (4 to 16 players) with live `@napi-rs/canvas` bracket charts, simultaneous preliminary rounds, and public Grand Finals.
 3. 🤖 **Intelligent AI Opponents & RPG Boss Duels**: Play solo against Minimax TicTacToe AI, psychological RPS predictors, or battle 3 unique RPG bosses (*Dragon Sovereign*, *Cyber Knight*, *Shadow Goblin*) in Fight!
-4. 🔊 **Discord Soundboard & Audio SFX (`weky.soundboard`)**: Safe REST soundboard sound dispatcher for victories, defeats, and match actions.
-5. 📈 **Plug-and-Play ELO & Canvas Leaderboards (`weky.leaderboard`, `weky.renderLeaderboard`)**: Mathematical ELO rating calculation and neon high-score poster generation.
+4. 🔊 **Web Dashboard MP3 Soundboard Engine (`weky.soundboard`)**: High-fidelity zero-latency bundled MP3 audio tracks with player-scoped targeting (`targetUserIds`, `userId`) and active dashboard presence filtering (`requireActiveDashboardUser`).
+5. 📈 **Plug-and-Play ELO & Canvas Leaderboards (`weky.leaderboard`, `weky.renderLeaderboard`)**: Mathematical ELO rating calculation with developer custom pointing and neon high-score poster generation.
 6. 🎟️ **"Share & Flex" Gamer Score Cards (`weky.renderShareCard`)**: Collectible holographic gamer victory tickets with custom stats and rank badges.
+7. 🌐 **Cross-Platform Bridge (`WekyBridge`)**: Bidirectional real-time state synchronization connecting Discord bot minigames with web dashboards.
 
 ---
 
@@ -47,13 +48,19 @@ Version 14.28.0 introduces 6 major, ground-breaking features that elevate Discor
 
 ### 🕹️ 1. The Arcade Hub Launcher
 
-Launch a complete arcade cabinet interface in one line of code! Players can browse games by category (*Classic Arcade*, *PvP Duels*, *Brain & Puzzles*, *Party & Social*) or click "🎲 Random Game":
+Launch a complete arcade cabinet interface in one line of code! Players can browse games by category (*Classic Arcade*, *PvP Duels*, *Brain & Puzzles*, *Party & Social*), click "🎲 Random Game", or configure their match settings with interactive buttons before launching:
 
 ```typescript
 // /arcade Slash Command or Message
 await weky.createArcadeHub({
   context: interaction, // or message
   title: "Official Community Arcade Cabinet",
+  configureBeforeLaunch: true, // Interactive setup screen with difficulty/boss/PvP buttons
+  gameOptions: {
+    fight: { startHealth: 250, embed: { title: "Arcade Colosseum Fight" } },
+    tictactoe: { difficulty: "unbeatable", embed: { title: "Arcade TicTacToe" } },
+    snake: { gridSize: 18 },
+  },
 });
 ```
 
@@ -417,7 +424,7 @@ npm run build
 
 ## 📄 License
 
-Distributed under the **Apache-2.0 License**. See [LICENSE](file:///c:/Users/micha/Desktop/Weky/LICENSE) for details.
+Distributed under the **Apache-2.0 License**. See [LICENSE](./LICENSE) for details.
 
 ---
 

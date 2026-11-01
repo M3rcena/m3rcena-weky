@@ -12,29 +12,46 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 #### Added
 
-- **Discord.js v14.28.0 Parity**: Full compatibility upgrade with Discord.js `14.28.0`.
+- **Discord.js v14.28.0 Parity & TypeScript 7**: Full compatibility upgrade with Discord.js `14.28.0` and TypeScript `7.0.2`. Migrated build pipeline from `tsup` to modern `tsdown` powered by Rolldown.
 - **Feature 1: The Arcade Hub (`ArcadeHub` & `weky.createArcadeHub`)**:
   - Centralized, interactive minigames launcher cabinet grouping all 17 minigames into 4 organized categories (*Classic Arcade*, *PvP Duels*, *Brain & Puzzles*, *Party & Social*).
   - Uses Discord Components V2 Containers with interactive `StringSelectMenuBuilder`, quick random game launcher button, and game filtering (`options.exclude`).
+  - Added `gameOptions` dictionary: Deeply customize cards, embed titles, text prompts, and settings for each individual game when launched through the Arcade Hub.
+  - Added Interactive Setup Screen (`configureBeforeLaunch: true`): Players can configure AI difficulty, select RPG bosses, categories, grid sizes, or toggle between Solo vs Boss and PvP Duels with friend selection via `UserSelectMenuBuilder` before launching.
   - Added `weky.launchGameByKey(gameKey, context)` universal dispatch router.
 - **Feature 2: Automated Tournament & Canvas Bracket Engine (`TournamentManager` & `RenderBracket`)**:
-  - Single-elimination automated championship system supporting 4 to 16 players.
-  - Generates high-definition, eSports-style tournament bracket canvas diagrams with player avatars, round columns, match connectors, and live status badges (`✔ W`, `OUT`).
-  - Step-by-step match progression with "Play Next Match" controls and champion crowning.
+  - Single-elimination automated championship system supporting 4 to 16 players with real-time `@napi-rs/canvas` bracket generation.
+  - Simultaneous preliminary rounds using ephemeral interactive sessions with synchronized state and anti-AFK timeout protection (auto-reset on interaction).
+  - Standalone bracket image generation via `weky.generateTournamentProgress(...)` and manual tournament match advancement via `progressMatch(...)`.
+  - Live public Grand Finals hosted directly in the channel with championship coronation.
 - **Feature 3: Intelligent AI Opponents & RPG Boss Duels**:
-  - **Tic Tac Toe**: Unbeatable Minimax AI (`"unbeatable"` / `"hard"`), smart heuristic blocking (`"medium"`), and casual (`"easy"`). Play solo vs AI without requiring a second player.
-  - **Fight RPG**: Solo boss fights against 3 unique tactical bosses (`Dragon Sovereign`, `Cyber Knight`, `Shadow Goblin`) with unique abilities, dialogues, and coin stealing.
-  - **Rock Paper Scissors**: Heuristic psychological AI using win-stay / lose-shift prediction to outsmart human move habits.
-- **Feature 4: Discord Soundboard & Audio SFX Integration (`SoundboardManager`)**:
-  - Safe, non-intrusive soundboard sound dispatcher directly utilizing Discord's REST soundboard endpoints.
-  - Fires custom audio SFX for victory, defeat, countdown, or actions with built-in permission fallback.
+  - Full support for both **Player-vs-Player (PvP)** duels and **Solo AI/Boss** fights across `/fight`, `w!fight`, `/arcade`, and `/tournament`.
+  - **Tic Tac Toe**: Unbeatable Minimax AI (`"unbeatable"` / `"hard"`), heuristic blocking (`"medium"`), and casual (`"easy"`).
+  - **Fight RPG**: Solo boss fights against 3 unique tactical bosses (`Dragon Sovereign`, `Cyber Knight`, `Shadow Goblin`) with special attacks, dialogue, and coin theft.
+  - **Rock Paper Scissors**: Psychological Markov/heuristic AI predicting human player move habits.
+- **Feature 4: Web Dashboard MP3 Soundboard Engine (`SoundboardManager`)**:
+  - Transitioned soundboard to high-fidelity, zero-latency MP3 audio tracks designed for Web Dashboards and headless game engines.
+  - Synthesized 11 authentic 44.1 kHz, 128 kbps MP3 files bundled in `assets/sounds/` (`victory`, `defeat`, `hit`, `heavy_hit`, `heal`, `eat`, `countdown`, `gamestart`, `tie`, `action`, `win_streak`).
+  - **Player-Scoped Audio Routing**: `dashboardSound` events now carry `userId`, `username`, and `targetUserIds` so dashboards route sounds exclusively to the active player's browser session without broadcasting to all users.
+  - **Active Presence Filtering (`requireActiveDashboardUser`)**: Added optional dashboard presence tracking via `setDashboardUserOnline(userId, isOnline)`. When `requireActiveDashboardUser: true` is configured, sounds will only trigger when the player is verified active on the dashboard, skipping unnecessary audio processing for pure Discord interactions.
 - **Feature 5: Plug-and-Play ELO & Canvas Leaderboards (`LeaderboardManager` & `RenderLeaderboard`)**:
   - Mathematical ELO calculation using standard international FIDE formulas with customizable K-factors.
-  - Built-in tracking for wins, losses, draws, win streaks, personal best scores, and pluggable storage adapter support (`LeaderboardStorageAdapter`).
+  - Custom Developer Pointing System: Configure optional static points (`winPoints`, `lossPoints`, `tiePoints`) or dynamic custom pointing formulas (`calculatePoints: (player, match) => ...`).
   - High-resolution cyberpunk/neon arcade leaderboard card renderer drawing top 10 player ranks, circular avatars, medals, and streaks.
 - **Feature 6: "Share & Flex" Gamer Score Cards (`RenderShareCard`)**:
   - Collectible, holographic-style match victory and score ticket generator using `@napi-rs/canvas`.
   - Displays large player avatar, neon rank tier badge, primary score hero box, customizable 2x2 metric stat grid, and verification barcode.
+- **Feature 7: Cross-Platform Bridge & Headless Dashboard Sync (`WekyBridge`)**:
+  - Bidirectional bridge connecting Discord bot game sessions with web dashboards in real time.
+  - Dispatch moves, synchronize board state, query game overviews, and broadcast audio events across platforms.
+- **Feature 8: Strongly-Typed Event Emitters**:
+  - Replaced `any` callback signatures with strict TypeScript types for all `WekyManager` lifecycle hooks (`gameStart`, `gameOver`, `gameError`, `unauthorizedClick`, `dashboardSound`).
+
+#### Fixed
+
+- **Bot Loss Event Outcome Bug**: Fixed an issue where losing to a Bot or Boss in `Fight`, `TicTacToe`, or `RockPaperScissors` recorded `outcome: "WIN"` on the player's event. The outcome now accurately emits `"LOSE"` or `"lost"` with correct winner/loser mapping, properly decrementing ELO and resetting win streaks.
+- **Tournament Inactivity Timeout**: Interactive game moves now refresh and reset the tournament timeout timer to prevent ongoing championships from timing out mid-game.
+- **Discord Application Command Option Order**: Reordered slash command options in example/test bot so required parameters precede optional ones in compliance with Discord API Form Body constraints.
 
 ---
 
