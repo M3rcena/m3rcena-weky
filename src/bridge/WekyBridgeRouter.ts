@@ -353,9 +353,9 @@ export class WekyBridgeRouter implements BridgePackageRouter {
             title: req.query.title || "Arcade Championship Leaderboard",
             gameName: "Arcade",
             entries: [
-              { rank: 1, userId: "MasterGamer", score: 14500, avatarUrl },
-              { rank: 2, userId: "NeonNinja", score: 11200 },
-              { rank: 3, userId: "PixelQueen", score: 9800 },
+              { rank: 1, username: "MasterGamer", scoreOrElo: 14500, avatarUrl },
+              { rank: 2, username: "NeonNinja", scoreOrElo: 11200 },
+              { rank: 3, username: "PixelQueen", scoreOrElo: 9800 },
             ],
           });
         }
