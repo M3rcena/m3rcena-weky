@@ -1,7 +1,7 @@
 import { ActionRowBuilder, AttachmentBuilder, ButtonInteraction, ButtonStyle, ChatInputCommandInteraction, Client, ColorResolvable, ContainerBuilder, EmbedBuilder, EmbedFooterData, Guild, GuildMember, GuildTextBasedChannel, Interaction, MediaGalleryBuilder, Message, MessageFlags, TextBasedChannel, User } from "discord.js";
 import { EventEmitter } from "events";
 import { SKRSContext2D } from "@napi-rs/canvas";
-import { M3rcenaBridge, M3rcenaBridge as M3rcenaBridge$1 } from "@m3rcena/bridge";
+import { BridgeAction, BridgePackageRouter, BridgeRequest, BridgeResponse, M3rcenaBridge, M3rcenaBridge as M3rcenaBridge$1 } from "@m3rcena/bridge";
 export declare const version = "14.28.0";
 export declare const VERSION = "14.28.0";
 export interface PokemonData {
@@ -891,6 +891,26 @@ export declare class SoundboardManager {
   leaveVoice(): boolean;
   destroy(): void;
 }
+export declare const WEKY_GAME_CATALOG: {
+  id: string;
+  name: string;
+  description: string;
+  minPlayers: number;
+  maxPlayers: number;
+  category: string;
+  controls: string[];
+  canvasSupported: boolean;
+}[];
+export declare class WekyBridgeRouter implements BridgePackageRouter {
+  name: string;
+  basePath: string;
+  description: string;
+  version: string;
+  private bridge;
+  constructor(bridge: WekyBridge);
+  handleRequest(req: BridgeRequest): Promise<BridgeResponse | null>;
+  handleAction(action: BridgeAction): Promise<any>;
+}
 interface BridgePlayer {
   id: string;
   username: string;
@@ -972,6 +992,7 @@ export declare class WekyBridge {
   private sessions;
   wekyManager?: any;
   m3rcenaBridge: M3rcenaBridge$1;
+  router: WekyBridgeRouter;
   constructor(wekyManager?: any, customBridge?: M3rcenaBridge$1);
   /**
    * Returns the underlying M3rcenaBridge instance.

@@ -9084,6 +9084,1638 @@ var SoundboardManager = class {
 	}
 	destroy() {}
 };
+// src/canvas/WekyCanvas.ts
+/**
+* Centralized graphics and card generation suite for `@m3rcena/weky`.
+* Ideal for web dashboards, REST APIs, custom UIs, and external webhooks.
+*/
+var WekyCanvas = class {
+	/**
+	* Converts an image Buffer into a web-ready Data URL string (`data:image/png;base64,...`).
+	* Can be directly used in HTML `<img src="..." />` or frontend frameworks (React, Vue, Svelte).
+	*/
+	static toDataURL(buffer, mime = "image/png") {
+		return `data:${mime};base64,${buffer.toString("base64")}`;
+	}
+	/**
+	* Converts an image Buffer into a base64 encoded string.
+	*/
+	static toBase64(buffer) {
+		return buffer.toString("base64");
+	}
+	/**
+	* Fight Duel canvas card renderers.
+	*/
+	static fight = {
+		/**
+		* Renders a Challenge / Request card between two players.
+		*/
+		request: (challenger, opponent) => {
+			return RenderFight.renderRequestCard(challenger, opponent);
+		},
+		/**
+		* Renders an active battle arena card showing both fighters, health bars, coins, and current turn indicator.
+		*/
+		battle: (player1, player2, currentTurnUserId, announcement) => {
+			return RenderFight.renderBattleCard(player1, player2, currentTurnUserId, announcement);
+		},
+		/**
+		* Renders the battle outcome card (Victory, Surrender, Denied, Timeout).
+		*/
+		outcome: (winner, loser, type) => {
+			return RenderFight.renderOutcomeCard(winner, loser, type);
+		}
+	};
+	/**
+	* 2048 game board card renderer.
+	*/
+	static game2048(board, score, username, avatarUrl, state) {
+		return Render2048.renderBoard(board, score, username, avatarUrl, state);
+	}
+	/**
+	* Snake game board card renderer.
+	*/
+	static snake(snake, food, direction, score, gridSize, username, avatarUrl, isGameOver, overlayTitle) {
+		return RenderSnake.renderBoard(snake, food, direction, score, gridSize, username, avatarUrl, isGameOver, overlayTitle);
+	}
+	/**
+	* Hangman gallows and word card renderer.
+	*/
+	static hangman(wrongGuessesCount, displayWord, guessedLetters, username = "Player", avatarUrl = "", gameOver = false, won = false, fullWord) {
+		return RenderHangman.renderCard(wrongGuessesCount, displayWord, guessedLetters, username, avatarUrl, gameOver, won, fullWord);
+	}
+	/**
+	* Pokemon silhouette / revealed card renderer.
+	*/
+	static pokemon(pokemon, reveal = false) {
+		return RenderPokemon.renderCard({
+			name: pokemon.name,
+			imageUrl: pokemon.imageUrl || pokemon.image || "",
+			types: pokemon.types || ["Normal"],
+			abilities: pokemon.abilities || [],
+			id: pokemon.id
+		}, reveal);
+	}
+};
+// src/engines/Game2048Engine.ts
+/**
+* Headless 2048 game engine for web dashboards, custom bots, and REST/WebSocket APIs.
+*/
+var Game2048Engine = class {
+	board = [];
+	score = 0;
+	hasWon = false;
+	isGameOver = false;
+	moveCount = 0;
+	username;
+	avatarUrl;
+	constructor(options) {
+		this.username = options?.username || "Player";
+		this.avatarUrl = options?.avatarUrl || "https://cdn.discordapp.com/embed/avatars/0.png";
+		this.reset();
+	}
+	/**
+	* Resets the game to an initial state with 2 spawned tiles.
+	*/
+	reset() {
+		this.board = Array(4).fill(0).map(() => Array(4).fill(0));
+		this.score = 0;
+		this.hasWon = false;
+		this.isGameOver = false;
+		this.moveCount = 0;
+		this.spawnTile();
+		this.spawnTile();
+	}
+	/**
+	* Spawns a random tile (2 with 90% probability, 4 with 10% probability).
+	*/
+	spawnTile() {
+		const empty = [];
+		for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) if (this.board[r][c] === 0) empty.push({
+			r,
+			c
+		});
+		if (empty.length > 0) {
+			const spot = empty[Math.floor(Math.random() * empty.length)];
+			this.board[spot.r][spot.c] = Math.random() < .9 ? 2 : 4;
+		}
+	}
+	/**
+	* Performs a slide move in the specified direction.
+	* @returns `true` if the board moved/changed, `false` otherwise.
+	*/
+	move(direction) {
+		if (this.isGameOver) return false;
+		let moved = false;
+		let scoreGained = 0;
+		let newBoard = this.board.map((row) => [...row]);
+		const processRow = (row) => {
+			let filtered = row.filter((v) => v !== 0);
+			let merged = [];
+			for (let i = 0; i < filtered.length; i++) if (i < filtered.length - 1 && filtered[i] === filtered[i + 1]) {
+				const combined = filtered[i] * 2;
+				merged.push(combined);
+				scoreGained += combined;
+				i++;
+			} else merged.push(filtered[i]);
+			while (merged.length < 4) merged.push(0);
+			return merged;
+		};
+		if (direction === "LEFT") newBoard = newBoard.map((row) => {
+			const nr = processRow(row);
+			if (nr.join(",") !== row.join(",")) moved = true;
+			return nr;
+		});
+		else if (direction === "RIGHT") newBoard = newBoard.map((row) => {
+			const rev = [...row].reverse();
+			const nr = processRow(rev);
+			if (nr.join(",") !== rev.join(",")) moved = true;
+			return nr.reverse();
+		});
+		else if (direction === "UP") {
+			let trans = this.transpose(newBoard);
+			trans = trans.map((row) => {
+				const nr = processRow(row);
+				if (nr.join(",") !== row.join(",")) moved = true;
+				return nr;
+			});
+			newBoard = this.transpose(trans);
+		} else if (direction === "DOWN") {
+			let trans = this.transpose(newBoard);
+			trans = trans.map((row) => {
+				const rev = [...row].reverse();
+				const nr = processRow(rev);
+				if (nr.join(",") !== rev.join(",")) moved = true;
+				return nr.reverse();
+			});
+			newBoard = this.transpose(trans);
+		}
+		if (moved) {
+			this.board = newBoard;
+			this.score += scoreGained;
+			this.moveCount++;
+			this.spawnTile();
+			if (!this.hasWon && this.checkWon()) this.hasWon = true;
+			if (this.checkGameOver()) this.isGameOver = true;
+		}
+		return moved;
+	}
+	transpose(matrix) {
+		return matrix[0].map((_, col) => matrix.map((row) => row[col]));
+	}
+	checkWon() {
+		for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) if (this.board[r][c] >= 2048) return true;
+		return false;
+	}
+	checkGameOver() {
+		for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) {
+			if (this.board[r][c] === 0) return false;
+			if (c < 3 && this.board[r][c] === this.board[r][c + 1]) return false;
+			if (r < 3 && this.board[r][c] === this.board[r + 1][c]) return false;
+		}
+		return true;
+	}
+	/**
+	* Returns a snapshot of the current game state.
+	*/
+	getState() {
+		return {
+			board: this.board.map((r) => [...r]),
+			score: this.score,
+			hasWon: this.hasWon,
+			isGameOver: this.isGameOver,
+			moveCount: this.moveCount
+		};
+	}
+	/**
+	* Returns control buttons suitable for web dashboards or UI rendering.
+	*/
+	getControls() {
+		const disabled = this.isGameOver;
+		return [{ components: [
+			{
+				id: "blank_1",
+				label: " ",
+				style: "secondary",
+				disabled: true
+			},
+			{
+				id: "up",
+				label: "Up",
+				emoji: "⬆️",
+				style: "primary",
+				disabled
+			},
+			{
+				id: "blank_2",
+				label: " ",
+				style: "secondary",
+				disabled: true
+			},
+			{
+				id: "quit",
+				label: "Quit",
+				emoji: "🛑",
+				style: "danger",
+				disabled
+			}
+		] }, { components: [
+			{
+				id: "left",
+				label: "Left",
+				emoji: "⬅️",
+				style: "primary",
+				disabled
+			},
+			{
+				id: "down",
+				label: "Down",
+				emoji: "⬇️",
+				style: "primary",
+				disabled
+			},
+			{
+				id: "right",
+				label: "Right",
+				emoji: "➡️",
+				style: "primary",
+				disabled
+			}
+		] }];
+	}
+	/**
+	* Renders the current board as a PNG buffer.
+	*/
+	async renderCard(customState) {
+		const state = customState || (this.hasWon ? "won" : this.isGameOver ? "gameover" : "active");
+		return Render2048.renderBoard(this.board, this.score, this.username, this.avatarUrl, state);
+	}
+	/**
+	* Renders the current board directly as a Data URL string (`data:image/png;base64,...`).
+	*/
+	async renderDataURL(customState) {
+		const buffer = await this.renderCard(customState);
+		return WekyCanvas.toDataURL(buffer);
+	}
+};
+// src/engines/SnakeEngine.ts
+/**
+* Headless Snake game engine for web dashboards and custom APIs.
+*/
+var SnakeEngine = class {
+	snake = [];
+	food = {
+		x: 0,
+		y: 0
+	};
+	direction = "RIGHT";
+	score = 0;
+	isGameOver = false;
+	gridSize;
+	username;
+	avatarUrl;
+	constructor(options) {
+		this.gridSize = options?.gridSize || 15;
+		this.username = options?.username || "Player";
+		this.avatarUrl = options?.avatarUrl || "https://cdn.discordapp.com/embed/avatars/0.png";
+		this.reset();
+	}
+	/**
+	* Resets the snake game to starting state.
+	*/
+	reset() {
+		const center = Math.floor(this.gridSize / 2);
+		this.snake = [
+			{
+				x: center,
+				y: center
+			},
+			{
+				x: center - 1,
+				y: center
+			},
+			{
+				x: center - 2,
+				y: center
+			}
+		];
+		this.direction = "RIGHT";
+		this.score = 0;
+		this.isGameOver = false;
+		this.spawnFood();
+	}
+	spawnFood() {
+		let valid = false;
+		while (!valid) {
+			const fx = Math.floor(Math.random() * this.gridSize);
+			const fy = Math.floor(Math.random() * this.gridSize);
+			if (!this.snake.some((part) => part.x === fx && part.y === fy)) {
+				this.food = {
+					x: fx,
+					y: fy
+				};
+				valid = true;
+			}
+		}
+	}
+	/**
+	* Moves the snake one step in the specified direction.
+	* Prevents instant reverse into own neck.
+	*/
+	move(newDir) {
+		if (this.isGameOver) return false;
+		if ({
+			UP: "DOWN",
+			DOWN: "UP",
+			LEFT: "RIGHT",
+			RIGHT: "LEFT"
+		}[this.direction] === newDir) newDir = this.direction;
+		this.direction = newDir;
+		const head = { ...this.snake[0] };
+		switch (newDir) {
+			case "UP":
+				head.y -= 1;
+				break;
+			case "DOWN":
+				head.y += 1;
+				break;
+			case "LEFT":
+				head.x -= 1;
+				break;
+			case "RIGHT": head.x += 1;
+		}
+		if (head.x < 0 || head.x >= this.gridSize || head.y < 0 || head.y >= this.gridSize) {
+			this.isGameOver = true;
+			return false;
+		}
+		if (this.snake.some((part, i) => {
+			if (i === this.snake.length - 1 && !(head.x === this.food.x && head.y === this.food.y)) return false;
+			return part.x === head.x && part.y === head.y;
+		})) {
+			this.isGameOver = true;
+			return false;
+		}
+		this.snake.unshift(head);
+		if (head.x === this.food.x && head.y === this.food.y) {
+			this.score += 1;
+			this.spawnFood();
+		} else this.snake.pop();
+		return true;
+	}
+	/**
+	* Sets next direction without immediately advancing.
+	*/
+	changeDirection(newDir) {
+		if ({
+			UP: "DOWN",
+			DOWN: "UP",
+			LEFT: "RIGHT",
+			RIGHT: "LEFT"
+		}[this.direction] !== newDir) this.direction = newDir;
+	}
+	/**
+	* Advances snake by one frame/step. Ideal for timer loops.
+	*/
+	step(dir) {
+		return {
+			isAlive: this.move(dir || this.direction),
+			isGameOver: this.isGameOver,
+			score: this.score
+		};
+	}
+	/**
+	* Returns current snapshot of the snake state.
+	*/
+	getState() {
+		return {
+			snake: this.snake.map((p) => ({ ...p })),
+			food: { ...this.food },
+			score: this.score,
+			length: this.snake.length,
+			direction: this.direction,
+			isGameOver: this.isGameOver
+		};
+	}
+	/**
+	* Returns control buttons schema.
+	*/
+	getControls() {
+		const disabled = this.isGameOver;
+		return [{ components: [
+			{
+				id: "blank_1",
+				label: " ",
+				style: "secondary",
+				disabled: true
+			},
+			{
+				id: "up",
+				label: "Up",
+				emoji: "⬆️",
+				style: "primary",
+				disabled
+			},
+			{
+				id: "blank_2",
+				label: " ",
+				style: "secondary",
+				disabled: true
+			},
+			{
+				id: "quit",
+				label: "Quit",
+				emoji: "🛑",
+				style: "danger",
+				disabled
+			}
+		] }, { components: [
+			{
+				id: "left",
+				label: "Left",
+				emoji: "⬅️",
+				style: "primary",
+				disabled
+			},
+			{
+				id: "down",
+				label: "Down",
+				emoji: "⬇️",
+				style: "primary",
+				disabled
+			},
+			{
+				id: "right",
+				label: "Right",
+				emoji: "➡️",
+				style: "primary",
+				disabled
+			}
+		] }];
+	}
+	/**
+	* Renders the current snake board as a PNG buffer.
+	*/
+	async renderCard(overlayTitle) {
+		return RenderSnake.renderBoard(this.snake, this.food, this.direction, this.score, this.gridSize, this.username, this.avatarUrl, this.isGameOver, overlayTitle);
+	}
+	/**
+	* Renders the snake board as a Data URL string.
+	*/
+	async renderDataURL(overlayTitle) {
+		const buffer = await this.renderCard(overlayTitle);
+		return WekyCanvas.toDataURL(buffer);
+	}
+};
+// src/engines/FightEngine.ts
+/**
+* Headless Fight Duel RPG engine for web dashboards and custom APIs.
+*/
+var FightEngine = class {
+	p1;
+	p2;
+	currentTurnId;
+	phase = "REQUEST";
+	lastAnnouncement = "Duel requested!";
+	winner;
+	loser;
+	endReason;
+	constructor(options) {
+		const defaultHp = options.startHealth ?? 100;
+		this.p1 = {
+			id: options.player1.id,
+			username: options.player1.username,
+			avatarUrl: options.player1.avatarUrl || "",
+			health: options.player1.health ?? defaultHp,
+			coins: options.player1.coins ?? 0,
+			lastAction: "Challenged opponent",
+			activeEffects: []
+		};
+		this.p2 = {
+			id: options.player2.id,
+			username: options.player2.username,
+			avatarUrl: options.player2.avatarUrl || "",
+			health: options.player2.health ?? defaultHp,
+			coins: options.player2.coins ?? 0,
+			lastAction: "Awaiting start",
+			activeEffects: []
+		};
+		this.currentTurnId = this.p1.id;
+		if (options.initialPhase === "REQUEST") {
+			this.phase = "REQUEST";
+			this.lastAnnouncement = "Duel requested!";
+		} else {
+			this.phase = "FIGHT";
+			this.lastAnnouncement = `The duel begins! It's ${this.p1.username}'s turn!`;
+		}
+	}
+	/**
+	* Accepts the challenge and transitions to FIGHT phase.
+	*/
+	acceptChallenge() {
+		this.phase = "FIGHT";
+		this.currentTurnId = Math.random() < .5 ? this.p1.id : this.p2.id;
+		const starter = this.currentTurnId === this.p1.id ? this.p1 : this.p2;
+		this.lastAnnouncement = `The duel begins! It's ${starter.username}'s turn!`;
+	}
+	/**
+	* Universal action method accepting either (action, playerId) or (playerId, action) and case-insensitive strings.
+	*/
+	action(playerId, actionType) {
+		let act = actionType.toLowerCase();
+		if (act === "attack") act = "hit";
+		const res = this.performAction(act, playerId);
+		return {
+			success: res.success,
+			message: res.message,
+			announcement: this.lastAnnouncement,
+			isGameOver: res.isGameOver,
+			winnerId: res.winnerId
+		};
+	}
+	/**
+	* Performs a combat action for a fighter.
+	*/
+	performAction(action, playerId) {
+		if (this.phase === "REQUEST") return {
+			success: false,
+			message: "Duel has not started yet. Call acceptChallenge() first."
+		};
+		if (this.phase === "ENDED") return {
+			success: false,
+			message: "Duel has already ended."
+		};
+		if (playerId !== this.p1.id && playerId !== this.p2.id) return {
+			success: false,
+			message: "User is not a combatant in this duel."
+		};
+		if (action === "surrender") {
+			this.winner = playerId === this.p1.id ? this.p2 : this.p1;
+			this.loser = playerId === this.p1.id ? this.p1 : this.p2;
+			this.phase = "ENDED";
+			this.endReason = "SURRENDER";
+			this.lastAnnouncement = `${this.loser.username} surrendered! ${this.winner.username} wins!`;
+			return {
+				success: true,
+				message: this.lastAnnouncement,
+				isGameOver: this.phase === "ENDED",
+				winnerId: this.winner?.id
+			};
+		}
+		if (playerId !== this.currentTurnId) return {
+			success: false,
+			message: "It is not this player's turn."
+		};
+		const attacker = this.currentTurnId === this.p1.id ? this.p1 : this.p2;
+		const defender = this.currentTurnId === this.p1.id ? this.p2 : this.p1;
+		if (action === "hit" || action === "heavy") {
+			const isHeavy = action === "heavy";
+			let damage = isHeavy ? Math.floor(Math.random() * 18) + 18 : Math.floor(Math.random() * 13) + 10;
+			if (isHeavy && Math.random() < .25) {
+				attacker.lastAction = "Missed Heavy Attack!";
+				this.lastAnnouncement = `${attacker.username} swung hard but missed!`;
+				attacker.coins += 5;
+			} else {
+				if (attacker.activeEffects?.includes("2x Damage")) {
+					damage *= 2;
+					attacker.activeEffects = attacker.activeEffects.filter((e) => e !== "2x Damage");
+				}
+				if (defender.activeEffects?.includes("Shield")) {
+					damage = Math.floor(damage / 2);
+					defender.activeEffects = defender.activeEffects.filter((e) => e !== "Shield");
+				}
+				defender.health = Math.max(0, defender.health - damage);
+				attacker.coins += isHeavy ? 15 : 10;
+				attacker.lastAction = `${isHeavy ? "Heavy Hit" : "Hit"} for ${damage} DMG`;
+				this.lastAnnouncement = `${attacker.username} used ${isHeavy ? "Heavy Attack" : "Normal Attack"} dealing ${damage} damage!`;
+			}
+		} else if (action === "heal") {
+			if (attacker.health >= 85) {
+				this.lastAnnouncement = `${attacker.username} tried to heal, but HP is already high!`;
+				attacker.lastAction = "Heal failed (High HP)";
+			} else {
+				const heal = Math.floor(Math.random() * 11) + 15;
+				attacker.health = Math.min(100, attacker.health + heal);
+				attacker.coins += 5;
+				attacker.lastAction = `Healed +${heal} HP`;
+				this.lastAnnouncement = `${attacker.username} healed for +${heal} HP!`;
+			}
+		} else if (action === "shield") {
+			if (attacker.coins < 25) return {
+				success: false,
+				message: "Not enough coins for Shield (requires 25)."
+			};
+			attacker.coins -= 25;
+			if (!attacker.activeEffects) attacker.activeEffects = [];
+			if (!attacker.activeEffects.includes("Shield")) attacker.activeEffects.push("Shield");
+			attacker.lastAction = "Activated Shield";
+			this.lastAnnouncement = `${attacker.username} activated a Shield! (-50% damage taken)`;
+		} else if (action === "double") {
+			if (attacker.coins < 30) return {
+				success: false,
+				message: "Not enough coins for 2x Damage (requires 30)."
+			};
+			attacker.coins -= 30;
+			if (!attacker.activeEffects) attacker.activeEffects = [];
+			if (!attacker.activeEffects.includes("2x Damage")) attacker.activeEffects.push("2x Damage");
+			attacker.lastAction = "Activated 2x DMG";
+			this.lastAnnouncement = `${attacker.username} activated 2x Damage for next attack!`;
+		}
+		if (defender.health <= 0) {
+			this.winner = attacker;
+			this.loser = defender;
+			this.phase = "ENDED";
+			this.endReason = "WIN";
+			this.lastAnnouncement = `${attacker.username} knocked out ${defender.username} and won!`;
+		} else this.currentTurnId = defender.id;
+		return {
+			success: true,
+			message: this.lastAnnouncement,
+			isGameOver: this.phase === "ENDED",
+			winnerId: this.winner?.id
+		};
+	}
+	/**
+	* Returns current combat state.
+	*/
+	getState() {
+		return {
+			p1: {
+				...this.p1,
+				activeEffects: [...this.p1.activeEffects || []]
+			},
+			p2: {
+				...this.p2,
+				activeEffects: [...this.p2.activeEffects || []]
+			},
+			currentTurnId: this.currentTurnId,
+			phase: this.phase,
+			lastAnnouncement: this.lastAnnouncement,
+			winner: this.winner ? { ...this.winner } : void 0,
+			loser: this.loser ? { ...this.loser } : void 0,
+			endReason: this.endReason
+		};
+	}
+	/**
+	* Returns control buttons suitable for web dashboard or custom bot.
+	*/
+	getControls(playerId) {
+		const isPlayerTurn = !playerId || playerId === this.currentTurnId;
+		const isFightPhase = this.phase === "FIGHT";
+		const disabled = !isFightPhase || !isPlayerTurn;
+		const activePlayer = this.currentTurnId === this.p1.id ? this.p1 : this.p2;
+		const canShield = !disabled && activePlayer.coins >= 25;
+		const canDouble = !disabled && activePlayer.coins >= 30;
+		return [{ components: [
+			{
+				id: "hit",
+				label: "Attack",
+				emoji: "⚔️",
+				style: "primary",
+				disabled
+			},
+			{
+				id: "heavy",
+				label: "Heavy Attack",
+				emoji: "💥",
+				style: "primary",
+				disabled
+			},
+			{
+				id: "heal",
+				label: "Heal (+15-25 HP)",
+				emoji: "💚",
+				style: "success",
+				disabled
+			}
+		] }, { components: [
+			{
+				id: "shield",
+				label: "Shield (25¢)",
+				emoji: "🛡️",
+				style: "secondary",
+				disabled: !canShield
+			},
+			{
+				id: "double",
+				label: "2x Damage (30¢)",
+				emoji: "⚡",
+				style: "secondary",
+				disabled: !canDouble
+			},
+			{
+				id: "surrender",
+				label: "Surrender",
+				emoji: "🏳️",
+				style: "danger",
+				disabled: !isFightPhase
+			}
+		] }];
+	}
+	/**
+	* Renders the current fight arena card as a PNG buffer.
+	*/
+	async renderCard() {
+		if (this.phase === "REQUEST") return RenderFight.renderRequestCard(this.p1, this.p2);
+		if (this.phase === "ENDED" && this.winner) return RenderFight.renderOutcomeCard(this.winner, this.loser, this.endReason);
+		return RenderFight.renderBattleCard(this.p1, this.p2, this.currentTurnId, this.lastAnnouncement);
+	}
+	/**
+	* Renders the current fight card as a Data URL string.
+	*/
+	async renderDataURL() {
+		const buffer = await this.renderCard();
+		return WekyCanvas.toDataURL(buffer);
+	}
+};
+// src/engines/TicTacToeEngine.ts
+/**
+* Headless Tic Tac Toe engine for dashboards and web interfaces.
+*/
+var TicTacToeEngine = class {
+	board = Array(9).fill(null);
+	playerX;
+	playerO;
+	currentTurnId;
+	winner = null;
+	isDraw = false;
+	isGameOver = false;
+	constructor(options) {
+		this.playerX = options?.playerX || {
+			id: "X",
+			username: "Player X"
+		};
+		this.playerO = options?.playerO || {
+			id: "O",
+			username: "Player O"
+		};
+		this.currentTurnId = this.playerX.id;
+	}
+	reset() {
+		this.board = Array(9).fill(null);
+		this.currentTurnId = this.playerX.id;
+		this.winner = null;
+		this.isDraw = false;
+		this.isGameOver = false;
+	}
+	/**
+	* Places a mark on the board. Supports (row, col) or flat index (0-8).
+	* Automatically uses currentTurnId if playerId is omitted.
+	*/
+	move(rowOrIndex, colOrPlayerId, playerId) {
+		let index;
+		let actualPlayerId;
+		if (typeof colOrPlayerId === "number") {
+			index = rowOrIndex * 3 + colOrPlayerId;
+			actualPlayerId = playerId || this.currentTurnId;
+		} else {
+			index = rowOrIndex;
+			actualPlayerId = colOrPlayerId || this.currentTurnId;
+		}
+		return {
+			success: this.place(index, actualPlayerId).success,
+			winner: this.winner,
+			isWon: !!this.winner,
+			isDraw: this.isDraw,
+			isGameOver: this.isGameOver
+		};
+	}
+	place(index, playerId) {
+		if (this.isGameOver || index < 0 || index > 8 || this.board[index] !== null) return { success: false };
+		if (playerId !== this.currentTurnId) return { success: false };
+		const symbol = playerId === this.playerX.id ? "X" : "O";
+		this.board[index] = symbol;
+		if (this.checkWin(symbol)) {
+			this.winner = playerId;
+			this.isGameOver = true;
+			return {
+				success: true,
+				winner: playerId
+			};
+		}
+		if (this.board.every((cell) => cell !== null)) {
+			this.isDraw = true;
+			this.isGameOver = true;
+			return {
+				success: true,
+				isDraw: true
+			};
+		}
+		this.currentTurnId = playerId === this.playerX.id ? this.playerO.id : this.playerX.id;
+		return { success: true };
+	}
+	checkWin(symbol) {
+		return [
+			[
+				0,
+				1,
+				2
+			],
+			[
+				3,
+				4,
+				5
+			],
+			[
+				6,
+				7,
+				8
+			],
+			[
+				0,
+				3,
+				6
+			],
+			[
+				1,
+				4,
+				7
+			],
+			[
+				2,
+				5,
+				8
+			],
+			[
+				0,
+				4,
+				8
+			],
+			[
+				2,
+				4,
+				6
+			]
+		].some(([a, b, c]) => this.board[a] === symbol && this.board[b] === symbol && this.board[c] === symbol);
+	}
+	getState() {
+		return {
+			board: [...this.board],
+			currentTurnId: this.currentTurnId,
+			winner: this.winner,
+			isDraw: this.isDraw,
+			isGameOver: this.isGameOver
+		};
+	}
+	getControls() {
+		const rows = [];
+		for (let r = 0; r < 3; r++) {
+			const components = [];
+			for (let c = 0; c < 3; c++) {
+				const idx = r * 3 + c;
+				const val = this.board[idx];
+				components.push({
+					id: String(idx),
+					label: val || " ",
+					emoji: val === "X" ? "❌" : val === "O" ? "⭕" : void 0,
+					style: val === "X" ? "danger" : val === "O" ? "primary" : "secondary",
+					disabled: this.isGameOver || val !== null
+				});
+			}
+			rows.push({ components });
+		}
+		return rows;
+	}
+};
+// src/engines/HangmanEngine.ts
+/**
+* Headless Hangman word puzzle engine for dashboards and web interfaces.
+*/
+var HangmanEngine = class {
+	word = "";
+	guessedLetters = [];
+	mistakes = 0;
+	maxMistakes;
+	isWon = false;
+	isGameOver = false;
+	constructor(options) {
+		this.maxMistakes = options?.maxMistakes || 6;
+		this.word = (options?.word || getRandomWord()).toUpperCase().trim();
+	}
+	/**
+	* Resets the game with an optional new word.
+	*/
+	reset(newWord) {
+		this.word = (newWord || getRandomWord()).toUpperCase().trim();
+		this.guessedLetters = [];
+		this.mistakes = 0;
+		this.isWon = false;
+		this.isGameOver = false;
+	}
+	/**
+	* Makes a letter guess.
+	*/
+	guess(letter) {
+		if (this.isGameOver) return {
+			correct: false,
+			isWon: this.isWon,
+			isGameOver: true
+		};
+		const char = letter.toUpperCase().trim();
+		if (!char || char.length !== 1 || this.guessedLetters.includes(char)) return {
+			correct: false,
+			isWon: this.isWon,
+			isGameOver: this.isGameOver
+		};
+		this.guessedLetters.push(char);
+		const isMatch = this.word.includes(char);
+		if (!isMatch) {
+			this.mistakes++;
+			if (this.mistakes >= this.maxMistakes) this.isGameOver = true;
+		} else if (this.word.split("").every((c) => c === " " || this.guessedLetters.includes(c))) {
+			this.isWon = true;
+			this.isGameOver = true;
+		}
+		return {
+			correct: isMatch,
+			isWon: this.isWon,
+			isGameOver: this.isGameOver
+		};
+	}
+	/**
+	* Returns current game state.
+	*/
+	getState() {
+		const masked = this.word.split("").map((c) => c === " " ? " " : this.guessedLetters.includes(c) ? c : "_").join(" ");
+		return {
+			word: this.word,
+			maskedWord: masked,
+			guessedLetters: [...this.guessedLetters],
+			mistakes: this.mistakes,
+			maxMistakes: this.maxMistakes,
+			isWon: this.isWon,
+			isGameOver: this.isGameOver
+		};
+	}
+	/**
+	* Returns keyboard layout controls schema for web dashboards.
+	*/
+	getControls() {
+		const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+		const rows = [];
+		const rowSizes = [
+			7,
+			7,
+			6,
+			6
+		];
+		let offset = 0;
+		for (const size of rowSizes) {
+			const chunk = letters.slice(offset, offset + size);
+			offset += size;
+			const components = chunk.map((letter) => {
+				const isGuessed = this.guessedLetters.includes(letter);
+				return {
+					id: letter,
+					label: letter,
+					style: isGuessed && this.word.includes(letter) ? "success" : isGuessed ? "danger" : "secondary",
+					disabled: this.isGameOver || isGuessed
+				};
+			});
+			rows.push({ components });
+		}
+		return rows;
+	}
+	/**
+	* Renders the Hangman canvas board as a PNG buffer.
+	*/
+	async renderCard(username = "Player", avatarUrl = "") {
+		const masked = this.getState().maskedWord;
+		return RenderHangman.renderCard(this.mistakes, masked, this.guessedLetters, username, avatarUrl, this.isGameOver, this.isWon, this.word);
+	}
+	/**
+	* Renders the Hangman board as a Data URL string.
+	*/
+	async renderDataURL(username = "Player", avatarUrl = "") {
+		const buffer = await this.renderCard(username, avatarUrl);
+		return WekyCanvas.toDataURL(buffer);
+	}
+};
+// src/engines/CalculatorEngine.ts
+const STANDARD_KEYS = [
+	"DC",
+	"(",
+	")",
+	"⌫",
+	"AC",
+	"7",
+	"8",
+	"9",
+	"÷",
+	"^",
+	"4",
+	"5",
+	"6",
+	"x",
+	"SQRT",
+	"1",
+	"2",
+	"3",
+	" - ",
+	" + ",
+	"2nd",
+	"0",
+	".",
+	"ans",
+	"="
+];
+const SCIENTIFIC_KEYS = [
+	"DC",
+	"SIN",
+	"COS",
+	"TAN",
+	"AC",
+	"LG",
+	"LN",
+	"x!",
+	"1/x",
+	"⌫",
+	"RND",
+	"π",
+	"e",
+	"÷",
+	"x",
+	"(",
+	")",
+	"%",
+	" - ",
+	" + ",
+	"2nd",
+	"0",
+	".",
+	"ans",
+	"="
+];
+const INVALID_START_KEYS = [
+	"⌫",
+	"AC",
+	"=",
+	"x",
+	"÷",
+	"%",
+	"^",
+	"x!"
+];
+/**
+* Headless Calculator engine for web dashboards and custom clients.
+*/
+var CalculatorEngine = class {
+	expression = " ";
+	lastAnswer = "";
+	hasCalculated = false;
+	is2nd = false;
+	constructor() {}
+	/**
+	* Toggles between standard arithmetic keypad and 2nd / scientific keypad.
+	*/
+	toggle2nd() {
+		this.is2nd = !this.is2nd;
+		return this.is2nd;
+	}
+	/**
+	* Clears the current expression (AC).
+	*/
+	clear() {
+		this.expression = " ";
+	}
+	/**
+	* Erases the last character or token (Backspace).
+	*/
+	backspace() {
+		if (!this.expression || this.expression === " ") return;
+		this.expression = this.expression.endsWith(" ") ? this.expression.slice(0, -3) : this.expression.slice(0, -1);
+		if (this.expression === "") this.expression = " ";
+	}
+	/**
+	* Alias for input(key).
+	*/
+	press(key) {
+		return this.input(key);
+	}
+	/**
+	* Handles button click or input.
+	*/
+	input(key) {
+		if (key === "2nd") {
+			this.toggle2nd();
+			return;
+		}
+		if (key === "AC") {
+			this.clear();
+			return;
+		}
+		if (key === "⌫") {
+			this.backspace();
+			return;
+		}
+		if (key === "=") return this.calculate();
+		let token = key;
+		if (token === "×" || token === "*") token = "x";
+		if (token === "+") token = " + ";
+		if (token === "-") token = " - ";
+		this.expression += token;
+	}
+	/**
+	* Calculates the current expression safely using MathEvaluator.
+	*/
+	calculate() {
+		if (!this.expression.trim()) return { error: "Empty expression" };
+		const clean = this.expression.replace(/x/g, "*").replace(/÷/g, "/").replace(/π/g, "pi").replace(/ans/g, this.lastAnswer || "0").trim();
+		const evalResult = MathEvaluator.evaluate(clean, Number(this.lastAnswer) || 0);
+		if (evalResult.error) {
+			this.expression = "Error";
+			return { error: evalResult.error };
+		}
+		const res = evalResult.formatted;
+		this.expression = String(res);
+		this.lastAnswer = String(res);
+		this.hasCalculated = true;
+		return { result: res };
+	}
+	/**
+	* Returns a snapshot of the calculator's current state.
+	*/
+	getState() {
+		const modeTag = this.is2nd ? " [2nd / SCI]" : "";
+		return {
+			expression: this.expression,
+			display: `${this.expression}${modeTag}`,
+			lastAnswer: this.lastAnswer,
+			is2nd: this.is2nd,
+			hasCalculated: this.hasCalculated
+		};
+	}
+	/**
+	* Returns the 5x5 keypad controls schema for dashboard rendering.
+	*/
+	getControls() {
+		const keys = this.is2nd ? SCIENTIFIC_KEYS : STANDARD_KEYS;
+		const isEmpty = this.expression.trim() === "";
+		const rows = [];
+		for (let i = 0; i < keys.length; i += 5) {
+			const components = keys.slice(i, i + 5).map((k) => {
+				let disabled = false;
+				if (k === "ans" && !this.hasCalculated) disabled = true;
+				else if (isEmpty && INVALID_START_KEYS.includes(k)) disabled = true;
+				let style = "secondary";
+				if (k === "=") style = "success";
+				else if (k === "2nd") style = this.is2nd ? "success" : "primary";
+				else if (k === "AC" || k === "DC") style = "danger";
+				else if ([
+					"x",
+					"÷",
+					" - ",
+					" + ",
+					"^",
+					"%"
+				].includes(k)) style = "primary";
+				return {
+					id: k,
+					label: k,
+					emoji: k === "DC" ? "🛑" : void 0,
+					style,
+					disabled
+				};
+			});
+			rows.push({ components });
+		}
+		return rows;
+	}
+};
+// src/bridge/WekyBridgeRouter.ts
+/**
+* @m3rcena/weky
+* Weky Bridge Package Router & Decoupled State API.
+* Provides unified HTTP endpoints and WebSocket routing for headless minigames,
+* raw state inspection, live cross-platform moves, and visual Canvas card rendering.
+*
+* @copyright 2026 M3rcena Development. All rights reserved.
+* @license Apache-2.0
+*/
+const WEKY_GAME_CATALOG = [
+	{
+		id: "2048",
+		name: "2048",
+		description: "Slide and merge numbered tiles on a 4x4 grid to reach the 2048 tile.",
+		minPlayers: 1,
+		maxPlayers: 1,
+		category: "puzzle",
+		controls: [
+			"UP",
+			"DOWN",
+			"LEFT",
+			"RIGHT"
+		],
+		canvasSupported: true
+	},
+	{
+		id: "snake",
+		name: "Snake",
+		description: "Navigate the classic snake, eat apples, grow longer and avoid collisions.",
+		minPlayers: 1,
+		maxPlayers: 1,
+		category: "arcade",
+		controls: [
+			"UP",
+			"DOWN",
+			"LEFT",
+			"RIGHT"
+		],
+		canvasSupported: true
+	},
+	{
+		id: "fight",
+		name: "Fight (PvP & Boss Battle)",
+		description: "Turn-based arena fighting game with health bars, critical strikes, and heals.",
+		minPlayers: 1,
+		maxPlayers: 2,
+		category: "action",
+		controls: [
+			"hit",
+			"heavy",
+			"heal",
+			"shield",
+			"surrender"
+		],
+		canvasSupported: true
+	},
+	{
+		id: "tictactoe",
+		name: "Tic Tac Toe",
+		description: "Classic 3x3 grid alignment duel against another player or AI.",
+		minPlayers: 1,
+		maxPlayers: 2,
+		category: "strategy",
+		controls: [
+			"cell_0",
+			"cell_1",
+			"cell_2",
+			"cell_3",
+			"cell_4",
+			"cell_5",
+			"cell_6",
+			"cell_7",
+			"cell_8"
+		],
+		canvasSupported: false
+	},
+	{
+		id: "hangman",
+		name: "Hangman",
+		description: "Guess the hidden mystery word letter by letter before running out of lives.",
+		minPlayers: 1,
+		maxPlayers: 1,
+		category: "word",
+		controls: ["letter_guess"],
+		canvasSupported: true
+	},
+	{
+		id: "calculator",
+		name: "Scientific Calculator",
+		description: "Interactive arithmetic calculator with expression evaluation.",
+		minPlayers: 1,
+		maxPlayers: 1,
+		category: "utility",
+		controls: ["num_0"],
+		canvasSupported: false
+	}
+];
+var WekyBridgeRouter = class {
+	name = "weky";
+	basePath = "/api/weky";
+	description = "Universal headless minigame engine, state synchronization, and canvas card generator.";
+	version = "14.28.0";
+	bridge;
+	constructor(bridge) {
+		this.bridge = bridge;
+	}
+	async handleRequest(req) {
+		const path = req.subPath.replace(/\/+$/, "") || "/";
+		const method = req.method.toUpperCase();
+		if (path === "/games" && method === "GET") return {
+			status: 200,
+			body: {
+				games: WEKY_GAME_CATALOG,
+				activeCount: this.bridge.getActiveSessions().length
+			}
+		};
+		if (path === "/games/start" && method === "POST") {
+			const body = req.body || {};
+			const game = (body.game || "").toLowerCase();
+			const playerId = body.playerId || "guest";
+			const username = body.username || "Guest Player";
+			const avatarUrl = body.avatarUrl;
+			const sessionId = `weky_${game}_${Math.random().toString(36).substring(2, 8)}`;
+			let engine = null;
+			let initialState = null;
+			let players = [{
+				id: playerId,
+				username,
+				avatarUrl,
+				platform: body.platform || "dashboard"
+			}];
+			if (game === "2048") {
+				engine = new Game2048Engine({
+					username,
+					avatarUrl
+				});
+				initialState = engine.getState();
+			} else if (game === "snake") {
+				engine = new SnakeEngine({
+					username,
+					avatarUrl
+				});
+				initialState = engine.getState();
+			} else if (game === "fight") {
+				const opponentId = body.opponentId || "bot";
+				const opponentName = body.opponentName || "Cyber Gladiator";
+				engine = new FightEngine({
+					player1: {
+						id: playerId,
+						username,
+						avatarUrl
+					},
+					player2: {
+						id: opponentId,
+						username: opponentName,
+						avatarUrl: body.opponentAvatarUrl
+					}
+				});
+				initialState = engine.getState();
+				players.push({
+					id: opponentId,
+					username: opponentName,
+					avatarUrl: body.opponentAvatarUrl,
+					platform: "dashboard"
+				});
+			} else if (game === "tictactoe") {
+				const opponentId = body.opponentId || "ai";
+				const opponentName = body.opponentName || "Antigravity AI";
+				engine = new TicTacToeEngine({
+					player1: {
+						id: playerId,
+						username
+					},
+					player2: {
+						id: opponentId,
+						username: opponentName
+					}
+				});
+				initialState = engine.getState();
+				players.push({
+					id: opponentId,
+					username: opponentName,
+					platform: "dashboard"
+				});
+			} else if (game === "hangman") {
+				engine = new HangmanEngine();
+				initialState = engine.getState();
+			} else if (game === "calculator") {
+				engine = new CalculatorEngine();
+				initialState = engine.getState();
+			} else return {
+				status: 400,
+				body: { error: `Unsupported game "${game}". Available: 2048, snake, fight, tictactoe, hangman, calculator` }
+			};
+			const session = {
+				id: sessionId,
+				game,
+				platform: "dashboard",
+				players,
+				currentTurnId: playerId,
+				state: initialState,
+				engine,
+				createdAt: Date.now(),
+				lastUpdated: Date.now(),
+				isGameOver: false,
+				onMove: async (move) => {
+					let res;
+					if (game === "2048") res = {
+						success: engine.move(move.action.toUpperCase()),
+						state: engine.getState(),
+						isGameOver: engine.getState().isGameOver
+					};
+					else if (game === "snake") res = {
+						success: engine.changeDirection(move.action.toUpperCase()),
+						state: engine.getState(),
+						isGameOver: engine.getState().isGameOver
+					};
+					else if (game === "fight") res = engine.action(move.playerId, move.action, move.payload);
+					else if (game === "tictactoe") res = engine.playTurn(move.playerId, parseInt(move.payload?.index ?? move.action.replace("cell_", ""), 10));
+					else if (game === "hangman") res = engine.guess(move.action || move.payload?.letter);
+					else if (game === "calculator") res = engine.press(move.action);
+					else res = {
+						success: false,
+						error: "Unsupported game move"
+					};
+					return res;
+				}
+			};
+			this.bridge.registerSession(session);
+			return {
+				status: 201,
+				body: {
+					success: true,
+					sessionId,
+					game,
+					state: initialState,
+					players
+				}
+			};
+		}
+		if (path === "/games/action" && method === "POST") {
+			const { sessionId, playerId, action, payload } = req.body || {};
+			if (!sessionId || !action) return {
+				status: 400,
+				body: { error: "Missing sessionId or action in request body." }
+			};
+			const result = await this.bridge.dispatchMove(sessionId, {
+				playerId: playerId || "guest",
+				action,
+				payload,
+				sourcePlatform: req.body?.platform || "dashboard"
+			});
+			return {
+				status: result.success ? 200 : 400,
+				body: result
+			};
+		}
+		if (path.startsWith("/games/") && method === "GET") {
+			const sessionId = path.replace("/games/", "");
+			const session = this.bridge.getSession(sessionId);
+			if (!session) return {
+				status: 404,
+				body: { error: `Session "${sessionId}" not found.` }
+			};
+			return {
+				status: 200,
+				body: {
+					id: session.id,
+					game: session.game,
+					platform: session.platform,
+					players: session.players,
+					currentTurnId: session.currentTurnId,
+					state: session.state,
+					isGameOver: session.isGameOver,
+					winnerId: session.winnerId,
+					lastUpdated: session.lastUpdated
+				}
+			};
+		}
+		if (path === "/cards/render" && method === "GET") {
+			const type = (req.query.type || "").toLowerCase();
+			try {
+				let buffer = null;
+				if (type === "2048") {
+					const score = parseInt(req.query.score || "0", 10);
+					const boardJson = req.query.board ? JSON.parse(req.query.board) : [
+						[
+							2,
+							4,
+							8,
+							16
+						],
+						[
+							32,
+							64,
+							128,
+							256
+						],
+						[
+							512,
+							1024,
+							2048,
+							0
+						],
+						[
+							0,
+							0,
+							0,
+							0
+						]
+					];
+					buffer = await Render2048.renderBoard({
+						board: boardJson,
+						score,
+						username: req.query.username || "Player",
+						avatarUrl: req.query.avatarUrl
+					});
+				} else if (type === "snake") {
+					const score = parseInt(req.query.score || "0", 10);
+					buffer = await RenderSnake.renderGrid({
+						snake: [
+							{
+								x: 7,
+								y: 7
+							},
+							{
+								x: 6,
+								y: 7
+							},
+							{
+								x: 5,
+								y: 7
+							}
+						],
+						food: {
+							x: 10,
+							y: 7
+						},
+						gridSize: 15,
+						score,
+						username: req.query.username || "Player",
+						avatarUrl: req.query.avatarUrl
+					});
+				} else if (type === "fight") buffer = await RenderFight.renderArena({
+					player1: {
+						username: req.query.p1Name || "Player 1",
+						avatarUrl: req.query.p1Avatar,
+						hp: parseInt(req.query.p1Hp || "100", 10),
+						maxHp: 100
+					},
+					player2: {
+						username: req.query.p2Name || "Player 2",
+						avatarUrl: req.query.p2Avatar,
+						hp: parseInt(req.query.p2Hp || "80", 10),
+						maxHp: 100
+					},
+					round: parseInt(req.query.round || "1", 10),
+					lastAction: req.query.lastAction || "Match started!"
+				});
+				else if (type === "hangman") buffer = await RenderHangman.renderGallows({
+					word: req.query.word || "G A M E",
+					guessedLetters: (req.query.guessed || "A,E,G").split(","),
+					mistakes: parseInt(req.query.mistakes || "1", 10),
+					maxMistakes: 6
+				});
+				else if (type === "pokemon") buffer = await RenderPokemon.renderCard({
+					name: req.query.name || "Pikachu",
+					revealed: req.query.revealed === "true",
+					silhouetteUrl: req.query.imageUrl
+				});
+				else if (type === "share") buffer = await RenderShareCard.renderCard({
+					gameName: req.query.game || "Weky Arcade",
+					username: req.query.username || "Player",
+					avatarUrl: req.query.avatarUrl,
+					score: parseInt(req.query.score || "1000", 10),
+					outcome: req.query.outcome || "VICTORY"
+				});
+				else if (type === "leaderboard") buffer = await RenderLeaderboard.renderLeaderboard({
+					title: req.query.title || "Arcade Championship Leaderboard",
+					players: [
+						{
+							rank: 1,
+							username: "MasterGamer",
+							score: 14500,
+							avatarUrl: req.query.avatarUrl
+						},
+						{
+							rank: 2,
+							username: "NeonNinja",
+							score: 11200
+						},
+						{
+							rank: 3,
+							username: "PixelQueen",
+							score: 9800
+						}
+					]
+				});
+				if (buffer) return {
+					status: 200,
+					body: buffer,
+					isBuffer: true,
+					contentType: "image/png"
+				};
+				return {
+					status: 400,
+					body: { error: `Invalid card type "${type}". Available: 2048, snake, fight, hangman, pokemon, share, leaderboard` }
+				};
+			} catch (err) {
+				return {
+					status: 500,
+					body: { error: `Card rendering error: ${err?.message || err}` }
+				};
+			}
+		}
+		if (path === "/overview" && method === "GET") return {
+			status: 200,
+			body: await this.bridge.getDashboardOverview()
+		};
+		return null;
+	}
+	async handleAction(action) {
+		if (!action.sessionId) return {
+			success: false,
+			error: "Action missing sessionId"
+		};
+		return this.bridge.dispatchMove(action.sessionId, {
+			playerId: action.playerId,
+			action: action.action,
+			payload: action.payload,
+			sourcePlatform: action.sourcePlatform
+		});
+	}
+};
 // src/bridge/WekyBridge.ts
 /**
 * Weky Cross-Platform Bridge & Dashboard Gateway
@@ -9098,9 +10730,12 @@ var WekyBridge = class {
 	sessions = /* @__PURE__ */ new Map();
 	wekyManager;
 	m3rcenaBridge;
+	router;
 	constructor(wekyManager, customBridge) {
 		this.wekyManager = wekyManager;
 		this.m3rcenaBridge = customBridge || new M3rcenaBridge$1();
+		this.router = new WekyBridgeRouter(this);
+		this.m3rcenaBridge.mountPackage(this.router);
 		this.m3rcenaBridge.registerModule("games", async (action) => {
 			const res = await this.dispatchMove(action.sessionId || "", {
 				playerId: action.playerId,
@@ -9859,1203 +11494,6 @@ var WekyManager = class extends EventEmitter {
 		} else this.bridge.setM3rcenaBridge(bridge);
 	}
 };
-// src/canvas/WekyCanvas.ts
-/**
-* Centralized graphics and card generation suite for `@m3rcena/weky`.
-* Ideal for web dashboards, REST APIs, custom UIs, and external webhooks.
-*/
-var WekyCanvas = class {
-	/**
-	* Converts an image Buffer into a web-ready Data URL string (`data:image/png;base64,...`).
-	* Can be directly used in HTML `<img src="..." />` or frontend frameworks (React, Vue, Svelte).
-	*/
-	static toDataURL(buffer, mime = "image/png") {
-		return `data:${mime};base64,${buffer.toString("base64")}`;
-	}
-	/**
-	* Converts an image Buffer into a base64 encoded string.
-	*/
-	static toBase64(buffer) {
-		return buffer.toString("base64");
-	}
-	/**
-	* Fight Duel canvas card renderers.
-	*/
-	static fight = {
-		/**
-		* Renders a Challenge / Request card between two players.
-		*/
-		request: (challenger, opponent) => {
-			return RenderFight.renderRequestCard(challenger, opponent);
-		},
-		/**
-		* Renders an active battle arena card showing both fighters, health bars, coins, and current turn indicator.
-		*/
-		battle: (player1, player2, currentTurnUserId, announcement) => {
-			return RenderFight.renderBattleCard(player1, player2, currentTurnUserId, announcement);
-		},
-		/**
-		* Renders the battle outcome card (Victory, Surrender, Denied, Timeout).
-		*/
-		outcome: (winner, loser, type) => {
-			return RenderFight.renderOutcomeCard(winner, loser, type);
-		}
-	};
-	/**
-	* 2048 game board card renderer.
-	*/
-	static game2048(board, score, username, avatarUrl, state) {
-		return Render2048.renderBoard(board, score, username, avatarUrl, state);
-	}
-	/**
-	* Snake game board card renderer.
-	*/
-	static snake(snake, food, direction, score, gridSize, username, avatarUrl, isGameOver, overlayTitle) {
-		return RenderSnake.renderBoard(snake, food, direction, score, gridSize, username, avatarUrl, isGameOver, overlayTitle);
-	}
-	/**
-	* Hangman gallows and word card renderer.
-	*/
-	static hangman(wrongGuessesCount, displayWord, guessedLetters, username = "Player", avatarUrl = "", gameOver = false, won = false, fullWord) {
-		return RenderHangman.renderCard(wrongGuessesCount, displayWord, guessedLetters, username, avatarUrl, gameOver, won, fullWord);
-	}
-	/**
-	* Pokemon silhouette / revealed card renderer.
-	*/
-	static pokemon(pokemon, reveal = false) {
-		return RenderPokemon.renderCard({
-			name: pokemon.name,
-			imageUrl: pokemon.imageUrl || pokemon.image || "",
-			types: pokemon.types || ["Normal"],
-			abilities: pokemon.abilities || [],
-			id: pokemon.id
-		}, reveal);
-	}
-};
-// src/engines/CalculatorEngine.ts
-const STANDARD_KEYS = [
-	"DC",
-	"(",
-	")",
-	"⌫",
-	"AC",
-	"7",
-	"8",
-	"9",
-	"÷",
-	"^",
-	"4",
-	"5",
-	"6",
-	"x",
-	"SQRT",
-	"1",
-	"2",
-	"3",
-	" - ",
-	" + ",
-	"2nd",
-	"0",
-	".",
-	"ans",
-	"="
-];
-const SCIENTIFIC_KEYS = [
-	"DC",
-	"SIN",
-	"COS",
-	"TAN",
-	"AC",
-	"LG",
-	"LN",
-	"x!",
-	"1/x",
-	"⌫",
-	"RND",
-	"π",
-	"e",
-	"÷",
-	"x",
-	"(",
-	")",
-	"%",
-	" - ",
-	" + ",
-	"2nd",
-	"0",
-	".",
-	"ans",
-	"="
-];
-const INVALID_START_KEYS = [
-	"⌫",
-	"AC",
-	"=",
-	"x",
-	"÷",
-	"%",
-	"^",
-	"x!"
-];
-/**
-* Headless Calculator engine for web dashboards and custom clients.
-*/
-var CalculatorEngine = class {
-	expression = " ";
-	lastAnswer = "";
-	hasCalculated = false;
-	is2nd = false;
-	constructor() {}
-	/**
-	* Toggles between standard arithmetic keypad and 2nd / scientific keypad.
-	*/
-	toggle2nd() {
-		this.is2nd = !this.is2nd;
-		return this.is2nd;
-	}
-	/**
-	* Clears the current expression (AC).
-	*/
-	clear() {
-		this.expression = " ";
-	}
-	/**
-	* Erases the last character or token (Backspace).
-	*/
-	backspace() {
-		if (!this.expression || this.expression === " ") return;
-		this.expression = this.expression.endsWith(" ") ? this.expression.slice(0, -3) : this.expression.slice(0, -1);
-		if (this.expression === "") this.expression = " ";
-	}
-	/**
-	* Alias for input(key).
-	*/
-	press(key) {
-		return this.input(key);
-	}
-	/**
-	* Handles button click or input.
-	*/
-	input(key) {
-		if (key === "2nd") {
-			this.toggle2nd();
-			return;
-		}
-		if (key === "AC") {
-			this.clear();
-			return;
-		}
-		if (key === "⌫") {
-			this.backspace();
-			return;
-		}
-		if (key === "=") return this.calculate();
-		let token = key;
-		if (token === "×" || token === "*") token = "x";
-		if (token === "+") token = " + ";
-		if (token === "-") token = " - ";
-		this.expression += token;
-	}
-	/**
-	* Calculates the current expression safely using MathEvaluator.
-	*/
-	calculate() {
-		if (!this.expression.trim()) return { error: "Empty expression" };
-		const clean = this.expression.replace(/x/g, "*").replace(/÷/g, "/").replace(/π/g, "pi").replace(/ans/g, this.lastAnswer || "0").trim();
-		const evalResult = MathEvaluator.evaluate(clean, Number(this.lastAnswer) || 0);
-		if (evalResult.error) {
-			this.expression = "Error";
-			return { error: evalResult.error };
-		}
-		const res = evalResult.formatted;
-		this.expression = String(res);
-		this.lastAnswer = String(res);
-		this.hasCalculated = true;
-		return { result: res };
-	}
-	/**
-	* Returns a snapshot of the calculator's current state.
-	*/
-	getState() {
-		const modeTag = this.is2nd ? " [2nd / SCI]" : "";
-		return {
-			expression: this.expression,
-			display: `${this.expression}${modeTag}`,
-			lastAnswer: this.lastAnswer,
-			is2nd: this.is2nd,
-			hasCalculated: this.hasCalculated
-		};
-	}
-	/**
-	* Returns the 5x5 keypad controls schema for dashboard rendering.
-	*/
-	getControls() {
-		const keys = this.is2nd ? SCIENTIFIC_KEYS : STANDARD_KEYS;
-		const isEmpty = this.expression.trim() === "";
-		const rows = [];
-		for (let i = 0; i < keys.length; i += 5) {
-			const components = keys.slice(i, i + 5).map((k) => {
-				let disabled = false;
-				if (k === "ans" && !this.hasCalculated) disabled = true;
-				else if (isEmpty && INVALID_START_KEYS.includes(k)) disabled = true;
-				let style = "secondary";
-				if (k === "=") style = "success";
-				else if (k === "2nd") style = this.is2nd ? "success" : "primary";
-				else if (k === "AC" || k === "DC") style = "danger";
-				else if ([
-					"x",
-					"÷",
-					" - ",
-					" + ",
-					"^",
-					"%"
-				].includes(k)) style = "primary";
-				return {
-					id: k,
-					label: k,
-					emoji: k === "DC" ? "🛑" : void 0,
-					style,
-					disabled
-				};
-			});
-			rows.push({ components });
-		}
-		return rows;
-	}
-};
-// src/engines/FightEngine.ts
-/**
-* Headless Fight Duel RPG engine for web dashboards and custom APIs.
-*/
-var FightEngine = class {
-	p1;
-	p2;
-	currentTurnId;
-	phase = "REQUEST";
-	lastAnnouncement = "Duel requested!";
-	winner;
-	loser;
-	endReason;
-	constructor(options) {
-		const defaultHp = options.startHealth ?? 100;
-		this.p1 = {
-			id: options.player1.id,
-			username: options.player1.username,
-			avatarUrl: options.player1.avatarUrl || "",
-			health: options.player1.health ?? defaultHp,
-			coins: options.player1.coins ?? 0,
-			lastAction: "Challenged opponent",
-			activeEffects: []
-		};
-		this.p2 = {
-			id: options.player2.id,
-			username: options.player2.username,
-			avatarUrl: options.player2.avatarUrl || "",
-			health: options.player2.health ?? defaultHp,
-			coins: options.player2.coins ?? 0,
-			lastAction: "Awaiting start",
-			activeEffects: []
-		};
-		this.currentTurnId = this.p1.id;
-		if (options.initialPhase === "REQUEST") {
-			this.phase = "REQUEST";
-			this.lastAnnouncement = "Duel requested!";
-		} else {
-			this.phase = "FIGHT";
-			this.lastAnnouncement = `The duel begins! It's ${this.p1.username}'s turn!`;
-		}
-	}
-	/**
-	* Accepts the challenge and transitions to FIGHT phase.
-	*/
-	acceptChallenge() {
-		this.phase = "FIGHT";
-		this.currentTurnId = Math.random() < .5 ? this.p1.id : this.p2.id;
-		const starter = this.currentTurnId === this.p1.id ? this.p1 : this.p2;
-		this.lastAnnouncement = `The duel begins! It's ${starter.username}'s turn!`;
-	}
-	/**
-	* Universal action method accepting either (action, playerId) or (playerId, action) and case-insensitive strings.
-	*/
-	action(playerId, actionType) {
-		let act = actionType.toLowerCase();
-		if (act === "attack") act = "hit";
-		const res = this.performAction(act, playerId);
-		return {
-			success: res.success,
-			message: res.message,
-			announcement: this.lastAnnouncement,
-			isGameOver: res.isGameOver,
-			winnerId: res.winnerId
-		};
-	}
-	/**
-	* Performs a combat action for a fighter.
-	*/
-	performAction(action, playerId) {
-		if (this.phase === "REQUEST") return {
-			success: false,
-			message: "Duel has not started yet. Call acceptChallenge() first."
-		};
-		if (this.phase === "ENDED") return {
-			success: false,
-			message: "Duel has already ended."
-		};
-		if (playerId !== this.p1.id && playerId !== this.p2.id) return {
-			success: false,
-			message: "User is not a combatant in this duel."
-		};
-		if (action === "surrender") {
-			this.winner = playerId === this.p1.id ? this.p2 : this.p1;
-			this.loser = playerId === this.p1.id ? this.p1 : this.p2;
-			this.phase = "ENDED";
-			this.endReason = "SURRENDER";
-			this.lastAnnouncement = `${this.loser.username} surrendered! ${this.winner.username} wins!`;
-			return {
-				success: true,
-				message: this.lastAnnouncement,
-				isGameOver: this.phase === "ENDED",
-				winnerId: this.winner?.id
-			};
-		}
-		if (playerId !== this.currentTurnId) return {
-			success: false,
-			message: "It is not this player's turn."
-		};
-		const attacker = this.currentTurnId === this.p1.id ? this.p1 : this.p2;
-		const defender = this.currentTurnId === this.p1.id ? this.p2 : this.p1;
-		if (action === "hit" || action === "heavy") {
-			const isHeavy = action === "heavy";
-			let damage = isHeavy ? Math.floor(Math.random() * 18) + 18 : Math.floor(Math.random() * 13) + 10;
-			if (isHeavy && Math.random() < .25) {
-				attacker.lastAction = "Missed Heavy Attack!";
-				this.lastAnnouncement = `${attacker.username} swung hard but missed!`;
-				attacker.coins += 5;
-			} else {
-				if (attacker.activeEffects?.includes("2x Damage")) {
-					damage *= 2;
-					attacker.activeEffects = attacker.activeEffects.filter((e) => e !== "2x Damage");
-				}
-				if (defender.activeEffects?.includes("Shield")) {
-					damage = Math.floor(damage / 2);
-					defender.activeEffects = defender.activeEffects.filter((e) => e !== "Shield");
-				}
-				defender.health = Math.max(0, defender.health - damage);
-				attacker.coins += isHeavy ? 15 : 10;
-				attacker.lastAction = `${isHeavy ? "Heavy Hit" : "Hit"} for ${damage} DMG`;
-				this.lastAnnouncement = `${attacker.username} used ${isHeavy ? "Heavy Attack" : "Normal Attack"} dealing ${damage} damage!`;
-			}
-		} else if (action === "heal") {
-			if (attacker.health >= 85) {
-				this.lastAnnouncement = `${attacker.username} tried to heal, but HP is already high!`;
-				attacker.lastAction = "Heal failed (High HP)";
-			} else {
-				const heal = Math.floor(Math.random() * 11) + 15;
-				attacker.health = Math.min(100, attacker.health + heal);
-				attacker.coins += 5;
-				attacker.lastAction = `Healed +${heal} HP`;
-				this.lastAnnouncement = `${attacker.username} healed for +${heal} HP!`;
-			}
-		} else if (action === "shield") {
-			if (attacker.coins < 25) return {
-				success: false,
-				message: "Not enough coins for Shield (requires 25)."
-			};
-			attacker.coins -= 25;
-			if (!attacker.activeEffects) attacker.activeEffects = [];
-			if (!attacker.activeEffects.includes("Shield")) attacker.activeEffects.push("Shield");
-			attacker.lastAction = "Activated Shield";
-			this.lastAnnouncement = `${attacker.username} activated a Shield! (-50% damage taken)`;
-		} else if (action === "double") {
-			if (attacker.coins < 30) return {
-				success: false,
-				message: "Not enough coins for 2x Damage (requires 30)."
-			};
-			attacker.coins -= 30;
-			if (!attacker.activeEffects) attacker.activeEffects = [];
-			if (!attacker.activeEffects.includes("2x Damage")) attacker.activeEffects.push("2x Damage");
-			attacker.lastAction = "Activated 2x DMG";
-			this.lastAnnouncement = `${attacker.username} activated 2x Damage for next attack!`;
-		}
-		if (defender.health <= 0) {
-			this.winner = attacker;
-			this.loser = defender;
-			this.phase = "ENDED";
-			this.endReason = "WIN";
-			this.lastAnnouncement = `${attacker.username} knocked out ${defender.username} and won!`;
-		} else this.currentTurnId = defender.id;
-		return {
-			success: true,
-			message: this.lastAnnouncement,
-			isGameOver: this.phase === "ENDED",
-			winnerId: this.winner?.id
-		};
-	}
-	/**
-	* Returns current combat state.
-	*/
-	getState() {
-		return {
-			p1: {
-				...this.p1,
-				activeEffects: [...this.p1.activeEffects || []]
-			},
-			p2: {
-				...this.p2,
-				activeEffects: [...this.p2.activeEffects || []]
-			},
-			currentTurnId: this.currentTurnId,
-			phase: this.phase,
-			lastAnnouncement: this.lastAnnouncement,
-			winner: this.winner ? { ...this.winner } : void 0,
-			loser: this.loser ? { ...this.loser } : void 0,
-			endReason: this.endReason
-		};
-	}
-	/**
-	* Returns control buttons suitable for web dashboard or custom bot.
-	*/
-	getControls(playerId) {
-		const isPlayerTurn = !playerId || playerId === this.currentTurnId;
-		const isFightPhase = this.phase === "FIGHT";
-		const disabled = !isFightPhase || !isPlayerTurn;
-		const activePlayer = this.currentTurnId === this.p1.id ? this.p1 : this.p2;
-		const canShield = !disabled && activePlayer.coins >= 25;
-		const canDouble = !disabled && activePlayer.coins >= 30;
-		return [{ components: [
-			{
-				id: "hit",
-				label: "Attack",
-				emoji: "⚔️",
-				style: "primary",
-				disabled
-			},
-			{
-				id: "heavy",
-				label: "Heavy Attack",
-				emoji: "💥",
-				style: "primary",
-				disabled
-			},
-			{
-				id: "heal",
-				label: "Heal (+15-25 HP)",
-				emoji: "💚",
-				style: "success",
-				disabled
-			}
-		] }, { components: [
-			{
-				id: "shield",
-				label: "Shield (25¢)",
-				emoji: "🛡️",
-				style: "secondary",
-				disabled: !canShield
-			},
-			{
-				id: "double",
-				label: "2x Damage (30¢)",
-				emoji: "⚡",
-				style: "secondary",
-				disabled: !canDouble
-			},
-			{
-				id: "surrender",
-				label: "Surrender",
-				emoji: "🏳️",
-				style: "danger",
-				disabled: !isFightPhase
-			}
-		] }];
-	}
-	/**
-	* Renders the current fight arena card as a PNG buffer.
-	*/
-	async renderCard() {
-		if (this.phase === "REQUEST") return RenderFight.renderRequestCard(this.p1, this.p2);
-		if (this.phase === "ENDED" && this.winner) return RenderFight.renderOutcomeCard(this.winner, this.loser, this.endReason);
-		return RenderFight.renderBattleCard(this.p1, this.p2, this.currentTurnId, this.lastAnnouncement);
-	}
-	/**
-	* Renders the current fight card as a Data URL string.
-	*/
-	async renderDataURL() {
-		const buffer = await this.renderCard();
-		return WekyCanvas.toDataURL(buffer);
-	}
-};
-// src/engines/Game2048Engine.ts
-/**
-* Headless 2048 game engine for web dashboards, custom bots, and REST/WebSocket APIs.
-*/
-var Game2048Engine = class {
-	board = [];
-	score = 0;
-	hasWon = false;
-	isGameOver = false;
-	moveCount = 0;
-	username;
-	avatarUrl;
-	constructor(options) {
-		this.username = options?.username || "Player";
-		this.avatarUrl = options?.avatarUrl || "https://cdn.discordapp.com/embed/avatars/0.png";
-		this.reset();
-	}
-	/**
-	* Resets the game to an initial state with 2 spawned tiles.
-	*/
-	reset() {
-		this.board = Array(4).fill(0).map(() => Array(4).fill(0));
-		this.score = 0;
-		this.hasWon = false;
-		this.isGameOver = false;
-		this.moveCount = 0;
-		this.spawnTile();
-		this.spawnTile();
-	}
-	/**
-	* Spawns a random tile (2 with 90% probability, 4 with 10% probability).
-	*/
-	spawnTile() {
-		const empty = [];
-		for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) if (this.board[r][c] === 0) empty.push({
-			r,
-			c
-		});
-		if (empty.length > 0) {
-			const spot = empty[Math.floor(Math.random() * empty.length)];
-			this.board[spot.r][spot.c] = Math.random() < .9 ? 2 : 4;
-		}
-	}
-	/**
-	* Performs a slide move in the specified direction.
-	* @returns `true` if the board moved/changed, `false` otherwise.
-	*/
-	move(direction) {
-		if (this.isGameOver) return false;
-		let moved = false;
-		let scoreGained = 0;
-		let newBoard = this.board.map((row) => [...row]);
-		const processRow = (row) => {
-			let filtered = row.filter((v) => v !== 0);
-			let merged = [];
-			for (let i = 0; i < filtered.length; i++) if (i < filtered.length - 1 && filtered[i] === filtered[i + 1]) {
-				const combined = filtered[i] * 2;
-				merged.push(combined);
-				scoreGained += combined;
-				i++;
-			} else merged.push(filtered[i]);
-			while (merged.length < 4) merged.push(0);
-			return merged;
-		};
-		if (direction === "LEFT") newBoard = newBoard.map((row) => {
-			const nr = processRow(row);
-			if (nr.join(",") !== row.join(",")) moved = true;
-			return nr;
-		});
-		else if (direction === "RIGHT") newBoard = newBoard.map((row) => {
-			const rev = [...row].reverse();
-			const nr = processRow(rev);
-			if (nr.join(",") !== rev.join(",")) moved = true;
-			return nr.reverse();
-		});
-		else if (direction === "UP") {
-			let trans = this.transpose(newBoard);
-			trans = trans.map((row) => {
-				const nr = processRow(row);
-				if (nr.join(",") !== row.join(",")) moved = true;
-				return nr;
-			});
-			newBoard = this.transpose(trans);
-		} else if (direction === "DOWN") {
-			let trans = this.transpose(newBoard);
-			trans = trans.map((row) => {
-				const rev = [...row].reverse();
-				const nr = processRow(rev);
-				if (nr.join(",") !== rev.join(",")) moved = true;
-				return nr.reverse();
-			});
-			newBoard = this.transpose(trans);
-		}
-		if (moved) {
-			this.board = newBoard;
-			this.score += scoreGained;
-			this.moveCount++;
-			this.spawnTile();
-			if (!this.hasWon && this.checkWon()) this.hasWon = true;
-			if (this.checkGameOver()) this.isGameOver = true;
-		}
-		return moved;
-	}
-	transpose(matrix) {
-		return matrix[0].map((_, col) => matrix.map((row) => row[col]));
-	}
-	checkWon() {
-		for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) if (this.board[r][c] >= 2048) return true;
-		return false;
-	}
-	checkGameOver() {
-		for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) {
-			if (this.board[r][c] === 0) return false;
-			if (c < 3 && this.board[r][c] === this.board[r][c + 1]) return false;
-			if (r < 3 && this.board[r][c] === this.board[r + 1][c]) return false;
-		}
-		return true;
-	}
-	/**
-	* Returns a snapshot of the current game state.
-	*/
-	getState() {
-		return {
-			board: this.board.map((r) => [...r]),
-			score: this.score,
-			hasWon: this.hasWon,
-			isGameOver: this.isGameOver,
-			moveCount: this.moveCount
-		};
-	}
-	/**
-	* Returns control buttons suitable for web dashboards or UI rendering.
-	*/
-	getControls() {
-		const disabled = this.isGameOver;
-		return [{ components: [
-			{
-				id: "blank_1",
-				label: " ",
-				style: "secondary",
-				disabled: true
-			},
-			{
-				id: "up",
-				label: "Up",
-				emoji: "⬆️",
-				style: "primary",
-				disabled
-			},
-			{
-				id: "blank_2",
-				label: " ",
-				style: "secondary",
-				disabled: true
-			},
-			{
-				id: "quit",
-				label: "Quit",
-				emoji: "🛑",
-				style: "danger",
-				disabled
-			}
-		] }, { components: [
-			{
-				id: "left",
-				label: "Left",
-				emoji: "⬅️",
-				style: "primary",
-				disabled
-			},
-			{
-				id: "down",
-				label: "Down",
-				emoji: "⬇️",
-				style: "primary",
-				disabled
-			},
-			{
-				id: "right",
-				label: "Right",
-				emoji: "➡️",
-				style: "primary",
-				disabled
-			}
-		] }];
-	}
-	/**
-	* Renders the current board as a PNG buffer.
-	*/
-	async renderCard(customState) {
-		const state = customState || (this.hasWon ? "won" : this.isGameOver ? "gameover" : "active");
-		return Render2048.renderBoard(this.board, this.score, this.username, this.avatarUrl, state);
-	}
-	/**
-	* Renders the current board directly as a Data URL string (`data:image/png;base64,...`).
-	*/
-	async renderDataURL(customState) {
-		const buffer = await this.renderCard(customState);
-		return WekyCanvas.toDataURL(buffer);
-	}
-};
-// src/engines/HangmanEngine.ts
-/**
-* Headless Hangman word puzzle engine for dashboards and web interfaces.
-*/
-var HangmanEngine = class {
-	word = "";
-	guessedLetters = [];
-	mistakes = 0;
-	maxMistakes;
-	isWon = false;
-	isGameOver = false;
-	constructor(options) {
-		this.maxMistakes = options?.maxMistakes || 6;
-		this.word = (options?.word || getRandomWord()).toUpperCase().trim();
-	}
-	/**
-	* Resets the game with an optional new word.
-	*/
-	reset(newWord) {
-		this.word = (newWord || getRandomWord()).toUpperCase().trim();
-		this.guessedLetters = [];
-		this.mistakes = 0;
-		this.isWon = false;
-		this.isGameOver = false;
-	}
-	/**
-	* Makes a letter guess.
-	*/
-	guess(letter) {
-		if (this.isGameOver) return {
-			correct: false,
-			isWon: this.isWon,
-			isGameOver: true
-		};
-		const char = letter.toUpperCase().trim();
-		if (!char || char.length !== 1 || this.guessedLetters.includes(char)) return {
-			correct: false,
-			isWon: this.isWon,
-			isGameOver: this.isGameOver
-		};
-		this.guessedLetters.push(char);
-		const isMatch = this.word.includes(char);
-		if (!isMatch) {
-			this.mistakes++;
-			if (this.mistakes >= this.maxMistakes) this.isGameOver = true;
-		} else if (this.word.split("").every((c) => c === " " || this.guessedLetters.includes(c))) {
-			this.isWon = true;
-			this.isGameOver = true;
-		}
-		return {
-			correct: isMatch,
-			isWon: this.isWon,
-			isGameOver: this.isGameOver
-		};
-	}
-	/**
-	* Returns current game state.
-	*/
-	getState() {
-		const masked = this.word.split("").map((c) => c === " " ? " " : this.guessedLetters.includes(c) ? c : "_").join(" ");
-		return {
-			word: this.word,
-			maskedWord: masked,
-			guessedLetters: [...this.guessedLetters],
-			mistakes: this.mistakes,
-			maxMistakes: this.maxMistakes,
-			isWon: this.isWon,
-			isGameOver: this.isGameOver
-		};
-	}
-	/**
-	* Returns keyboard layout controls schema for web dashboards.
-	*/
-	getControls() {
-		const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
-		const rows = [];
-		const rowSizes = [
-			7,
-			7,
-			6,
-			6
-		];
-		let offset = 0;
-		for (const size of rowSizes) {
-			const chunk = letters.slice(offset, offset + size);
-			offset += size;
-			const components = chunk.map((letter) => {
-				const isGuessed = this.guessedLetters.includes(letter);
-				return {
-					id: letter,
-					label: letter,
-					style: isGuessed && this.word.includes(letter) ? "success" : isGuessed ? "danger" : "secondary",
-					disabled: this.isGameOver || isGuessed
-				};
-			});
-			rows.push({ components });
-		}
-		return rows;
-	}
-	/**
-	* Renders the Hangman canvas board as a PNG buffer.
-	*/
-	async renderCard(username = "Player", avatarUrl = "") {
-		const masked = this.getState().maskedWord;
-		return RenderHangman.renderCard(this.mistakes, masked, this.guessedLetters, username, avatarUrl, this.isGameOver, this.isWon, this.word);
-	}
-	/**
-	* Renders the Hangman board as a Data URL string.
-	*/
-	async renderDataURL(username = "Player", avatarUrl = "") {
-		const buffer = await this.renderCard(username, avatarUrl);
-		return WekyCanvas.toDataURL(buffer);
-	}
-};
-// src/engines/SnakeEngine.ts
-/**
-* Headless Snake game engine for web dashboards and custom APIs.
-*/
-var SnakeEngine = class {
-	snake = [];
-	food = {
-		x: 0,
-		y: 0
-	};
-	direction = "RIGHT";
-	score = 0;
-	isGameOver = false;
-	gridSize;
-	username;
-	avatarUrl;
-	constructor(options) {
-		this.gridSize = options?.gridSize || 15;
-		this.username = options?.username || "Player";
-		this.avatarUrl = options?.avatarUrl || "https://cdn.discordapp.com/embed/avatars/0.png";
-		this.reset();
-	}
-	/**
-	* Resets the snake game to starting state.
-	*/
-	reset() {
-		const center = Math.floor(this.gridSize / 2);
-		this.snake = [
-			{
-				x: center,
-				y: center
-			},
-			{
-				x: center - 1,
-				y: center
-			},
-			{
-				x: center - 2,
-				y: center
-			}
-		];
-		this.direction = "RIGHT";
-		this.score = 0;
-		this.isGameOver = false;
-		this.spawnFood();
-	}
-	spawnFood() {
-		let valid = false;
-		while (!valid) {
-			const fx = Math.floor(Math.random() * this.gridSize);
-			const fy = Math.floor(Math.random() * this.gridSize);
-			if (!this.snake.some((part) => part.x === fx && part.y === fy)) {
-				this.food = {
-					x: fx,
-					y: fy
-				};
-				valid = true;
-			}
-		}
-	}
-	/**
-	* Moves the snake one step in the specified direction.
-	* Prevents instant reverse into own neck.
-	*/
-	move(newDir) {
-		if (this.isGameOver) return false;
-		if ({
-			UP: "DOWN",
-			DOWN: "UP",
-			LEFT: "RIGHT",
-			RIGHT: "LEFT"
-		}[this.direction] === newDir) newDir = this.direction;
-		this.direction = newDir;
-		const head = { ...this.snake[0] };
-		switch (newDir) {
-			case "UP":
-				head.y -= 1;
-				break;
-			case "DOWN":
-				head.y += 1;
-				break;
-			case "LEFT":
-				head.x -= 1;
-				break;
-			case "RIGHT": head.x += 1;
-		}
-		if (head.x < 0 || head.x >= this.gridSize || head.y < 0 || head.y >= this.gridSize) {
-			this.isGameOver = true;
-			return false;
-		}
-		if (this.snake.some((part, i) => {
-			if (i === this.snake.length - 1 && !(head.x === this.food.x && head.y === this.food.y)) return false;
-			return part.x === head.x && part.y === head.y;
-		})) {
-			this.isGameOver = true;
-			return false;
-		}
-		this.snake.unshift(head);
-		if (head.x === this.food.x && head.y === this.food.y) {
-			this.score += 1;
-			this.spawnFood();
-		} else this.snake.pop();
-		return true;
-	}
-	/**
-	* Sets next direction without immediately advancing.
-	*/
-	changeDirection(newDir) {
-		if ({
-			UP: "DOWN",
-			DOWN: "UP",
-			LEFT: "RIGHT",
-			RIGHT: "LEFT"
-		}[this.direction] !== newDir) this.direction = newDir;
-	}
-	/**
-	* Advances snake by one frame/step. Ideal for timer loops.
-	*/
-	step(dir) {
-		return {
-			isAlive: this.move(dir || this.direction),
-			isGameOver: this.isGameOver,
-			score: this.score
-		};
-	}
-	/**
-	* Returns current snapshot of the snake state.
-	*/
-	getState() {
-		return {
-			snake: this.snake.map((p) => ({ ...p })),
-			food: { ...this.food },
-			score: this.score,
-			length: this.snake.length,
-			direction: this.direction,
-			isGameOver: this.isGameOver
-		};
-	}
-	/**
-	* Returns control buttons schema.
-	*/
-	getControls() {
-		const disabled = this.isGameOver;
-		return [{ components: [
-			{
-				id: "blank_1",
-				label: " ",
-				style: "secondary",
-				disabled: true
-			},
-			{
-				id: "up",
-				label: "Up",
-				emoji: "⬆️",
-				style: "primary",
-				disabled
-			},
-			{
-				id: "blank_2",
-				label: " ",
-				style: "secondary",
-				disabled: true
-			},
-			{
-				id: "quit",
-				label: "Quit",
-				emoji: "🛑",
-				style: "danger",
-				disabled
-			}
-		] }, { components: [
-			{
-				id: "left",
-				label: "Left",
-				emoji: "⬅️",
-				style: "primary",
-				disabled
-			},
-			{
-				id: "down",
-				label: "Down",
-				emoji: "⬇️",
-				style: "primary",
-				disabled
-			},
-			{
-				id: "right",
-				label: "Right",
-				emoji: "➡️",
-				style: "primary",
-				disabled
-			}
-		] }];
-	}
-	/**
-	* Renders the current snake board as a PNG buffer.
-	*/
-	async renderCard(overlayTitle) {
-		return RenderSnake.renderBoard(this.snake, this.food, this.direction, this.score, this.gridSize, this.username, this.avatarUrl, this.isGameOver, overlayTitle);
-	}
-	/**
-	* Renders the snake board as a Data URL string.
-	*/
-	async renderDataURL(overlayTitle) {
-		const buffer = await this.renderCard(overlayTitle);
-		return WekyCanvas.toDataURL(buffer);
-	}
-};
-// src/engines/TicTacToeEngine.ts
-/**
-* Headless Tic Tac Toe engine for dashboards and web interfaces.
-*/
-var TicTacToeEngine = class {
-	board = Array(9).fill(null);
-	playerX;
-	playerO;
-	currentTurnId;
-	winner = null;
-	isDraw = false;
-	isGameOver = false;
-	constructor(options) {
-		this.playerX = options?.playerX || {
-			id: "X",
-			username: "Player X"
-		};
-		this.playerO = options?.playerO || {
-			id: "O",
-			username: "Player O"
-		};
-		this.currentTurnId = this.playerX.id;
-	}
-	reset() {
-		this.board = Array(9).fill(null);
-		this.currentTurnId = this.playerX.id;
-		this.winner = null;
-		this.isDraw = false;
-		this.isGameOver = false;
-	}
-	/**
-	* Places a mark on the board. Supports (row, col) or flat index (0-8).
-	* Automatically uses currentTurnId if playerId is omitted.
-	*/
-	move(rowOrIndex, colOrPlayerId, playerId) {
-		let index;
-		let actualPlayerId;
-		if (typeof colOrPlayerId === "number") {
-			index = rowOrIndex * 3 + colOrPlayerId;
-			actualPlayerId = playerId || this.currentTurnId;
-		} else {
-			index = rowOrIndex;
-			actualPlayerId = colOrPlayerId || this.currentTurnId;
-		}
-		return {
-			success: this.place(index, actualPlayerId).success,
-			winner: this.winner,
-			isWon: !!this.winner,
-			isDraw: this.isDraw,
-			isGameOver: this.isGameOver
-		};
-	}
-	place(index, playerId) {
-		if (this.isGameOver || index < 0 || index > 8 || this.board[index] !== null) return { success: false };
-		if (playerId !== this.currentTurnId) return { success: false };
-		const symbol = playerId === this.playerX.id ? "X" : "O";
-		this.board[index] = symbol;
-		if (this.checkWin(symbol)) {
-			this.winner = playerId;
-			this.isGameOver = true;
-			return {
-				success: true,
-				winner: playerId
-			};
-		}
-		if (this.board.every((cell) => cell !== null)) {
-			this.isDraw = true;
-			this.isGameOver = true;
-			return {
-				success: true,
-				isDraw: true
-			};
-		}
-		this.currentTurnId = playerId === this.playerX.id ? this.playerO.id : this.playerX.id;
-		return { success: true };
-	}
-	checkWin(symbol) {
-		return [
-			[
-				0,
-				1,
-				2
-			],
-			[
-				3,
-				4,
-				5
-			],
-			[
-				6,
-				7,
-				8
-			],
-			[
-				0,
-				3,
-				6
-			],
-			[
-				1,
-				4,
-				7
-			],
-			[
-				2,
-				5,
-				8
-			],
-			[
-				0,
-				4,
-				8
-			],
-			[
-				2,
-				4,
-				6
-			]
-		].some(([a, b, c]) => this.board[a] === symbol && this.board[b] === symbol && this.board[c] === symbol);
-	}
-	getState() {
-		return {
-			board: [...this.board],
-			currentTurnId: this.currentTurnId,
-			winner: this.winner,
-			isDraw: this.isDraw,
-			isGameOver: this.isGameOver
-		};
-	}
-	getControls() {
-		const rows = [];
-		for (let r = 0; r < 3; r++) {
-			const components = [];
-			for (let c = 0; c < 3; c++) {
-				const idx = r * 3 + c;
-				const val = this.board[idx];
-				components.push({
-					id: String(idx),
-					label: val || " ",
-					emoji: val === "X" ? "❌" : val === "O" ? "⭕" : void 0,
-					style: val === "X" ? "danger" : val === "O" ? "primary" : "secondary",
-					disabled: this.isGameOver || val !== null
-				});
-			}
-			rows.push({ components });
-		}
-		return rows;
-	}
-};
 // src/engines/WekyEngine.ts
 /**
 * Unified Headless Engine Factory for web dashboards, REST APIs, and custom bots.
@@ -11113,6 +11551,6 @@ var WekyEngine = class WekyEngine {
 * @copyright 2026 M3rcena Development. All rights reserved.
 * @license Apache-2.0
 */
-export { ARCADE_GAMES, ArcadeHub, BaseGame, COMMON_WORDS, Calculator, CalculatorEngine, CanvasUtils, ChaosWords, ContextAdapter, DEFAULT_DASHBOARD_SOUNDS, DEFAULT_DISCORD_SOUNDS, EASY_SENTENCES, EventManager, FIGHT_BOSSES, FastType, Fight, FightAI, FightEngine, Game2048, Game2048Engine, GuessTheNumber, GuessThePokemon, HANGMAN_CATEGORIES, HARD_SENTENCES, Hangman, HangmanEngine, LeaderboardManager, LieSwatter, M3rcenaBridge, MEDIUM_SENTENCES, MathEvaluator, NEVER_HAVE_I_EVER_PROMPTS, NeverHaveIEver, POPULAR_POKEMONS, QuickClick, RPSPredictor, Render2048, RenderBracket, RenderFight, RenderHangman, RenderLeaderboard, RenderPokemon, RenderShareCard, RenderSnake, RockPaperScissors, ShuffleGuess, Snake, SnakeEngine, SoundboardManager, TRIVIA_FACTS, TicTacToe, TicTacToeAI, TicTacToeEngine, TournamentManager, VERSION, WYPTB_DILEMMAS, WYR_DILEMMAS, WekyBridge, WekyCanvas, WekyEngine, WekyManager, WillYouPressTheButton, WouldYouRather, boxConsole, checkPackageUpdates, clamp, compareSemver, fetchLatestVersion, fetchRandomPokemon, formatTime, getRandomHangmanWord, getRandomNHIE, getRandomSentence, getRandomString, getRandomTriviaFact, getRandomWYPTB, getRandomWYR, getRandomWord, getRandomWords, safeResolveColor, shuffleArray, shuffleString, stripAnsi, version };
+export { ARCADE_GAMES, ArcadeHub, BaseGame, COMMON_WORDS, Calculator, CalculatorEngine, CanvasUtils, ChaosWords, ContextAdapter, DEFAULT_DASHBOARD_SOUNDS, DEFAULT_DISCORD_SOUNDS, EASY_SENTENCES, EventManager, FIGHT_BOSSES, FastType, Fight, FightAI, FightEngine, Game2048, Game2048Engine, GuessTheNumber, GuessThePokemon, HANGMAN_CATEGORIES, HARD_SENTENCES, Hangman, HangmanEngine, LeaderboardManager, LieSwatter, M3rcenaBridge, MEDIUM_SENTENCES, MathEvaluator, NEVER_HAVE_I_EVER_PROMPTS, NeverHaveIEver, POPULAR_POKEMONS, QuickClick, RPSPredictor, Render2048, RenderBracket, RenderFight, RenderHangman, RenderLeaderboard, RenderPokemon, RenderShareCard, RenderSnake, RockPaperScissors, ShuffleGuess, Snake, SnakeEngine, SoundboardManager, TRIVIA_FACTS, TicTacToe, TicTacToeAI, TicTacToeEngine, TournamentManager, VERSION, WEKY_GAME_CATALOG, WYPTB_DILEMMAS, WYR_DILEMMAS, WekyBridge, WekyBridgeRouter, WekyCanvas, WekyEngine, WekyManager, WillYouPressTheButton, WouldYouRather, boxConsole, checkPackageUpdates, clamp, compareSemver, fetchLatestVersion, fetchRandomPokemon, formatTime, getRandomHangmanWord, getRandomNHIE, getRandomSentence, getRandomString, getRandomTriviaFact, getRandomWYPTB, getRandomWYR, getRandomWord, getRandomWords, safeResolveColor, shuffleArray, shuffleString, stripAnsi, version };
 
 //# sourceMappingURL=index.mjs.map

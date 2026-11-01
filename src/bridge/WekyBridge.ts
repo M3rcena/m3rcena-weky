@@ -11,6 +11,7 @@
 import { CrossPlatformMoveEvent, BridgeSyncEvent } from "../core/EventTypes.js";
 import { LeaderboardPlayer } from "../leaderboard/LeaderboardManager.js";
 import { M3rcenaBridge } from "@m3rcena/bridge";
+import { WekyBridgeRouter } from "./WekyBridgeRouter.js";
 
 export interface BridgePlayer {
   id: string;
@@ -94,10 +95,13 @@ export class WekyBridge {
   private sessions: Map<string, BridgeSession> = new Map();
   public wekyManager?: any;
   public m3rcenaBridge: M3rcenaBridge;
+  public router: WekyBridgeRouter;
 
   constructor(wekyManager?: any, customBridge?: M3rcenaBridge) {
     this.wekyManager = wekyManager;
     this.m3rcenaBridge = customBridge || new M3rcenaBridge();
+    this.router = new WekyBridgeRouter(this);
+    this.m3rcenaBridge.mountPackage(this.router);
 
     // Register module "games" in M3rcenaBridge
     this.m3rcenaBridge.registerModule("games", async (action) => {
