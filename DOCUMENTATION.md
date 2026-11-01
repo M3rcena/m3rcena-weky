@@ -1,5 +1,11 @@
 # 📖 @m3rcena/weky Comprehensive API Documentation
 
+> 📚 **Official GitHub Wiki**: The full, categorized documentation, tutorials, and deep-dive guides are organized in the **[M3rcena Official Wiki](https://github.com/M3rcena/m3rcena-weky/wiki)**:
+> - **[Weky Overview](https://github.com/M3rcena/m3rcena-weky/wiki/Weky-Overview)**
+> - **[All 17 Minigames Catalog](https://github.com/M3rcena/m3rcena-weky/wiki/Weky-Minigames-Catalog)**
+> - **[Next-Gen Arcade Suite](https://github.com/M3rcena/m3rcena-weky/wiki/Weky-Arcade-Suite)**
+> - **[Headless Engine & Canvas Card APIs](https://github.com/M3rcena/m3rcena-weky/wiki/Weky-Headless-and-Canvas-APIs)**
+
 Welcome to the definitive documentation for **`@m3rcena/weky`** (v14.28.0).
 
 This document covers everything you need to know: architecture, installation, event listeners, the universal context adapter, full option references for all 17 minigames, the v14.28.0 Next-Gen Arcade Suite (Hub, Tournaments, AI Opponents & Bosses, Soundboard, ELO Leaderboards, and Gamer Cards), headless engines for web dashboards, and the standalone canvas hub.
