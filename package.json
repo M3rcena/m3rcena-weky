@@ -3,19 +3,20 @@
   "version": "14.28.0",
   "description": "The ultimate Discord minigames engine with blazingly fast @napi-rs/canvas graphics, hybrid Slash/Message support, and zero external dependencies.",
   "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.cts",
   "exports": {
     ".": {
       "import": {
         "types": "./dist/index.d.mts",
-        "default": "./dist/index.js"
+        "default": "./dist/index.mjs"
       },
       "require": {
-        "types": "./dist/index.d.ts",
+        "types": "./dist/index.d.cts",
         "default": "./dist/index.cjs"
       }
-    }
+    },
+    "./package.json": "./package.json"
   },
   "files": [
     "dist",
@@ -27,8 +28,8 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
+    "build": "tsdown",
+    "dev": "tsdown --watch",
     "typecheck": "tsc --noEmit",
     "test": "tsx test/verify.ts && tsx test/componentsV2.test.ts && tsx test/dashboard.test.ts && tsx test/managerAndCustomizations.test.ts && tsx test/v14_28_features.test.ts",
     "test:bot": "tsx test/index.ts"
@@ -60,16 +61,16 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
-    "@napi-rs/canvas": "^1.0.11",
+    "@napi-rs/canvas": "^1.1.0",
     "chalk": "^6.0.1",
     "discord.js": "^14.28.0",
     "html-entities": "^2.6.0"
   },
   "devDependencies": {
-    "@types/node": "^26.6.5",
-    "dotenv": "^18.0.8",
-    "tsup": "^9.0.0",
+    "@types/node": "^26.6.6",
+    "dotenv": "^18.0.9",
+    "tsdown": "^0.23.4",
     "tsx": "^4.23.15",
-    "typescript": "^5.9.3"
+    "typescript": "^7.0.2"
   }
 }

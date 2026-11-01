@@ -5,12 +5,12 @@ import { HangmanEngine, HangmanEngineOptions } from "./HangmanEngine.js";
 import { SnakeEngine, SnakeEngineOptions } from "./SnakeEngine.js";
 import { TicTacToeEngine, TicTacToeEngineOptions } from "./TicTacToeEngine.js";
 
-export { CalculatorEngine, CalculatorState } from "./CalculatorEngine.js";
-export { FightEngine, FightEngineOptions, FightState } from "./FightEngine.js";
-export { Game2048Engine, Game2048EngineOptions, Game2048State } from "./Game2048Engine.js";
-export { HangmanEngine, HangmanEngineOptions, HangmanState } from "./HangmanEngine.js";
-export { SnakeEngine, SnakeEngineOptions, SnakeState } from "./SnakeEngine.js";
-export { TicTacToeEngine, TicTacToeEngineOptions, TicTacToeState } from "./TicTacToeEngine.js";
+export { CalculatorEngine, type CalculatorState } from "./CalculatorEngine.js";
+export { FightEngine, type FightEngineOptions, type FightState } from "./FightEngine.js";
+export { Game2048Engine, type Game2048EngineOptions, type Game2048State } from "./Game2048Engine.js";
+export { HangmanEngine, type HangmanEngineOptions, type HangmanState } from "./HangmanEngine.js";
+export { SnakeEngine, type SnakeEngineOptions, type SnakeState } from "./SnakeEngine.js";
+export { TicTacToeEngine, type TicTacToeEngineOptions, type TicTacToeState } from "./TicTacToeEngine.js";
 
 /**
  * Unified Headless Engine Factory for web dashboards, REST APIs, and custom bots.
