@@ -2,6 +2,7 @@ import { ActionRowBuilder, AttachmentBuilder, ButtonInteraction, ButtonStyle, Ch
 import { EventEmitter } from "events";
 import { SKRSContext2D } from "@napi-rs/canvas";
 import { BridgeAction, BridgePackageRouter, BridgeRequest, BridgeResponse, M3rcenaBridge, M3rcenaBridge as M3rcenaBridge$1 } from "@m3rcena/bridge";
+import { EventEmitter as EventEmitter$1 } from "node:events";
 export declare const version = "14.28.0";
 export declare const VERSION = "14.28.0";
 export interface PokemonData {
@@ -506,13 +507,6 @@ export declare class TournamentManager extends BaseGame<TournamentOptions> {
   private clearAllTimers;
   private endTournament;
 }
-/**
- * ELO & High-Score Leaderboard Engine
- * Provides plug-and-play ELO rating calculations, streak tracking, and score storage.
- *
- * @copyright 2026 M3rcena Development. All rights reserved.
- * @license Apache-2.0
- */
 interface LeaderboardPlayer {
   id: string;
   username: string;
@@ -577,6 +571,8 @@ interface LeaderboardManagerOptions {
   kFactor?: number;
   /** Custom persistent storage adapter (e.g. Database, Quick.db, Enmap, SQLite) */
   storageAdapter?: LeaderboardStorageAdapter;
+  /** Database configuration ("sqlite" | "prisma" | "json" | "memory" | object config) */
+  database?: WekyDatabaseConfig;
   /** Optional developer-defined custom pointing formula (falls back to standard FIDE ELO if omitted) */
   pointing?: LeaderboardPointingOptions;
   /** Optional reference to WekyManager for event telemetry */
@@ -587,7 +583,7 @@ export declare class LeaderboardManager {
   defaultElo: number;
   defaultKFactor: number;
   pointing?: LeaderboardPointingOptions;
-  private storageAdapter?;
+  storageAdapter?: LeaderboardStorageAdapter;
   wekyManager?: any;
   constructor(options?: LeaderboardManagerOptions);
   /**
@@ -1073,6 +1069,130 @@ export declare class WekyBridge {
    */
   isUserOnDashboard(userId: string): boolean;
 }
+interface GameRewardRule {
+  /** Flat coins awarded on victory */
+  winReward?: number;
+  /** Flat coins deducted on defeat */
+  lossPenalty?: number;
+  /** Flat coins awarded on draw / tie */
+  drawReward?: number;
+  /** Multiplier for solo points/score (e.g. 0.05 means 1000 score = 50 coins) */
+  scoreMultiplier?: number;
+  /** Maximum coins allowed from score multiplier */
+  maxScoreReward?: number;
+  /** Bonus coins awarded per win streak count */
+  streakBonus?: number;
+}
+interface WagerRecord {
+  id: string;
+  player1Id: string;
+  player2Id: string;
+  amount: number;
+  totalPot: number;
+  guildId?: string;
+  game?: string;
+  createdAt: number;
+  status: "active" | "resolved" | "refunded";
+  winnerId?: string;
+}
+interface WagerCreateResult {
+  success: boolean;
+  wager?: WagerRecord;
+  reason?: string;
+  failedUserId?: string;
+}
+interface WekyEcoConnectorOptions {
+  /** Default flat coins awarded on victory (default: 50) */
+  defaultWinReward?: number;
+  /** Default flat coins deducted on defeat (default: 0) */
+  defaultLossPenalty?: number;
+  /** Default flat coins awarded on tie/draw (default: 10) */
+  defaultDrawReward?: number;
+  /** Default multiplier applied to solo score (default: 0.05) */
+  defaultScoreMultiplier?: number;
+  /** Maximum coins awarded from score in a single game (default: 500) */
+  maxScoreReward?: number;
+  /** Bonus coins awarded per active win streak count (default: 5) */
+  streakBonus?: number;
+  /** Tournament champion cash prize (default: 500) */
+  tournamentChampionPrize?: number;
+  /** Tournament runner-up cash prize (default: 200) */
+  tournamentRunnerUpPrize?: number;
+  /** House fee percentage taken from PvP wager pots (0 - 100, default: 0) */
+  wagerHouseFee?: number;
+  /** Specific per-game rule overrides */
+  games?: Record<string, GameRewardRule>;
+  /** Whether automatic rewards on gameOver are enabled (default: true) */
+  autoReward?: boolean;
+}
+interface RewardDistributionResult {
+  userId: string;
+  game: string;
+  outcome: "WIN" | "LOSE" | "DRAW" | "SCORE" | "TOURNAMENT";
+  amount: number;
+  newBalance: number;
+  reason: string;
+  streakBonus?: number;
+  scoreBonus?: number;
+  wagerWon?: number;
+}
+export declare class WekyEcoConnector extends EventEmitter$1 {
+  readonly weky: WekyManager;
+  readonly eco: any;
+  options: WekyEcoConnectorOptions;
+  private activeWagers;
+  private userToWagerMap;
+  constructor(weky: WekyManager, eco: any, options?: WekyEcoConnectorOptions);
+  private initListeners;
+  /**
+   * Creates and escrows a PvP wager match between two players.
+   * Both players must have sufficient wallet balances.
+   */
+  createWager(params: {
+    wagerId: string;
+    player1Id: string;
+    player2Id: string;
+    amount: number;
+    guildId?: string;
+    game?: string;
+  }): Promise<WagerCreateResult>;
+  /**
+   * Resolves an active wager, awarding the escrowed pot (minus optional house fee) to the winner.
+   */
+  resolveWager(wagerId: string, winnerId: string): Promise<RewardDistributionResult | null>;
+  /**
+   * Cancels and refunds an active wager back to both participants.
+   */
+  refundWager(wagerId: string, reason?: string): Promise<boolean>;
+  /**
+   * Internal handler for Weky gameOver events.
+   */
+  private handleGameOver;
+  /**
+   * Internal handler for Weky tournamentEnd events.
+   */
+  private handleTournamentEnd;
+  /**
+   * Fetches user cash balance from the connected EcoManager.
+   */
+  getUserWallet(userId: string, guildId?: string): Promise<number>;
+  /**
+   * Credits cash to a user's wallet with cross-package fallback.
+   */
+  creditWallet(userId: string, amount: number, reason?: string, guildId?: string): Promise<number>;
+  /**
+   * Deducts cash from a user's wallet with cross-package fallback.
+   */
+  deductWallet(userId: string, amount: number, reason?: string, guildId?: string): Promise<number>;
+  /**
+   * Returns all active PvP wager sessions.
+   */
+  getActiveWagers(): WagerRecord[];
+  /**
+   * Returns a wager by id.
+   */
+  getWager(wagerId: string): WagerRecord | undefined;
+}
 /**
  * Options for initializing the WekyManager.
  */
@@ -1091,6 +1211,10 @@ interface WekyManagerOptions {
   leaderboard?: LeaderboardManagerOptions;
   /** Cross-platform dashboard bridge instance from `@m3rcena/bridge` or custom `WekyBridge` */
   bridge?: any;
+  /** Persistent database storage configuration ("sqlite" | "prisma" | "json" | "memory" | object config) */
+  database?: WekyDatabaseConfig;
+  /** Custom persistent storage adapter implementing LeaderboardStorageAdapter */
+  storageAdapter?: LeaderboardStorageAdapter;
 }
 /**
  * Main manager class for the `@m3rcena/weky` Discord minigames engine.
@@ -1109,6 +1233,7 @@ export declare class WekyManager extends EventEmitter {
   notifyUpdates: boolean;
   soundboard: SoundboardManager;
   leaderboard: LeaderboardManager;
+  storage?: LeaderboardStorageAdapter;
   bridge: WekyBridge;
   /**
    * Initializes the WekyManager.
@@ -1117,6 +1242,11 @@ export declare class WekyManager extends EventEmitter {
    * @param notifyUpdatesParam Legacy parameter for update notifications.
    */
   constructor(client: Client, options?: WekyManagerOptions | string | boolean, notifyUpdatesParam?: boolean);
+  /**
+   * Connects the Weky minigames engine with @m3rcena/eco.
+   * Enables automated coin payouts, streak bonuses, score multipliers, PvP wager bets, and tournament prize pools.
+   */
+  connectEco(eco: any, connectorOptions?: WekyEcoConnectorOptions): WekyEcoConnector;
   on<K extends keyof WekyEvents>(event: K, listener: (...args: WekyEvents[K]) => void): this;
   on(event: string | symbol, listener: (...args: any[]) => void): this;
   once<K extends keyof WekyEvents>(event: K, listener: (...args: WekyEvents[K]) => void): this;
@@ -1880,6 +2010,25 @@ export interface IMinigame {
   onMessage?(message: Message): Promise<void> | void;
   onTypingStart?(typing: any): Promise<void> | void;
 }
+/**
+ * Universal database storage configuration for @m3rcena/weky.
+ * Supports zero-dependency native SQLite (node:sqlite), Prisma ORM, JSON file persistence, or in-memory.
+ */
+export type WekyDatabaseConfig = "sqlite" | "memory" | "json" | {
+  type: "sqlite";
+  path?: string;
+  walMode?: boolean;
+} | {
+  type: "prisma";
+  client: any;
+  model?: string;
+  autoMigrate?: boolean;
+} | {
+  type: "json";
+  path?: string;
+} | {
+  type: "memory";
+};
 type ComponentBuilderType = ActionRowBuilder<any> | ContainerBuilder | any;
 interface ContextSendOptions {
   content?: string;
@@ -2959,6 +3108,93 @@ export declare class RPSPredictor {
    */
   static getCounterMove(playerHistory?: RPSMove[], lastPlayerOutcome?: "win" | "lose" | "tie", difficulty?: "easy" | "medium" | "hard"): RPSMove;
 }
+interface SqliteWekyStorageOptions {
+  /** Database file path on disk (default: "./weky.sqlite") */
+  path?: string;
+  /** Whether to enable WAL mode for high concurrency (default: true) */
+  walMode?: boolean;
+}
+export declare class SqliteWekyStorage implements LeaderboardStorageAdapter {
+  private db;
+  readonly dbPath: string;
+  constructor(options?: string | SqliteWekyStorageOptions);
+  private initTables;
+  get(userId: string): Promise<LeaderboardPlayer | undefined>;
+  set(userId: string, data: LeaderboardPlayer): Promise<void>;
+  getAll(): Promise<LeaderboardPlayer[]>;
+  saveTournament(id: string, game: string, state: any, winnerId?: string): Promise<void>;
+  getTournament(id: string): Promise<any | null>;
+  /**
+   * Closes the SQLite database connection.
+   */
+  close(): void;
+}
+/**
+ * Prisma Schema snippet that developers can paste into their schema.prisma.
+ */
+export declare const PRISMA_WEKY_MODEL: string;
+/**
+ * Automatically inspects and appends Weky models to a schema.prisma file if missing.
+ * @param schemaPath Path to schema.prisma (default: "prisma/schema.prisma")
+ * @returns True if models were appended, false if already present or schema file not found.
+ */
+export declare function applyPrismaWekyModel(schemaPath?: string): boolean;
+interface PrismaWekyStorageOptions {
+  /** The PrismaClient instance provided by the bot */
+  client: any;
+  /** Property name of the player model on the client (default: "wekyPlayer") */
+  playerModel?: string;
+  /** Property name of the tournament model on the client (default: "wekyTournament") */
+  tournamentModel?: string;
+  /** Table name in database for players (default: "WekyPlayer") */
+  playerTable?: string;
+  /** Table name in database for tournaments (default: "WekyTournament") */
+  tournamentTable?: string;
+  /** Automatically run table migration on connection if missing (default: true) */
+  autoMigrate?: boolean;
+}
+export declare class PrismaWekyStorage implements LeaderboardStorageAdapter {
+  private client;
+  private playerModel;
+  private tournamentModel;
+  private playerTable;
+  private tournamentTable;
+  private autoMigrate;
+  private migrated;
+  constructor(options: any | PrismaWekyStorageOptions);
+  private ensureMigrated;
+  get(userId: string): Promise<LeaderboardPlayer | undefined>;
+  set(userId: string, data: LeaderboardPlayer): Promise<void>;
+  getAll(): Promise<LeaderboardPlayer[]>;
+}
+export declare class JsonWekyStorage implements LeaderboardStorageAdapter {
+  private filePath;
+  private cache;
+  private loaded;
+  constructor(filePath?: string);
+  private ensureLoaded;
+  private persist;
+  get(userId: string): Promise<LeaderboardPlayer | undefined>;
+  set(userId: string, data: LeaderboardPlayer): Promise<void>;
+  getAll(): Promise<LeaderboardPlayer[]>;
+}
+export declare class WekyDatabaseHandler {
+  /**
+   * Instantiates the requested storage adapter based on developer configuration.
+   */
+  static create(config?: WekyDatabaseConfig): LeaderboardStorageAdapter | undefined;
+  /**
+   * Automatically appends Weky models to schema.prisma if missing.
+   */
+  static applyPrismaSchema(schemaPath?: string): boolean;
+}
+/**
+ * Resolves a LeaderboardStorageAdapter from an existing storageAdapter or database config.
+ */
+export declare function resolveWekyStorage(options?: {
+  storageAdapter?: LeaderboardStorageAdapter;
+  database?: WekyDatabaseConfig;
+}): LeaderboardStorageAdapter | undefined;
 export declare class CanvasUtils {
   /**
    * Draws a rounded rectangle path.
@@ -3150,5 +3386,5 @@ export declare function getRandomHangmanWord(category?: string): {
   word: string;
   category: string;
 };
-export { type ArcadeGameEntry, type ArcadeHubCustomTexts, type ArcadeHubOptions, type BossProfile, type BracketMatch, type BracketParticipant, type BracketRenderOptions, type BridgeMoveResult, type BridgePlayer, type BridgeSession, type CalculatorState, type ContextSendOptions, type CrossPlatformMove, type CustomPointingMatchContext, type CustomPointingMatchHandler, type CustomPointingScoreContext, type CustomPointingScoreHandler, type DashboardOverview, type DashboardSoundEntry, type EloChangeResult, type EvaluationResult, type FightCardCustomTexts, type FightEngineOptions, type FightPlayerInfo, type FightState, type Game2048EngineOptions, type Game2048State, type GrandFinalsSession, type HangmanEngineOptions, type HangmanState, type LeaderboardCustomTexts, type LeaderboardEntry, type LeaderboardManagerOptions, type LeaderboardPlayer, type LeaderboardPointingOptions, type LeaderboardStorageAdapter, M3rcenaBridge, type ManualMatchInput, type ManualTournamentOptions, type RenderLeaderboardOptions, type RenderShareCardOptions, type ShareCardCustomTexts, type ShareCardStat, type SnakeEngineOptions, type SnakeState, type SoundboardConfig, type SoundboardPlayOptions, type SoundboardPlayResult, type TicTacToeDifficulty, type TicTacToeEngineOptions, type TicTacToeState, type TournamentCustomTexts, type TournamentMatchSession, type TournamentOptions, type WekyManagerOptions };
+export { type ArcadeGameEntry, type ArcadeHubCustomTexts, type ArcadeHubOptions, type BossProfile, type BracketMatch, type BracketParticipant, type BracketRenderOptions, type BridgeMoveResult, type BridgePlayer, type BridgeSession, type CalculatorState, type ContextSendOptions, type CrossPlatformMove, type CustomPointingMatchContext, type CustomPointingMatchHandler, type CustomPointingScoreContext, type CustomPointingScoreHandler, type DashboardOverview, type DashboardSoundEntry, type EloChangeResult, type EvaluationResult, type FightCardCustomTexts, type FightEngineOptions, type FightPlayerInfo, type FightState, type Game2048EngineOptions, type Game2048State, type GameRewardRule, type GrandFinalsSession, type HangmanEngineOptions, type HangmanState, type LeaderboardCustomTexts, type LeaderboardEntry, type LeaderboardManagerOptions, type LeaderboardPlayer, type LeaderboardPointingOptions, type LeaderboardStorageAdapter, M3rcenaBridge, type ManualMatchInput, type ManualTournamentOptions, type PrismaWekyStorageOptions, type RenderLeaderboardOptions, type RenderShareCardOptions, type RewardDistributionResult, type ShareCardCustomTexts, type ShareCardStat, type SnakeEngineOptions, type SnakeState, type SoundboardConfig, type SoundboardPlayOptions, type SoundboardPlayResult, type SqliteWekyStorageOptions, type TicTacToeDifficulty, type TicTacToeEngineOptions, type TicTacToeState, type TournamentCustomTexts, type TournamentMatchSession, type TournamentOptions, type WagerCreateResult, type WagerRecord, type WekyEcoConnectorOptions, type WekyManagerOptions };
 //# sourceMappingURL=index.d.mts.map

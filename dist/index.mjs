@@ -2,10 +2,12 @@ import { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, Client
 import { randomBytes } from "crypto";
 import { EventEmitter } from "events";
 import { Canvas, createCanvas, loadImage } from "@napi-rs/canvas";
+import fs, * as fs$1 from "node:fs";
 import path, * as path$1 from "node:path";
+import { DatabaseSync } from "node:sqlite";
 import { fileURLToPath } from "node:url";
-import * as fs from "node:fs";
 import { M3rcenaBridge, M3rcenaBridge as M3rcenaBridge$1 } from "@m3rcena/bridge";
+import { EventEmitter as EventEmitter$1 } from "node:events";
 // src/version.ts
 const version = "14.28.0";
 const VERSION = version;
@@ -8097,6 +8099,480 @@ var TournamentManager = class extends BaseGame {
 		});
 	}
 };
+// src/storage/SqliteWekyStorage.ts
+/**
+* @m3rcena/weky
+* Native SQLite Storage Adapter using node:sqlite (Node.js >= 22.0.0).
+* Provides fast, zero-dependency, transactional local database storage for
+* player ELO ratings, solo high scores, win streaks, and tournament brackets.
+*
+* @copyright 2026 M3rcena Development. All rights reserved.
+* @license Apache-2.0
+*/
+var SqliteWekyStorage = class {
+	db;
+	dbPath;
+	constructor(options = "./weky.sqlite") {
+		const rawPath = typeof options === "string" ? options : options.path || "./weky.sqlite";
+		this.dbPath = path.resolve(process.cwd(), rawPath);
+		const dir = path.dirname(this.dbPath);
+		if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+		this.db = new DatabaseSync(this.dbPath);
+		if (typeof options === "object" ? options.walMode ?? true : true) try {
+			this.db.exec("PRAGMA journal_mode = WAL;");
+		} catch {}
+		this.initTables();
+	}
+	initTables() {
+		this.db.exec(`
+      CREATE TABLE IF NOT EXISTS weky_players (
+        id TEXT PRIMARY KEY,
+        username TEXT NOT NULL,
+        avatar_url TEXT,
+        elo REAL NOT NULL DEFAULT 1200,
+        wins INTEGER NOT NULL DEFAULT 0,
+        losses INTEGER NOT NULL DEFAULT 0,
+        draws INTEGER NOT NULL DEFAULT 0,
+        win_streak INTEGER NOT NULL DEFAULT 0,
+        highest_streak INTEGER NOT NULL DEFAULT 0,
+        scores TEXT NOT NULL DEFAULT '{}',
+        data TEXT NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS weky_tournaments (
+        id TEXT PRIMARY KEY,
+        game TEXT NOT NULL,
+        state TEXT NOT NULL,
+        winner_id TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_weky_elo ON weky_players (elo DESC);
+      CREATE INDEX IF NOT EXISTS idx_weky_wins ON weky_players (wins DESC);
+      CREATE INDEX IF NOT EXISTS idx_weky_streak ON weky_players (win_streak DESC);
+      CREATE INDEX IF NOT EXISTS idx_weky_updated ON weky_players (updated_at DESC);
+    `);
+	}
+	async get(userId) {
+		const row = this.db.prepare("SELECT data FROM weky_players WHERE id = ? LIMIT 1").get(userId);
+		if (!row || !row.data) return void 0;
+		try {
+			return JSON.parse(row.data);
+		} catch {
+			return;
+		}
+	}
+	async set(userId, data) {
+		const now = Date.now();
+		const payload = JSON.stringify(data);
+		const scoresPayload = JSON.stringify(data.scores || {});
+		this.db.prepare(`
+      INSERT INTO weky_players (
+        id, username, avatar_url, elo, wins, losses, draws, win_streak, highest_streak, scores, data, updated_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        username = excluded.username,
+        avatar_url = excluded.avatar_url,
+        elo = excluded.elo,
+        wins = excluded.wins,
+        losses = excluded.losses,
+        draws = excluded.draws,
+        win_streak = excluded.win_streak,
+        highest_streak = excluded.highest_streak,
+        scores = excluded.scores,
+        data = excluded.data,
+        updated_at = excluded.updated_at
+    `).run(userId, data.username || "Player", data.avatarUrl || null, data.elo ?? 1200, data.wins ?? 0, data.losses ?? 0, data.draws ?? 0, data.winStreak ?? 0, data.highestStreak ?? 0, scoresPayload, payload, now);
+	}
+	async getAll() {
+		const rows = this.db.prepare("SELECT data FROM weky_players ORDER BY elo DESC").all();
+		const result = [];
+		for (const r of rows) try {
+			if (r && r.data) result.push(JSON.parse(r.data));
+		} catch {}
+		return result;
+	}
+	async saveTournament(id, game, state, winnerId) {
+		const now = Date.now();
+		const serialized = JSON.stringify(state);
+		this.db.prepare(`
+      INSERT INTO weky_tournaments (id, game, state, winner_id, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        state = excluded.state,
+        winner_id = excluded.winner_id,
+        updated_at = excluded.updated_at
+    `).run(id, game, serialized, winnerId || null, now, now);
+	}
+	async getTournament(id) {
+		const row = this.db.prepare("SELECT state FROM weky_tournaments WHERE id = ? LIMIT 1").get(id);
+		if (!row || !row.state) return null;
+		try {
+			return JSON.parse(row.state);
+		} catch {
+			return null;
+		}
+	}
+	/**
+	* Closes the SQLite database connection.
+	*/
+	close() {
+		try {
+			this.db.close();
+		} catch {}
+	}
+};
+// src/storage/PrismaWekyStorage.ts
+/**
+* @m3rcena/weky
+* Enterprise Prisma Storage Adapter for Player ELO, High Scores, and Tournaments.
+*
+* @copyright 2026 M3rcena Development. All rights reserved.
+* @license Apache-2.0
+*/
+/**
+* Prisma Schema snippet that developers can paste into their schema.prisma.
+*/
+const PRISMA_WEKY_MODEL = `
+// Added by @m3rcena/weky
+model WekyPlayer {
+  id            String   @id
+  username      String
+  avatarUrl     String?
+  elo           Float    @default(1200)
+  wins          Int      @default(0)
+  losses        Int      @default(0)
+  draws         Int      @default(0)
+  winStreak     Int      @default(0)
+  highestStreak Int      @default(0)
+  scores        String   @default("{}")
+  data          String
+  updatedAt     DateTime @updatedAt
+
+  @@index([elo])
+}
+
+model WekyTournament {
+  id        String   @id
+  game      String
+  state     String
+  winnerId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+`.trim();
+/**
+* Automatically inspects and appends Weky models to a schema.prisma file if missing.
+* @param schemaPath Path to schema.prisma (default: "prisma/schema.prisma")
+* @returns True if models were appended, false if already present or schema file not found.
+*/
+function applyPrismaWekyModel(schemaPath = "prisma/schema.prisma") {
+	try {
+		const resolved = path.resolve(process.cwd(), schemaPath);
+		if (!fs.existsSync(resolved)) return false;
+		const content = fs.readFileSync(resolved, "utf-8");
+		if (content.includes("model WekyPlayer")) return false;
+		const updated = `${content.trim()}\n\n${PRISMA_WEKY_MODEL}\n`;
+		fs.writeFileSync(resolved, updated, "utf-8");
+		return true;
+	} catch (err) {
+		console.error("[applyPrismaWekyModel] Failed to append model to schema:", err);
+		return false;
+	}
+}
+var PrismaWekyStorage = class {
+	client;
+	playerModel;
+	tournamentModel;
+	playerTable;
+	tournamentTable;
+	autoMigrate;
+	migrated = false;
+	constructor(options) {
+		if (options && options.client) {
+			this.client = options.client;
+			this.playerModel = options.playerModel || "wekyPlayer";
+			this.tournamentModel = options.tournamentModel || "wekyTournament";
+			this.playerTable = options.playerTable || "WekyPlayer";
+			this.tournamentTable = options.tournamentTable || "WekyTournament";
+			this.autoMigrate = options.autoMigrate ?? true;
+		} else {
+			this.client = options;
+			this.playerModel = "wekyPlayer";
+			this.tournamentModel = "wekyTournament";
+			this.playerTable = "WekyPlayer";
+			this.tournamentTable = "WekyTournament";
+			this.autoMigrate = true;
+		}
+	}
+	async ensureMigrated() {
+		if (this.migrated || !this.autoMigrate || !this.client) return;
+		this.migrated = true;
+		if (this.client[this.playerModel]) return;
+		if (typeof this.client.$executeRawUnsafe === "function") try {
+			await this.client.$executeRawUnsafe(`
+          CREATE TABLE IF NOT EXISTS "${this.playerTable}" (
+            "id" VARCHAR(191) PRIMARY KEY,
+            "username" VARCHAR(191) NOT NULL,
+            "avatarUrl" TEXT,
+            "elo" DOUBLE PRECISION NOT NULL DEFAULT 1200,
+            "wins" INTEGER NOT NULL DEFAULT 0,
+            "losses" INTEGER NOT NULL DEFAULT 0,
+            "draws" INTEGER NOT NULL DEFAULT 0,
+            "winStreak" INTEGER NOT NULL DEFAULT 0,
+            "highestStreak" INTEGER NOT NULL DEFAULT 0,
+            "scores" TEXT NOT NULL DEFAULT '{}',
+            "data" TEXT NOT NULL,
+            "updatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+          );
+        `);
+			await this.client.$executeRawUnsafe(`
+          CREATE TABLE IF NOT EXISTS "${this.tournamentTable}" (
+            "id" VARCHAR(191) PRIMARY KEY,
+            "game" VARCHAR(191) NOT NULL,
+            "state" TEXT NOT NULL,
+            "winnerId" VARCHAR(191),
+            "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            "updatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+          );
+        `);
+		} catch {
+			try {
+				await this.client.$executeRawUnsafe(`
+            CREATE TABLE IF NOT EXISTS ${this.playerTable} (
+              id TEXT PRIMARY KEY,
+              username TEXT NOT NULL,
+              avatarUrl TEXT,
+              elo REAL DEFAULT 1200,
+              wins INTEGER DEFAULT 0,
+              losses INTEGER DEFAULT 0,
+              draws INTEGER DEFAULT 0,
+              winStreak INTEGER DEFAULT 0,
+              highestStreak INTEGER DEFAULT 0,
+              scores TEXT DEFAULT '{}',
+              data TEXT NOT NULL,
+              updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+          `);
+				await this.client.$executeRawUnsafe(`
+            CREATE TABLE IF NOT EXISTS ${this.tournamentTable} (
+              id TEXT PRIMARY KEY,
+              game TEXT NOT NULL,
+              state TEXT NOT NULL,
+              winnerId TEXT,
+              createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+              updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+          `);
+			} catch {}
+		}
+	}
+	async get(userId) {
+		await this.ensureMigrated();
+		const delegate = this.client[this.playerModel];
+		if (delegate && typeof delegate.findUnique === "function") try {
+			const record = await delegate.findUnique({ where: { id: userId } });
+			if (!record || !record.data) return void 0;
+			return typeof record.data === "string" ? JSON.parse(record.data) : record.data;
+		} catch {}
+		if (typeof this.client.$queryRawUnsafe === "function") try {
+			const rows = await this.client.$queryRawUnsafe(`SELECT data FROM "${this.playerTable}" WHERE id = $1 LIMIT 1`, userId);
+			if (rows && rows.length > 0 && rows[0].data) return JSON.parse(rows[0].data);
+		} catch {
+			try {
+				const rows = await this.client.$queryRawUnsafe(`SELECT data FROM ${this.playerTable} WHERE id = ? LIMIT 1`, userId);
+				if (rows && rows.length > 0 && rows[0].data) return JSON.parse(rows[0].data);
+			} catch {
+				return;
+			}
+		}
+	}
+	async set(userId, data) {
+		await this.ensureMigrated();
+		const serialized = JSON.stringify(data);
+		const scores = JSON.stringify(data.scores || {});
+		const delegate = this.client[this.playerModel];
+		if (delegate && typeof delegate.upsert === "function") try {
+			await delegate.upsert({
+				where: { id: userId },
+				update: {
+					username: data.username || "Player",
+					avatarUrl: data.avatarUrl || null,
+					elo: data.elo ?? 1200,
+					wins: data.wins ?? 0,
+					losses: data.losses ?? 0,
+					draws: data.draws ?? 0,
+					winStreak: data.winStreak ?? 0,
+					highestStreak: data.highestStreak ?? 0,
+					scores,
+					data: serialized,
+					updatedAt: /* @__PURE__ */ new Date()
+				},
+				create: {
+					id: userId,
+					username: data.username || "Player",
+					avatarUrl: data.avatarUrl || null,
+					elo: data.elo ?? 1200,
+					wins: data.wins ?? 0,
+					losses: data.losses ?? 0,
+					draws: data.draws ?? 0,
+					winStreak: data.winStreak ?? 0,
+					highestStreak: data.highestStreak ?? 0,
+					scores,
+					data: serialized,
+					updatedAt: /* @__PURE__ */ new Date()
+				}
+			});
+			return;
+		} catch {}
+		if (typeof this.client.$executeRawUnsafe === "function") try {
+			await this.client.$executeRawUnsafe(`
+          INSERT INTO "${this.playerTable}" (
+            "id", "username", "avatarUrl", "elo", "wins", "losses", "draws", "winStreak", "highestStreak", "scores", "data", "updatedAt"
+          )
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
+          ON CONFLICT ("id") DO UPDATE SET
+            "username" = EXCLUDED."username",
+            "avatarUrl" = EXCLUDED."avatarUrl",
+            "elo" = EXCLUDED."elo",
+            "wins" = EXCLUDED."wins",
+            "losses" = EXCLUDED."losses",
+            "draws" = EXCLUDED."draws",
+            "winStreak" = EXCLUDED."winStreak",
+            "highestStreak" = EXCLUDED."highestStreak",
+            "scores" = EXCLUDED."scores",
+            "data" = EXCLUDED."data",
+            "updatedAt" = NOW()
+          `, userId, data.username || "Player", data.avatarUrl || null, data.elo ?? 1200, data.wins ?? 0, data.losses ?? 0, data.draws ?? 0, data.winStreak ?? 0, data.highestStreak ?? 0, scores, serialized);
+		} catch {
+			await this.client.$executeRawUnsafe(`
+          INSERT INTO ${this.playerTable} (
+            id, username, avatarUrl, elo, wins, losses, draws, winStreak, highestStreak, scores, data, updatedAt
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+          ON CONFLICT(id) DO UPDATE SET
+            username = excluded.username,
+            avatarUrl = excluded.avatarUrl,
+            elo = excluded.elo,
+            wins = excluded.wins,
+            losses = excluded.losses,
+            draws = excluded.draws,
+            winStreak = excluded.winStreak,
+            highestStreak = excluded.highestStreak,
+            scores = excluded.scores,
+            data = excluded.data,
+            updatedAt = CURRENT_TIMESTAMP
+          `, userId, data.username || "Player", data.avatarUrl || null, data.elo ?? 1200, data.wins ?? 0, data.losses ?? 0, data.draws ?? 0, data.winStreak ?? 0, data.highestStreak ?? 0, scores, serialized);
+		}
+	}
+	async getAll() {
+		await this.ensureMigrated();
+		const delegate = this.client[this.playerModel];
+		if (delegate && typeof delegate.findMany === "function") try {
+			return (await delegate.findMany({ orderBy: { elo: "desc" } })).map((r) => typeof r.data === "string" ? JSON.parse(r.data) : r.data).filter(Boolean);
+		} catch {}
+		if (typeof this.client.$queryRawUnsafe === "function") try {
+			return (await this.client.$queryRawUnsafe(`SELECT data FROM ${this.playerTable} ORDER BY elo DESC`)).map((r) => JSON.parse(r.data)).filter(Boolean);
+		} catch {
+			return [];
+		}
+		return [];
+	}
+};
+// src/storage/JsonWekyStorage.ts
+/**
+* @m3rcena/weky
+* JSON File Storage Adapter for Leaderboards and Player Data.
+*
+* @copyright 2026 M3rcena Development. All rights reserved.
+* @license Apache-2.0
+*/
+var JsonWekyStorage = class {
+	filePath;
+	cache = {};
+	loaded = false;
+	constructor(filePath = "./weky-data.json") {
+		this.filePath = path.resolve(process.cwd(), filePath);
+	}
+	async ensureLoaded() {
+		if (this.loaded) return;
+		try {
+			if (fs.existsSync(this.filePath)) {
+				const raw = await fs.promises.readFile(this.filePath, "utf-8");
+				this.cache = JSON.parse(raw);
+			}
+		} catch {
+			this.cache = {};
+		}
+		this.loaded = true;
+	}
+	async persist() {
+		try {
+			const dir = path.dirname(this.filePath);
+			if (!fs.existsSync(dir)) await fs.promises.mkdir(dir, { recursive: true });
+			await fs.promises.writeFile(this.filePath, JSON.stringify(this.cache, null, 2), "utf-8");
+		} catch (err) {
+			console.error("[JsonWekyStorage] Failed to save players to disk:", err);
+		}
+	}
+	async get(userId) {
+		await this.ensureLoaded();
+		return this.cache[userId] ? { ...this.cache[userId] } : void 0;
+	}
+	async set(userId, data) {
+		await this.ensureLoaded();
+		this.cache[userId] = { ...data };
+		await this.persist();
+	}
+	async getAll() {
+		await this.ensureLoaded();
+		return Object.values(this.cache).map((p) => ({ ...p }));
+	}
+};
+// src/storage/WekyDatabaseHandler.ts
+/**
+* @m3rcena/weky
+* Unified Database Handler and Factory for SQLite, Prisma, JSON, and Memory storage.
+*
+* @copyright 2026 M3rcena Development. All rights reserved.
+* @license Apache-2.0
+*/
+var WekyDatabaseHandler = class {
+	/**
+	* Instantiates the requested storage adapter based on developer configuration.
+	*/
+	static create(config) {
+		if (!config || config === "memory") return;
+		if (config === "sqlite") return new SqliteWekyStorage("./weky.sqlite");
+		if (config === "json") return new JsonWekyStorage("./weky-data.json");
+		if (typeof config === "object") {
+			if (config.type === "sqlite") return new SqliteWekyStorage(config.path || "./weky.sqlite");
+			if (config.type === "prisma") return new PrismaWekyStorage({
+				client: config.client,
+				playerModel: config.model || "wekyPlayer",
+				autoMigrate: config.autoMigrate ?? true
+			});
+			if (config.type === "json") return new JsonWekyStorage(config.path || "./weky-data.json");
+			if (config.type === "memory") return;
+		}
+	}
+	/**
+	* Automatically appends Weky models to schema.prisma if missing.
+	*/
+	static applyPrismaSchema(schemaPath = "prisma/schema.prisma") {
+		return applyPrismaWekyModel(schemaPath);
+	}
+};
+/**
+* Resolves a LeaderboardStorageAdapter from an existing storageAdapter or database config.
+*/
+function resolveWekyStorage(options) {
+	if (options?.storageAdapter) return options.storageAdapter;
+	if (options?.database) return WekyDatabaseHandler.create(options.database);
+}
 // src/leaderboard/LeaderboardManager.ts
 /**
 * ELO & High-Score Leaderboard Engine
@@ -8115,7 +8591,7 @@ var LeaderboardManager = class LeaderboardManager {
 	constructor(options = {}) {
 		this.defaultElo = options.defaultElo ?? 1200;
 		this.defaultKFactor = options.kFactor ?? 32;
-		this.storageAdapter = options.storageAdapter;
+		this.storageAdapter = options.storageAdapter || resolveWekyStorage({ database: options.database });
 		this.pointing = options.pointing;
 		this.wekyManager = options.wekyManager;
 	}
@@ -8934,7 +9410,7 @@ var SoundboardManager = class {
 				candidatePaths.push(path$1.resolve(__dirname, "../assets/sounds"));
 			}
 		} catch {}
-		for (const p of candidatePaths) if (fs.existsSync(p)) return p;
+		for (const p of candidatePaths) if (fs$1.existsSync(p)) return p;
 		return candidatePaths[0];
 	}
 	/**
@@ -11078,6 +11554,322 @@ var WekyBridge = class {
 		return false;
 	}
 };
+// src/connector/WekyEcoConnector.ts
+/**
+* @m3rcena/weky
+* Weky <-> Economy Cross-Package Connector
+*
+* Connects the Weky minigames engine with @m3rcena/eco:
+* - Automatically rewards players in cash/coins for winning minigames
+* - Deducts optional penalties or wagers upon losing
+* - Distributes solo minigame score bonuses (proportional to score, e.g. 2048, Snake, FastType)
+* - Rewards consecutive win streaks with multiplier bonuses
+* - Manages PvP bet pots / wagers with atomic escrow & refund handling
+* - Awards championship prize pools for tournament winners
+* - Emits real-time economic telemetry to @m3rcena/bridge
+*
+* @copyright 2026 M3rcena Development. All rights reserved.
+* @license Apache-2.0
+*/
+var WekyEcoConnector = class extends EventEmitter$1 {
+	weky;
+	eco;
+	options;
+	activeWagers = /* @__PURE__ */ new Map();
+	userToWagerMap = /* @__PURE__ */ new Map();
+	constructor(weky, eco, options = {}) {
+		super();
+		if (!weky) throw new TypeError("[WekyEcoConnector] A valid WekyManager instance is required.");
+		if (!eco) throw new TypeError("[WekyEcoConnector] A valid EcoManager instance is required.");
+		this.weky = weky;
+		this.eco = eco;
+		this.options = {
+			defaultWinReward: 50,
+			defaultLossPenalty: 0,
+			defaultDrawReward: 10,
+			defaultScoreMultiplier: .05,
+			maxScoreReward: 500,
+			streakBonus: 5,
+			tournamentChampionPrize: 500,
+			tournamentRunnerUpPrize: 200,
+			wagerHouseFee: 0,
+			autoReward: true,
+			...options
+		};
+		this.initListeners();
+	}
+	initListeners() {
+		if (typeof this.weky.on === "function") {
+			this.weky.on("gameOver", async (event) => {
+				if (!this.options.autoReward) return;
+				try {
+					await this.handleGameOver(event);
+				} catch (err) {
+					this.emit("error", err);
+				}
+			});
+			this.weky.on("tournamentEnd", async (event) => {
+				if (!this.options.autoReward) return;
+				try {
+					await this.handleTournamentEnd(event);
+				} catch (err) {
+					this.emit("error", err);
+				}
+			});
+		}
+	}
+	/**
+	* Creates and escrows a PvP wager match between two players.
+	* Both players must have sufficient wallet balances.
+	*/
+	async createWager(params) {
+		const { wagerId, player1Id, player2Id, amount, guildId, game } = params;
+		if (amount <= 0) return {
+			success: false,
+			reason: "Wager amount must be greater than zero."
+		};
+		if (player1Id === player2Id) return {
+			success: false,
+			reason: "A player cannot wager against themselves."
+		};
+		if (await this.getUserWallet(player1Id, guildId) < amount) return {
+			success: false,
+			reason: "Player 1 has insufficient funds.",
+			failedUserId: player1Id
+		};
+		if (await this.getUserWallet(player2Id, guildId) < amount) return {
+			success: false,
+			reason: "Player 2 has insufficient funds.",
+			failedUserId: player2Id
+		};
+		await this.deductWallet(player1Id, amount, `Wager escrow for ${game || "match"} vs <@${player2Id}>`, guildId);
+		await this.deductWallet(player2Id, amount, `Wager escrow for ${game || "match"} vs <@${player1Id}>`, guildId);
+		const record = {
+			id: wagerId,
+			player1Id,
+			player2Id,
+			amount,
+			totalPot: amount * 2,
+			guildId,
+			game,
+			createdAt: Date.now(),
+			status: "active"
+		};
+		this.activeWagers.set(wagerId, record);
+		this.userToWagerMap.set(player1Id, wagerId);
+		this.userToWagerMap.set(player2Id, wagerId);
+		this.emit("wagerCreated", record);
+		return {
+			success: true,
+			wager: record
+		};
+	}
+	/**
+	* Resolves an active wager, awarding the escrowed pot (minus optional house fee) to the winner.
+	*/
+	async resolveWager(wagerId, winnerId) {
+		const wager = this.activeWagers.get(wagerId);
+		if (!wager || wager.status !== "active") return null;
+		if (winnerId !== wager.player1Id && winnerId !== wager.player2Id) throw new Error(`Winner ${winnerId} is not a participant in wager ${wagerId}`);
+		const loserId = winnerId === wager.player1Id ? wager.player2Id : wager.player1Id;
+		const feePct = Math.max(0, Math.min(100, this.options.wagerHouseFee ?? 0));
+		const houseFee = Math.floor(wager.totalPot * feePct / 100);
+		const winAmount = wager.totalPot - houseFee;
+		const newBalance = await this.creditWallet(winnerId, winAmount, `Won wager pot in ${wager.game || "PvP"} (+${winAmount} coins)`, wager.guildId);
+		wager.status = "resolved";
+		wager.winnerId = winnerId;
+		this.userToWagerMap.delete(wager.player1Id);
+		this.userToWagerMap.delete(wager.player2Id);
+		const result = {
+			userId: winnerId,
+			game: wager.game || "pvp",
+			outcome: "WIN",
+			amount: winAmount,
+			newBalance,
+			reason: `Wager Victory vs <@${loserId}>`,
+			wagerWon: winAmount
+		};
+		this.emit("wagerResolved", {
+			wager,
+			winnerId,
+			loserId,
+			payout: winAmount,
+			houseFee
+		});
+		return result;
+	}
+	/**
+	* Cancels and refunds an active wager back to both participants.
+	*/
+	async refundWager(wagerId, reason = "Match cancelled or tied") {
+		const wager = this.activeWagers.get(wagerId);
+		if (!wager || wager.status !== "active") return false;
+		await this.creditWallet(wager.player1Id, wager.amount, `Refund wager: ${reason}`, wager.guildId);
+		await this.creditWallet(wager.player2Id, wager.amount, `Refund wager: ${reason}`, wager.guildId);
+		wager.status = "refunded";
+		this.userToWagerMap.delete(wager.player1Id);
+		this.userToWagerMap.delete(wager.player2Id);
+		this.emit("wagerRefunded", {
+			wager,
+			reason
+		});
+		return true;
+	}
+	/**
+	* Internal handler for Weky gameOver events.
+	*/
+	async handleGameOver(event) {
+		const userId = typeof event.user === "string" ? event.user : event.user?.id;
+		if (!userId) return;
+		const game = event.game || "unknown";
+		const rule = this.options.games?.[game] || {};
+		const outcomeRaw = (event.outcome || "").toUpperCase();
+		const isWin = outcomeRaw.includes("WIN") || outcomeRaw === "WON" || outcomeRaw === "VICTORY";
+		const isLoss = outcomeRaw.includes("LOSE") || outcomeRaw.includes("LOST") || outcomeRaw === "DEFEAT";
+		const isTie = outcomeRaw.includes("TIE") || outcomeRaw.includes("DRAW");
+		const wagerId = this.userToWagerMap.get(userId) || (event.channelId ? this.userToWagerMap.get(event.channelId) : void 0);
+		if (wagerId && this.activeWagers.has(wagerId)) {
+			if (isWin) {
+				await this.resolveWager(wagerId, userId);
+				return;
+			} else if (isTie) {
+				await this.refundWager(wagerId, "Game ended in a draw");
+				return;
+			} else if (isLoss) {
+				const wager = this.activeWagers.get(wagerId);
+				const opponentId = userId === wager.player1Id ? wager.player2Id : wager.player1Id;
+				await this.resolveWager(wagerId, opponentId);
+				return;
+			}
+		}
+		const winReward = rule.winReward ?? this.options.defaultWinReward ?? 50;
+		const lossPenalty = rule.lossPenalty ?? this.options.defaultLossPenalty ?? 0;
+		const drawReward = rule.drawReward ?? this.options.defaultDrawReward ?? 10;
+		const scoreMultiplier = rule.scoreMultiplier ?? this.options.defaultScoreMultiplier ?? .05;
+		const maxScore = rule.maxScoreReward ?? this.options.maxScoreReward ?? 500;
+		const streakBonusPerWin = rule.streakBonus ?? this.options.streakBonus ?? 5;
+		if (isWin) {
+			let streakBonus = 0;
+			try {
+				const player = await this.weky.leaderboard?.getPlayer(userId);
+				if (player && player.winStreak > 0) streakBonus = player.winStreak * streakBonusPerWin;
+			} catch {}
+			let scoreBonus = 0;
+			if (typeof event.score === "number" && event.score > 0) scoreBonus = Math.min(maxScore, Math.floor(event.score * scoreMultiplier));
+			const totalWin = winReward + streakBonus + scoreBonus;
+			if (totalWin > 0) {
+				const result = {
+					userId,
+					game,
+					outcome: "WIN",
+					amount: totalWin,
+					newBalance: await this.creditWallet(userId, totalWin, `Minigame Victory: ${game} (+${totalWin} coins)`),
+					reason: `Won ${game}`,
+					streakBonus,
+					scoreBonus
+				};
+				this.emit("reward", result);
+			}
+		} else if (isLoss) {
+			if (lossPenalty > 0) {
+				const newBal = await this.deductWallet(userId, lossPenalty, `Minigame Defeat: ${game} (-${lossPenalty} coins)`);
+				const result = {
+					userId,
+					game,
+					outcome: "LOSE",
+					amount: -lossPenalty,
+					newBalance: newBal,
+					reason: `Lost ${game}`
+				};
+				this.emit("penalty", result);
+			}
+		} else if (isTie) {
+			if (drawReward > 0) {
+				const result = {
+					userId,
+					game,
+					outcome: "DRAW",
+					amount: drawReward,
+					newBalance: await this.creditWallet(userId, drawReward, `Minigame Draw: ${game} (+${drawReward} coins)`),
+					reason: `Draw in ${game}`
+				};
+				this.emit("reward", result);
+			}
+		} else if (typeof event.score === "number" && event.score > 0) {
+			const scoreBonus = Math.min(maxScore, Math.floor(event.score * scoreMultiplier));
+			if (scoreBonus > 0) {
+				const result = {
+					userId,
+					game,
+					outcome: "SCORE",
+					amount: scoreBonus,
+					newBalance: await this.creditWallet(userId, scoreBonus, `Minigame Solo Score: ${game} (${event.score} pts -> +${scoreBonus} coins)`),
+					reason: `Scored ${event.score} in ${game}`,
+					scoreBonus
+				};
+				this.emit("reward", result);
+			}
+		}
+	}
+	/**
+	* Internal handler for Weky tournamentEnd events.
+	*/
+	async handleTournamentEnd(event) {
+		if (!event.champion || !event.champion.id) return;
+		const championPrize = this.options.tournamentChampionPrize ?? 500;
+		if (championPrize > 0) {
+			const newBal = await this.creditWallet(event.champion.id, championPrize, `Tournament Champion: Crowned in Tournament ${event.tournamentId} (+${championPrize} coins)`);
+			const result = {
+				userId: event.champion.id,
+				game: "tournament",
+				outcome: "TOURNAMENT",
+				amount: championPrize,
+				newBalance: newBal,
+				reason: `Crowned champion in tournament ${event.tournamentId}`
+			};
+			this.emit("tournamentReward", result);
+		}
+	}
+	/**
+	* Fetches user cash balance from the connected EcoManager.
+	*/
+	async getUserWallet(userId, guildId) {
+		if (typeof this.eco.getBalance === "function") return (await this.eco.getBalance(userId, guildId)).wallet;
+		if (typeof this.eco.getAccount === "function") return (await this.eco.getAccount(userId, guildId)).wallet;
+		if (this.eco.bank && typeof this.eco.bank.getBalance === "function") return (await this.eco.bank.getBalance(userId, guildId)).wallet;
+		return 0;
+	}
+	/**
+	* Credits cash to a user's wallet with cross-package fallback.
+	*/
+	async creditWallet(userId, amount, reason, guildId) {
+		if (typeof this.eco.addWallet === "function") return this.eco.addWallet(userId, amount, guildId);
+		if (this.eco.bank && typeof this.eco.bank.addWallet === "function") return this.eco.bank.addWallet(userId, amount, guildId);
+		if (typeof this.eco.modifyWallet === "function") return (await this.eco.modifyWallet(userId, amount, guildId)).newBalance;
+		return 0;
+	}
+	/**
+	* Deducts cash from a user's wallet with cross-package fallback.
+	*/
+	async deductWallet(userId, amount, reason, guildId) {
+		if (typeof this.eco.removeWallet === "function") return this.eco.removeWallet(userId, amount, guildId);
+		if (this.eco.bank && typeof this.eco.bank.removeWallet === "function") return this.eco.bank.removeWallet(userId, amount, guildId);
+		if (typeof this.eco.modifyWallet === "function") return (await this.eco.modifyWallet(userId, -amount, guildId)).newBalance;
+		return 0;
+	}
+	/**
+	* Returns all active PvP wager sessions.
+	*/
+	getActiveWagers() {
+		return Array.from(this.activeWagers.values()).filter((w) => w.status === "active");
+	}
+	/**
+	* Returns a wager by id.
+	*/
+	getWager(wagerId) {
+		return this.activeWagers.get(wagerId);
+	}
+};
 // src/utils/Notifier.ts
 /**
 * Utility functions for update checking and terminal box notifications.
@@ -11194,6 +11986,7 @@ var WekyManager = class extends EventEmitter {
 	notifyUpdates = true;
 	soundboard;
 	leaderboard;
+	storage;
 	bridge;
 	/**
 	* Initializes the WekyManager.
@@ -11223,12 +12016,27 @@ var WekyManager = class extends EventEmitter {
 		}
 		const sbConfig = options && typeof options === "object" ? options.soundboard : void 0;
 		this.soundboard = new SoundboardManager(this._client, sbConfig, this);
-		const lbConfig = options && typeof options === "object" ? options.leaderboard : void 0;
+		const rawOptions = options && typeof options === "object" ? options : void 0;
+		const lbConfig = rawOptions?.leaderboard;
+		const dbConfig = rawOptions?.database || lbConfig?.database;
+		const resolvedStorage = resolveWekyStorage({
+			storageAdapter: rawOptions?.storageAdapter || lbConfig?.storageAdapter,
+			database: dbConfig
+		});
+		this.storage = resolvedStorage;
 		this.leaderboard = new LeaderboardManager({
 			...lbConfig,
+			storageAdapter: resolvedStorage,
 			wekyManager: this
 		});
 		if (this.notifyUpdates) checkPackageUpdates(version, false).catch(() => {});
+	}
+	/**
+	* Connects the Weky minigames engine with @m3rcena/eco.
+	* Enables automated coin payouts, streak bonuses, score multipliers, PvP wager bets, and tournament prize pools.
+	*/
+	connectEco(eco, connectorOptions) {
+		return new WekyEcoConnector(this, eco, connectorOptions);
 	}
 	on(event, listener) {
 		return super.on(event, listener);
@@ -11595,6 +12403,6 @@ var WekyEngine = class WekyEngine {
 * @copyright 2026 M3rcena Development. All rights reserved.
 * @license Apache-2.0
 */
-export { ARCADE_GAMES, ArcadeHub, BaseGame, COMMON_WORDS, Calculator, CalculatorEngine, CanvasUtils, ChaosWords, ContextAdapter, DEFAULT_DASHBOARD_SOUNDS, DEFAULT_DISCORD_SOUNDS, EASY_SENTENCES, EventManager, FIGHT_BOSSES, FastType, Fight, FightAI, FightEngine, Game2048, Game2048Engine, GuessTheNumber, GuessThePokemon, HANGMAN_CATEGORIES, HARD_SENTENCES, Hangman, HangmanEngine, LeaderboardManager, LieSwatter, M3rcenaBridge, MEDIUM_SENTENCES, MathEvaluator, NEVER_HAVE_I_EVER_PROMPTS, NeverHaveIEver, POPULAR_POKEMONS, QuickClick, RPSPredictor, Render2048, RenderBracket, RenderFight, RenderHangman, RenderLeaderboard, RenderPokemon, RenderShareCard, RenderSnake, RockPaperScissors, ShuffleGuess, Snake, SnakeEngine, SoundboardManager, TRIVIA_FACTS, TicTacToe, TicTacToeAI, TicTacToeEngine, TournamentManager, VERSION, WEKY_GAME_CATALOG, WYPTB_DILEMMAS, WYR_DILEMMAS, WekyBridge, WekyBridgeRouter, WekyCanvas, WekyEngine, WekyManager, WillYouPressTheButton, WouldYouRather, boxConsole, checkPackageUpdates, clamp, compareSemver, fetchLatestVersion, fetchRandomPokemon, formatTime, getRandomHangmanWord, getRandomNHIE, getRandomSentence, getRandomString, getRandomTriviaFact, getRandomWYPTB, getRandomWYR, getRandomWord, getRandomWords, safeResolveColor, shuffleArray, shuffleString, stripAnsi, version };
+export { ARCADE_GAMES, ArcadeHub, BaseGame, COMMON_WORDS, Calculator, CalculatorEngine, CanvasUtils, ChaosWords, ContextAdapter, DEFAULT_DASHBOARD_SOUNDS, DEFAULT_DISCORD_SOUNDS, EASY_SENTENCES, EventManager, FIGHT_BOSSES, FastType, Fight, FightAI, FightEngine, Game2048, Game2048Engine, GuessTheNumber, GuessThePokemon, HANGMAN_CATEGORIES, HARD_SENTENCES, Hangman, HangmanEngine, JsonWekyStorage, LeaderboardManager, LieSwatter, M3rcenaBridge, MEDIUM_SENTENCES, MathEvaluator, NEVER_HAVE_I_EVER_PROMPTS, NeverHaveIEver, POPULAR_POKEMONS, PRISMA_WEKY_MODEL, PrismaWekyStorage, QuickClick, RPSPredictor, Render2048, RenderBracket, RenderFight, RenderHangman, RenderLeaderboard, RenderPokemon, RenderShareCard, RenderSnake, RockPaperScissors, ShuffleGuess, Snake, SnakeEngine, SoundboardManager, SqliteWekyStorage, TRIVIA_FACTS, TicTacToe, TicTacToeAI, TicTacToeEngine, TournamentManager, VERSION, WEKY_GAME_CATALOG, WYPTB_DILEMMAS, WYR_DILEMMAS, WekyBridge, WekyBridgeRouter, WekyCanvas, WekyDatabaseHandler, WekyEcoConnector, WekyEngine, WekyManager, WillYouPressTheButton, WouldYouRather, applyPrismaWekyModel, boxConsole, checkPackageUpdates, clamp, compareSemver, fetchLatestVersion, fetchRandomPokemon, formatTime, getRandomHangmanWord, getRandomNHIE, getRandomSentence, getRandomString, getRandomTriviaFact, getRandomWYPTB, getRandomWYR, getRandomWord, getRandomWords, resolveWekyStorage, safeResolveColor, shuffleArray, shuffleString, stripAnsi, version };
 
 //# sourceMappingURL=index.mjs.map

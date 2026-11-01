@@ -1194,7 +1194,56 @@ Using pure JavaScript instead of TypeScript? You don't have to sacrifice Intelli
 
 ---
 
-## 13. Troubleshooting & Best Practices
+## 13. Database Storage & Persistence
+
+`@m3rcena/weky` features a unified database persistence layer supporting **zero-dependency native SQLite** (`node:sqlite` in Node 22+), **Prisma ORM** auto-migration, **JSON file storage**, and transient **in-memory** stores.
+
+```typescript
+// Native SQLite (Zero external dependencies!)
+const weky = new WekyManager(client, {
+  database: "sqlite", // saves to ./weky.sqlite with WAL mode
+});
+
+// Prisma ORM (Auto-appends models to schema.prisma!)
+const weky = new WekyManager(client, {
+  database: {
+    type: "prisma",
+    client: prisma,
+    model: "wekyPlayer",
+    autoMigrate: true,
+  },
+});
+```
+
+---
+
+## 14. Weky <-> Economy Cross-Package Connector
+
+Seamlessly link `@m3rcena/weky` with `@m3rcena/eco` so games directly influence user balances, win streaks, and leaderboard stats:
+
+```typescript
+const connector = weky.connectEco(eco, {
+  defaultWinReward: 50,         // Coins awarded on minigame victory
+  defaultLossPenalty: 0,        // Coins deducted on defeat
+  defaultScoreMultiplier: 0.05, // Solo score multiplier (1000 pts = 50 coins)
+  streakBonus: 10,              // +10 bonus coins per active win streak count
+  tournamentChampionPrize: 500, // Tournament champion prize
+  wagerHouseFee: 5,             // 5% house fee taken from PvP bet pots
+});
+
+// Start an escrowed PvP wager duel:
+await connector.createWager({
+  wagerId: interaction.channelId,
+  player1Id: player1.id,
+  player2Id: player2.id,
+  amount: 100, // 100 coins each = 200 pot
+  game: "fight",
+});
+```
+
+---
+
+## 15. Troubleshooting & Best Practices
 
 | Issue                                     | Cause                                              | Solution                                                                                                                                               |
 | :---------------------------------------- | :------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------- |

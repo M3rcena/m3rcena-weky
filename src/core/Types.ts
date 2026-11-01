@@ -648,3 +648,31 @@ export type { LeaderboardPlayer, EloChangeResult, LeaderboardStorageAdapter, Lea
 export type { LeaderboardEntry, RenderLeaderboardOptions } from "../canvas/RenderLeaderboard.js";
 export type { ShareCardStat, RenderShareCardOptions } from "../canvas/RenderShareCard.js";
 export type { SoundboardConfig, SoundboardPlayOptions, SoundboardPlayResult, DashboardSoundEntry } from "../soundboard/SoundboardManager.js";
+
+/**
+ * Universal database storage configuration for @m3rcena/weky.
+ * Supports zero-dependency native SQLite (node:sqlite), Prisma ORM, JSON file persistence, or in-memory.
+ */
+export type WekyDatabaseConfig =
+  | "sqlite"
+  | "memory"
+  | "json"
+  | {
+      type: "sqlite";
+      path?: string;
+      walMode?: boolean;
+    }
+  | {
+      type: "prisma";
+      client: any;
+      model?: string;
+      autoMigrate?: boolean;
+    }
+  | {
+      type: "json";
+      path?: string;
+    }
+  | {
+      type: "memory";
+    };
+

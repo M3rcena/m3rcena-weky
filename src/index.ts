@@ -61,6 +61,22 @@ export { RPSPredictor } from "./ai/RPSPredictor.js";
 export { LeaderboardManager, type LeaderboardPlayer, type EloChangeResult, type LeaderboardStorageAdapter, type LeaderboardManagerOptions, type LeaderboardPointingOptions, type CustomPointingMatchHandler, type CustomPointingScoreHandler, type CustomPointingMatchContext, type CustomPointingScoreContext } from "./leaderboard/LeaderboardManager.js";
 export { RenderLeaderboard, type LeaderboardEntry, type RenderLeaderboardOptions, type LeaderboardCustomTexts } from "./canvas/RenderLeaderboard.js";
 
+// Database Storage Handlers & Adapters (SQLite, Prisma, JSON)
+export { SqliteWekyStorage, type SqliteWekyStorageOptions } from "./storage/SqliteWekyStorage.js";
+export { PrismaWekyStorage, type PrismaWekyStorageOptions, PRISMA_WEKY_MODEL, applyPrismaWekyModel } from "./storage/PrismaWekyStorage.js";
+export { JsonWekyStorage } from "./storage/JsonWekyStorage.js";
+export { WekyDatabaseHandler, resolveWekyStorage } from "./storage/WekyDatabaseHandler.js";
+
+// Economy Connector (@m3rcena/weky <-> @m3rcena/eco)
+export {
+  WekyEcoConnector,
+  type WekyEcoConnectorOptions,
+  type GameRewardRule,
+  type WagerRecord,
+  type WagerCreateResult,
+  type RewardDistributionResult,
+} from "./connector/WekyEcoConnector.js";
+
 // Share & Flex Gamer Cards
 export { RenderShareCard, type ShareCardStat, type RenderShareCardOptions, type ShareCardCustomTexts } from "./canvas/RenderShareCard.js";
 

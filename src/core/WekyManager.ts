@@ -28,11 +28,14 @@ import { WouldYouRather } from "../games/WouldYouRather.js";
 import { ArcadeHub, ArcadeHubOptions } from "../hub/ArcadeHub.js";
 import { TournamentManager, TournamentOptions, ManualTournamentOptions } from "../tournament/TournamentManager.js";
 import { RenderBracket, BracketRenderOptions } from "../tournament/RenderBracket.js";
-import { LeaderboardManager, LeaderboardManagerOptions, LeaderboardPointingOptions } from "../leaderboard/LeaderboardManager.js";
+import { LeaderboardManager, LeaderboardManagerOptions, LeaderboardPointingOptions, LeaderboardStorageAdapter } from "../leaderboard/LeaderboardManager.js";
 import { RenderLeaderboard, RenderLeaderboardOptions } from "../canvas/RenderLeaderboard.js";
 import { RenderShareCard, RenderShareCardOptions } from "../canvas/RenderShareCard.js";
 import { SoundboardManager, SoundboardConfig } from "../soundboard/SoundboardManager.js";
 import { WekyBridge, BridgeSession, CrossPlatformMove, BridgeMoveResult, DashboardOverview } from "../bridge/WekyBridge.js";
+import { WekyDatabaseConfig } from "./Types.js";
+import { resolveWekyStorage } from "../storage/WekyDatabaseHandler.js";
+import { WekyEcoConnector, WekyEcoConnectorOptions } from "../connector/WekyEcoConnector.js";
 
 // Helpers
 import { formatTime, getRandomString, safeResolveColor, shuffleArray, shuffleString } from "../utils/Helpers.js";
@@ -57,6 +60,10 @@ export interface WekyManagerOptions {
   leaderboard?: LeaderboardManagerOptions;
   /** Cross-platform dashboard bridge instance from `@m3rcena/bridge` or custom `WekyBridge` */
   bridge?: any;
+  /** Persistent database storage configuration ("sqlite" | "prisma" | "json" | "memory" | object config) */
+  database?: WekyDatabaseConfig;
+  /** Custom persistent storage adapter implementing LeaderboardStorageAdapter */
+  storageAdapter?: LeaderboardStorageAdapter;
 }
 
 /**
@@ -76,6 +83,7 @@ export class WekyManager extends EventEmitter {
   public notifyUpdates: boolean = true;
   public soundboard: SoundboardManager;
   public leaderboard: LeaderboardManager;
+  public storage?: LeaderboardStorageAdapter;
   public bridge: WekyBridge;
 
   /**
@@ -129,12 +137,32 @@ export class WekyManager extends EventEmitter {
     const sbConfig = options && typeof options === "object" ? options.soundboard : undefined;
     this.soundboard = new SoundboardManager(this._client, sbConfig, this);
 
-    const lbConfig = options && typeof options === "object" ? options.leaderboard : undefined;
-    this.leaderboard = new LeaderboardManager({ ...lbConfig, wekyManager: this });
+    const rawOptions = options && typeof options === "object" ? options : undefined;
+    const lbConfig = rawOptions?.leaderboard;
+    const dbConfig = rawOptions?.database || lbConfig?.database;
+    const customStorage = rawOptions?.storageAdapter || lbConfig?.storageAdapter;
+    const resolvedStorage = resolveWekyStorage({
+      storageAdapter: customStorage,
+      database: dbConfig,
+    });
+    this.storage = resolvedStorage;
+    this.leaderboard = new LeaderboardManager({
+      ...lbConfig,
+      storageAdapter: resolvedStorage,
+      wekyManager: this,
+    });
 
     if (this.notifyUpdates) {
       checkPackageUpdates(version, false).catch(() => {});
     }
+  }
+
+  /**
+   * Connects the Weky minigames engine with @m3rcena/eco.
+   * Enables automated coin payouts, streak bonuses, score multipliers, PvP wager bets, and tournament prize pools.
+   */
+  public connectEco(eco: any, connectorOptions?: WekyEcoConnectorOptions): WekyEcoConnector {
+    return new WekyEcoConnector(this, eco, connectorOptions);
   }
 
   // --------------------------------------------------------------------------

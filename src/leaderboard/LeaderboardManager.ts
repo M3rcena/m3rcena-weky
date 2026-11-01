@@ -6,6 +6,9 @@
  * @license Apache-2.0
  */
 
+import type { WekyDatabaseConfig } from "../core/Types.js";
+import { resolveWekyStorage } from "../storage/WekyDatabaseHandler.js";
+
 export interface LeaderboardPlayer {
   id: string;
   username: string;
@@ -77,6 +80,8 @@ export interface LeaderboardManagerOptions {
   kFactor?: number;
   /** Custom persistent storage adapter (e.g. Database, Quick.db, Enmap, SQLite) */
   storageAdapter?: LeaderboardStorageAdapter;
+  /** Database configuration ("sqlite" | "prisma" | "json" | "memory" | object config) */
+  database?: WekyDatabaseConfig;
   /** Optional developer-defined custom pointing formula (falls back to standard FIDE ELO if omitted) */
   pointing?: LeaderboardPointingOptions;
   /** Optional reference to WekyManager for event telemetry */
@@ -88,13 +93,13 @@ export class LeaderboardManager {
   public defaultElo: number;
   public defaultKFactor: number;
   public pointing?: LeaderboardPointingOptions;
-  private storageAdapter?: LeaderboardStorageAdapter;
+  public storageAdapter?: LeaderboardStorageAdapter;
   public wekyManager?: any;
 
   constructor(options: LeaderboardManagerOptions = {}) {
     this.defaultElo = options.defaultElo ?? 1200;
     this.defaultKFactor = options.kFactor ?? 32;
-    this.storageAdapter = options.storageAdapter;
+    this.storageAdapter = options.storageAdapter || resolveWekyStorage({ database: options.database });
     this.pointing = options.pointing;
     this.wekyManager = options.wekyManager;
   }
