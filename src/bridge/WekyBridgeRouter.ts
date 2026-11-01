@@ -265,10 +265,12 @@ export class WekyBridgeRouter implements BridgePackageRouter {
 
     // 5. GET /cards/render - Visual Canvas Card Renderer
     if (path === "/cards/render" && method === "GET") {
-      const type = (req.query.type || "").toLowerCase();
+      const type = (req.query.type || req.query.card || "").toLowerCase();
 
       try {
         let buffer: Buffer | null = null;
+        const username = req.query.username || "Player";
+        const avatarUrl = req.query.avatarUrl || "";
 
         if (type === "2048") {
           const score = parseInt(req.query.score || "0", 10);
@@ -278,67 +280,82 @@ export class WekyBridgeRouter implements BridgePackageRouter {
             [512, 1024, 2048, 0],
             [0, 0, 0, 0],
           ];
-          buffer = await Render2048.renderBoard({
-            board: boardJson,
-            score,
-            username: req.query.username || "Player",
-            avatarUrl: req.query.avatarUrl,
-          });
+          buffer = await Render2048.renderBoard(boardJson, score, username, avatarUrl);
         } else if (type === "snake") {
           const score = parseInt(req.query.score || "0", 10);
-          buffer = await RenderSnake.renderGrid({
-            snake: [{ x: 7, y: 7 }, { x: 6, y: 7 }, { x: 5, y: 7 }],
-            food: { x: 10, y: 7 },
-            gridSize: 15,
+          buffer = await RenderSnake.renderBoard(
+            [{ x: 7, y: 7 }, { x: 6, y: 7 }, { x: 5, y: 7 }],
+            { x: 10, y: 7 },
+            "RIGHT",
             score,
-            username: req.query.username || "Player",
-            avatarUrl: req.query.avatarUrl,
-          });
+            15,
+            username,
+            avatarUrl
+          );
         } else if (type === "fight") {
-          buffer = await RenderFight.renderArena({
-            player1: {
-              username: req.query.p1Name || "Player 1",
-              avatarUrl: req.query.p1Avatar,
-              hp: parseInt(req.query.p1Hp || "100", 10),
-              maxHp: 100,
+          const p1Hp = parseInt(req.query.p1Hp || "90", 10);
+          const p2Hp = parseInt(req.query.p2Hp || "45", 10);
+          buffer = await RenderFight.renderBattleCard(
+            {
+              id: "p1",
+              username: req.query.p1 || req.query.p1Name || username,
+              avatarUrl: req.query.p1Avatar || avatarUrl,
+              health: p1Hp,
+              maxHealth: 100,
+              shield: false,
+              doubleDamage: false,
             },
-            player2: {
-              username: req.query.p2Name || "Player 2",
-              avatarUrl: req.query.p2Avatar,
-              hp: parseInt(req.query.p2Hp || "80", 10),
-              maxHp: 100,
+            {
+              id: "p2",
+              username: req.query.p2 || req.query.p2Name || "Dragon Boss",
+              avatarUrl: req.query.p2Avatar || "",
+              health: p2Hp,
+              maxHealth: 100,
+              shield: false,
+              doubleDamage: false,
             },
-            round: parseInt(req.query.round || "1", 10),
-            lastAction: req.query.lastAction || "Match started!",
-          });
+            "p1",
+            req.query.action || "⚔️ Hero used Heavy Strike for 24 damage!"
+          );
         } else if (type === "hangman") {
-          buffer = await RenderHangman.renderGallows({
-            word: req.query.word || "G A M E",
-            guessedLetters: (req.query.guessed || "A,E,G").split(","),
-            mistakes: parseInt(req.query.mistakes || "1", 10),
-            maxMistakes: 6,
-          });
+          const word = req.query.word || "DEVELOPER";
+          const guessed = (req.query.guessed || "E,O,L").split(",");
+          buffer = await RenderHangman.renderCard(
+            parseInt(req.query.mistakes || "2", 10),
+            word,
+            guessed,
+            username,
+            avatarUrl
+          );
         } else if (type === "pokemon") {
-          buffer = await RenderPokemon.renderCard({
-            name: req.query.name || "Pikachu",
-            revealed: req.query.revealed === "true",
-            silhouetteUrl: req.query.imageUrl,
-          });
+          buffer = await RenderPokemon.renderCard(
+            {
+              name: req.query.name || req.query.pokemon || "Pikachu",
+              types: ["Electric"],
+              abilities: ["Static", "Lightning Rod"],
+              imageUrl: req.query.imageUrl || "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png",
+              id: 25,
+            },
+            req.query.revealed === "true"
+          );
         } else if (type === "share") {
-          buffer = await RenderShareCard.renderCard({
-            gameName: req.query.game || "Weky Arcade",
-            username: req.query.username || "Player",
-            avatarUrl: req.query.avatarUrl,
-            score: parseInt(req.query.score || "1000", 10),
-            outcome: (req.query.outcome || "VICTORY") as any,
+          buffer = await RenderShareCard.render({
+            title: req.query.game || "Weky Arcade",
+            username,
+            avatarUrl,
+            stats: [
+              { label: "Score", value: req.query.score || "4,096" },
+              { label: "Outcome", value: req.query.outcome || "VICTORY" },
+            ],
           });
         } else if (type === "leaderboard") {
-          buffer = await RenderLeaderboard.renderLeaderboard({
+          buffer = await RenderLeaderboard.render({
             title: req.query.title || "Arcade Championship Leaderboard",
-            players: [
-              { rank: 1, username: "MasterGamer", score: 14500, avatarUrl: req.query.avatarUrl },
-              { rank: 2, username: "NeonNinja", score: 11200 },
-              { rank: 3, username: "PixelQueen", score: 9800 },
+            gameName: "Arcade",
+            entries: [
+              { rank: 1, userId: "MasterGamer", score: 14500, avatarUrl },
+              { rank: 2, userId: "NeonNinja", score: 11200 },
+              { rank: 3, userId: "PixelQueen", score: 9800 },
             ],
           });
         }

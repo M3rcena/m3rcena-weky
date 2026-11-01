@@ -10581,9 +10581,11 @@ var WekyBridgeRouter = class {
 			};
 		}
 		if (path === "/cards/render" && method === "GET") {
-			const type = (req.query.type || "").toLowerCase();
+			const type = (req.query.type || req.query.card || "").toLowerCase();
 			try {
 				let buffer = null;
+				const username = req.query.username || "Player";
+				const avatarUrl = req.query.avatarUrl || "";
 				if (type === "2048") {
 					const score = parseInt(req.query.score || "0", 10);
 					const boardJson = req.query.board ? JSON.parse(req.query.board) : [
@@ -10612,89 +10614,87 @@ var WekyBridgeRouter = class {
 							0
 						]
 					];
-					buffer = await Render2048.renderBoard({
-						board: boardJson,
-						score,
-						username: req.query.username || "Player",
-						avatarUrl: req.query.avatarUrl
-					});
+					buffer = await Render2048.renderBoard(boardJson, score, username, avatarUrl);
 				} else if (type === "snake") {
 					const score = parseInt(req.query.score || "0", 10);
-					buffer = await RenderSnake.renderGrid({
-						snake: [
-							{
-								x: 7,
-								y: 7
-							},
-							{
-								x: 6,
-								y: 7
-							},
-							{
-								x: 5,
-								y: 7
-							}
-						],
-						food: {
-							x: 10,
+					buffer = await RenderSnake.renderBoard([
+						{
+							x: 7,
 							y: 7
 						},
-						gridSize: 15,
-						score,
-						username: req.query.username || "Player",
-						avatarUrl: req.query.avatarUrl
-					});
-				} else if (type === "fight") buffer = await RenderFight.renderArena({
-					player1: {
-						username: req.query.p1Name || "Player 1",
-						avatarUrl: req.query.p1Avatar,
-						hp: parseInt(req.query.p1Hp || "100", 10),
-						maxHp: 100
-					},
-					player2: {
-						username: req.query.p2Name || "Player 2",
-						avatarUrl: req.query.p2Avatar,
-						hp: parseInt(req.query.p2Hp || "80", 10),
-						maxHp: 100
-					},
-					round: parseInt(req.query.round || "1", 10),
-					lastAction: req.query.lastAction || "Match started!"
+						{
+							x: 6,
+							y: 7
+						},
+						{
+							x: 5,
+							y: 7
+						}
+					], {
+						x: 10,
+						y: 7
+					}, "RIGHT", score, 15, username, avatarUrl);
+				} else if (type === "fight") {
+					const p1Hp = parseInt(req.query.p1Hp || "90", 10);
+					const p2Hp = parseInt(req.query.p2Hp || "45", 10);
+					buffer = await RenderFight.renderBattleCard({
+						id: "p1",
+						username: req.query.p1 || req.query.p1Name || username,
+						avatarUrl: req.query.p1Avatar || avatarUrl,
+						health: p1Hp,
+						maxHealth: 100,
+						shield: false,
+						doubleDamage: false
+					}, {
+						id: "p2",
+						username: req.query.p2 || req.query.p2Name || "Dragon Boss",
+						avatarUrl: req.query.p2Avatar || "",
+						health: p2Hp,
+						maxHealth: 100,
+						shield: false,
+						doubleDamage: false
+					}, "p1", req.query.action || "⚔️ Hero used Heavy Strike for 24 damage!");
+				} else if (type === "hangman") {
+					const word = req.query.word || "DEVELOPER";
+					const guessed = (req.query.guessed || "E,O,L").split(",");
+					buffer = await RenderHangman.renderCard(parseInt(req.query.mistakes || "2", 10), word, guessed, username, avatarUrl);
+				} else if (type === "pokemon") buffer = await RenderPokemon.renderCard({
+					name: req.query.name || req.query.pokemon || "Pikachu",
+					types: ["Electric"],
+					abilities: ["Static", "Lightning Rod"],
+					imageUrl: req.query.imageUrl || "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png",
+					id: 25
+				}, req.query.revealed === "true");
+				else if (type === "share") buffer = await RenderShareCard.render({
+					title: req.query.game || "Weky Arcade",
+					username,
+					avatarUrl,
+					stats: [{
+						label: "Score",
+						value: req.query.score || "4,096"
+					}, {
+						label: "Outcome",
+						value: req.query.outcome || "VICTORY"
+					}]
 				});
-				else if (type === "hangman") buffer = await RenderHangman.renderGallows({
-					word: req.query.word || "G A M E",
-					guessedLetters: (req.query.guessed || "A,E,G").split(","),
-					mistakes: parseInt(req.query.mistakes || "1", 10),
-					maxMistakes: 6
-				});
-				else if (type === "pokemon") buffer = await RenderPokemon.renderCard({
-					name: req.query.name || "Pikachu",
-					revealed: req.query.revealed === "true",
-					silhouetteUrl: req.query.imageUrl
-				});
-				else if (type === "share") buffer = await RenderShareCard.renderCard({
-					gameName: req.query.game || "Weky Arcade",
-					username: req.query.username || "Player",
-					avatarUrl: req.query.avatarUrl,
-					score: parseInt(req.query.score || "1000", 10),
-					outcome: req.query.outcome || "VICTORY"
-				});
-				else if (type === "leaderboard") buffer = await RenderLeaderboard.renderLeaderboard({
+				else if (type === "leaderboard") buffer = await RenderLeaderboard.render({
 					title: req.query.title || "Arcade Championship Leaderboard",
-					players: [
+					gameName: "Arcade",
+					entries: [
 						{
 							rank: 1,
-							username: "MasterGamer",
+							userId: "MasterGamer",
 							score: 14500,
-							avatarUrl: req.query.avatarUrl
+							avatarUrl
 						},
 						{
 							rank: 2,
-							username: "NeonNinja",
+							userId: "NeonNinja",
 							score: 11200
 						},
 						{
 							rank: 3,
-							username: "PixelQueen",
+							userId: "PixelQueen",
 							score: 9800
 						}
 					]
