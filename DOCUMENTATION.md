@@ -821,24 +821,42 @@ await weky.createRPS({
 
 ---
 
-### 6.4. Discord Soundboard SFX
+### 6.4. Dashboard Audio & MP3 Soundboard Engine (`SoundboardManager`)
 
-`SoundboardManager` triggers Discord soundboard audio cues across match lifecycles without extra bot audio libraries:
+`SoundboardManager` provides MP3 audio feedback for **Web Dashboards**, **Headless Game Engines**, and **Cross-Platform Bridge** gameplay. Because Discord players primarily play minigames directly in text channels without voice channels, soundboard audio is purpose-built for web dashboards using zero-latency MP3 audio tracks.
+
+When games are played or synchronized via `WekyBridge`, the engine automatically selects and attaches appropriate MP3 audio cues (`victory`, `defeat`, `hit`, `heal`, `eat`, `action`, `tie`) and emits `dashboardSound` events in real-time.
 
 ```typescript
-// Initialized automatically via WekyManager options:
+import { WekyManager, DEFAULT_DASHBOARD_SOUNDS } from "@m3rcena/weky";
+
+// 1. Initialize with optional custom MP3 URLs or volume:
 const weky = new WekyManager(client, {
   soundboard: {
     enabled: true,
+    volume: 0.8,
     sounds: {
-      victory: "123456789012345678", // Discord sound ID
-      defeat: "876543210987654321",
+      victory: "https://your-dashboard.com/sounds/victory.mp3", // Custom override
+      hit: "/assets/sounds/hit.mp3",
     },
   },
 });
 
-// Trigger directly:
-await weky.soundboard.playSound(channelId, "victory");
+// 2. Listen to real-time audio cues (e.g. for WebSockets to dash frontend):
+weky.on("dashboardSound", ({ soundKey, soundUrl, volume, game }) => {
+  console.log(`[Dashboard Audio] ${soundKey} (${volume * 100}%) -> ${soundUrl}`);
+  // Broadcast to connected web dashboard clients via WebSocket
+  wsServer.broadcast(JSON.stringify({ type: "sound", soundUrl, volume }));
+});
+
+// 3. Web Dashboard Client Integration:
+// Get the audio manifest for preloading:
+const manifest = weky.soundboard.getAudioManifest();
+
+// Or generate the ready-to-inject client script for your web page:
+const scriptHtml = weky.soundboard.generateDashboardAudioScript({ defaultVolume: 0.8 });
+// In the browser, any move can play audio instantly:
+// window.WekyAudio.play("victory");
 ```
 
 ---

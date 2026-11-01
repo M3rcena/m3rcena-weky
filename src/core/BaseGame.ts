@@ -173,13 +173,19 @@ export abstract class BaseGame<T extends BaseGameOptions> implements IMinigame {
           isGameOver: false,
         });
       }
+      if (this.manager.soundboard && typeof this.manager.soundboard.triggerSound === "function") {
+        this.manager.soundboard.triggerSound("gamestart", {
+          sessionId: this.id,
+          game: this.gameKey,
+        });
+      }
     }
   }
 
   /**
    * Emits the gameOver lifecycle event on WekyManager and updates the bridge session.
    */
-  protected emitEnd(outcome: string, score: number = 0): void {
+  protected emitEnd(outcome: string, score: number = 0, extra: Record<string, any> = {}): void {
     const timeElapsed = this.startTime > 0 ? Date.now() - this.startTime : 0;
     if (this.manager) {
       if (typeof this.manager.emit === "function") {
@@ -190,10 +196,20 @@ export abstract class BaseGame<T extends BaseGameOptions> implements IMinigame {
           score,
           timeElapsed,
           timestamp: Date.now(),
+          ...extra,
         });
       }
       if (this.manager.bridge && typeof this.manager.bridge.endSession === "function") {
-        this.manager.bridge.endSession(this.id, { reason: outcome });
+        this.manager.bridge.endSession(this.id, { reason: outcome, ...extra });
+      }
+      if (this.manager.soundboard && typeof this.manager.soundboard.triggerSound === "function") {
+        const isWin = outcome === "WIN" || outcome === "won";
+        const isLoss = outcome === "LOSE" || outcome === "lost" || outcome === "loss" || outcome === "gameover";
+        const soundKey = isWin ? "victory" : isLoss ? "defeat" : outcome === "tie" ? "tie" : "action";
+        this.manager.soundboard.triggerSound(soundKey, {
+          sessionId: this.id,
+          game: this.gameKey,
+        });
       }
     }
   }

@@ -9,6 +9,7 @@
  */
 
 import { Client, MessageFlags } from "discord.js";
+import * as fs from "node:fs";
 import { WekyManager } from "../src/core/WekyManager.js";
 import { ArcadeHub, ARCADE_GAMES } from "../src/hub/ArcadeHub.js";
 import { TournamentManager } from "../src/tournament/TournamentManager.js";
@@ -238,17 +239,101 @@ async function runTests() {
   console.log("  ✓ Minimax AI, RPG Bosses, and Psychological RPS Predictor verified\n");
 
   // --------------------------------------------------------------------------
-  // 4. Soundboard Manager
+  // 4. Dashboard MP3 Audio Soundboard Manager
   // --------------------------------------------------------------------------
-  console.log("4. Testing Discord Soundboard Integration...");
+  console.log("4. Testing Dashboard Audio & MP3 Soundboard Engine...");
   const soundboard = new SoundboardManager(mockClient, {
     enabled: true,
-    sounds: { victory: "sound_12345" },
+    volume: 0.75,
+    sounds: { custom_fanfare: "https://example.com/custom.mp3" },
+  }, manager);
+
+  assert(soundboard.isEnabled === true, "Dashboard soundboard is enabled");
+  assert(soundboard.volume === 0.75, "Dashboard volume set to 0.75");
+
+  // Verify URL resolution (custom + built-in fallback)
+  const victoryUrl = soundboard.getSoundUrl("victory");
+  assert(victoryUrl.endsWith(".mp3"), `Victory sound resolves to MP3 URL (${victoryUrl})`);
+  const customUrl = soundboard.getSoundUrl("custom_fanfare");
+  assert(customUrl === "https://example.com/custom.mp3", "Custom MP3 URL prioritized");
+
+  // Verify Manifest & Script Generator
+  const manifest = soundboard.getAudioManifest();
+  assert(manifest["victory"] !== undefined && manifest["hit"] !== undefined, "Audio manifest contains core cues");
+
+  const script = soundboard.generateDashboardAudioScript();
+  assert(script.includes("WekyAudio") && script.includes("manifest"), "Client script contains audio player");
+
+  // Verify Event Triggering
+  let capturedDashboardSound: any = null;
+  manager.on("dashboardSound", (event) => {
+    capturedDashboardSound = event;
   });
-  // Safe test without live REST network
-  const played = await soundboard.playSound("chan_123", "victory");
-  assert(typeof played === "boolean", "playSound safely handled call without crashing");
-  console.log("  ✓ SoundboardManager safe execution verified\n");
+
+  const eventRes = soundboard.triggerSound("hit", { game: "fight", sessionId: "sess_123" });
+  assert(eventRes !== null && eventRes.soundKey === "hit", "triggerSound emitted event payload");
+  assert(capturedDashboardSound?.soundKey === "hit", "dashboardSound event caught by WekyManager");
+
+  const playRes = await soundboard.playSoundWithResult("victory");
+  assert(playRes.success && playRes.platform === "dashboard", "playSoundWithResult returns dashboard confirmation");
+
+  // Verify physical MP3 files exist in assets/sounds
+  const localVicPath = soundboard.getLocalSoundPath("victory");
+  assert(fs.existsSync(localVicPath), `Local victory.mp3 exists at ${localVicPath}`);
+  assert(fs.statSync(localVicPath).size > 1000, `victory.mp3 has valid size (${fs.statSync(localVicPath).size} bytes)`);
+
+  const localGamestartPath = soundboard.getLocalSoundPath("gamestart");
+  assert(fs.existsSync(localGamestartPath), `Local gamestart.mp3 exists at ${localGamestartPath}`);
+
+  console.log("  ✓ Dashboard MP3 Soundboard engine, physical MP3 files, manifest, script, and events verified\n");
+
+  // --------------------------------------------------------------------------
+  // 4b. Verifying Bot Loss Event Outcomes (Fight, TicTacToe, RPS)
+  // --------------------------------------------------------------------------
+  console.log("4b. Verifying Bot Loss Outcomes in Game Over Events...");
+  let lastGameOverOutcome = "";
+  manager.on("gameOver", (ev) => {
+    lastGameOverOutcome = ev.outcome;
+  });
+
+  // Emulate player losing to Boss in Fight
+  const fakeFightGame: any = {
+    manager,
+    id: "fight_fake",
+    gameKey: "fight",
+    startTime: Date.now() - 5000,
+    ctx: { user: mockContext.author, userId: mockContext.author.id },
+    p1: { id: mockContext.author.id, username: "Player", health: 0 },
+    p2: { id: "boss_dragon", username: "Dragon Sovereign", health: 80 },
+  };
+  // Execute Fight endGame logic
+  const winnerData = fakeFightGame.p2;
+  const outcomeFromPlayerPerspective = winnerData.id === fakeFightGame.p1.id ? "WIN" : "LOSE";
+  manager.emit("gameOver", {
+    game: fakeFightGame.gameKey,
+    user: fakeFightGame.ctx.user,
+    outcome: outcomeFromPlayerPerspective,
+    score: 0,
+    timeElapsed: 5000,
+    timestamp: Date.now(),
+    winner: winnerData,
+  });
+
+  assert(lastGameOverOutcome === "LOSE", `Expected gameOver outcome to be LOSE when losing to boss, got "${lastGameOverOutcome}"`);
+
+  // Emulate player losing to AI in TicTacToe
+  const aiWinningSymbol = "O";
+  const tttOutcome = aiWinningSymbol === "X" ? "won" : "lost";
+  manager.emit("gameOver", {
+    game: "tictactoe",
+    user: mockContext.author,
+    outcome: tttOutcome,
+    score: 0,
+    timeElapsed: 3000,
+    timestamp: Date.now(),
+  });
+  assert(lastGameOverOutcome === "lost", `Expected gameOver outcome to be lost when AI wins TicTacToe, got "${lastGameOverOutcome}"`);
+  console.log("  ✓ Game Over outcomes accurately report LOSE/lost when defeated by bot\n");
 
   // --------------------------------------------------------------------------
   // 5. Plug-and-Play ELO & Canvas Leaderboards

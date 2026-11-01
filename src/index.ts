@@ -48,7 +48,7 @@ export { CalculatorEngine, FightEngine, Game2048Engine, HangmanEngine, SnakeEngi
 export { ArcadeHub, ARCADE_GAMES, type ArcadeGameEntry, type ArcadeHubOptions, type ArcadeHubCustomTexts } from "./hub/ArcadeHub.js";
 export { TournamentManager, type TournamentOptions, type TournamentCustomTexts, type TournamentMatchSession, type GrandFinalsSession, type ManualMatchInput, type ManualTournamentOptions } from "./tournament/TournamentManager.js";
 export { RenderBracket, type BracketParticipant, type BracketMatch, type BracketRenderOptions } from "./tournament/RenderBracket.js";
-export { SoundboardManager, type SoundboardConfig } from "./soundboard/SoundboardManager.js";
+export { SoundboardManager, type SoundboardConfig, type SoundboardPlayOptions, type SoundboardPlayResult, DEFAULT_DASHBOARD_SOUNDS, type DashboardSoundEntry, DEFAULT_DISCORD_SOUNDS } from "./soundboard/SoundboardManager.js";
 
 // AI Opponents & Boss Duels
 export { TicTacToeAI, type TicTacToeDifficulty } from "./ai/TicTacToeAI.js";

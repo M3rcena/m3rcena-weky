@@ -76,7 +76,7 @@ export class FightEngine {
   /**
    * Universal action method accepting either (action, playerId) or (playerId, action) and case-insensitive strings.
    */
-  public action(playerId: string, actionType: string): { success: boolean; message: string; announcement: string } {
+  public action(playerId: string, actionType: string): { success: boolean; message: string; announcement: string; isGameOver?: boolean; winnerId?: string } {
     let act = actionType.toLowerCase();
     if (act === "attack") act = "hit";
     const res = this.performAction(act as any, playerId);
@@ -84,13 +84,15 @@ export class FightEngine {
       success: res.success,
       message: res.message,
       announcement: this.lastAnnouncement,
+      isGameOver: res.isGameOver,
+      winnerId: res.winnerId,
     };
   }
 
   /**
    * Performs a combat action for a fighter.
    */
-  public performAction(action: "hit" | "heavy" | "heal" | "shield" | "double" | "surrender", playerId: string): { success: boolean; message: string } {
+  public performAction(action: "hit" | "heavy" | "heal" | "shield" | "double" | "surrender", playerId: string): { success: boolean; message: string; isGameOver?: boolean; winnerId?: string } {
     if (this.phase === "REQUEST") {
       return { success: false, message: "Duel has not started yet. Call acceptChallenge() first." };
     }
@@ -107,7 +109,12 @@ export class FightEngine {
       this.phase = "ENDED";
       this.endReason = "SURRENDER";
       this.lastAnnouncement = `${this.loser.username} surrendered! ${this.winner.username} wins!`;
-      return { success: true, message: this.lastAnnouncement };
+      return {
+      success: true,
+      message: this.lastAnnouncement,
+      isGameOver: this.phase === "ENDED",
+      winnerId: this.winner?.id,
+    };
     }
 
     if (playerId !== this.currentTurnId) {
@@ -180,7 +187,12 @@ export class FightEngine {
       this.currentTurnId = defender.id;
     }
 
-    return { success: true, message: this.lastAnnouncement };
+    return {
+      success: true,
+      message: this.lastAnnouncement,
+      isGameOver: this.phase === "ENDED",
+      winnerId: this.winner?.id,
+    };
   }
 
   /**

@@ -2,6 +2,9 @@ import { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, Client
 import { randomBytes } from "crypto";
 import { EventEmitter } from "events";
 import { Canvas, createCanvas, loadImage } from "@napi-rs/canvas";
+import path, * as path$1 from "node:path";
+import { fileURLToPath } from "node:url";
+import * as fs from "node:fs";
 // src/version.ts
 const version = "14.28.0";
 const VERSION = version;
@@ -363,12 +366,16 @@ var BaseGame = class {
 				lastUpdated: Date.now(),
 				isGameOver: false
 			});
+			if (this.manager.soundboard && typeof this.manager.soundboard.triggerSound === "function") this.manager.soundboard.triggerSound("gamestart", {
+				sessionId: this.id,
+				game: this.gameKey
+			});
 		}
 	}
 	/**
 	* Emits the gameOver lifecycle event on WekyManager and updates the bridge session.
 	*/
-	emitEnd(outcome, score = 0) {
+	emitEnd(outcome, score = 0, extra = {}) {
 		const timeElapsed = this.startTime > 0 ? Date.now() - this.startTime : 0;
 		if (this.manager) {
 			if (typeof this.manager.emit === "function") this.manager.emit("gameOver", {
@@ -377,9 +384,20 @@ var BaseGame = class {
 				outcome,
 				score,
 				timeElapsed,
-				timestamp: Date.now()
+				timestamp: Date.now(),
+				...extra
 			});
-			if (this.manager.bridge && typeof this.manager.bridge.endSession === "function") this.manager.bridge.endSession(this.id, { reason: outcome });
+			if (this.manager.bridge && typeof this.manager.bridge.endSession === "function") this.manager.bridge.endSession(this.id, {
+				reason: outcome,
+				...extra
+			});
+			if (this.manager.soundboard && typeof this.manager.soundboard.triggerSound === "function") {
+				const soundKey = outcome === "WIN" || outcome === "won" ? "victory" : outcome === "LOSE" || outcome === "lost" || outcome === "loss" || outcome === "gameover" ? "defeat" : outcome === "tie" ? "tie" : "action";
+				this.manager.soundboard.triggerSound(soundKey, {
+					sessionId: this.id,
+					game: this.gameKey
+				});
+			}
 		}
 	}
 	/**
@@ -2711,9 +2729,15 @@ var Fight = class extends BaseGame {
 		this.isActive = false;
 		this.clearTimer();
 		this.destroy();
-		this.emitEnd(reason);
 		const winnerData = winner || (this.p1.health > this.p2.health ? this.p1 : this.p2);
 		const loserData = loser || (winnerData.id === this.p1.id ? this.p2 : this.p1);
+		let outcome = reason;
+		if (reason === "WIN") outcome = winnerData.id === this.p1.id ? "WIN" : "LOSE";
+		else if (reason === "SURRENDER") outcome = winnerData.id === this.p1.id ? "WIN" : "LOSE";
+		this.emitEnd(outcome, outcome === "WIN" ? 1 : 0, {
+			winner: winnerData,
+			loser: loserData
+		});
 		const buffer = await RenderFight.renderOutcomeCard({
 			username: winnerData.username,
 			avatarUrl: winnerData.avatarUrl
@@ -4732,7 +4756,18 @@ var RockPaperScissors = class extends BaseGame {
 		this.isActive = false;
 		this.clearTimer();
 		this.destroy();
-		this.emitEnd(state);
+		let outcome = state;
+		if (state === "result") {
+			const m1 = this.p1Move || "rock";
+			const m2 = this.p2Move || "rock";
+			if (m1 === m2) outcome = "tie";
+			else if (m1 === "rock" && m2 === "scissors" || m1 === "paper" && m2 === "rock" || m1 === "scissors" && m2 === "paper") outcome = "won";
+			else outcome = "lost";
+		}
+		this.emitEnd(outcome, outcome === "won" ? 1 : 0, {
+			p1Move: this.p1Move,
+			p2Move: this.p2Move
+		});
 		const container = this.createGameContainer(state);
 		await this.ctx.edit({
 			components: [container],
@@ -5610,7 +5645,9 @@ var TicTacToe = class extends BaseGame {
 		this.isActive = false;
 		this.clearTimer();
 		this.destroy();
-		this.emitEnd(state, state === "won" && winningSymbol === "X" ? 1 : 0);
+		let outcome = state;
+		if (state === "won") outcome = winningSymbol === "X" ? "won" : "lost";
+		this.emitEnd(outcome, outcome === "won" ? 1 : 0, { winningSymbol });
 		const container = this.createGameContainer(state, winningSymbol);
 		await this.ctx.edit({
 			components: [container],
@@ -8121,70 +8158,311 @@ var RenderShareCard = class {
 		return canvas.toBuffer("image/png");
 	}
 };
+// node_modules/tsdown/esm-shims.js
+const getFilename = () => fileURLToPath(import.meta.url);
+const getDirname = () => path.dirname(getFilename());
+const __dirname = /* @__PURE__ */ getDirname();
 // src/soundboard/SoundboardManager.ts
 /**
-* Soundboard & Audio Integration
-* Plays Discord soundboard sounds on key minigame events.
+* Dashboard Audio & MP3 Soundboard Engine
+* Provides MP3 audio playback cues for Web Dashboards, Headless Game Engines,
+* and Cross-Platform Bridge gameplay without requiring Discord Voice Channels.
 *
 * @copyright 2026 M3rcena Development. All rights reserved.
 * @license Apache-2.0
 */
+/** Built-in high-quality MP3 audio library for Web Dashboards */
+const DEFAULT_DASHBOARD_SOUNDS = {
+	victory: {
+		key: "victory",
+		name: "Victory Fanfare",
+		category: "victory",
+		url: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/main/assets/sounds/victory.mp3",
+		description: "Triumphant fanfare played on match wins and new high scores."
+	},
+	defeat: {
+		key: "defeat",
+		name: "Defeat & Game Over",
+		category: "defeat",
+		url: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/main/assets/sounds/defeat.mp3",
+		description: "Somber fail chime played on round defeat or game over."
+	},
+	action: {
+		key: "action",
+		name: "Button & Move Click",
+		category: "general",
+		url: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/main/assets/sounds/action.mp3",
+		description: "Subtle tactile sound for card interactions, button presses, and moves."
+	},
+	countdown: {
+		key: "countdown",
+		name: "Countdown Tick",
+		category: "general",
+		url: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/main/assets/sounds/countdown.mp3",
+		description: "Metronome tick for active turn countdowns and speed rounds."
+	},
+	hit: {
+		key: "hit",
+		name: "Combat Hit Impact",
+		category: "combat",
+		url: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/main/assets/sounds/hit.mp3",
+		description: "Impact sound for weapon strikes and normal attacks in Fight RPG."
+	},
+	heavy_hit: {
+		key: "heavy_hit",
+		name: "Heavy Critical Strike",
+		category: "combat",
+		url: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/main/assets/sounds/heavy_hit.mp3",
+		description: "Heavy bass strike for critical attacks and boss special moves."
+	},
+	heal: {
+		key: "heal",
+		name: "Magic Heal & Shield",
+		category: "combat",
+		url: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/main/assets/sounds/heal.mp3",
+		description: "Glittering chime for healing potions and shield activation."
+	},
+	eat: {
+		key: "eat",
+		name: "Retro Munch & Collect",
+		category: "retro",
+		url: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/main/assets/sounds/eat.mp3",
+		description: "Classic arcade bite sound for Snake apples and 2048 merges."
+	},
+	tie: {
+		key: "tie",
+		name: "Match Draw",
+		category: "general",
+		url: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/main/assets/sounds/tie.mp3",
+		description: "Harmonic neutral chime for ties and stalemate matches."
+	},
+	gamestart: {
+		key: "gamestart",
+		name: "Arcade Coin Insert",
+		category: "retro",
+		url: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/main/assets/sounds/gamestart.mp3",
+		description: "Classic coin drop sound when launching a new game session."
+	},
+	win_streak: {
+		key: "win_streak",
+		name: "Combo Streak Fire",
+		category: "victory",
+		url: "https://raw.githubusercontent.com/M3rcena/m3rcena-weky/main/assets/sounds/win_streak.mp3",
+		description: "Ignition flare sound when reaching high win streaks."
+	}
+};
+/** Backwards-compatible alias */
+const DEFAULT_DISCORD_SOUNDS = Object.values(DEFAULT_DASHBOARD_SOUNDS).map((s) => ({
+	id: s.key,
+	name: s.name,
+	emoji: s.category === "victory" ? "🏆" : s.category === "combat" ? "⚔️" : s.category === "retro" ? "🕹️" : "🔊"
+}));
 var SoundboardManager = class {
 	client;
 	config;
-	constructor(client, config = {}) {
+	wekyManager;
+	constructor(client, config = {}, wekyManager) {
 		this.client = client;
+		this.wekyManager = wekyManager;
 		this.config = {
-			enabled: config.enabled ?? false,
+			enabled: config.enabled ?? true,
+			volume: typeof config.volume === "number" ? Math.max(0, Math.min(1, config.volume)) : .8,
 			sounds: config.sounds || {}
 		};
 	}
 	/**
-	* Safely plays a soundboard sound in the given voice channel with diagnostic details.
+	* Returns whether dashboard audio is enabled.
 	*/
-	async playSoundWithResult(channelId, soundTypeOrId, sourceGuildId) {
-		if (!this.config.enabled) return {
-			success: false,
-			error: "Soundboard integration is disabled in WekyManager configuration."
-		};
-		if (!channelId) return {
-			success: false,
-			error: "A valid Voice Channel ID is required to trigger soundboard playback."
-		};
-		const soundId = this.config.sounds?.[soundTypeOrId] || soundTypeOrId;
-		if (!soundId) return {
-			success: false,
-			error: `No sound ID found for '${soundTypeOrId}'.`
-		};
-		try {
-			if (this.client.rest && typeof this.client.rest.post === "function") {
-				const body = { sound_id: soundId };
-				if (sourceGuildId) body.source_guild_id = sourceGuildId;
-				await this.client.rest.post(`/channels/${channelId}/send-soundboard-sound`, { body });
-				return {
-					success: true,
-					soundId
-				};
-			}
-			return {
-				success: false,
-				error: "Discord.js REST client is unavailable."
-			};
-		} catch (err) {
-			return {
-				success: false,
-				error: err?.rawError?.message || err?.message || "Failed to dispatch soundboard sound.",
-				soundId
-			};
-		}
+	get isEnabled() {
+		return this.config.enabled ?? true;
 	}
 	/**
-	* Safely plays a soundboard sound in the given voice channel.
-	* If soundboard is disabled or bot lacks permissions, fails silently without crashing.
+	* Returns default playback volume (0.0 to 1.0).
 	*/
-	async playSound(channelId, soundTypeOrId, sourceGuildId) {
-		return (await this.playSoundWithResult(channelId, soundTypeOrId, sourceGuildId)).success;
+	get volume() {
+		return this.config.volume ?? .8;
 	}
+	/**
+	* Retrieves the MP3 sound URL for a given event key.
+	* If a custom URL was provided in config, it takes precedence over built-in defaults.
+	*/
+	getSoundUrl(soundKey) {
+		const customUrl = this.config.sounds?.[soundKey];
+		if (customUrl) return customUrl;
+		const defaultSound = DEFAULT_DASHBOARD_SOUNDS[soundKey];
+		if (defaultSound) return defaultSound.url;
+		return DEFAULT_DASHBOARD_SOUNDS.action.url;
+	}
+	/**
+	* Retrieves a registered sound entry by key.
+	*/
+	getSound(soundKey) {
+		const customUrl = this.config.sounds?.[soundKey];
+		const defaultEntry = DEFAULT_DASHBOARD_SOUNDS[soundKey];
+		if (customUrl) return {
+			key: soundKey,
+			name: defaultEntry?.name || soundKey.toUpperCase(),
+			category: defaultEntry?.category || "general",
+			url: customUrl,
+			description: defaultEntry?.description || "Custom developer MP3 audio track."
+		};
+		return defaultEntry;
+	}
+	/**
+	* Returns all available sound entries as a dictionary.
+	*/
+	getAllSounds() {
+		const combined = { ...DEFAULT_DASHBOARD_SOUNDS };
+		if (this.config.sounds) for (const [key, url] of Object.entries(this.config.sounds)) {
+			if (!url) continue;
+			const existing = combined[key];
+			combined[key] = {
+				key,
+				name: existing?.name || key.toUpperCase(),
+				category: existing?.category || "general",
+				url,
+				description: existing?.description || "Custom developer MP3 audio track."
+			};
+		}
+		return combined;
+	}
+	/**
+	* Generates a lightweight JSON manifest of all MP3 audio tracks for Web Dashboards.
+	*/
+	getAudioManifest() {
+		const manifest = {};
+		const all = this.getAllSounds();
+		for (const [k, v] of Object.entries(all)) manifest[k] = {
+			name: v.name,
+			url: v.url,
+			category: v.category
+		};
+		return manifest;
+	}
+	/**
+	* Returns the directory path containing the bundled MP3 audio files.
+	* Useful for web servers (Express/Fastify/Next.js) serving static audio files.
+	*/
+	getSoundsDirectory() {
+		const candidatePaths = [path$1.resolve(process.cwd(), "assets/sounds"), path$1.resolve(process.cwd(), "node_modules/@m3rcena/weky/assets/sounds")];
+		try {
+			if (typeof __dirname !== "undefined") {
+				candidatePaths.push(path$1.resolve(__dirname, "../../assets/sounds"));
+				candidatePaths.push(path$1.resolve(__dirname, "../assets/sounds"));
+			}
+		} catch {}
+		for (const p of candidatePaths) if (fs.existsSync(p)) return p;
+		return candidatePaths[0];
+	}
+	/**
+	* Returns the local file path for an MP3 audio asset if it exists on disk.
+	*/
+	getLocalSoundPath(soundKey) {
+		const dir = this.getSoundsDirectory();
+		return path$1.join(dir, `${soundKey}.mp3`);
+	}
+	/**
+	* Triggers a dashboard audio sound cue, dispatching a `dashboardSound` lifecycle event.
+	*/
+	triggerSound(soundKey, meta = {}) {
+		if (!this.config.enabled) return null;
+		const soundUrl = this.getSoundUrl(soundKey);
+		const volume = typeof meta.volume === "number" ? Math.max(0, Math.min(1, meta.volume)) : this.volume;
+		const eventPayload = {
+			sessionId: meta.sessionId,
+			game: meta.game,
+			soundKey,
+			soundUrl,
+			volume,
+			timestamp: Date.now()
+		};
+		if (this.wekyManager && typeof this.wekyManager.emit === "function") this.wekyManager.emit("dashboardSound", eventPayload);
+		return eventPayload;
+	}
+	/**
+	* Returns a ready-to-use HTML/JavaScript client-side script snippet that web dashboards
+	* can include to automatically play MP3 sounds on user interactions and WebSocket events.
+	*/
+	generateDashboardAudioScript(options = {}) {
+		return `
+<!-- Weky Web Dashboard Audio Controller -->
+<script>
+(function() {
+  const WEKY_AUDIO_MANIFEST = ${JSON.stringify(this.getAudioManifest())};
+  const WekyAudio = {
+    manifest: WEKY_AUDIO_MANIFEST,
+    volume: ${options.defaultVolume ?? this.volume},
+    cache: {},
+    play: function(soundKey, customVol) {
+      try {
+        const sound = WEKY_AUDIO_MANIFEST[soundKey] || { url: soundKey };
+        if (!sound.url) return;
+        const audio = new Audio(sound.url);
+        audio.volume = typeof customVol === 'number' ? Math.max(0, Math.min(1, customVol)) : WekyAudio.volume;
+        audio.play().catch(function(err) {
+          // Autoplay policy: audio will play once the user interacts with the dashboard
+        });
+      } catch (e) {
+        console.warn('[WekyAudio] Playback notice:', e);
+      }
+    }
+  };
+  window.WekyAudio = WekyAudio;
+})();
+<\/script>`.trim();
+	}
+	/**
+	* Safely plays a soundboard sound for dashboards.
+	* Fully backwards compatible with existing minigame call sites.
+	*/
+	async playSoundWithResult(channelOrKey, soundTypeOrId, options) {
+		if (!this.config.enabled) return {
+			success: false,
+			platform: "dashboard",
+			error: "Soundboard integration is disabled in WekyManager configuration."
+		};
+		const soundKey = (soundTypeOrId || channelOrKey || "action").toString();
+		const soundUrl = this.getSoundUrl(soundKey);
+		let vol = this.volume;
+		let sessionId;
+		let game;
+		if (typeof options === "object" && options !== null) {
+			if (typeof options.volume === "number") vol = options.volume;
+			if (options.sessionId) sessionId = options.sessionId;
+			if (options.game) game = options.game;
+		}
+		this.triggerSound(soundKey, {
+			sessionId,
+			game,
+			volume: vol
+		});
+		return {
+			success: true,
+			soundKey,
+			soundUrl,
+			volume: vol,
+			platform: "dashboard"
+		};
+	}
+	/**
+	* Safely plays a soundboard sound.
+	*/
+	async playSound(channelOrKey, soundTypeOrId, options) {
+		return (await this.playSoundWithResult(channelOrKey, soundTypeOrId, options)).success;
+	}
+	/**
+	* Backwards-compatible stubs for previous voice channel controls.
+	*/
+	isConnectedTo() {
+		return false;
+	}
+	async joinVoice() {
+		return null;
+	}
+	leaveVoice() {
+		return false;
+	}
+	destroy() {}
 };
 // src/bridge/WekyBridge.ts
 /**
@@ -8303,6 +8581,20 @@ var WekyBridge = class {
 			if (result.isGameOver) {
 				session.isGameOver = true;
 				session.winnerId = result.winnerId;
+			}
+			if (this.wekyManager?.soundboard && typeof this.wekyManager.soundboard.getSoundUrl === "function") {
+				let soundKey = "action";
+				if (result.isGameOver) soundKey = result.winnerId ? "victory" : "tie";
+				else if (move.action === "hit" || move.action === "heavy") soundKey = "hit";
+				else if (move.action === "heal") soundKey = "heal";
+				else if (move.action === "eat" || session.game === "snake") soundKey = "eat";
+				const soundUrl = this.wekyManager.soundboard.getSoundUrl(soundKey);
+				result.soundKey = soundKey;
+				result.soundUrl = soundUrl;
+				this.wekyManager.soundboard.triggerSound(soundKey, {
+					sessionId: session.id,
+					game: session.game
+				});
 			}
 			if (this.wekyManager && typeof this.wekyManager.emit === "function") {
 				this.wekyManager.emit("crossPlatformMove", {
@@ -8543,7 +8835,7 @@ var WekyManager = class extends EventEmitter {
 			if (typeof options.notifyUpdates === "boolean") this.notifyUpdates = options.notifyUpdates;
 		}
 		const sbConfig = options && typeof options === "object" ? options.soundboard : void 0;
-		this.soundboard = new SoundboardManager(this._client, sbConfig);
+		this.soundboard = new SoundboardManager(this._client, sbConfig, this);
 		const lbConfig = options && typeof options === "object" ? options.leaderboard : void 0;
 		this.leaderboard = new LeaderboardManager({
 			...lbConfig,
@@ -9149,7 +9441,9 @@ var FightEngine = class {
 		return {
 			success: res.success,
 			message: res.message,
-			announcement: this.lastAnnouncement
+			announcement: this.lastAnnouncement,
+			isGameOver: res.isGameOver,
+			winnerId: res.winnerId
 		};
 	}
 	/**
@@ -9176,7 +9470,9 @@ var FightEngine = class {
 			this.lastAnnouncement = `${this.loser.username} surrendered! ${this.winner.username} wins!`;
 			return {
 				success: true,
-				message: this.lastAnnouncement
+				message: this.lastAnnouncement,
+				isGameOver: this.phase === "ENDED",
+				winnerId: this.winner?.id
 			};
 		}
 		if (playerId !== this.currentTurnId) return {
@@ -9247,7 +9543,9 @@ var FightEngine = class {
 		} else this.currentTurnId = defender.id;
 		return {
 			success: true,
-			message: this.lastAnnouncement
+			message: this.lastAnnouncement,
+			isGameOver: this.phase === "ENDED",
+			winnerId: this.winner?.id
 		};
 	}
 	/**
@@ -10072,6 +10370,6 @@ var WekyEngine = class WekyEngine {
 * @copyright 2026 M3rcena Development. All rights reserved.
 * @license Apache-2.0
 */
-export { ARCADE_GAMES, ArcadeHub, BaseGame, COMMON_WORDS, Calculator, CalculatorEngine, CanvasUtils, ChaosWords, ContextAdapter, EASY_SENTENCES, EventManager, FIGHT_BOSSES, FastType, Fight, FightAI, FightEngine, Game2048, Game2048Engine, GuessTheNumber, GuessThePokemon, HANGMAN_CATEGORIES, HARD_SENTENCES, Hangman, HangmanEngine, LeaderboardManager, LieSwatter, MEDIUM_SENTENCES, MathEvaluator, NEVER_HAVE_I_EVER_PROMPTS, NeverHaveIEver, POPULAR_POKEMONS, QuickClick, RPSPredictor, Render2048, RenderBracket, RenderFight, RenderHangman, RenderLeaderboard, RenderPokemon, RenderShareCard, RenderSnake, RockPaperScissors, ShuffleGuess, Snake, SnakeEngine, SoundboardManager, TRIVIA_FACTS, TicTacToe, TicTacToeAI, TicTacToeEngine, TournamentManager, VERSION, WYPTB_DILEMMAS, WYR_DILEMMAS, WekyBridge, WekyCanvas, WekyEngine, WekyManager, WillYouPressTheButton, WouldYouRather, boxConsole, checkPackageUpdates, clamp, compareSemver, fetchLatestVersion, fetchRandomPokemon, formatTime, getRandomHangmanWord, getRandomNHIE, getRandomSentence, getRandomString, getRandomTriviaFact, getRandomWYPTB, getRandomWYR, getRandomWord, getRandomWords, safeResolveColor, shuffleArray, shuffleString, stripAnsi, version };
+export { ARCADE_GAMES, ArcadeHub, BaseGame, COMMON_WORDS, Calculator, CalculatorEngine, CanvasUtils, ChaosWords, ContextAdapter, DEFAULT_DASHBOARD_SOUNDS, DEFAULT_DISCORD_SOUNDS, EASY_SENTENCES, EventManager, FIGHT_BOSSES, FastType, Fight, FightAI, FightEngine, Game2048, Game2048Engine, GuessTheNumber, GuessThePokemon, HANGMAN_CATEGORIES, HARD_SENTENCES, Hangman, HangmanEngine, LeaderboardManager, LieSwatter, MEDIUM_SENTENCES, MathEvaluator, NEVER_HAVE_I_EVER_PROMPTS, NeverHaveIEver, POPULAR_POKEMONS, QuickClick, RPSPredictor, Render2048, RenderBracket, RenderFight, RenderHangman, RenderLeaderboard, RenderPokemon, RenderShareCard, RenderSnake, RockPaperScissors, ShuffleGuess, Snake, SnakeEngine, SoundboardManager, TRIVIA_FACTS, TicTacToe, TicTacToeAI, TicTacToeEngine, TournamentManager, VERSION, WYPTB_DILEMMAS, WYR_DILEMMAS, WekyBridge, WekyCanvas, WekyEngine, WekyManager, WillYouPressTheButton, WouldYouRather, boxConsole, checkPackageUpdates, clamp, compareSemver, fetchLatestVersion, fetchRandomPokemon, formatTime, getRandomHangmanWord, getRandomNHIE, getRandomSentence, getRandomString, getRandomTriviaFact, getRandomWYPTB, getRandomWYR, getRandomWord, getRandomWords, safeResolveColor, shuffleArray, shuffleString, stripAnsi, version };
 
 //# sourceMappingURL=index.mjs.map

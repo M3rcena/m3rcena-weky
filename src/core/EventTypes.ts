@@ -23,7 +23,7 @@ export interface GameOverEvent {
   game: string;
   /** The Discord user who played */
   user: User | GuildMember;
-  /** Game outcome string (e.g. "won", "lost", "draw", "timeout", "aborted", "finished") */
+  /** Game outcome string (e.g. "WIN", "LOSE", "won", "lost", "tie", "timeout", "aborted", "finished") */
   outcome: string;
   /** Score or final points achieved */
   score: number;
@@ -31,6 +31,11 @@ export interface GameOverEvent {
   timeElapsed: number;
   /** Timestamp when game finished */
   timestamp: number;
+  /** Optional winner participant */
+  winner?: any;
+  /** Optional loser participant */
+  loser?: any;
+  [key: string]: any;
 }
 
 export interface GameErrorEvent {
@@ -128,6 +133,21 @@ export interface BridgeSyncEvent {
   timestamp: number;
 }
 
+export interface DashboardSoundEvent {
+  /** Session ID if associated with an active game session */
+  sessionId?: string;
+  /** Minigame key (e.g. "fight", "snake", "2048") */
+  game?: string;
+  /** Audio cue key (e.g. "victory", "defeat", "action", "hit", "heal", "eat") */
+  soundKey: string;
+  /** MP3 audio URL */
+  soundUrl: string;
+  /** Playback volume between 0.0 and 1.0 */
+  volume: number;
+  /** Event timestamp */
+  timestamp: number;
+}
+
 /**
  * Type-safe map associating WekyManager event names with their exact parameter tuples.
  */
@@ -142,5 +162,6 @@ export interface WekyEvents {
   tournamentEnd: [event: TournamentEndEvent];
   crossPlatformMove: [event: CrossPlatformMoveEvent];
   bridgeSync: [event: BridgeSyncEvent];
+  dashboardSound: [event: DashboardSoundEvent];
 }
 

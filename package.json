@@ -61,6 +61,7 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
+    "@discordjs/voice": "^0.19.2",
     "@napi-rs/canvas": "^1.1.0",
     "chalk": "^6.0.1",
     "discord.js": "^14.28.0",

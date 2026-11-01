@@ -359,10 +359,22 @@ export class Fight extends BaseGame<FightTypes> {
     this.isActive = false;
     this.clearTimer();
     this.destroy();
-    this.emitEnd(reason);
 
     const winnerData = winner || (this.p1.health > this.p2.health ? this.p1 : this.p2);
     const loserData = loser || (winnerData.id === this.p1.id ? this.p2 : this.p1);
+
+    // Determine the outcome from the perspective of the initiator (this.ctx.user / this.p1):
+    let outcome: string = reason;
+    if (reason === "WIN") {
+      outcome = winnerData.id === this.p1.id ? "WIN" : "LOSE";
+    } else if (reason === "SURRENDER") {
+      outcome = winnerData.id === this.p1.id ? "WIN" : "LOSE";
+    }
+
+    this.emitEnd(outcome, outcome === "WIN" ? 1 : 0, {
+      winner: winnerData,
+      loser: loserData,
+    });
 
     const buffer = await RenderFight.renderOutcomeCard({ username: winnerData.username, avatarUrl: winnerData.avatarUrl }, loserData ? { username: loserData.username, avatarUrl: loserData.avatarUrl } : undefined, reason);
     const attachment = new AttachmentBuilder(buffer, { name: "fight-outcome.png" });

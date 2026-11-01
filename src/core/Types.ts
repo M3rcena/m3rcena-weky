@@ -647,4 +647,4 @@ export type { BracketParticipant, BracketMatch, BracketRenderOptions } from "../
 export type { LeaderboardPlayer, EloChangeResult, LeaderboardStorageAdapter, LeaderboardManagerOptions } from "../leaderboard/LeaderboardManager.js";
 export type { LeaderboardEntry, RenderLeaderboardOptions } from "../canvas/RenderLeaderboard.js";
 export type { ShareCardStat, RenderShareCardOptions } from "../canvas/RenderShareCard.js";
-export type { SoundboardConfig } from "../soundboard/SoundboardManager.js";
+export type { SoundboardConfig, SoundboardPlayOptions, SoundboardPlayResult, DashboardSoundEntry } from "../soundboard/SoundboardManager.js";

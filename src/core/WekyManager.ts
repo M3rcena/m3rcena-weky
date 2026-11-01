@@ -114,7 +114,7 @@ export class WekyManager extends EventEmitter {
     }
 
     const sbConfig = options && typeof options === "object" ? options.soundboard : undefined;
-    this.soundboard = new SoundboardManager(this._client, sbConfig);
+    this.soundboard = new SoundboardManager(this._client, sbConfig, this);
 
     const lbConfig = options && typeof options === "object" ? options.leaderboard : undefined;
     this.leaderboard = new LeaderboardManager({ ...lbConfig, wekyManager: this });

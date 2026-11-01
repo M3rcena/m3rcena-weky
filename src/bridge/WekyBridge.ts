@@ -32,6 +32,8 @@ export interface BridgeMoveResult {
   isGameOver?: boolean;
   winnerId?: string;
   announcement?: string;
+  soundKey?: string;
+  soundUrl?: string;
   error?: string;
 }
 
@@ -210,6 +212,29 @@ export class WekyBridge {
       if (result.isGameOver) {
         session.isGameOver = true;
         session.winnerId = result.winnerId;
+      }
+
+      // Attach dashboard MP3 audio cue
+      if (this.wekyManager?.soundboard && typeof this.wekyManager.soundboard.getSoundUrl === "function") {
+        let soundKey = "action";
+        if (result.isGameOver) {
+          soundKey = result.winnerId ? "victory" : "tie";
+        } else if (move.action === "hit" || move.action === "heavy") {
+          soundKey = "hit";
+        } else if (move.action === "heal") {
+          soundKey = "heal";
+        } else if (move.action === "eat" || session.game === "snake") {
+          soundKey = "eat";
+        }
+
+        const soundUrl = this.wekyManager.soundboard.getSoundUrl(soundKey);
+        result.soundKey = soundKey;
+        result.soundUrl = soundUrl;
+
+        this.wekyManager.soundboard.triggerSound(soundKey, {
+          sessionId: session.id,
+          game: session.game,
+        });
       }
 
       // Telemetry emit

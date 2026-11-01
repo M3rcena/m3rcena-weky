@@ -44,7 +44,7 @@ export interface GameOverEvent {
   game: string;
   /** The Discord user who played */
   user: User | GuildMember;
-  /** Game outcome string (e.g. "won", "lost", "draw", "timeout", "aborted", "finished") */
+  /** Game outcome string (e.g. "WIN", "LOSE", "won", "lost", "tie", "timeout", "aborted", "finished") */
   outcome: string;
   /** Score or final points achieved */
   score: number;
@@ -52,6 +52,11 @@ export interface GameOverEvent {
   timeElapsed: number;
   /** Timestamp when game finished */
   timestamp: number;
+  /** Optional winner participant */
+  winner?: any;
+  /** Optional loser participant */
+  loser?: any;
+  [key: string]: any;
 }
 export interface GameErrorEvent {
   /** The minigame key */
@@ -153,6 +158,20 @@ export interface BridgeSyncEvent {
   /** Timestamp */
   timestamp: number;
 }
+export interface DashboardSoundEvent {
+  /** Session ID if associated with an active game session */
+  sessionId?: string;
+  /** Minigame key (e.g. "fight", "snake", "2048") */
+  game?: string;
+  /** Audio cue key (e.g. "victory", "defeat", "action", "hit", "heal", "eat") */
+  soundKey: string;
+  /** MP3 audio URL */
+  soundUrl: string;
+  /** Playback volume between 0.0 and 1.0 */
+  volume: number;
+  /** Event timestamp */
+  timestamp: number;
+}
 /**
  * Type-safe map associating WekyManager event names with their exact parameter tuples.
  */
@@ -167,6 +186,7 @@ export interface WekyEvents {
   tournamentEnd: [event: TournamentEndEvent];
   crossPlatformMove: [event: CrossPlatformMoveEvent];
   bridgeSync: [event: BridgeSyncEvent];
+  dashboardSound: [event: DashboardSoundEvent];
 }
 interface ArcadeHubCustomTexts {
   /** Custom description text */
@@ -688,33 +708,121 @@ interface RenderShareCardOptions {
 export declare class RenderShareCard {
   static render(options: RenderShareCardOptions): Promise<Buffer>;
 }
+interface DashboardSoundEntry {
+  key: string;
+  name: string;
+  category: "general" | "victory" | "defeat" | "combat" | "retro";
+  url: string;
+  description: string;
+}
 interface SoundboardConfig {
+  /** Whether dashboard soundboard playback is enabled (default: true) */
   enabled?: boolean;
-  sounds?: {
-    victory?: string;
-    defeat?: string;
-    countdown?: string;
-    action?: string;
-  };
+  /** Default playback volume between 0.0 and 1.0 (default: 0.8) */
+  volume?: number;
+  /** Custom developer MP3 URLs or relative asset paths mapped to sound event keys */
+  sounds?: Record<string, string>;
+}
+interface SoundboardPlayOptions {
+  /** Volume override for this playback event (0.0 to 1.0) */
+  volume?: number;
+  /** Associated bridge session ID */
+  sessionId?: string;
+  /** Associated minigame key */
+  game?: string;
+  [key: string]: any;
 }
 interface SoundboardPlayResult {
   success: boolean;
+  soundKey?: string;
+  soundUrl?: string;
+  volume?: number;
+  platform: "dashboard";
   error?: string;
-  soundId?: string;
 }
+/** Built-in high-quality MP3 audio library for Web Dashboards */
+export declare const DEFAULT_DASHBOARD_SOUNDS: Record<string, DashboardSoundEntry>;
+/** Backwards-compatible alias */
+export declare const DEFAULT_DISCORD_SOUNDS: {
+  id: string;
+  name: string;
+  emoji: string;
+}[];
 export declare class SoundboardManager {
   private client;
   private config;
-  constructor(client: Client, config?: SoundboardConfig);
+  wekyManager?: any;
+  constructor(client: Client, config?: SoundboardConfig, wekyManager?: any);
   /**
-   * Safely plays a soundboard sound in the given voice channel with diagnostic details.
+   * Returns whether dashboard audio is enabled.
    */
-  playSoundWithResult(channelId: string, soundTypeOrId: "victory" | "defeat" | "countdown" | "action" | string, sourceGuildId?: string): Promise<SoundboardPlayResult>;
+  get isEnabled(): boolean;
   /**
-   * Safely plays a soundboard sound in the given voice channel.
-   * If soundboard is disabled or bot lacks permissions, fails silently without crashing.
+   * Returns default playback volume (0.0 to 1.0).
    */
-  playSound(channelId: string, soundTypeOrId: "victory" | "defeat" | "countdown" | "action" | string, sourceGuildId?: string): Promise<boolean>;
+  get volume(): number;
+  /**
+   * Retrieves the MP3 sound URL for a given event key.
+   * If a custom URL was provided in config, it takes precedence over built-in defaults.
+   */
+  getSoundUrl(soundKey: string): string;
+  /**
+   * Retrieves a registered sound entry by key.
+   */
+  getSound(soundKey: string): DashboardSoundEntry | undefined;
+  /**
+   * Returns all available sound entries as a dictionary.
+   */
+  getAllSounds(): Record<string, DashboardSoundEntry>;
+  /**
+   * Generates a lightweight JSON manifest of all MP3 audio tracks for Web Dashboards.
+   */
+  getAudioManifest(): Record<string, {
+    name: string;
+    url: string;
+    category: string;
+  }>;
+  /**
+   * Returns the directory path containing the bundled MP3 audio files.
+   * Useful for web servers (Express/Fastify/Next.js) serving static audio files.
+   */
+  getSoundsDirectory(): string;
+  /**
+   * Returns the local file path for an MP3 audio asset if it exists on disk.
+   */
+  getLocalSoundPath(soundKey: string): string;
+  /**
+   * Triggers a dashboard audio sound cue, dispatching a `dashboardSound` lifecycle event.
+   */
+  triggerSound(soundKey: string, meta?: {
+    sessionId?: string;
+    game?: string;
+    volume?: number;
+  }): DashboardSoundEvent | null;
+  /**
+   * Returns a ready-to-use HTML/JavaScript client-side script snippet that web dashboards
+   * can include to automatically play MP3 sounds on user interactions and WebSocket events.
+   */
+  generateDashboardAudioScript(options?: {
+    autoPlay?: boolean;
+    defaultVolume?: number;
+  }): string;
+  /**
+   * Safely plays a soundboard sound for dashboards.
+   * Fully backwards compatible with existing minigame call sites.
+   */
+  playSoundWithResult(channelOrKey: string, soundTypeOrId?: string, options?: SoundboardPlayOptions | string): Promise<SoundboardPlayResult>;
+  /**
+   * Safely plays a soundboard sound.
+   */
+  playSound(channelOrKey: string, soundTypeOrId?: string, options?: SoundboardPlayOptions | string): Promise<boolean>;
+  /**
+   * Backwards-compatible stubs for previous voice channel controls.
+   */
+  isConnectedTo(): boolean;
+  joinVoice(): Promise<null>;
+  leaveVoice(): boolean;
+  destroy(): void;
 }
 interface BridgePlayer {
   id: string;
@@ -735,6 +843,8 @@ interface BridgeMoveResult {
   isGameOver?: boolean;
   winnerId?: string;
   announcement?: string;
+  soundKey?: string;
+  soundUrl?: string;
   error?: string;
 }
 interface BridgeSession<TState = any> {
@@ -1748,7 +1858,7 @@ export declare abstract class BaseGame<T extends BaseGameOptions> implements IMi
   /**
    * Emits the gameOver lifecycle event on WekyManager and updates the bridge session.
    */
-  protected emitEnd(outcome: string, score?: number): void;
+  protected emitEnd(outcome: string, score?: number, extra?: Record<string, any>): void;
   /**
    * Emits the gameError lifecycle event on WekyManager.
    */
@@ -2318,6 +2428,8 @@ export declare class FightEngine {
     success: boolean;
     message: string;
     announcement: string;
+    isGameOver?: boolean;
+    winnerId?: string;
   };
   /**
    * Performs a combat action for a fighter.
@@ -2325,6 +2437,8 @@ export declare class FightEngine {
   performAction(action: "hit" | "heavy" | "heal" | "shield" | "double" | "surrender", playerId: string): {
     success: boolean;
     message: string;
+    isGameOver?: boolean;
+    winnerId?: string;
   };
   /**
    * Returns current combat state.
@@ -2876,5 +2990,5 @@ export declare function getRandomHangmanWord(category?: string): {
   word: string;
   category: string;
 };
-export type { ArcadeGameEntry, ArcadeHubCustomTexts, ArcadeHubOptions, BossProfile, BracketMatch, BracketParticipant, BracketRenderOptions, BridgeMoveResult, BridgePlayer, BridgeSession, CalculatorState, ContextSendOptions, CrossPlatformMove, CustomPointingMatchContext, CustomPointingMatchHandler, CustomPointingScoreContext, CustomPointingScoreHandler, DashboardOverview, EloChangeResult, EvaluationResult, FightCardCustomTexts, FightEngineOptions, FightPlayerInfo, FightState, Game2048EngineOptions, Game2048State, GrandFinalsSession, HangmanEngineOptions, HangmanState, LeaderboardCustomTexts, LeaderboardEntry, LeaderboardManagerOptions, LeaderboardPlayer, LeaderboardPointingOptions, LeaderboardStorageAdapter, ManualMatchInput, ManualTournamentOptions, RenderLeaderboardOptions, RenderShareCardOptions, ShareCardCustomTexts, ShareCardStat, SnakeEngineOptions, SnakeState, SoundboardConfig, TicTacToeDifficulty, TicTacToeEngineOptions, TicTacToeState, TournamentCustomTexts, TournamentMatchSession, TournamentOptions, WekyManagerOptions };
+export type { ArcadeGameEntry, ArcadeHubCustomTexts, ArcadeHubOptions, BossProfile, BracketMatch, BracketParticipant, BracketRenderOptions, BridgeMoveResult, BridgePlayer, BridgeSession, CalculatorState, ContextSendOptions, CrossPlatformMove, CustomPointingMatchContext, CustomPointingMatchHandler, CustomPointingScoreContext, CustomPointingScoreHandler, DashboardOverview, DashboardSoundEntry, EloChangeResult, EvaluationResult, FightCardCustomTexts, FightEngineOptions, FightPlayerInfo, FightState, Game2048EngineOptions, Game2048State, GrandFinalsSession, HangmanEngineOptions, HangmanState, LeaderboardCustomTexts, LeaderboardEntry, LeaderboardManagerOptions, LeaderboardPlayer, LeaderboardPointingOptions, LeaderboardStorageAdapter, ManualMatchInput, ManualTournamentOptions, RenderLeaderboardOptions, RenderShareCardOptions, ShareCardCustomTexts, ShareCardStat, SnakeEngineOptions, SnakeState, SoundboardConfig, SoundboardPlayOptions, SoundboardPlayResult, TicTacToeDifficulty, TicTacToeEngineOptions, TicTacToeState, TournamentCustomTexts, TournamentMatchSession, TournamentOptions, WekyManagerOptions };
 //# sourceMappingURL=index.d.mts.map

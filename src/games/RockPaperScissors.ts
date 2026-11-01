@@ -102,7 +102,28 @@ export class RockPaperScissors extends BaseGame<RPSTypes> {
     this.isActive = false;
     this.clearTimer();
     this.destroy();
-    this.emitEnd(state);
+
+    let outcome: string = state;
+    if (state === "result") {
+      const m1 = this.p1Move || "rock";
+      const m2 = this.p2Move || "rock";
+      if (m1 === m2) {
+        outcome = "tie";
+      } else if (
+        (m1 === "rock" && m2 === "scissors") ||
+        (m1 === "paper" && m2 === "rock") ||
+        (m1 === "scissors" && m2 === "paper")
+      ) {
+        outcome = "won";
+      } else {
+        outcome = "lost";
+      }
+    }
+
+    this.emitEnd(outcome, outcome === "won" ? 1 : 0, {
+      p1Move: this.p1Move,
+      p2Move: this.p2Move,
+    });
 
     const container = this.createGameContainer(state);
 

@@ -7,7 +7,13 @@ const CLIENT_ID = process.env.CLIENT_ID || "YOUR_CLIENT_ID_HERE";
 const GUILD_ID = process.env.GUILD_ID;
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMessageTyping],
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildMessageTyping,
+    GatewayIntentBits.GuildVoiceStates,
+  ],
 });
 
 let weky: WekyManager;
@@ -92,8 +98,20 @@ const commands = [
     .addStringOption((opt) => opt.setName("tier").setDescription("Rank tier (e.g. GRANDMASTER or DIAMOND)")),
   new SlashCommandBuilder()
     .setName("soundboard")
-    .setDescription("Test Discord Soundboard audio playback")
-    .addStringOption((opt) => opt.setName("sound").setDescription("Soundboard Sound ID (or leave blank for test sound)")),
+    .setDescription("Preview Dashboard MP3 soundboard audio cues")
+    .addStringOption((opt) =>
+      opt
+        .setName("sound")
+        .setDescription("Dashboard sound cue name")
+        .addChoices(
+          { name: "Victory Fanfare", value: "victory" },
+          { name: "Defeat & Game Over", value: "defeat" },
+          { name: "Combat Hit Impact", value: "hit" },
+          { name: "Magic Heal & Shield", value: "heal" },
+          { name: "Retro Munch / Eat", value: "eat" },
+          { name: "Action / Move Click", value: "action" }
+        )
+    ),
 ];
 
 client.once(Events.ClientReady, async (c) => {
@@ -106,10 +124,7 @@ client.once(Events.ClientReady, async (c) => {
     unauthorizedMessage: "⛔ Only the game initiator can interact with these buttons!",
     soundboard: {
       enabled: true,
-      sounds: {
-        victory: "1234567890",
-        defeat: "9876543210",
-      },
+      volume: 0.8,
     },
     leaderboard: {
       defaultElo: 1200,
@@ -140,7 +155,7 @@ client.once(Events.ClientReady, async (c) => {
         player.winStreak++;
         if (player.winStreak > player.highestStreak) player.highestStreak = player.winStreak;
         player.elo += 25;
-      } else if (outcome === "TIMEOUT" || outcome === "gameover" || outcome === "SURRENDER") {
+      } else if (outcome === "LOSE" || outcome === "lost" || outcome === "loss" || outcome === "TIMEOUT" || outcome === "gameover" || outcome === "SURRENDER") {
         player.losses++;
         player.winStreak = 0;
         player.elo = Math.max(100, player.elo - 15);
@@ -150,6 +165,10 @@ client.once(Events.ClientReady, async (c) => {
 
   weky.on("gameError", ({ game, error }) => {
     console.error(`[Weky Event] ❌ Error in "${game}":`, error);
+  });
+
+  weky.on("dashboardSound", ({ soundKey, soundUrl, volume, game }) => {
+    console.log(`[Weky Audio] 🔊 Dashboard MP3 Triggered: "${soundKey}" (vol: ${volume}) for "${game || "general"}" -> ${soundUrl}`);
   });
 
   weky.on("unauthorizedClick", ({ game, user }) => {
@@ -365,29 +384,15 @@ client.on(Events.InteractionCreate, async (interaction) => {
         files: [file],
       });
     } else if (commandName === "soundboard") {
-      const member = interaction.member as any;
-      const voiceChannel = member?.voice?.channel;
+      const soundKey = interaction.options.getString("sound") || "victory";
+      const sound = weky.soundboard.getSound(soundKey) || weky.soundboard.getSound("victory");
+      const allKeys = Object.keys(weky.soundboard.getAllSounds()).join(", ");
 
-      if (!voiceChannel) {
-        await interaction.reply({
-          content: "⚠️ **Voice Channel Required:**\n> Discord soundboard sounds play exclusively inside **Voice Channels**.\n> Please join any voice channel in this server, then run `/soundboard` again to hear it live!",
-        });
-        return;
-      }
+      weky.soundboard.triggerSound(soundKey, { game: "preview" });
 
-      // Default to "2" which is Discord's official built-in Airhorn
-      const soundId = interaction.options.getString("sound") || "2";
-      const result = await weky.soundboard.playSoundWithResult(voiceChannel.id, soundId);
-
-      if (result.success) {
-        await interaction.reply({
-          content: `🔊 **Soundboard sound dispatched to <#${voiceChannel.id}>!**\n> Playing sound ID \`${result.soundId}\` (${result.soundId === "2" ? "Official Discord Airhorn" : result.soundId === "1" ? "Official Discord Quack" : "Custom Sound"})!`,
-        });
-      } else {
-        await interaction.reply({
-          content: `❌ **Soundboard Notice:**\n> Reason: \`${result.error}\`\n> Target Voice Channel: <#${voiceChannel.id}>\n> **Tip:** Ensure the bot has **Use Soundboard** and **Send Soundboard Sounds** permissions in this server.`,
-        });
-      }
+      await interaction.reply({
+        content: `🔊 **Dashboard Audio Soundboard (MP3 Engine)**\n> 🎶 **Selected Track:** \`${sound?.name}\` (\`${sound?.key}\`)\n> 🔗 **Audio MP3:** [Listen to MP3 Track](${sound?.url})\n> 🕹️ **Category:** \`${sound?.category}\`\n> 🎮 **All Dashboard Sound Cues:** \`${allKeys}\`\n> 💡 *Soundboard audio is now active on Web Dashboards using MP3 files for zero-latency browser audio without requiring a Discord Voice Channel!*`,
+      });
     }
   } catch (err) {
     console.error(`Error executing /${commandName}:`, err);
@@ -489,18 +494,11 @@ client.on(Events.MessageCreate, async (msg) => {
       await msg.reply({ content: `🎟️ **${msg.author.username}'s Gamer Scorecard**`, files: [file] });
     }
     if (command === "soundboard" || command === "sound") {
-      const member = msg.member;
-      const voiceChannel = member?.voice?.channel;
-      if (!voiceChannel) {
-        return msg.reply("⚠️ Please join a **Voice Channel** first to test soundboard playback! e.g. join General and type `w!soundboard`");
-      }
-      const soundId = args[0] || "2"; // Default Airhorn
-      const res = await weky.soundboard.playSoundWithResult(voiceChannel.id, soundId);
-      if (res.success) {
-        await msg.reply(`🔊 Playing soundboard sound ID \`${soundId}\` in <#${voiceChannel.id}>!`);
-      } else {
-        await msg.reply(`❌ Soundboard Error: \`${res.error}\` in <#${voiceChannel.id}>!`);
-      }
+      const soundKey = args[0] || "victory";
+      const sound = weky.soundboard.getSound(soundKey) || weky.soundboard.getSound("victory");
+      const allKeys = Object.keys(weky.soundboard.getAllSounds()).join(", ");
+      weky.soundboard.triggerSound(soundKey, { game: "preview" });
+      await msg.reply(`🔊 **Dashboard Audio Soundboard (MP3 Engine)**\n> 🎶 **Sound:** \`${sound?.name}\` (\`${sound?.key}\`)\n> 🔗 **MP3 Track:** [Click to listen](${sound?.url})\n> 🎮 **Available Sounds:** \`${allKeys}\`\n> 💡 *Plays directly in browser web dashboards during live minigames without needing a voice channel!*`);
     }
   } catch (err) {
     console.error(`Error executing w!${command}:`, err);

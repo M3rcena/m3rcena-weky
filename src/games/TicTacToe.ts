@@ -157,7 +157,13 @@ export class TicTacToe extends BaseGame<TicTacToeTypes> {
     this.clearTimer();
     this.destroy();
 
-    this.emitEnd(state, state === "won" && winningSymbol === "X" ? 1 : 0);
+    // Determine outcome from initiator's perspective ("X"):
+    let outcome: string = state;
+    if (state === "won") {
+      outcome = winningSymbol === "X" ? "won" : "lost";
+    }
+
+    this.emitEnd(outcome, outcome === "won" ? 1 : 0, { winningSymbol });
 
     const container = this.createGameContainer(state, winningSymbol);
 
