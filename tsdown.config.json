@@ -1,5 +1,10 @@
 {
-  "entry": ["src/index.ts"],
+  "entry": [
+    "src/index.ts",
+    "src/resolver.ts",
+    "src/register.ts",
+    "src/host.ts"
+  ],
   "format": ["cjs", "esm"],
   "dts": true,
   "sourcemap": true,
@@ -7,4 +12,3 @@
   "target": "es2022",
   "shims": true
 }
-

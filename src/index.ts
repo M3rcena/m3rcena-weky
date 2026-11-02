@@ -102,3 +102,8 @@ export * from "./data/pokemons.js";
 export * from "./data/sentences.js";
 export * from "./data/trivia.js";
 export * from "./data/words.js";
+
+// Rust-Style Submodule Resolver & Local Host
+export * from "./resolver.js";
+export * from "./host.js";
+
