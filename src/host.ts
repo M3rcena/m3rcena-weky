@@ -15,6 +15,7 @@ import { WekyBridge } from "./bridge/WekyBridge.js";
 import { WekyBridgeRouter } from "./bridge/WekyBridgeRouter.js";
 import { getAllPackageResolutions, printResolutionSummary } from "./resolver.js";
 import { RenderPokemon } from "./canvas/RenderPokemon.js";
+import { version } from "./version.js";
 
 export interface HostWekyOptions {
   port?: number;
@@ -70,7 +71,7 @@ export async function hostWeky(options: HostWekyOptions = {}): Promise<{
           status: "healthy",
           package: "@m3rcena/weky",
           mode: "local-submodule-host",
-          version: "14.28.0",
+          version: version,
           uptime: process.uptime(),
           canvasEngine: "@napi-rs/canvas (blazingly fast Rust renderer)",
         }, null, 2)

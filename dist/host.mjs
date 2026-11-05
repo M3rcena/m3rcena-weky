@@ -1,2 +1,2 @@
-export { t as hostWeky } from "./host-dVt3w8e3.mjs";
+export { t as hostWeky } from "./host-BIej04Ms.mjs";
 import "./resolver.mjs";

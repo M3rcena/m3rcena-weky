@@ -1,6 +1,6 @@
 {
   "name": "@m3rcena/weky",
-  "version": "14.28.0",
+  "version": "14.28.1",
   "description": "The ultimate Discord minigames engine with blazingly fast @napi-rs/canvas graphics, hybrid Slash/Message support, and zero external dependencies.",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
@@ -39,7 +39,9 @@
     "dist",
     "assets",
     "DOCUMENTATION.md",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "README.md",
+    "LICENSE"
   ],
   "publishConfig": {
     "access": "public"
@@ -80,9 +82,9 @@
     "node": ">=22.0.0"
   },
   "dependencies": {
-    "@m3rcena/bridge": "^14.28.0",
+    "@m3rcena/bridge": "^14.28.1",
     "@napi-rs/canvas": "^1.1.0",
-    "discord.js": "^14.28.0"
+    "discord.js": "^14.28.1"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

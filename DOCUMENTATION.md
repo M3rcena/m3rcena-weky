@@ -6,9 +6,9 @@
 > - **[Next-Gen Arcade Suite](https://github.com/M3rcena/m3rcena-weky/wiki/Weky-Arcade-Suite)**
 > - **[Headless Engine & Canvas Card APIs](https://github.com/M3rcena/m3rcena-weky/wiki/Weky-Headless-and-Canvas-APIs)**
 
-Welcome to the definitive documentation for **`@m3rcena/weky`** (v14.28.0).
+Welcome to the definitive documentation for **`@m3rcena/weky`** (v14.28.1).
 
-This document covers everything you need to know: architecture, installation, event listeners, the universal context adapter, full option references for all 17 minigames, the v14.28.0 Next-Gen Arcade Suite (Hub, Tournaments, AI Opponents & Bosses, Soundboard, ELO Leaderboards, and Gamer Cards), headless engines for web dashboards, and the standalone canvas hub.
+This document covers everything you need to know: architecture, installation, event listeners, the universal context adapter, full option references for all 17 minigames, the v14.28.1 Next-Gen Arcade Suite (Hub, Tournaments, AI Opponents & Bosses, Soundboard, ELO Leaderboards, and Gamer Cards), headless engines for web dashboards, and the standalone canvas hub.
 
 ---
 
@@ -55,9 +55,9 @@ This document covers everything you need to know: architecture, installation, ev
 
 ## 1. Architecture & Design Principles
 
-`@m3rcena/weky` v14.28.0 is a complete re-engineering of the original `weky` library:
+`@m3rcena/weky` v14.28.1 is a complete re-engineering of the original `weky` library:
 
-- **Strict Discord.js Version Alignment:** We mirror the Discord.js version numbering (e.g., `14.28.0`). This guarantees exact API parity, zero peer-dependency conflicts, and instant support for Discord's newest features.
+- **Strict Discord.js Version Alignment:** We mirror the Discord.js version numbering (e.g., `14.28.1`). This guarantees exact API parity, zero peer-dependency conflicts, and instant support for Discord's newest features.
 - **Components V2 Native:** Built from the ground up for Discord Components V2 using `ContainerBuilder`, `MediaGalleryBuilder`, and `MessageFlags.IsComponentsV2`.
 - **Rust-Powered Canvas (`@napi-rs/canvas`):** Generates photorealistic high-definition game cards in memory in under 10 milliseconds.
 - **Zero External Server/Database Dependencies:** All state machines, image generation, and data pools run locally inside your bot or app.
@@ -1254,5 +1254,5 @@ await connector.createWager({
 ---
 
 <p align="center">
-  <b>@m3rcena/weky v14.28.0</b> • Designed and engineered with ❤️ by <b>M3rcena</b>
+  <b>@m3rcena/weky v14.28.1</b> • Designed and engineered with ❤️ by <b>M3rcena</b>
 </p>

@@ -19,10 +19,13 @@
     </a>
   </p>
   <p>
-    <img src="https://img.shields.io/badge/Discord.js-v14%20Ready-5865F2?style=flat-square&logo=discord" alt="DJS v14" />
+    <img src="https://img.shields.io/badge/discord.js-v14.28.1-5865F2?style=flat-square&logo=discord" alt="discord.js v14.28.1" />
     <img src="https://img.shields.io/badge/Canvas-@napi--rs/canvas-orange?style=flat-square&logo=rust" alt="@napi-rs/canvas" />
-    <img src="https://img.shields.io/badge/TypeScript-100%25-blue?style=flat-square&logo=typescript" alt="TypeScript" />
-    <img src="https://img.shields.io/badge/License-Apache--2.0-green?style=flat-square" alt="Apache-2.0" />
+    <img src="https://img.shields.io/badge/Node.js-22%20%7C%2024%20%7C%2026%20LTS-green?style=flat-square&logo=node.js" alt="Node LTS" />
+    <img src="https://img.shields.io/badge/TypeScript-7.0-blue?style=flat-square&logo=typescript" alt="TypeScript" />
+    <a href="https://github.com/M3rcena/m3rcena-weky/blob/main/LICENSE">
+      <img src="https://img.shields.io/badge/License-Apache--2.0-green?style=flat-square" alt="Apache-2.0" />
+    </a>
     <a href="https://github.com/M3rcena/m3rcena-weky/wiki">
       <img src="https://img.shields.io/badge/Wiki-Documentation-purple?style=flat-square&logo=gitbook" alt="Wiki Documentation" />
     </a>
@@ -33,19 +36,23 @@
 
 ---
 
-## ⚡ What's New in v14.28.0?
+## ⚡ What's New in v14.28.1?
 
-> **Versioning Notice**: `@m3rcena/weky` strictly mirrors the version numbering of **`discord.js`** (now `14.28.0`). Whenever Discord.js releases updates, `@m3rcena/weky` releases an identical version to ensure 100% API parity, zero peer-dependency conflicts, and instantaneous support for Discord's newest features like **Components V2**.
+> **Versioning Notice**: `@m3rcena/weky` strictly mirrors the version numbering of **`discord.js`** (now `14.28.1`). Whenever Discord.js releases updates, `@m3rcena/weky` releases an identical version to ensure 100% API parity, zero peer-dependency conflicts, and instantaneous support for Discord's newest features like **Components V2** and `Events.ClientReady`.
 
-Version 14.28.0 introduces 7 major, ground-breaking features that elevate Discord gaming beyond simple bot commands:
+Version 14.28.1 delivers total ecosystem harmony alongside `@m3rcena/bridge` and `@m3rcena/eco`:
 
-1. 🕹️ **The Arcade Hub (`weky.createArcadeHub`)**: Centralized launcher grouping all 17 minigames into 4 clean categories with dropdown menus, in-arcade game customization (`gameOptions`), and interactive pre-launch match setup screens (`configureBeforeLaunch: true`) with difficulty, boss, and PvP opponent selection.
-2. 🏆 **Automated Tournament & Canvas Bracket Engine (`weky.createTournament`)**: Single-elimination eSports tournaments (4 to 16 players) with live `@napi-rs/canvas` bracket charts, simultaneous preliminary rounds, and public Grand Finals.
-3. 🤖 **Intelligent AI Opponents & RPG Boss Duels**: Play solo against Minimax TicTacToe AI, psychological RPS predictors, or battle 3 unique RPG bosses (*Dragon Sovereign*, *Cyber Knight*, *Shadow Goblin*) in Fight!
-4. 🔊 **Web Dashboard MP3 Soundboard Engine (`weky.soundboard`)**: High-fidelity zero-latency bundled MP3 audio tracks with player-scoped targeting (`targetUserIds`, `userId`) and active dashboard presence filtering (`requireActiveDashboardUser`).
-5. 📈 **Plug-and-Play ELO & Canvas Leaderboards (`weky.leaderboard`, `weky.renderLeaderboard`)**: Mathematical ELO rating calculation with developer custom pointing and neon high-score poster generation.
-6. 🎟️ **"Share & Flex" Gamer Score Cards (`weky.renderShareCard`)**: Collectible holographic gamer victory tickets with custom stats and rank badges.
-7. 🌐 **Cross-Platform Bridge (`WekyBridge`)**: Bidirectional real-time state synchronization connecting Discord bot minigames with web dashboards.
+1. 🤖 **Discord.js v14.28.1 Compatibility**: Full support for `Events.ClientReady` lifecycle and Discord.js 14.28.1 runtime.
+2. 💾 **Zero-Dependency Native SQLite WAL Storage (`SqliteWekyStorage`)**: High-performance local SQLite storage (`node:sqlite`) with WAL mode for leaderboards and player stats.
+3. 🗄️ **Enterprise Prisma ORM Adapter (`PrismaWekyStorage`)**: Auto-migrating database handler supporting PostgreSQL, MySQL, and SQLite via Prisma ORM.
+4. 🦀 **Rust-Style Submodule Resolver & Local Hosting**: Vendor and run Weky directly via Git submodules (`@m3rcena/weky/resolver`, `@m3rcena/weky/register`, `@m3rcena/weky/host`).
+5. 💰 **Economy Wage & PvP Escrow Connector (`EcoWekyConnector`)**: Seamless escrow wagering and automated coin payouts when connected with `@m3rcena/eco`.
+6. 🕹️ **The Arcade Hub (`weky.createArcadeHub`)**: Centralized launcher grouping all 17 minigames into 4 clean categories with dropdown menus, in-arcade game customization (`gameOptions`), and interactive pre-launch match setup screens (`configureBeforeLaunch: true`).
+7. 🏆 **Automated Tournament & Canvas Bracket Engine (`weky.createTournament`)**: Single-elimination eSports tournaments (4 to 16 players) with live `@napi-rs/canvas` bracket charts, simultaneous preliminary rounds, and public Grand Finals.
+8. 🔊 **Web Dashboard MP3 Soundboard Engine (`weky.soundboard`)**: High-fidelity zero-latency bundled MP3 audio tracks with player-scoped targeting (`targetUserIds`, `userId`) and active dashboard presence filtering (`requireActiveDashboardUser`).
+9. 📈 **Plug-and-Play ELO & Canvas Leaderboards (`weky.leaderboard`, `weky.renderLeaderboard`)**: Mathematical ELO rating calculation with developer custom pointing and neon high-score poster generation.
+10. 🎟️ **"Share & Flex" Gamer Score Cards (`weky.renderShareCard`)**: Collectible holographic gamer victory tickets with custom stats and rank badges.
+11. 🌐 **Cross-Platform Bridge (`WekyBridge`)**: Bidirectional real-time state synchronization connecting Discord bot minigames with web dashboards.
 
 ---
 
@@ -169,12 +176,57 @@ Looking for exhaustive options, callback signatures, headless engine hooks, or c
 
 ## 📦 Installation
 
+### Option A: Standard NPM Installation
+
 ```bash
-npm install @m3rcena/weky @napi-rs/canvas discord.js
-# or
-yarn add @m3rcena/weky @napi-rs/canvas discord.js
-# or
-pnpm add @m3rcena/weky @napi-rs/canvas discord.js
+# npm
+npm install @m3rcena/weky @m3rcena/bridge @napi-rs/canvas discord.js
+
+# pnpm
+pnpm add @m3rcena/weky @m3rcena/bridge @napi-rs/canvas discord.js
+
+# yarn
+yarn add @m3rcena/weky @m3rcena/bridge @napi-rs/canvas discord.js
+```
+
+> **Note**: Requires Node.js **22.0.0+** (LTS 22, 24, 26). Node 20 is EOL and unsupported.
+
+### Option B: Local Git Submodule (Rust-Style Resolver)
+
+You can vendor and host `@m3rcena/weky` locally via Git submodules without needing to publish or pull from npm:
+
+```bash
+git submodule add https://github.com/M3rcena/m3rcena-weky.git submodules/m3rcena-weky
+```
+
+Add auto-registration at the top of your app entrypoint:
+```typescript
+import "@m3rcena/weky/register";
+```
+
+Or run standalone arcade hosting:
+```bash
+npx tsx @m3rcena/weky/host --port 5125
+```
+
+---
+
+## 💾 Database Handlers & Storage Adapters
+
+`@m3rcena/weky` supports zero-dependency local SQLite WAL mode, Prisma ORM, and JSON file storage:
+
+```typescript
+import {
+  WekyManager,
+  SqliteWekyStorage,   // Zero-dependency SQLite (WAL mode)
+  PrismaWekyStorage,   // PostgreSQL / MySQL / SQLite via Prisma ORM
+  JsonWekyStorage,     // Lightweight JSON file storage
+} from "@m3rcena/weky";
+
+// Zero-dependency SQLite with WAL journal mode:
+const weky = new WekyManager(client, {
+  storage: new SqliteWekyStorage("./data/weky.sqlite"),
+});
 ```
 
 ---
@@ -184,7 +236,7 @@ pnpm add @m3rcena/weky @napi-rs/canvas discord.js
 ### 1. Initialize the Weky Manager
 
 ```typescript
-import { Client, GatewayIntentBits } from "discord.js";
+import { Client, GatewayIntentBits, Events } from "discord.js";
 import { WekyManager } from "@m3rcena/weky";
 
 const client = new Client({
@@ -193,7 +245,7 @@ const client = new Client({
 
 let weky: WekyManager;
 
-client.once("ready", (c) => {
+client.once(Events.ClientReady, (c) => {
   console.log(`✅ ${c.user.tag} is online!`);
   // Initialize Weky with custom brand color, timeout, and update notifier
   weky = new WekyManager(c, {

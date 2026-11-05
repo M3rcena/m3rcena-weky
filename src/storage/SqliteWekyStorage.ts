@@ -26,11 +26,14 @@ export class SqliteWekyStorage implements LeaderboardStorageAdapter {
 
   constructor(options: string | SqliteWekyStorageOptions = "./weky.sqlite") {
     const rawPath = typeof options === "string" ? options : options.path || "./weky.sqlite";
-    this.dbPath = path.resolve(process.cwd(), rawPath);
-
-    const dir = path.dirname(this.dbPath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
+    if (rawPath === ":memory:") {
+      this.dbPath = ":memory:";
+    } else {
+      this.dbPath = path.resolve(process.cwd(), rawPath);
+      const dir = path.dirname(this.dbPath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
     }
 
     this.db = new DatabaseSync(this.dbPath);

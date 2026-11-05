@@ -7,7 +7,7 @@
  * @license Apache-2.0
  */
 
-export { version, VERSION } from "./version.js";
+export { version, VERSION, WEKY_VERSION } from "./version.js";
 
 // Core Manager and Adapters
 export { BaseGame } from "./core/BaseGame.js";

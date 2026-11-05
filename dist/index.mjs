@@ -1,4 +1,4 @@
-import { C as getRandomWord, S as getRandomHangmanWord, T as MathEvaluator, _ as Render2048, a as CalculatorEngine, b as COMMON_WORDS, c as FightEngine, d as WekyCanvas, f as RenderShareCard, g as RenderPokemon, h as RenderHangman, i as WekyBridgeRouter, l as SnakeEngine, m as RenderSnake, n as WekyBridge, o as HangmanEngine, p as RenderLeaderboard, r as WEKY_GAME_CATALOG, s as TicTacToeEngine, t as hostWeky, u as Game2048Engine, v as RenderFight, w as getRandomWords, x as HANGMAN_CATEGORIES, y as CanvasUtils } from "./host-dVt3w8e3.mjs";
+import { C as getRandomWord, D as WEKY_VERSION, E as VERSION, O as version, S as getRandomHangmanWord, T as MathEvaluator, _ as Render2048, a as CalculatorEngine, b as COMMON_WORDS, c as FightEngine, d as WekyCanvas, f as RenderShareCard, g as RenderPokemon, h as RenderHangman, i as WekyBridgeRouter, l as SnakeEngine, m as RenderSnake, n as WekyBridge, o as HangmanEngine, p as RenderLeaderboard, r as WEKY_GAME_CATALOG, s as TicTacToeEngine, t as hostWeky, u as Game2048Engine, v as RenderFight, w as getRandomWords, x as HANGMAN_CATEGORIES, y as CanvasUtils } from "./host-BIej04Ms.mjs";
 import { findProjectRoot, generateTsConfigPaths, getAllPackageResolutions, isTypeScriptRuntime, loadResolverConfig, printResolutionSummary, resolvePackage } from "./resolver.mjs";
 import { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, Client, ContainerBuilder, EmbedBuilder, Events, GuildMember, LabelBuilder, MediaGalleryBuilder, Message, MessageFlags, ModalBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, TextDisplayBuilder, TextInputBuilder, TextInputStyle, UserSelectMenuBuilder, resolveColor } from "discord.js";
 import { randomBytes } from "crypto";
@@ -10,9 +10,6 @@ import { DatabaseSync } from "node:sqlite";
 import { fileURLToPath } from "node:url";
 import { M3rcenaBridge } from "@m3rcena/bridge";
 import { EventEmitter as EventEmitter$1 } from "node:events";
-// src/version.ts
-const version = "14.28.0";
-const VERSION = version;
 // src/utils/Helpers.ts
 /**
 * Generates a cryptographically secure random string with a prefix.
@@ -6381,9 +6378,12 @@ var SqliteWekyStorage = class {
 	dbPath;
 	constructor(options = "./weky.sqlite") {
 		const rawPath = typeof options === "string" ? options : options.path || "./weky.sqlite";
-		this.dbPath = path.resolve(process.cwd(), rawPath);
-		const dir = path.dirname(this.dbPath);
-		if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+		if (rawPath === ":memory:") this.dbPath = ":memory:";
+		else {
+			this.dbPath = path.resolve(process.cwd(), rawPath);
+			const dir = path.dirname(this.dbPath);
+			if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+		}
 		this.db = new DatabaseSync(this.dbPath);
 		if (typeof options === "object" ? options.walMode ?? true : true) try {
 			this.db.exec("PRAGMA journal_mode = WAL;");
@@ -8308,6 +8308,6 @@ var WekyEngine = class WekyEngine {
 * @copyright 2026 M3rcena Development. All rights reserved.
 * @license Apache-2.0
 */
-export { ARCADE_GAMES, ArcadeHub, BaseGame, COMMON_WORDS, Calculator, CalculatorEngine, CanvasUtils, ChaosWords, ContextAdapter, DEFAULT_DASHBOARD_SOUNDS, DEFAULT_DISCORD_SOUNDS, EASY_SENTENCES, EventManager, FIGHT_BOSSES, FastType, Fight, FightAI, FightEngine, Game2048, Game2048Engine, GuessTheNumber, GuessThePokemon, HANGMAN_CATEGORIES, HARD_SENTENCES, Hangman, HangmanEngine, JsonWekyStorage, LeaderboardManager, LieSwatter, M3rcenaBridge, MEDIUM_SENTENCES, MathEvaluator, NEVER_HAVE_I_EVER_PROMPTS, NeverHaveIEver, POPULAR_POKEMONS, PRISMA_WEKY_MODEL, PrismaWekyStorage, QuickClick, RPSPredictor, Render2048, RenderBracket, RenderFight, RenderHangman, RenderLeaderboard, RenderPokemon, RenderShareCard, RenderSnake, RockPaperScissors, ShuffleGuess, Snake, SnakeEngine, SoundboardManager, SqliteWekyStorage, TRIVIA_FACTS, TicTacToe, TicTacToeAI, TicTacToeEngine, TournamentManager, VERSION, WEKY_GAME_CATALOG, WYPTB_DILEMMAS, WYR_DILEMMAS, WekyBridge, WekyBridgeRouter, WekyCanvas, WekyDatabaseHandler, WekyEcoConnector, WekyEngine, WekyManager, WillYouPressTheButton, WouldYouRather, applyPrismaWekyModel, boxConsole, checkPackageUpdates, clamp, compareSemver, fetchLatestVersion, fetchRandomPokemon, findProjectRoot, formatTime, generateTsConfigPaths, getAllPackageResolutions, getRandomHangmanWord, getRandomNHIE, getRandomSentence, getRandomString, getRandomTriviaFact, getRandomWYPTB, getRandomWYR, getRandomWord, getRandomWords, hostWeky, isTypeScriptRuntime, loadResolverConfig, printResolutionSummary, resolvePackage, resolveWekyStorage, safeResolveColor, shuffleArray, shuffleString, stripAnsi, version };
+export { ARCADE_GAMES, ArcadeHub, BaseGame, COMMON_WORDS, Calculator, CalculatorEngine, CanvasUtils, ChaosWords, ContextAdapter, DEFAULT_DASHBOARD_SOUNDS, DEFAULT_DISCORD_SOUNDS, EASY_SENTENCES, EventManager, FIGHT_BOSSES, FastType, Fight, FightAI, FightEngine, Game2048, Game2048Engine, GuessTheNumber, GuessThePokemon, HANGMAN_CATEGORIES, HARD_SENTENCES, Hangman, HangmanEngine, JsonWekyStorage, LeaderboardManager, LieSwatter, M3rcenaBridge, MEDIUM_SENTENCES, MathEvaluator, NEVER_HAVE_I_EVER_PROMPTS, NeverHaveIEver, POPULAR_POKEMONS, PRISMA_WEKY_MODEL, PrismaWekyStorage, QuickClick, RPSPredictor, Render2048, RenderBracket, RenderFight, RenderHangman, RenderLeaderboard, RenderPokemon, RenderShareCard, RenderSnake, RockPaperScissors, ShuffleGuess, Snake, SnakeEngine, SoundboardManager, SqliteWekyStorage, TRIVIA_FACTS, TicTacToe, TicTacToeAI, TicTacToeEngine, TournamentManager, VERSION, WEKY_GAME_CATALOG, WEKY_VERSION, WYPTB_DILEMMAS, WYR_DILEMMAS, WekyBridge, WekyBridgeRouter, WekyCanvas, WekyDatabaseHandler, WekyEcoConnector, WekyEngine, WekyManager, WillYouPressTheButton, WouldYouRather, applyPrismaWekyModel, boxConsole, checkPackageUpdates, clamp, compareSemver, fetchLatestVersion, fetchRandomPokemon, findProjectRoot, formatTime, generateTsConfigPaths, getAllPackageResolutions, getRandomHangmanWord, getRandomNHIE, getRandomSentence, getRandomString, getRandomTriviaFact, getRandomWYPTB, getRandomWYR, getRandomWord, getRandomWords, hostWeky, isTypeScriptRuntime, loadResolverConfig, printResolutionSummary, resolvePackage, resolveWekyStorage, safeResolveColor, shuffleArray, shuffleString, stripAnsi, version };
 
 //# sourceMappingURL=index.mjs.map

@@ -1,6 +1,6 @@
 Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
 const require_rolldown_runtime = require("./rolldown-runtime-CmQyd0Gu.cjs");
-const require_host = require("./host-D4WzK-Zm.cjs");
+const require_host = require("./host-DK9Rp-2q.cjs");
 const require_resolver = require("./resolver.cjs");
 let discord_js = require("discord.js");
 let crypto = require("crypto");
@@ -13,9 +13,6 @@ node_path = require_rolldown_runtime.__toESM(node_path);
 let node_sqlite = require("node:sqlite");
 let _m3rcena_bridge = require("@m3rcena/bridge");
 let node_events = require("node:events");
-// src/version.ts
-const version = "14.28.0";
-const VERSION = version;
 // src/utils/Helpers.ts
 /**
 * Generates a cryptographically secure random string with a prefix.
@@ -6384,9 +6381,12 @@ var SqliteWekyStorage = class {
 	dbPath;
 	constructor(options = "./weky.sqlite") {
 		const rawPath = typeof options === "string" ? options : options.path || "./weky.sqlite";
-		this.dbPath = node_path.default.resolve(process.cwd(), rawPath);
-		const dir = node_path.default.dirname(this.dbPath);
-		if (!node_fs.default.existsSync(dir)) node_fs.default.mkdirSync(dir, { recursive: true });
+		if (rawPath === ":memory:") this.dbPath = ":memory:";
+		else {
+			this.dbPath = node_path.default.resolve(process.cwd(), rawPath);
+			const dir = node_path.default.dirname(this.dbPath);
+			if (!node_fs.default.existsSync(dir)) node_fs.default.mkdirSync(dir, { recursive: true });
+		}
 		this.db = new node_sqlite.DatabaseSync(this.dbPath);
 		if (typeof options === "object" ? options.walMode ?? true : true) try {
 			this.db.exec("PRAGMA journal_mode = WAL;");
@@ -7927,7 +7927,7 @@ var WekyManager = class extends events.EventEmitter {
 			storageAdapter: resolvedStorage,
 			wekyManager: this
 		});
-		if (this.notifyUpdates) checkPackageUpdates(version, false).catch(() => {});
+		if (this.notifyUpdates) checkPackageUpdates(require_host.version, false).catch(() => {});
 	}
 	/**
 	* Connects the Weky minigames engine with @m3rcena/eco.
@@ -7964,7 +7964,7 @@ var WekyManager = class extends events.EventEmitter {
 	* Manually checks for newer versions of @m3rcena/weky.
 	*/
 	async checkUpdates(gameName) {
-		await checkPackageUpdates(version, !this.notifyUpdates, gameName);
+		await checkPackageUpdates(require_host.version, !this.notifyUpdates, gameName);
 	}
 	/** Backwards compatibility accessor */
 	get _EventManager() {
@@ -8370,8 +8370,9 @@ exports.TicTacToe = TicTacToe;
 exports.TicTacToeAI = TicTacToeAI;
 exports.TicTacToeEngine = require_host.TicTacToeEngine;
 exports.TournamentManager = TournamentManager;
-exports.VERSION = VERSION;
+exports.VERSION = require_host.VERSION;
 exports.WEKY_GAME_CATALOG = require_host.WEKY_GAME_CATALOG;
+exports.WEKY_VERSION = require_host.WEKY_VERSION;
 exports.WYPTB_DILEMMAS = WYPTB_DILEMMAS;
 exports.WYR_DILEMMAS = WYR_DILEMMAS;
 exports.WekyBridge = require_host.WekyBridge;
@@ -8413,6 +8414,6 @@ exports.safeResolveColor = safeResolveColor;
 exports.shuffleArray = shuffleArray;
 exports.shuffleString = shuffleString;
 exports.stripAnsi = stripAnsi;
-exports.version = version;
+exports.version = require_host.version;
 
 //# sourceMappingURL=index.cjs.map

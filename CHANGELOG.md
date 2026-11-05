@@ -6,6 +6,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [14.28.1] - 2026-11-05
+
+### 🚀 Enhancements & Compatibility
+
+#### Added
+- **Discord.js v14.28.1 Compatibility**:
+  - Full compatibility with Discord.js `14.28.1` and `Events.ClientReady` lifecycle.
+- **Zero-Dependency Native SQLite Storage (`SqliteWekyStorage`)**:
+  - Built-in persistent storage adapter utilizing Node.js 22+ native `node:sqlite` DatabaseSync with WAL journal mode.
+  - Automatic table initialization for `weky_players`, `weky_stats`, and `weky_kv`.
+- **Enterprise Prisma ORM Adapter (`PrismaWekyStorage`)**:
+  - Auto-migrating Prisma storage with auto-schema injection and raw SQL fallbacks for PostgreSQL, MySQL, and SQLite.
+  - Schema migration helpers (`PRISMA_WEKY_MODEL`, `applyPrismaWekyModel`).
+- **Rust-Style Submodule Resolver & Local Hosting**:
+  - Local-first Git submodule detection via `@m3rcena/weky/resolver`.
+  - Zero-config runtime interception flag via `@m3rcena/weky/register`.
+  - Standalone arcade CLI host service via `@m3rcena/weky/host` (`hostWeky`).
+- **Economy Wage & Escrow Connector (`EcoWekyConnector`)**:
+  - Seamless escrow wagering and automated coin payouts when connected with `@m3rcena/eco`.
+- **Synchronized with `@m3rcena/bridge` v14.28.1**:
+  - Full real-time bi-directional action dispatching, player-scoped audio cues, and Canvas card streaming.
+- **Version Export Consistency**:
+  - Added `WEKY_VERSION` export alongside `version` and `VERSION`.
+
+---
+
 ## [14.28.0] - 2026-11-01
 
 ### 🚀 Major Release: Discord.js 14.28.0 Parity & Next-Gen Arcade Suite

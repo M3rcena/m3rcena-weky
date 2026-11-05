@@ -23,6 +23,7 @@ import { RenderHangman } from "../canvas/RenderHangman.js";
 import { RenderPokemon } from "../canvas/RenderPokemon.js";
 import { RenderShareCard } from "../canvas/RenderShareCard.js";
 import { RenderLeaderboard } from "../canvas/RenderLeaderboard.js";
+import { version } from "../version.js";
 
 export const WEKY_GAME_CATALOG = [
   {
@@ -91,7 +92,7 @@ export class WekyBridgeRouter implements BridgePackageRouter {
   public name: string = "weky";
   public basePath: string = "/api/weky";
   public description: string = "Universal headless minigame engine, state synchronization, and canvas card generator.";
-  public version: string = "14.28.0";
+  public version: string = version;
   private bridge: WekyBridge;
 
   constructor(bridge: WekyBridge) {

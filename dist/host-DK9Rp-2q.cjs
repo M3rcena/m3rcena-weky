@@ -1,7 +1,13 @@
-import { getAllPackageResolutions, printResolutionSummary } from "./resolver.mjs";
-import { Canvas, createCanvas, loadImage } from "@napi-rs/canvas";
-import { M3rcenaBridge } from "@m3rcena/bridge";
-import http from "node:http";
+const require_rolldown_runtime = require("./rolldown-runtime-CmQyd0Gu.cjs");
+const require_resolver = require("./resolver.cjs");
+let _napi_rs_canvas = require("@napi-rs/canvas");
+let _m3rcena_bridge = require("@m3rcena/bridge");
+let node_http = require("node:http");
+node_http = require_rolldown_runtime.__toESM(node_http);
+// src/version.ts
+const version = "14.28.1";
+const VERSION = version;
+const WEKY_VERSION = version;
 // src/utils/MathEvaluator.ts
 var MathEvaluator = class {
 	static factorial(n) {
@@ -730,7 +736,7 @@ var CanvasUtils = class {
 	static async drawCircularAvatar(ctx, url, x, y, radius, borderColor, borderWidth = 3) {
 		try {
 			if (!url) return;
-			const avatar = await loadImage(url);
+			const avatar = await (0, _napi_rs_canvas.loadImage)(url);
 			ctx.save();
 			ctx.beginPath();
 			ctx.arc(x, y, radius, 0, Math.PI * 2);
@@ -922,7 +928,7 @@ var RenderFight = class {
 	static async renderRequestCard(challenger, opponent, customTexts) {
 		const W = 900;
 		const H = 520;
-		const canvas = new Canvas(W, H);
+		const canvas = new _napi_rs_canvas.Canvas(W, H);
 		const ctx = canvas.getContext("2d");
 		const bg = ctx.createRadialGradient(W / 2, H / 2, 80, W / 2, H / 2, 540);
 		bg.addColorStop(0, "#161b26");
@@ -995,7 +1001,7 @@ var RenderFight = class {
 	static async renderBattleCard(player1, player2, currentTurnUserId, announcement = "Battle in progress!", customTexts) {
 		const W = 900;
 		const H = 620;
-		const canvas = new Canvas(W, H);
+		const canvas = new _napi_rs_canvas.Canvas(W, H);
 		const ctx = canvas.getContext("2d");
 		const bg = ctx.createRadialGradient(W / 2, H / 2, 80, W / 2, H / 2, 580);
 		bg.addColorStop(0, "#161b24");
@@ -1123,7 +1129,7 @@ var RenderFight = class {
 	static async renderOutcomeCard(winner, loser, type = "WIN", customTexts) {
 		const W = 900;
 		const H = 540;
-		const canvas = new Canvas(W, H);
+		const canvas = new _napi_rs_canvas.Canvas(W, H);
 		const ctx = canvas.getContext("2d");
 		const bg = ctx.createRadialGradient(W / 2, H / 2, 80, W / 2, H / 2, 540);
 		if (type === "WIN") {
@@ -1259,7 +1265,7 @@ function getTileColors(val) {
 }
 var Render2048 = class {
 	static async renderBoard(board, score, username, avatarUrl, state) {
-		const canvas = new Canvas(CANVAS_SIZE$1, CANVAS_SIZE$1);
+		const canvas = new _napi_rs_canvas.Canvas(CANVAS_SIZE$1, CANVAS_SIZE$1);
 		const ctx = canvas.getContext("2d");
 		const bgGrad = ctx.createLinearGradient(0, 0, 0, CANVAS_SIZE$1);
 		bgGrad.addColorStop(0, "#1e2024");
@@ -1359,7 +1365,7 @@ const TYPE_COLORS = {
 };
 var RenderPokemon = class {
 	static async renderCard(pokemon, revealed = false) {
-		const canvas = new Canvas(800, 500);
+		const canvas = new _napi_rs_canvas.Canvas(800, 500);
 		const ctx = canvas.getContext("2d");
 		const primaryType = (pokemon.types[0] || "normal").toLowerCase();
 		const typeColor = TYPE_COLORS[primaryType] || "#00f7ff";
@@ -1381,13 +1387,13 @@ var RenderPokemon = class {
 		ctx.stroke();
 		ctx.restore();
 		try {
-			const img = await loadImage(pokemon.imageUrl);
+			const img = await (0, _napi_rs_canvas.loadImage)(pokemon.imageUrl);
 			const targetW = 320;
 			const targetH = 320;
 			const spriteX = 260 - targetW / 2;
 			const spriteY = 250 - targetH / 2;
 			if (!revealed) {
-				const offCanvas = new Canvas(targetW, targetH);
+				const offCanvas = new _napi_rs_canvas.Canvas(targetW, targetH);
 				const offCtx = offCanvas.getContext("2d");
 				offCtx.drawImage(img, 0, 0, targetW, targetH);
 				offCtx.globalCompositeOperation = "source-in";
@@ -1446,7 +1452,7 @@ var RenderPokemon = class {
 // src/canvas/RenderHangman.ts
 var RenderHangman = class {
 	static async renderCard(wrongGuessesCount, displayWord, guessedLetters, username, avatarUrl, gameOver = false, won = false, fullWord) {
-		const canvas = new Canvas(800, 500);
+		const canvas = new _napi_rs_canvas.Canvas(800, 500);
 		const ctx = canvas.getContext("2d");
 		const bg = ctx.createRadialGradient(400, 250, 50, 400, 250, 500);
 		bg.addColorStop(0, "#2c303a");
@@ -1598,7 +1604,7 @@ const COLORS = {
 };
 var RenderSnake = class {
 	static async renderBoard(snake, food, direction, score, gridSize, username, avatarUrl, isGameOver = false, overlayTitle) {
-		const canvas = new Canvas(CANVAS_SIZE, CANVAS_SIZE);
+		const canvas = new _napi_rs_canvas.Canvas(CANVAS_SIZE, CANVAS_SIZE);
 		const ctx = canvas.getContext("2d");
 		const bgGrad = ctx.createLinearGradient(0, 0, 0, CANVAS_SIZE);
 		bgGrad.addColorStop(0, COLORS.bgTop);
@@ -1752,7 +1758,7 @@ var RenderLeaderboard = class {
 		const rowHeight = 54;
 		const headerHeight = 175;
 		const height = Math.max(540, headerHeight + entries.length * 64 + 28 + 35);
-		const canvas = createCanvas(width, height);
+		const canvas = (0, _napi_rs_canvas.createCanvas)(width, height);
 		const ctx = canvas.getContext("2d");
 		const bgGrad = ctx.createLinearGradient(0, 0, width, height);
 		bgGrad.addColorStop(0, "#080b12");
@@ -1955,7 +1961,7 @@ var RenderShareCard = class {
 	static async render(options) {
 		const width = 840;
 		const height = 480;
-		const canvas = createCanvas(width, height);
+		const canvas = (0, _napi_rs_canvas.createCanvas)(width, height);
 		const ctx = canvas.getContext("2d");
 		const accent = options.accentColor || "#00f7ff";
 		const bgGrad = ctx.createLinearGradient(0, 0, width, height);
@@ -3434,7 +3440,7 @@ var WekyBridgeRouter = class {
 	name = "weky";
 	basePath = "/api/weky";
 	description = "Universal headless minigame engine, state synchronization, and canvas card generator.";
-	version = "14.28.0";
+	version = version;
 	bridge;
 	constructor(bridge) {
 		this.bridge = bridge;
@@ -3785,7 +3791,7 @@ var WekyBridge = class {
 	router;
 	constructor(wekyManager, customBridge) {
 		this.wekyManager = wekyManager;
-		this.m3rcenaBridge = customBridge || new M3rcenaBridge();
+		this.m3rcenaBridge = customBridge || new _m3rcena_bridge.M3rcenaBridge();
 		this.router = new WekyBridgeRouter(this);
 		this.m3rcenaBridge.mountPackage(this.router);
 		this.m3rcenaBridge.registerModule("games", async (action) => {
@@ -4143,13 +4149,13 @@ var WekyBridge = class {
 async function hostWeky(options = {}) {
 	const port = options.port ?? parseInt(process.env.PORT || process.env.WEKY_PORT || "4001", 10);
 	options.bridgeUrl ?? process.env.BRIDGE_URL;
-	printResolutionSummary();
+	require_resolver.printResolutionSummary();
 	const router = new WekyBridge().router;
-	const resolutions = getAllPackageResolutions();
+	const resolutions = require_resolver.getAllPackageResolutions();
 	if (resolutions["@m3rcena/bridge"].status !== "missing") try {
 		if ((await import(resolutions["@m3rcena/bridge"].path)).M3rcenaBridge) console.log(`[m3rcena-weky] 🌉 Found @m3rcena/bridge (${resolutions["@m3rcena/bridge"].status}). Ready for bridge mount.`);
 	} catch {}
-	const server = http.createServer(async (req, res) => {
+	const server = node_http.default.createServer(async (req, res) => {
 		const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
 		const pathname = url.pathname;
 		res.setHeader("Access-Control-Allow-Origin", "*");
@@ -4166,7 +4172,7 @@ async function hostWeky(options = {}) {
 				status: "healthy",
 				package: "@m3rcena/weky",
 				mode: "local-submodule-host",
-				version: "14.28.0",
+				version,
 				uptime: process.uptime(),
 				canvasEngine: "@napi-rs/canvas (blazingly fast Rust renderer)"
 			}, null, 2));
@@ -4304,6 +4310,173 @@ if (process.argv[1]?.endsWith("host.ts") || process.argv[1]?.endsWith("host.js")
 	console.error("[m3rcena-weky host] Fatal error:", err);
 	process.exit(1);
 });
-export { getRandomWord as C, getRandomHangmanWord as S, MathEvaluator as T, Render2048 as _, CalculatorEngine as a, COMMON_WORDS as b, FightEngine as c, WekyCanvas as d, RenderShareCard as f, RenderPokemon as g, RenderHangman as h, WekyBridgeRouter as i, SnakeEngine as l, RenderSnake as m, WekyBridge as n, HangmanEngine as o, RenderLeaderboard as p, WEKY_GAME_CATALOG as r, TicTacToeEngine as s, hostWeky as t, Game2048Engine as u, RenderFight as v, getRandomWords as w, HANGMAN_CATEGORIES as x, CanvasUtils as y };
+Object.defineProperty(exports, "COMMON_WORDS", {
+	enumerable: true,
+	get: function() {
+		return COMMON_WORDS;
+	}
+});
+Object.defineProperty(exports, "CalculatorEngine", {
+	enumerable: true,
+	get: function() {
+		return CalculatorEngine;
+	}
+});
+Object.defineProperty(exports, "CanvasUtils", {
+	enumerable: true,
+	get: function() {
+		return CanvasUtils;
+	}
+});
+Object.defineProperty(exports, "FightEngine", {
+	enumerable: true,
+	get: function() {
+		return FightEngine;
+	}
+});
+Object.defineProperty(exports, "Game2048Engine", {
+	enumerable: true,
+	get: function() {
+		return Game2048Engine;
+	}
+});
+Object.defineProperty(exports, "HANGMAN_CATEGORIES", {
+	enumerable: true,
+	get: function() {
+		return HANGMAN_CATEGORIES;
+	}
+});
+Object.defineProperty(exports, "HangmanEngine", {
+	enumerable: true,
+	get: function() {
+		return HangmanEngine;
+	}
+});
+Object.defineProperty(exports, "MathEvaluator", {
+	enumerable: true,
+	get: function() {
+		return MathEvaluator;
+	}
+});
+Object.defineProperty(exports, "Render2048", {
+	enumerable: true,
+	get: function() {
+		return Render2048;
+	}
+});
+Object.defineProperty(exports, "RenderFight", {
+	enumerable: true,
+	get: function() {
+		return RenderFight;
+	}
+});
+Object.defineProperty(exports, "RenderHangman", {
+	enumerable: true,
+	get: function() {
+		return RenderHangman;
+	}
+});
+Object.defineProperty(exports, "RenderLeaderboard", {
+	enumerable: true,
+	get: function() {
+		return RenderLeaderboard;
+	}
+});
+Object.defineProperty(exports, "RenderPokemon", {
+	enumerable: true,
+	get: function() {
+		return RenderPokemon;
+	}
+});
+Object.defineProperty(exports, "RenderShareCard", {
+	enumerable: true,
+	get: function() {
+		return RenderShareCard;
+	}
+});
+Object.defineProperty(exports, "RenderSnake", {
+	enumerable: true,
+	get: function() {
+		return RenderSnake;
+	}
+});
+Object.defineProperty(exports, "SnakeEngine", {
+	enumerable: true,
+	get: function() {
+		return SnakeEngine;
+	}
+});
+Object.defineProperty(exports, "TicTacToeEngine", {
+	enumerable: true,
+	get: function() {
+		return TicTacToeEngine;
+	}
+});
+Object.defineProperty(exports, "VERSION", {
+	enumerable: true,
+	get: function() {
+		return VERSION;
+	}
+});
+Object.defineProperty(exports, "WEKY_GAME_CATALOG", {
+	enumerable: true,
+	get: function() {
+		return WEKY_GAME_CATALOG;
+	}
+});
+Object.defineProperty(exports, "WEKY_VERSION", {
+	enumerable: true,
+	get: function() {
+		return WEKY_VERSION;
+	}
+});
+Object.defineProperty(exports, "WekyBridge", {
+	enumerable: true,
+	get: function() {
+		return WekyBridge;
+	}
+});
+Object.defineProperty(exports, "WekyBridgeRouter", {
+	enumerable: true,
+	get: function() {
+		return WekyBridgeRouter;
+	}
+});
+Object.defineProperty(exports, "WekyCanvas", {
+	enumerable: true,
+	get: function() {
+		return WekyCanvas;
+	}
+});
+Object.defineProperty(exports, "getRandomHangmanWord", {
+	enumerable: true,
+	get: function() {
+		return getRandomHangmanWord;
+	}
+});
+Object.defineProperty(exports, "getRandomWord", {
+	enumerable: true,
+	get: function() {
+		return getRandomWord;
+	}
+});
+Object.defineProperty(exports, "getRandomWords", {
+	enumerable: true,
+	get: function() {
+		return getRandomWords;
+	}
+});
+Object.defineProperty(exports, "hostWeky", {
+	enumerable: true,
+	get: function() {
+		return hostWeky;
+	}
+});
+Object.defineProperty(exports, "version", {
+	enumerable: true,
+	get: function() {
+		return version;
+	}
+});
 
-//# sourceMappingURL=host-dVt3w8e3.mjs.map
+//# sourceMappingURL=host-DK9Rp-2q.cjs.map
