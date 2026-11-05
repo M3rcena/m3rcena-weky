@@ -39,13 +39,13 @@ const KNOWN_PACKAGES = {
 	}
 };
 const CANDIDATE_CONTAINERS = [
+	".",
 	"submodules",
 	"submodule",
 	"vendor",
 	"packages",
 	"libs",
-	"modules",
-	""
+	"modules"
 ];
 function isTypeScriptRuntime() {
 	if (typeof process.isBun !== "undefined") return true;
@@ -134,6 +134,19 @@ function resolvePackage(packageName, options = {}) {
 	const cfg = loadResolverConfig(root);
 	const pkgMeta = KNOWN_PACKAGES[packageName];
 	const preferSource = options.preferSource ?? cfg?.preferSource ?? isTypeScriptRuntime();
+	const rootInspected = inspectSubmoduleDirectory(root, packageName);
+	if (rootInspected.isValid) {
+		const ep = resolveSubmoduleEntryPoint(root, preferSource);
+		return {
+			name: packageName,
+			status: "submodule",
+			type: ep.type,
+			path: ep.entryPath,
+			rootDirectory: root,
+			version: rootInspected.version,
+			isBuilt: ep.isBuilt
+		};
+	}
 	if (options.overrides?.[packageName]) {
 		const customPath = path.resolve(root, options.overrides[packageName]);
 		const inspected = inspectSubmoduleDirectory(customPath, packageName);
@@ -188,7 +201,7 @@ function resolvePackage(packageName, options = {}) {
 		cfg?.submodulesDir,
 		process.env.M3RCENA_SUBMODULES_DIR,
 		...CANDIDATE_CONTAINERS
-	].filter(Boolean);
+	].filter((c) => typeof c === "string" && c.trim().length > 0);
 	const searchRoots = [
 		root,
 		path.resolve(root, ".."),
