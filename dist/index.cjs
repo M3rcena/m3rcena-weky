@@ -1,6 +1,6 @@
 Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
 const require_rolldown_runtime = require("./rolldown-runtime-CmQyd0Gu.cjs");
-const require_host = require("./host-DK9Rp-2q.cjs");
+const require_host = require("./host-0Gy4BuhY.cjs");
 const require_resolver = require("./resolver.cjs");
 let discord_js = require("discord.js");
 let crypto = require("crypto");
@@ -6581,7 +6581,6 @@ var PrismaWekyStorage = class {
 	async ensureMigrated() {
 		if (this.migrated || !this.autoMigrate || !this.client) return;
 		this.migrated = true;
-		if (this.client[this.playerModel]) return;
 		if (typeof this.client.$executeRawUnsafe === "function") try {
 			await this.client.$executeRawUnsafe(`
           CREATE TABLE IF NOT EXISTS "${this.playerTable}" (
@@ -6717,25 +6716,28 @@ var PrismaWekyStorage = class {
             "data" = EXCLUDED."data",
             "updatedAt" = NOW()
           `, userId, data.username || "Player", data.avatarUrl || null, data.elo ?? 1200, data.wins ?? 0, data.losses ?? 0, data.draws ?? 0, data.winStreak ?? 0, data.highestStreak ?? 0, scores, serialized);
+			return;
 		} catch {
-			await this.client.$executeRawUnsafe(`
-          INSERT INTO ${this.playerTable} (
-            id, username, avatarUrl, elo, wins, losses, draws, winStreak, highestStreak, scores, data, updatedAt
-          )
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-          ON CONFLICT(id) DO UPDATE SET
-            username = excluded.username,
-            avatarUrl = excluded.avatarUrl,
-            elo = excluded.elo,
-            wins = excluded.wins,
-            losses = excluded.losses,
-            draws = excluded.draws,
-            winStreak = excluded.winStreak,
-            highestStreak = excluded.highestStreak,
-            scores = excluded.scores,
-            data = excluded.data,
-            updatedAt = CURRENT_TIMESTAMP
-          `, userId, data.username || "Player", data.avatarUrl || null, data.elo ?? 1200, data.wins ?? 0, data.losses ?? 0, data.draws ?? 0, data.winStreak ?? 0, data.highestStreak ?? 0, scores, serialized);
+			try {
+				await this.client.$executeRawUnsafe(`
+            INSERT INTO ${this.playerTable} (
+              id, username, avatarUrl, elo, wins, losses, draws, winStreak, highestStreak, scores, data, updatedAt
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(id) DO UPDATE SET
+              username = excluded.username,
+              avatarUrl = excluded.avatarUrl,
+              elo = excluded.elo,
+              wins = excluded.wins,
+              losses = excluded.losses,
+              draws = excluded.draws,
+              winStreak = excluded.winStreak,
+              highestStreak = excluded.highestStreak,
+              scores = excluded.scores,
+              data = excluded.data,
+              updatedAt = CURRENT_TIMESTAMP
+            `, userId, data.username || "Player", data.avatarUrl || null, data.elo ?? 1200, data.wins ?? 0, data.losses ?? 0, data.draws ?? 0, data.winStreak ?? 0, data.highestStreak ?? 0, scores, serialized);
+			} catch {}
 		}
 	}
 	async getAll() {
@@ -6745,9 +6747,13 @@ var PrismaWekyStorage = class {
 			return (await delegate.findMany({ orderBy: { elo: "desc" } })).map((r) => typeof r.data === "string" ? JSON.parse(r.data) : r.data).filter(Boolean);
 		} catch {}
 		if (typeof this.client.$queryRawUnsafe === "function") try {
-			return (await this.client.$queryRawUnsafe(`SELECT data FROM ${this.playerTable} ORDER BY elo DESC`)).map((r) => JSON.parse(r.data)).filter(Boolean);
+			return (await this.client.$queryRawUnsafe(`SELECT data FROM "${this.playerTable}" ORDER BY "elo" DESC`)).map((r) => typeof r.data === "string" ? JSON.parse(r.data) : r.data).filter(Boolean);
 		} catch {
-			return [];
+			try {
+				return (await this.client.$queryRawUnsafe(`SELECT data FROM ${this.playerTable} ORDER BY elo DESC`)).map((r) => typeof r.data === "string" ? JSON.parse(r.data) : r.data).filter(Boolean);
+			} catch {
+				return [];
+			}
 		}
 		return [];
 	}

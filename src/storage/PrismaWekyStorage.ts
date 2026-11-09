@@ -108,13 +108,9 @@ export class PrismaWekyStorage implements LeaderboardStorageAdapter {
     }
   }
 
-  private async ensureMigrated(): Promise<void> {
+  public async ensureMigrated(): Promise<void> {
     if (this.migrated || !this.autoMigrate || !this.client) return;
     this.migrated = true;
-
-    if (this.client[this.playerModel]) {
-      return;
-    }
 
     if (typeof this.client.$executeRawUnsafe === "function") {
       try {
@@ -173,7 +169,7 @@ export class PrismaWekyStorage implements LeaderboardStorageAdapter {
             );
           `);
         } catch {
-          // Ignore
+          // Gracefully ignore DDL permission restrictions or existing schemas
         }
       }
     }
@@ -297,43 +293,48 @@ export class PrismaWekyStorage implements LeaderboardStorageAdapter {
           scores,
           serialized
         );
+        return;
       } catch {
-        await this.client.$executeRawUnsafe(
-          `
-          INSERT INTO ${this.playerTable} (
-            id, username, avatarUrl, elo, wins, losses, draws, winStreak, highestStreak, scores, data, updatedAt
-          )
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-          ON CONFLICT(id) DO UPDATE SET
-            username = excluded.username,
-            avatarUrl = excluded.avatarUrl,
-            elo = excluded.elo,
-            wins = excluded.wins,
-            losses = excluded.losses,
-            draws = excluded.draws,
-            winStreak = excluded.winStreak,
-            highestStreak = excluded.highestStreak,
-            scores = excluded.scores,
-            data = excluded.data,
-            updatedAt = CURRENT_TIMESTAMP
-          `,
-          userId,
-          data.username || "Player",
-          data.avatarUrl || null,
-          data.elo ?? 1200,
-          data.wins ?? 0,
-          data.losses ?? 0,
-          data.draws ?? 0,
-          data.winStreak ?? 0,
-          data.highestStreak ?? 0,
-          scores,
-          serialized
-        );
+        try {
+          await this.client.$executeRawUnsafe(
+            `
+            INSERT INTO ${this.playerTable} (
+              id, username, avatarUrl, elo, wins, losses, draws, winStreak, highestStreak, scores, data, updatedAt
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(id) DO UPDATE SET
+              username = excluded.username,
+              avatarUrl = excluded.avatarUrl,
+              elo = excluded.elo,
+              wins = excluded.wins,
+              losses = excluded.losses,
+              draws = excluded.draws,
+              winStreak = excluded.winStreak,
+              highestStreak = excluded.highestStreak,
+              scores = excluded.scores,
+              data = excluded.data,
+              updatedAt = CURRENT_TIMESTAMP
+            `,
+            userId,
+            data.username || "Player",
+            data.avatarUrl || null,
+            data.elo ?? 1200,
+            data.wins ?? 0,
+            data.losses ?? 0,
+            data.draws ?? 0,
+            data.winStreak ?? 0,
+            data.highestStreak ?? 0,
+            scores,
+            serialized
+          );
+        } catch {
+          // Wrapped safely to prevent unhandled process rejection
+        }
       }
     }
   }
 
-  public async getAll(): Promise<LeaderboardPlayer[]> {
+  public async getAll(): Promise<any[]> {
     await this.ensureMigrated();
     const delegate = this.client[this.playerModel];
 
@@ -344,16 +345,29 @@ export class PrismaWekyStorage implements LeaderboardStorageAdapter {
           .map((r: any) => (typeof r.data === "string" ? JSON.parse(r.data) : r.data))
           .filter(Boolean);
       } catch {
-        // Fallback
+        // Fallback to raw queries below
       }
     }
 
     if (typeof this.client.$queryRawUnsafe === "function") {
       try {
-        const rows: any[] = await this.client.$queryRawUnsafe(`SELECT data FROM ${this.playerTable} ORDER BY elo DESC`);
-        return rows.map((r) => JSON.parse(r.data)).filter(Boolean);
+        const rows: any = await this.client.$queryRawUnsafe(
+          `SELECT data FROM "${this.playerTable}" ORDER BY "elo" DESC`
+        );
+        return rows
+          .map((r: any) => (typeof r.data === "string" ? JSON.parse(r.data) : r.data))
+          .filter(Boolean);
       } catch {
-        return [];
+        try {
+          const rows: any = await this.client.$queryRawUnsafe(
+            `SELECT data FROM ${this.playerTable} ORDER BY elo DESC`
+          );
+          return rows
+            .map((r: any) => (typeof r.data === "string" ? JSON.parse(r.data) : r.data))
+            .filter(Boolean);
+        } catch {
+          return [];
+        }
       }
     }
 

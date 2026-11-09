@@ -3,7 +3,7 @@ import { Canvas, createCanvas, loadImage } from "@napi-rs/canvas";
 import { M3rcenaBridge } from "@m3rcena/bridge";
 import http from "node:http";
 // src/version.ts
-const version = "14.28.1";
+const version = "14.28.1-1";
 const VERSION = version;
 const WEKY_VERSION = version;
 // src/utils/MathEvaluator.ts
@@ -4310,4 +4310,4 @@ if (process.argv[1]?.endsWith("host.ts") || process.argv[1]?.endsWith("host.js")
 });
 export { getRandomWord as C, WEKY_VERSION as D, VERSION as E, version as O, getRandomHangmanWord as S, MathEvaluator as T, Render2048 as _, CalculatorEngine as a, COMMON_WORDS as b, FightEngine as c, WekyCanvas as d, RenderShareCard as f, RenderPokemon as g, RenderHangman as h, WekyBridgeRouter as i, SnakeEngine as l, RenderSnake as m, WekyBridge as n, HangmanEngine as o, RenderLeaderboard as p, WEKY_GAME_CATALOG as r, TicTacToeEngine as s, hostWeky as t, Game2048Engine as u, RenderFight as v, getRandomWords as w, HANGMAN_CATEGORIES as x, CanvasUtils as y };
 
-//# sourceMappingURL=host-BIej04Ms.mjs.map
+//# sourceMappingURL=host-C0NCGmMn.mjs.map

@@ -5,7 +5,7 @@ let _m3rcena_bridge = require("@m3rcena/bridge");
 let node_http = require("node:http");
 node_http = require_rolldown_runtime.__toESM(node_http);
 // src/version.ts
-const version = "14.28.1";
+const version = "14.28.1-1";
 const VERSION = version;
 const WEKY_VERSION = version;
 // src/utils/MathEvaluator.ts
@@ -4479,4 +4479,4 @@ Object.defineProperty(exports, "version", {
 	}
 });
 
-//# sourceMappingURL=host-DK9Rp-2q.cjs.map
+//# sourceMappingURL=host-0Gy4BuhY.cjs.map

@@ -3,9 +3,9 @@ import { M3rcenaPackageName, M3rcenaResolverConfig, PackageResolution, ResolverO
 import { ColorResolvable, Interaction, Message } from "discord.js";
 import { SKRSContext2D } from "@napi-rs/canvas";
 import { M3rcenaBridge } from "@m3rcena/bridge";
-export declare const version = "14.28.1";
-export declare const VERSION = "14.28.1";
-export declare const WEKY_VERSION = "14.28.1";
+export declare const version = "14.28.1-1";
+export declare const VERSION = "14.28.1-1";
+export declare const WEKY_VERSION = "14.28.1-1";
 export declare class Calculator extends BaseGame<CalcTypes> {
   private msg1;
   private currentExpression;
@@ -1004,10 +1004,10 @@ export declare class PrismaWekyStorage implements LeaderboardStorageAdapter {
   private autoMigrate;
   private migrated;
   constructor(options: any | PrismaWekyStorageOptions);
-  private ensureMigrated;
+  ensureMigrated(): Promise<void>;
   get(userId: string): Promise<LeaderboardPlayer | undefined>;
   set(userId: string, data: LeaderboardPlayer): Promise<void>;
-  getAll(): Promise<LeaderboardPlayer[]>;
+  getAll(): Promise<any[]>;
 }
 export declare class JsonWekyStorage implements LeaderboardStorageAdapter {
   private filePath;

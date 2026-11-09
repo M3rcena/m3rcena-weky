@@ -1,4 +1,4 @@
-import { C as getRandomWord, D as WEKY_VERSION, E as VERSION, O as version, S as getRandomHangmanWord, T as MathEvaluator, _ as Render2048, a as CalculatorEngine, b as COMMON_WORDS, c as FightEngine, d as WekyCanvas, f as RenderShareCard, g as RenderPokemon, h as RenderHangman, i as WekyBridgeRouter, l as SnakeEngine, m as RenderSnake, n as WekyBridge, o as HangmanEngine, p as RenderLeaderboard, r as WEKY_GAME_CATALOG, s as TicTacToeEngine, t as hostWeky, u as Game2048Engine, v as RenderFight, w as getRandomWords, x as HANGMAN_CATEGORIES, y as CanvasUtils } from "./host-BIej04Ms.mjs";
+import { C as getRandomWord, D as WEKY_VERSION, E as VERSION, O as version, S as getRandomHangmanWord, T as MathEvaluator, _ as Render2048, a as CalculatorEngine, b as COMMON_WORDS, c as FightEngine, d as WekyCanvas, f as RenderShareCard, g as RenderPokemon, h as RenderHangman, i as WekyBridgeRouter, l as SnakeEngine, m as RenderSnake, n as WekyBridge, o as HangmanEngine, p as RenderLeaderboard, r as WEKY_GAME_CATALOG, s as TicTacToeEngine, t as hostWeky, u as Game2048Engine, v as RenderFight, w as getRandomWords, x as HANGMAN_CATEGORIES, y as CanvasUtils } from "./host-C0NCGmMn.mjs";
 import { findProjectRoot, generateTsConfigPaths, getAllPackageResolutions, isTypeScriptRuntime, loadResolverConfig, printResolutionSummary, resolvePackage } from "./resolver.mjs";
 import { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, Client, ContainerBuilder, EmbedBuilder, Events, GuildMember, LabelBuilder, MediaGalleryBuilder, Message, MessageFlags, ModalBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, TextDisplayBuilder, TextInputBuilder, TextInputStyle, UserSelectMenuBuilder, resolveColor } from "discord.js";
 import { randomBytes } from "crypto";
@@ -6578,7 +6578,6 @@ var PrismaWekyStorage = class {
 	async ensureMigrated() {
 		if (this.migrated || !this.autoMigrate || !this.client) return;
 		this.migrated = true;
-		if (this.client[this.playerModel]) return;
 		if (typeof this.client.$executeRawUnsafe === "function") try {
 			await this.client.$executeRawUnsafe(`
           CREATE TABLE IF NOT EXISTS "${this.playerTable}" (
@@ -6714,25 +6713,28 @@ var PrismaWekyStorage = class {
             "data" = EXCLUDED."data",
             "updatedAt" = NOW()
           `, userId, data.username || "Player", data.avatarUrl || null, data.elo ?? 1200, data.wins ?? 0, data.losses ?? 0, data.draws ?? 0, data.winStreak ?? 0, data.highestStreak ?? 0, scores, serialized);
+			return;
 		} catch {
-			await this.client.$executeRawUnsafe(`
-          INSERT INTO ${this.playerTable} (
-            id, username, avatarUrl, elo, wins, losses, draws, winStreak, highestStreak, scores, data, updatedAt
-          )
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-          ON CONFLICT(id) DO UPDATE SET
-            username = excluded.username,
-            avatarUrl = excluded.avatarUrl,
-            elo = excluded.elo,
-            wins = excluded.wins,
-            losses = excluded.losses,
-            draws = excluded.draws,
-            winStreak = excluded.winStreak,
-            highestStreak = excluded.highestStreak,
-            scores = excluded.scores,
-            data = excluded.data,
-            updatedAt = CURRENT_TIMESTAMP
-          `, userId, data.username || "Player", data.avatarUrl || null, data.elo ?? 1200, data.wins ?? 0, data.losses ?? 0, data.draws ?? 0, data.winStreak ?? 0, data.highestStreak ?? 0, scores, serialized);
+			try {
+				await this.client.$executeRawUnsafe(`
+            INSERT INTO ${this.playerTable} (
+              id, username, avatarUrl, elo, wins, losses, draws, winStreak, highestStreak, scores, data, updatedAt
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(id) DO UPDATE SET
+              username = excluded.username,
+              avatarUrl = excluded.avatarUrl,
+              elo = excluded.elo,
+              wins = excluded.wins,
+              losses = excluded.losses,
+              draws = excluded.draws,
+              winStreak = excluded.winStreak,
+              highestStreak = excluded.highestStreak,
+              scores = excluded.scores,
+              data = excluded.data,
+              updatedAt = CURRENT_TIMESTAMP
+            `, userId, data.username || "Player", data.avatarUrl || null, data.elo ?? 1200, data.wins ?? 0, data.losses ?? 0, data.draws ?? 0, data.winStreak ?? 0, data.highestStreak ?? 0, scores, serialized);
+			} catch {}
 		}
 	}
 	async getAll() {
@@ -6742,9 +6744,13 @@ var PrismaWekyStorage = class {
 			return (await delegate.findMany({ orderBy: { elo: "desc" } })).map((r) => typeof r.data === "string" ? JSON.parse(r.data) : r.data).filter(Boolean);
 		} catch {}
 		if (typeof this.client.$queryRawUnsafe === "function") try {
-			return (await this.client.$queryRawUnsafe(`SELECT data FROM ${this.playerTable} ORDER BY elo DESC`)).map((r) => JSON.parse(r.data)).filter(Boolean);
+			return (await this.client.$queryRawUnsafe(`SELECT data FROM "${this.playerTable}" ORDER BY "elo" DESC`)).map((r) => typeof r.data === "string" ? JSON.parse(r.data) : r.data).filter(Boolean);
 		} catch {
-			return [];
+			try {
+				return (await this.client.$queryRawUnsafe(`SELECT data FROM ${this.playerTable} ORDER BY elo DESC`)).map((r) => typeof r.data === "string" ? JSON.parse(r.data) : r.data).filter(Boolean);
+			} catch {
+				return [];
+			}
 		}
 		return [];
 	}

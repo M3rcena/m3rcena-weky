@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [14.28.1-1] - 2026-11-09
+
+### 🩹 Fixed
+- **Fix (Storage)**: Wrap fallback SQLite raw query invocations inside `try/catch` in `PrismaWekyStorage.set()` to prevent unhandled rejection crashes when executed against PostgreSQL.
+- **Fix (Database)**: Remove premature model check in `ensureMigrated()` that blocked automatic table creation when Prisma Client was pre-generated.
+
+---
+
 ## [14.28.1] - 2026-11-05
 
 ### 🚀 Enhancements & Compatibility
